@@ -1,29 +1,6 @@
-/*
-=========================================
-矿山管理系统
-admin-review.js V2.0
-
-功能：
-1. 人员信息汇总表
-2. 查看人员详细档案
-3. 查看证件照片
-4. 审核通过
-5. 审核不通过
-6. 打印人员档案
-7. 打印证件照片
-=========================================
-*/
-
-
 document.addEventListener(
     "DOMContentLoaded",
     function () {
-
-        /*
-        =====================================
-        页面元素
-        =====================================
-        */
 
         const emptyMessage =
             document.getElementById(
@@ -37,53 +14,11 @@ document.addEventListener(
             );
 
 
-        const personnelTableBody =
-            document.getElementById(
-                "personnelTableBody"
-            );
-
-
         const detailSection =
             document.getElementById(
                 "detailSection"
             );
 
-
-        const approveButton =
-            document.getElementById(
-                "approveButton"
-            );
-
-
-        const rejectButton =
-            document.getElementById(
-                "rejectButton"
-            );
-
-
-        const printProfileButton =
-            document.getElementById(
-                "printProfileButton"
-            );
-
-
-        const printPhotosButton =
-            document.getElementById(
-                "printPhotosButton"
-            );
-
-
-        const closeDetailButton =
-            document.getElementById(
-                "closeDetailButton"
-            );
-
-
-        /*
-        =====================================
-        读取人员资料
-        =====================================
-        */
 
         const data =
             localStorage.getItem(
@@ -96,10 +31,8 @@ document.addEventListener(
             emptyMessage.style.display =
                 "block";
 
-
             personnelTableArea.style.display =
                 "none";
-
 
             return;
 
@@ -112,39 +45,23 @@ document.addEventListener(
         try {
 
             profile =
-                JSON.parse(
-                    data
-                );
+                JSON.parse(data);
 
         }
 
         catch (error) {
 
-            console.error(
-                "人员资料读取失败：",
-                error
-            );
-
-
             alert(
                 "人员资料读取失败"
             );
-
 
             return;
 
         }
 
 
-        /*
-        =====================================
-        显示汇总表
-        =====================================
-        */
-
         emptyMessage.style.display =
             "none";
-
 
         personnelTableArea.style.display =
             "block";
@@ -154,13 +71,6 @@ document.addEventListener(
             profile
         );
 
-
-
-        /*
-        =====================================
-        查看详情
-        =====================================
-        */
 
         window.openPersonnelDetail =
             function () {
@@ -172,183 +82,150 @@ document.addEventListener(
             };
 
 
+        document
+            .getElementById(
+                "approveButton"
+            )
+            .addEventListener(
+                "click",
+                function () {
 
-        /*
-        =====================================
-        审核通过
-        =====================================
-        */
+                    if (
+                        !confirm(
+                            "确认审核通过该人员吗？"
+                        )
+                    ) {
 
-        approveButton.addEventListener(
-            "click",
-            function () {
+                        return;
 
-                const confirmed =
-                    confirm(
-                        "确认审核通过该人员吗？"
+                    }
+
+
+                    profile.status =
+                        "approved";
+
+
+                    profile.approvedAt =
+                        new Date()
+                            .toISOString();
+
+
+                    localStorage.setItem(
+                        "driverProfile",
+                        JSON.stringify(
+                            profile
+                        )
                     );
 
 
-                if (!confirmed) {
-
-                    return;
-
-                }
-
-
-                profile.status =
-                    "approved";
-
-
-                profile.approvedAt =
-                    new Date()
-                        .toISOString();
-
-
-                profile.rejectedAt =
-                    "";
-
-
-                saveProfile(
-                    profile
-                );
-
-
-                alert(
-                    "审核已通过"
-                );
-
-
-                refreshPage();
-
-            }
-        );
-
-
-
-        /*
-        =====================================
-        审核不通过
-        =====================================
-        */
-
-        rejectButton.addEventListener(
-            "click",
-            function () {
-
-                const confirmed =
-                    confirm(
-                        "确认审核不通过该人员吗？"
+                    alert(
+                        "审核已通过"
                     );
 
 
-                if (!confirmed) {
-
-                    return;
+                    location.reload();
 
                 }
+            );
 
 
-                profile.status =
-                    "rejected";
+        document
+            .getElementById(
+                "rejectButton"
+            )
+            .addEventListener(
+                "click",
+                function () {
+
+                    if (
+                        !confirm(
+                            "确认审核不通过该人员吗？"
+                        )
+                    ) {
+
+                        return;
+
+                    }
 
 
-                profile.rejectedAt =
-                    new Date()
-                        .toISOString();
+                    profile.status =
+                        "rejected";
 
 
-                profile.approvedAt =
-                    "";
+                    profile.rejectedAt =
+                        new Date()
+                            .toISOString();
 
 
-                saveProfile(
-                    profile
-                );
+                    localStorage.setItem(
+                        "driverProfile",
+                        JSON.stringify(
+                            profile
+                        )
+                    );
 
 
-                alert(
-                    "该人员审核未通过"
-                );
+                    alert(
+                        "审核未通过"
+                    );
 
 
-                refreshPage();
+                    location.reload();
 
-            }
-        );
-
-
-
-        /*
-        =====================================
-        打印人员档案
-        =====================================
-        */
-
-        printProfileButton.addEventListener(
-            "click",
-            function () {
-
-                printPersonnelProfile(
-                    profile
-                );
-
-            }
-        );
+                }
+            );
 
 
+        document
+            .getElementById(
+                "printProfileButton"
+            )
+            .addEventListener(
+                "click",
+                function () {
 
-        /*
-        =====================================
-        打印证件照片
-        =====================================
-        */
+                    printPersonnelProfile(
+                        profile
+                    );
 
-        printPhotosButton.addEventListener(
-            "click",
-            function () {
-
-                printPersonnelPhotos(
-                    profile
-                );
-
-            }
-        );
+                }
+            );
 
 
+        document
+            .getElementById(
+                "printPhotosButton"
+            )
+            .addEventListener(
+                "click",
+                function () {
 
-        /*
-        =====================================
-        关闭详情
-        =====================================
-        */
+                    printPersonnelPhotos(
+                        profile
+                    );
 
-        closeDetailButton.addEventListener(
-            "click",
-            function () {
-
-                detailSection.style.display =
-                    "none";
+                }
+            );
 
 
-                window.scrollTo({
-                    top: 0,
-                    behavior: "smooth"
-                });
+        document
+            .getElementById(
+                "closeDetailButton"
+            )
+            .addEventListener(
+                "click",
+                function () {
 
-            }
-        );
+                    detailSection.style.display =
+                        "none";
+
+                }
+            );
 
     }
 );
 
 
-
-/*
-=========================================
-生成人员汇总表
-=========================================
-*/
 
 function renderPersonnelTable(
     profile
@@ -361,146 +238,60 @@ function renderPersonnelTable(
 
 
     tableBody.innerHTML =
-        "";
+        `
 
+        <tr>
 
-    const row =
-        document.createElement(
-            "tr"
-        );
+            <td>
+                ${escapeHtml(profile.name || "")}
+            </td>
 
+            <td>
+                ${escapeHtml(profile.phone || "")}
+            </td>
 
-    row.innerHTML =
+            <td>
+                ${escapeHtml(profile.emergencyContact || "未填写")}
+            </td>
 
-        "<td>"
-        +
-        escapeHtml(
-            profile.name || ""
-        )
-        +
-        "</td>"
+            <td>
+                ${escapeHtml(profile.emergencyPhone || "未填写")}
+            </td>
 
-        +
+            <td>
+                ${escapeHtml(profile.position || "")}
+            </td>
 
-        "<td>"
-        +
-        escapeHtml(
-            profile.phone || ""
-        )
-        +
-        "</td>"
+            <td>
+                ${escapeHtml(profile.team || "")}
+            </td>
 
-        +
+            <td>
+                ${escapeHtml(profile.entryDate || "未填写")}
+            </td>
 
-        "<td>"
-        +
-        escapeHtml(
-            maskSensitive(
-                profile.idCardNumber
-            )
-        )
-        +
-        "</td>"
+            <td>
+                ${escapeHtml(getStatusText(profile.status))}
+            </td>
 
-        +
+            <td>
 
-        "<td>"
-        +
-        escapeHtml(
-            maskSensitive(
-                profile.passportNumber
-            )
-        )
-        +
-        "</td>"
+                <button
+                    type="button"
+                    onclick="openPersonnelDetail()"
+                >
+                    查看
+                </button>
 
-        +
+            </td>
 
-        "<td>"
-        +
-        escapeHtml(
-            maskBankCard(
-                profile.bankCardNumber
-            )
-        )
-        +
-        "</td>"
+        </tr>
 
-        +
-
-        "<td>"
-        +
-        escapeHtml(
-            profile.position || ""
-        )
-        +
-        "</td>"
-
-        +
-
-        "<td>"
-        +
-        escapeHtml(
-            profile.team || ""
-        )
-        +
-        "</td>"
-
-        +
-
-        "<td>"
-        +
-        escapeHtml(
-            profile.entryDate ||
-            "未填写"
-        )
-        +
-        "</td>"
-
-        +
-
-        "<td>"
-        +
-        escapeHtml(
-            getStatusText(
-                profile.status
-            )
-        )
-        +
-        "</td>"
-
-        +
-
-        "<td>"
-        +
-        "<button "
-        +
-        "type='button' "
-        +
-        "onclick='openPersonnelDetail()' "
-        +
-        "style='min-height:40px; margin:0;'>"
-        +
-        "查看"
-        +
-        "</button>"
-        +
-        "</td>";
-
-
-    tableBody.appendChild(
-        row
-    );
+        `;
 
 }
 
 
-
-/*
-=========================================
-显示人员详细档案
-=========================================
-*/
 
 function showPersonnelDetail(
     profile
@@ -515,6 +306,20 @@ function showPersonnelDetail(
     setText(
         "detailPhone",
         profile.phone
+    );
+
+
+    setText(
+        "detailEmergencyContact",
+        profile.emergencyContact ||
+        "未填写"
+    );
+
+
+    setText(
+        "detailEmergencyPhone",
+        profile.emergencyPhone ||
+        "未填写"
     );
 
 
@@ -605,29 +410,17 @@ function showPersonnelDetail(
     );
 
 
-    const detailSection =
-        document.getElementById(
+    document
+        .getElementById(
             "detailSection"
-        );
-
-
-    detailSection.style.display =
+        )
+        .style
+        .display =
         "block";
-
-
-    detailSection.scrollIntoView({
-        behavior: "smooth"
-    });
 
 }
 
 
-
-/*
-=========================================
-显示照片
-=========================================
-*/
 
 function showPhoto(
     imageId,
@@ -652,10 +445,8 @@ function showPhoto(
         image.src =
             imageData;
 
-
         image.style.display =
             "block";
-
 
         noPhoto.style.display =
             "none";
@@ -664,14 +455,8 @@ function showPhoto(
 
     else {
 
-        image.removeAttribute(
-            "src"
-        );
-
-
         image.style.display =
             "none";
-
 
         noPhoto.style.display =
             "block";
@@ -681,47 +466,6 @@ function showPhoto(
 }
 
 
-
-/*
-=========================================
-保存人员资料
-=========================================
-*/
-
-function saveProfile(
-    profile
-) {
-
-    localStorage.setItem(
-        "driverProfile",
-        JSON.stringify(
-            profile
-        )
-    );
-
-}
-
-
-
-/*
-=========================================
-刷新页面
-=========================================
-*/
-
-function refreshPage() {
-
-    location.reload();
-
-}
-
-
-
-/*
-=========================================
-打印人员档案
-=========================================
-*/
 
 function printPersonnelProfile(
     profile
@@ -735,28 +479,20 @@ function printPersonnelProfile(
 
 
     if (!printWindow) {
-
-        alert(
-            "浏览器阻止了打印窗口，请允许弹出窗口后重新操作。"
-        );
-
         return;
-
     }
 
 
     printWindow.document.write(`
 
-        <!DOCTYPE html>
-
-        <html lang="zh-CN">
+        <html>
 
         <head>
 
             <meta charset="UTF-8">
 
             <title>
-                人员档案
+                人员信息登记表
             </title>
 
             <style>
@@ -768,8 +504,6 @@ function printPersonnelProfile(
                         sans-serif;
 
                     padding: 30px;
-
-                    color: #111;
                 }
 
                 h1 {
@@ -778,24 +512,16 @@ function printPersonnelProfile(
 
                 table {
                     width: 100%;
-
-                    border-collapse:
-                        collapse;
-
-                    margin-top: 25px;
+                    border-collapse: collapse;
                 }
 
                 td {
-                    border:
-                        1px solid #333;
-
-                    padding:
-                        10px;
+                    border: 1px solid #333;
+                    padding: 10px;
                 }
 
                 td:first-child {
-                    width: 160px;
-
+                    width: 180px;
                     font-weight: bold;
                 }
 
@@ -821,6 +547,16 @@ function printPersonnelProfile(
                 <tr>
                     <td>手机号</td>
                     <td>${escapeHtml(profile.phone || "")}</td>
+                </tr>
+
+                <tr>
+                    <td>紧急联系人</td>
+                    <td>${escapeHtml(profile.emergencyContact || "未填写")}</td>
+                </tr>
+
+                <tr>
+                    <td>紧急联系人电话</td>
+                    <td>${escapeHtml(profile.emergencyPhone || "未填写")}</td>
                 </tr>
 
                 <tr>
@@ -875,9 +611,6 @@ function printPersonnelProfile(
     printWindow.document.close();
 
 
-    printWindow.focus();
-
-
     setTimeout(
         function () {
 
@@ -891,12 +624,6 @@ function printPersonnelProfile(
 
 
 
-/*
-=========================================
-打印证件照片
-=========================================
-*/
-
 function printPersonnelPhotos(
     profile
 ) {
@@ -905,17 +632,15 @@ function printPersonnelPhotos(
         profile.photos || {};
 
 
-    const availablePhotos = [];
+    const availablePhotos =
+        [];
 
 
     if (photos.idCard) {
 
         availablePhotos.push({
-            title:
-                "身份证照片",
-
-            src:
-                photos.idCard
+            title: "身份证照片",
+            src: photos.idCard
         });
 
     }
@@ -924,11 +649,8 @@ function printPersonnelPhotos(
     if (photos.passport) {
 
         availablePhotos.push({
-            title:
-                "护照照片",
-
-            src:
-                photos.passport
+            title: "护照照片",
+            src: photos.passport
         });
 
     }
@@ -937,11 +659,8 @@ function printPersonnelPhotos(
     if (photos.driverLicense) {
 
         availablePhotos.push({
-            title:
-                "驾驶证照片",
-
-            src:
-                photos.driverLicense
+            title: "驾驶证照片",
+            src: photos.driverLicense
         });
 
     }
@@ -950,11 +669,8 @@ function printPersonnelPhotos(
     if (photos.bankCard) {
 
         availablePhotos.push({
-            title:
-                "银行卡照片",
-
-            src:
-                photos.bankCard
+            title: "银行卡照片",
+            src: photos.bankCard
         });
 
     }
@@ -981,29 +697,21 @@ function printPersonnelPhotos(
         );
 
 
-    if (!printWindow) {
-
-        alert(
-            "浏览器阻止了打印窗口，请允许弹出窗口后重新操作。"
-        );
-
-        return;
-
-    }
-
-
-    let photoHtml =
+    let html =
         "";
 
 
     availablePhotos.forEach(
-        function (
-            photo
-        ) {
+        function (photo) {
 
-            photoHtml += `
+            html += `
 
-                <div class="photo-block">
+                <div
+                    style="
+                        text-align:center;
+                        margin-bottom:40px;
+                    "
+                >
 
                     <h2>
                         ${escapeHtml(photo.title)}
@@ -1011,7 +719,10 @@ function printPersonnelPhotos(
 
                     <img
                         src="${photo.src}"
-                        alt="${escapeHtml(photo.title)}"
+                        style="
+                            max-width:100%;
+                            max-height:800px;
+                        "
                     >
 
                 </div>
@@ -1024,82 +735,32 @@ function printPersonnelPhotos(
 
     printWindow.document.write(`
 
-        <!DOCTYPE html>
-
-        <html lang="zh-CN">
+        <html>
 
         <head>
 
             <meta charset="UTF-8">
 
             <title>
-                证件照片
+                人员证件照片
             </title>
-
-            <style>
-
-                body {
-                    font-family:
-                        Arial,
-                        "Microsoft YaHei",
-                        sans-serif;
-
-                    padding:
-                        25px;
-                }
-
-                h1 {
-                    text-align:
-                        center;
-                }
-
-                .person-name {
-                    text-align:
-                        center;
-
-                    margin-bottom:
-                        30px;
-                }
-
-                .photo-block {
-                    page-break-inside:
-                        avoid;
-
-                    margin-bottom:
-                        40px;
-
-                    text-align:
-                        center;
-                }
-
-                img {
-                    max-width:
-                        100%;
-
-                    max-height:
-                        850px;
-                }
-
-            </style>
 
         </head>
 
 
         <body>
 
-            <h1>
-                人员证件照片
+            <h1
+                style="
+                    text-align:center;
+                "
+            >
+                ${escapeHtml(profile.name || "")}
+                · 人员证件照片
             </h1>
 
-            <div class="person-name">
 
-                姓名：
-                ${escapeHtml(profile.name || "")}
-
-            </div>
-
-
-            ${photoHtml}
+            ${html}
 
         </body>
 
@@ -1109,9 +770,6 @@ function printPersonnelPhotos(
 
 
     printWindow.document.close();
-
-
-    printWindow.focus();
 
 
     setTimeout(
@@ -1126,12 +784,6 @@ function printPersonnelPhotos(
 }
 
 
-
-/*
-=========================================
-审核状态文字
-=========================================
-*/
 
 function getStatusText(
     status
@@ -1173,128 +825,25 @@ function getStatusText(
 
 
 
-/*
-=========================================
-设置文字
-=========================================
-*/
-
 function setText(
     id,
     value
 ) {
 
     const element =
-        document.getElementById(
-            id
-        );
+        document.getElementById(id);
 
 
-    if (!element) {
-        return;
+    if (element) {
+
+        element.textContent =
+            value || "";
+
     }
-
-
-    element.textContent =
-        value || "";
 
 }
 
 
-
-/*
-=========================================
-身份证 / 护照简单脱敏
-=========================================
-*/
-
-function maskSensitive(
-    value
-) {
-
-    if (!value) {
-
-        return "未填写";
-
-    }
-
-
-    if (
-        value.length <=
-        6
-    ) {
-
-        return value;
-
-    }
-
-
-    return (
-        value.slice(
-            0,
-            3
-        )
-        +
-        "****"
-        +
-        value.slice(
-            -3
-        )
-    );
-
-}
-
-
-
-/*
-=========================================
-银行卡号脱敏
-=========================================
-*/
-
-function maskBankCard(
-    value
-) {
-
-    if (!value) {
-
-        return "未填写";
-
-    }
-
-
-    if (
-        value.length <=
-        8
-    ) {
-
-        return value;
-
-    }
-
-
-    return (
-        value.slice(
-            0,
-            4
-        )
-        +
-        " **** **** "
-        +
-        value.slice(
-            -4
-        )
-    );
-
-}
-
-
-
-/*
-=========================================
-HTML安全处理
-=========================================
-*/
 
 function escapeHtml(
     value
