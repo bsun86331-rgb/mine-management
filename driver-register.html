@@ -1,1 +1,205 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
 
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>司机首次登记</title>
+
+    <link
+        rel="stylesheet"
+        href="css/style.css"
+    >
+
+</head>
+
+
+<body>
+
+    <header>
+
+        <h1>司机信息登记</h1>
+
+        <p>Driver Registration</p>
+
+    </header>
+
+
+    <main>
+
+        <section>
+
+            <h2>首次登录登记</h2>
+
+            <p>
+                请填写真实个人信息，提交后由管理员审核。
+                审核通过后，下次可直接进入司机工作界面。
+            </p>
+
+
+            <!-- 姓名 -->
+
+            <label for="driverName">
+                姓名 *
+            </label>
+
+            <input
+                id="driverName"
+                type="text"
+                placeholder="请输入姓名"
+                autocomplete="name"
+                required
+            >
+
+
+            <!-- 手机号 -->
+
+            <label for="phone">
+                手机号 *
+            </label>
+
+            <input
+                id="phone"
+                type="tel"
+                placeholder="请输入手机号"
+                autocomplete="tel"
+                required
+            >
+
+
+            <!-- 身份证 / 护照 -->
+
+            <label for="idNumber">
+                身份证 / 护照号 *
+            </label>
+
+            <input
+                id="idNumber"
+                type="text"
+                placeholder="请输入身份证或护照号码"
+                required
+            >
+
+
+            <!-- 岗位 -->
+
+            <label for="position">
+                岗位
+            </label>
+
+            <input
+                id="position"
+                type="text"
+                value="卡车司机"
+                readonly
+            >
+
+
+            <!-- 所属车队 -->
+
+            <label for="team">
+                所属车队 *
+            </label>
+
+            <select
+                id="team"
+                required
+            >
+
+                <option value="">
+                    请选择所属车队
+                </option>
+
+                <option value="山一车队">
+                    山一车队
+                </option>
+
+                <option value="山二车队">
+                    山二车队
+                </option>
+
+                <option value="其他车队">
+                    其他车队
+                </option>
+
+            </select>
+
+
+            <!-- 车辆编号 -->
+
+            <label for="truckNumber">
+                车辆编号 *
+            </label>
+
+            <input
+                id="truckNumber"
+                type="text"
+                placeholder="例如：TRUCK-001"
+                required
+            >
+
+
+            <!-- 入职日期 -->
+
+            <label for="entryDate">
+                入职日期
+            </label>
+
+            <input
+                id="entryDate"
+                type="date"
+            >
+
+
+            <!-- 备注 -->
+
+            <label for="remark">
+                备注
+            </label>
+
+            <textarea
+                id="remark"
+                rows="4"
+                placeholder="其他需要说明的信息（选填）"
+            ></textarea>
+
+
+            <!-- 提交 -->
+
+            <button
+                id="submitButton"
+                type="button"
+            >
+                提交审核
+            </button>
+
+
+            <!-- 返回 -->
+
+            <button
+                type="button"
+                onclick="location.href='index.html'"
+            >
+                返回登录端口
+            </button>
+
+        </section>
+
+    </main>
+
+
+    <footer>
+
+        <p>矿山管理系统 · 司机端 V1.0</p>
+
+    </footer>
+
+</body>
+
+</html>
