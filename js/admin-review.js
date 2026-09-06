@@ -1,7 +1,7 @@
 /*
 =========================================
 矿山管理系统
-admin-review.js V1.0
+admin-review.js V1.1
 管理员人员审核
 =========================================
 */
@@ -88,10 +88,20 @@ document.addEventListener(
 
         document
             .getElementById(
-                "reviewIdNumber"
+                "reviewIdCardNumber"
             )
             .textContent =
-            profile.idNumber || "";
+            profile.idCardNumber ||
+            "未填写";
+
+
+        document
+            .getElementById(
+                "reviewPassportNumber"
+            )
+            .textContent =
+            profile.passportNumber ||
+            "未填写";
 
 
         document
@@ -123,7 +133,8 @@ document.addEventListener(
                 "reviewEntryDate"
             )
             .textContent =
-            profile.entryDate || "未填写";
+            profile.entryDate ||
+            "未填写";
 
 
         document
@@ -131,7 +142,8 @@ document.addEventListener(
                 "reviewRemark"
             )
             .textContent =
-            profile.remark || "无";
+            profile.remark ||
+            "无";
 
 
         document
@@ -240,7 +252,6 @@ document.addEventListener(
 
                 }
             );
-
 
     }
 );
