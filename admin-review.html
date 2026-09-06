@@ -10,7 +10,7 @@
         content="width=device-width, initial-scale=1.0"
     >
 
-    <title>人员审核</title>
+    <title>人员信息管理</title>
 
     <link
         rel="stylesheet"
@@ -24,9 +24,9 @@
 
     <header>
 
-        <h1>管理员端</h1>
+        <h1>人员信息管理</h1>
 
-        <p>Personnel Review</p>
+        <p>Personnel Management</p>
 
     </header>
 
@@ -35,97 +35,69 @@
 
         <section>
 
-            <h2>人员审核</h2>
+            <h2>人员信息汇总表</h2>
 
+
+            <!-- 无数据提示 -->
 
             <div id="emptyMessage">
 
                 <p>
-                    当前没有待审核人员。
+                    当前没有人员登记信息。
                 </p>
 
             </div>
 
 
+            <!-- 汇总表 -->
+
             <div
-                id="reviewCard"
-                style="display:none;"
+                id="personnelTableArea"
+                style="display:none; overflow-x:auto;"
             >
 
-                <p>
-                    <strong>姓名：</strong>
-                    <span id="reviewName"></span>
-                </p>
-
-
-                <p>
-                    <strong>手机号：</strong>
-                    <span id="reviewPhone"></span>
-                </p>
-
-
-                <p>
-                    <strong>身份证号：</strong>
-                    <span id="reviewIdCardNumber"></span>
-                </p>
-
-
-                <p>
-                    <strong>护照号：</strong>
-                    <span id="reviewPassportNumber"></span>
-                </p>
-
-
-                <p>
-                    <strong>岗位：</strong>
-                    <span id="reviewPosition"></span>
-                </p>
-
-
-                <p>
-                    <strong>所属车队：</strong>
-                    <span id="reviewTeam"></span>
-                </p>
-
-
-                <p>
-                    <strong>车辆编号：</strong>
-                    <span id="reviewTruck"></span>
-                </p>
-
-
-                <p>
-                    <strong>入职日期：</strong>
-                    <span id="reviewEntryDate"></span>
-                </p>
-
-
-                <p>
-                    <strong>备注：</strong>
-                    <span id="reviewRemark"></span>
-                </p>
-
-
-                <p>
-                    <strong>当前状态：</strong>
-                    <span id="reviewStatus"></span>
-                </p>
-
-
-                <button
-                    id="approveButton"
-                    type="button"
+                <table
+                    style="
+                        width:100%;
+                        border-collapse:collapse;
+                        min-width:900px;
+                    "
                 >
-                    审核通过
-                </button>
+
+                    <thead>
+
+                        <tr>
+
+                            <th>姓名</th>
+
+                            <th>手机号</th>
+
+                            <th>身份证号</th>
+
+                            <th>护照号</th>
+
+                            <th>银行卡号</th>
+
+                            <th>岗位</th>
+
+                            <th>车队</th>
+
+                            <th>入职日期</th>
+
+                            <th>审核状态</th>
+
+                            <th>操作</th>
+
+                        </tr>
+
+                    </thead>
 
 
-                <button
-                    id="rejectButton"
-                    type="button"
-                >
-                    审核不通过
-                </button>
+                    <tbody id="personnelTableBody">
+
+                    </tbody>
+
+                </table>
 
             </div>
 
@@ -139,13 +111,270 @@
 
         </section>
 
+
+        <!-- =================================
+             人员详细资料
+        ================================== -->
+
+        <section
+            id="detailSection"
+            style="
+                display:none;
+                margin-top:20px;
+            "
+        >
+
+            <h2>
+                人员详细档案
+            </h2>
+
+
+            <p>
+                <strong>姓名：</strong>
+                <span id="detailName"></span>
+            </p>
+
+
+            <p>
+                <strong>手机号：</strong>
+                <span id="detailPhone"></span>
+            </p>
+
+
+            <p>
+                <strong>身份证号：</strong>
+                <span id="detailIdCardNumber"></span>
+            </p>
+
+
+            <p>
+                <strong>护照号：</strong>
+                <span id="detailPassportNumber"></span>
+            </p>
+
+
+            <p>
+                <strong>银行卡号：</strong>
+                <span id="detailBankCardNumber"></span>
+            </p>
+
+
+            <p>
+                <strong>岗位：</strong>
+                <span id="detailPosition"></span>
+            </p>
+
+
+            <p>
+                <strong>所属车队：</strong>
+                <span id="detailTeam"></span>
+            </p>
+
+
+            <p>
+                <strong>入职日期：</strong>
+                <span id="detailEntryDate"></span>
+            </p>
+
+
+            <p>
+                <strong>备注：</strong>
+                <span id="detailRemark"></span>
+            </p>
+
+
+            <p>
+                <strong>审核状态：</strong>
+                <span id="detailStatus"></span>
+            </p>
+
+
+            <!-- =================================
+                 证件照片
+            ================================== -->
+
+            <h2
+                style="margin-top:30px;"
+            >
+                证件照片
+            </h2>
+
+
+            <div id="photoArea">
+
+
+                <!-- 身份证 -->
+
+                <div
+                    id="idCardPhotoBox"
+                    style="margin-bottom:25px;"
+                >
+
+                    <h3>
+                        身份证照片
+                    </h3>
+
+                    <img
+                        id="detailIdCardPhoto"
+                        alt="身份证照片"
+                        style="
+                            width:100%;
+                            max-width:500px;
+                            display:none;
+                            border-radius:8px;
+                        "
+                    >
+
+                    <p id="idCardNoPhoto">
+                        未上传
+                    </p>
+
+                </div>
+
+
+                <!-- 护照 -->
+
+                <div
+                    id="passportPhotoBox"
+                    style="margin-bottom:25px;"
+                >
+
+                    <h3>
+                        护照照片
+                    </h3>
+
+                    <img
+                        id="detailPassportPhoto"
+                        alt="护照照片"
+                        style="
+                            width:100%;
+                            max-width:500px;
+                            display:none;
+                            border-radius:8px;
+                        "
+                    >
+
+                    <p id="passportNoPhoto">
+                        未上传
+                    </p>
+
+                </div>
+
+
+                <!-- 驾驶证 -->
+
+                <div
+                    id="driverLicensePhotoBox"
+                    style="margin-bottom:25px;"
+                >
+
+                    <h3>
+                        驾驶证照片
+                    </h3>
+
+                    <img
+                        id="detailDriverLicensePhoto"
+                        alt="驾驶证照片"
+                        style="
+                            width:100%;
+                            max-width:500px;
+                            display:none;
+                            border-radius:8px;
+                        "
+                    >
+
+                    <p id="driverLicenseNoPhoto">
+                        未上传
+                    </p>
+
+                </div>
+
+
+                <!-- 银行卡 -->
+
+                <div
+                    id="bankCardPhotoBox"
+                    style="margin-bottom:25px;"
+                >
+
+                    <h3>
+                        银行卡照片
+                    </h3>
+
+                    <img
+                        id="detailBankCardPhoto"
+                        alt="银行卡照片"
+                        style="
+                            width:100%;
+                            max-width:500px;
+                            display:none;
+                            border-radius:8px;
+                        "
+                    >
+
+                    <p id="bankCardNoPhoto">
+                        未上传
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <!-- 审核按钮 -->
+
+            <button
+                id="approveButton"
+                type="button"
+            >
+                审核通过
+            </button>
+
+
+            <button
+                id="rejectButton"
+                type="button"
+            >
+                审核不通过
+            </button>
+
+
+            <!-- 打印 -->
+
+            <button
+                id="printProfileButton"
+                type="button"
+            >
+                打印人员档案
+            </button>
+
+
+            <button
+                id="printPhotosButton"
+                type="button"
+            >
+                打印证件照片
+            </button>
+
+
+            <!-- 关闭详情 -->
+
+            <button
+                id="closeDetailButton"
+                type="button"
+            >
+                关闭人员详情
+            </button>
+
+        </section>
+
     </main>
 
 
     <footer>
 
         <p>
-            矿山管理系统 · 管理员端 V1.1
+            矿山管理系统 · 管理员端 V2.0
         </p>
 
     </footer>
