@@ -1,877 +1,269 @@
-/*
-=========================================
-矿山管理系统
-driver-register.js V2.0
+<!DOCTYPE html>
+<html lang="zh-CN">
 
-功能：
-1. 司机首次登记
-2. 保存身份证号
-3. 保存护照号
-4. 保存银行卡号
-5. 上传身份证照片
-6. 上传护照照片
-7. 上传驾驶证照片
-8. 上传银行卡照片
-9. 自动压缩上传图片
-10. 提交后进入等待审核页面
-=========================================
-*/
+<head>
 
+    <meta charset="UTF-8">
 
-document.addEventListener(
-    "DOMContentLoaded",
-    function () {
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
 
-        const submitButton =
-            document.getElementById(
-                "submitButton"
-            );
+    <title>司机首次登记</title>
 
+    <link
+        rel="stylesheet"
+        href="css/style.css"
+    >
 
-        if (!submitButton) {
-            return;
-        }
+</head>
 
 
-        /*
-        =====================================
-        检查本机是否已经登记
-        =====================================
-        */
+<body>
 
-        const oldData =
-            localStorage.getItem(
-                "driverProfile"
-            );
+    <header>
 
+        <h1>司机信息登记</h1>
 
-        if (oldData) {
+        <p>Driver Registration</p>
 
-            try {
+    </header>
 
-                const profile =
-                    JSON.parse(oldData);
 
+    <main>
 
-                /*
-                待审核
-                */
+        <section>
 
-                if (
-                    profile.status ===
-                    "pending"
-                ) {
+            <h2>首次登录登记</h2>
 
-                    location.href =
-                        "driver-waiting.html";
+            <p>
+                请填写真实个人信息，并上传相关证件照片。
+                提交后由管理员审核。
+            </p>
 
-                    return;
 
-                }
+            <label for="driverName">
+                姓名 *
+            </label>
 
+            <input
+                id="driverName"
+                type="text"
+                placeholder="请输入姓名"
+                required
+            >
 
-                /*
-                已审核通过
-                */
 
-                if (
-                    profile.status ===
-                    "approved"
-                ) {
+            <label for="phone">
+                手机号 *
+            </label>
 
-                    location.href =
-                        "driver-work.html";
+            <input
+                id="phone"
+                type="tel"
+                placeholder="请输入手机号"
+                required
+            >
 
-                    return;
 
-                }
+            <label for="emergencyContact">
+                紧急联系人 *
+            </label>
 
+            <input
+                id="emergencyContact"
+                type="text"
+                placeholder="请输入紧急联系人姓名"
+                required
+            >
 
-                /*
-                rejected
-                审核不通过时
-                允许重新填写
-                */
 
-            }
+            <label for="emergencyPhone">
+                紧急联系人电话 *
+            </label>
 
-            catch (error) {
+            <input
+                id="emergencyPhone"
+                type="tel"
+                placeholder="请输入紧急联系人电话号码"
+                required
+            >
 
-                console.error(
-                    "读取原司机资料失败：",
-                    error
-                );
 
-            }
+            <label for="idCardNumber">
+                身份证号
+            </label>
 
-        }
+            <input
+                id="idCardNumber"
+                type="text"
+                placeholder="请输入身份证号码"
+            >
 
 
+            <label for="passportNumber">
+                护照号
+            </label>
 
-        /*
-        =====================================
-        点击提交
-        =====================================
-        */
+            <input
+                id="passportNumber"
+                type="text"
+                placeholder="请输入护照号码"
+            >
 
-        submitButton.addEventListener(
-            "click",
-            async function () {
 
-                /*
-                防止连续点击
-                */
+            <label for="bankCardNumber">
+                银行卡号
+            </label>
 
-                submitButton.disabled =
-                    true;
+            <input
+                id="bankCardNumber"
+                type="text"
+                inputmode="numeric"
+                placeholder="请输入银行卡号"
+            >
 
-                submitButton.textContent =
-                    "正在提交...";
 
+            <label for="position">
+                岗位
+            </label>
 
-                try {
+            <input
+                id="position"
+                type="text"
+                value="卡车司机"
+                readonly
+            >
 
-                    /*
-                    =============================
-                    读取基本资料
-                    =============================
-                    */
 
-                    const driverName =
-                        getValue(
-                            "driverName"
-                        );
+            <label for="team">
+                所属车队 *
+            </label>
 
+            <select
+                id="team"
+                required
+            >
 
-                    const phone =
-                        getValue(
-                            "phone"
-                        );
+                <option value="">
+                    请选择所属车队
+                </option>
 
+                <option value="山一车队">
+                    山一车队
+                </option>
 
-                    const idCardNumber =
-                        getValue(
-                            "idCardNumber"
-                        );
+                <option value="山二车队">
+                    山二车队
+                </option>
 
+                <option value="其他车队">
+                    其他车队
+                </option>
 
-                    const passportNumber =
-                        getValue(
-                            "passportNumber"
-                        );
+            </select>
 
 
-                    const bankCardNumber =
-                        getValue(
-                            "bankCardNumber"
-                        );
+            <label for="entryDate">
+                入职日期
+            </label>
 
+            <input
+                id="entryDate"
+                type="date"
+            >
 
-                    const position =
-                        getValue(
-                            "position"
-                        );
 
+            <label for="idCardPhoto">
+                身份证照片
+            </label>
 
-                    const team =
-                        getValue(
-                            "team"
-                        );
+            <input
+                id="idCardPhoto"
+                type="file"
+                accept="image/*"
+            >
 
 
-                    const entryDate =
-                        getValue(
-                            "entryDate"
-                        );
+            <label for="passportPhoto">
+                护照照片
+            </label>
 
+            <input
+                id="passportPhoto"
+                type="file"
+                accept="image/*"
+            >
 
-                    const remark =
-                        getValue(
-                            "remark"
-                        );
 
+            <label for="driverLicensePhoto">
+                驾驶证照片
+            </label>
 
+            <input
+                id="driverLicensePhoto"
+                type="file"
+                accept="image/*"
+            >
 
-                    /*
-                    =============================
-                    基本资料验证
-                    =============================
-                    */
 
-                    if (!driverName) {
+            <label for="bankCardPhoto">
+                银行卡照片
+            </label>
 
-                        alert(
-                            "请输入姓名"
-                        );
+            <input
+                id="bankCardPhoto"
+                type="file"
+                accept="image/*"
+            >
 
-                        resetSubmitButton();
 
-                        return;
+            <label for="remark">
+                备注
+            </label>
 
-                    }
+            <textarea
+                id="remark"
+                rows="4"
+                placeholder="其他需要说明的信息（选填）"
+            ></textarea>
 
 
-                    if (!phone) {
+            <button
+                id="submitButton"
+                type="button"
+            >
+                提交审核
+            </button>
 
-                        alert(
-                            "请输入手机号"
-                        );
 
-                        resetSubmitButton();
+            <button
+                type="button"
+                onclick="location.href='index.html'"
+            >
+                返回登录端口
+            </button>
 
-                        return;
+        </section>
 
-                    }
+    </main>
 
 
-                    if (!team) {
+    <footer>
 
-                        alert(
-                            "请选择所属车队"
-                        );
+        <p>
+            矿山管理系统 · 司机端 V2.1
+        </p>
 
-                        resetSubmitButton();
+    </footer>
 
-                        return;
 
-                    }
+    <script
+        src="js/driver-register.js"
+    ></script>
 
 
-                    /*
-                    身份证号和护照号
-                    至少填写其中一个
-                    */
+</body>
 
-                    if (
-                        !idCardNumber &&
-                        !passportNumber
-                    ) {
-
-                        alert(
-                            "身份证号和护照号至少填写一项"
-                        );
-
-                        resetSubmitButton();
-
-                        return;
-
-                    }
-
-
-
-                    /*
-                    =============================
-                    获取照片文件
-                    =============================
-                    */
-
-                    const idCardFile =
-                        getFile(
-                            "idCardPhoto"
-                        );
-
-
-                    const passportFile =
-                        getFile(
-                            "passportPhoto"
-                        );
-
-
-                    const driverLicenseFile =
-                        getFile(
-                            "driverLicensePhoto"
-                        );
-
-
-                    const bankCardFile =
-                        getFile(
-                            "bankCardPhoto"
-                        );
-
-
-
-                    /*
-                    =============================
-                    图片格式检查
-                    =============================
-                    */
-
-                    const files = [
-
-                        {
-                            name:
-                                "身份证照片",
-
-                            file:
-                                idCardFile
-                        },
-
-                        {
-                            name:
-                                "护照照片",
-
-                            file:
-                                passportFile
-                        },
-
-                        {
-                            name:
-                                "驾驶证照片",
-
-                            file:
-                                driverLicenseFile
-                        },
-
-                        {
-                            name:
-                                "银行卡照片",
-
-                            file:
-                                bankCardFile
-                        }
-
-                    ];
-
-
-                    for (
-                        const item
-                        of files
-                    ) {
-
-                        if (
-                            item.file &&
-                            !item.file.type
-                                .startsWith(
-                                    "image/"
-                                )
-                        ) {
-
-                            alert(
-                                item.name
-                                +
-                                "必须上传图片文件"
-                            );
-
-                            resetSubmitButton();
-
-                            return;
-
-                        }
-
-                    }
-
-
-
-                    /*
-                    =============================
-                    压缩照片
-                    =============================
-                    */
-
-                    const idCardPhoto =
-                        await compressImage(
-                            idCardFile
-                        );
-
-
-                    const passportPhoto =
-                        await compressImage(
-                            passportFile
-                        );
-
-
-                    const driverLicensePhoto =
-                        await compressImage(
-                            driverLicenseFile
-                        );
-
-
-                    const bankCardPhoto =
-                        await compressImage(
-                            bankCardFile
-                        );
-
-
-
-                    /*
-                    =============================
-                    建立人员资料
-                    =============================
-                    */
-
-                    const profile = {
-
-                        /*
-                        本地人员编号
-                        */
-
-                        driverId:
-                            "DRIVER_"
-                            +
-                            Date.now(),
-
-
-                        /*
-                        基本资料
-                        */
-
-                        name:
-                            driverName,
-
-                        phone:
-                            phone,
-
-                        idCardNumber:
-                            idCardNumber,
-
-                        passportNumber:
-                            passportNumber,
-
-                        bankCardNumber:
-                            bankCardNumber,
-
-                        position:
-                            position,
-
-                        team:
-                            team,
-
-                        entryDate:
-                            entryDate,
-
-                        remark:
-                            remark,
-
-
-                        /*
-                        证件照片
-                        */
-
-                        photos: {
-
-                            idCard:
-                                idCardPhoto,
-
-                            passport:
-                                passportPhoto,
-
-                            driverLicense:
-                                driverLicensePhoto,
-
-                            bankCard:
-                                bankCardPhoto
-
-                        },
-
-
-                        /*
-                        审核状态
-                        */
-
-                        status:
-                            "pending",
-
-
-                        /*
-                        提交时间
-                        */
-
-                        submittedAt:
-                            new Date()
-                                .toISOString()
-
-                    };
-
-
-
-                    /*
-                    =============================
-                    保存到浏览器
-                    =============================
-                    */
-
-                    try {
-
-                        localStorage.setItem(
-                            "driverProfile",
-                            JSON.stringify(
-                                profile
-                            )
-                        );
-
-                    }
-
-                    catch (storageError) {
-
-                        console.error(
-                            "资料保存失败：",
-                            storageError
-                        );
-
-
-                        alert(
-                            "照片数据过大，浏览器无法保存。\n\n请重新上传尺寸较小的照片进行测试。"
-                        );
-
-
-                        resetSubmitButton();
-
-                        return;
-
-                    }
-
-
-
-                    /*
-                    =============================
-                    保存成功
-                    =============================
-                    */
-
-                    alert(
-                        "人员信息提交成功，等待管理员审核。"
-                    );
-
-
-                    location.href =
-                        "driver-waiting.html";
-
-                }
-
-                catch (error) {
-
-                    console.error(
-                        "登记提交失败：",
-                        error
-                    );
-
-
-                    alert(
-                        "提交失败，请检查填写内容和上传照片后重新尝试。"
-                    );
-
-
-                    resetSubmitButton();
-
-                }
-
-            }
-        );
-
-
-
-        /*
-        =====================================
-        获取输入框内容
-        =====================================
-        */
-
-        function getValue(
-            id
-        ) {
-
-            const element =
-                document.getElementById(
-                    id
-                );
-
-
-            if (!element) {
-
-                return "";
-
-            }
-
-
-            return element.value
-                .trim();
-
-        }
-
-
-
-        /*
-        =====================================
-        获取上传文件
-        =====================================
-        */
-
-        function getFile(
-            id
-        ) {
-
-            const element =
-                document.getElementById(
-                    id
-                );
-
-
-            if (
-                !element ||
-                !element.files ||
-                element.files.length === 0
-            ) {
-
-                return null;
-
-            }
-
-
-            return element.files[0];
-
-        }
-
-
-
-        /*
-        =====================================
-        恢复提交按钮
-        =====================================
-        */
-
-        function resetSubmitButton() {
-
-            submitButton.disabled =
-                false;
-
-
-            submitButton.textContent =
-                "提交审核";
-
-        }
-
-    }
-);
-
-
-
-/*
-=========================================
-图片压缩
-=========================================
-
-最大宽高：
-1200px
-
-JPEG质量：
-0.7
-=========================================
-*/
-
-function compressImage(
-    file
-) {
-
-    return new Promise(
-        function (
-            resolve,
-            reject
-        ) {
-
-            /*
-            没有上传照片
-            */
-
-            if (!file) {
-
-                resolve("");
-
-                return;
-
-            }
-
-
-            const reader =
-                new FileReader();
-
-
-            reader.onload =
-                function (event) {
-
-                    const image =
-                        new Image();
-
-
-                    image.onload =
-                        function () {
-
-                            let width =
-                                image.width;
-
-
-                            let height =
-                                image.height;
-
-
-                            const maxSize =
-                                1200;
-
-
-
-                            /*
-                            计算压缩尺寸
-                            */
-
-                            if (
-                                width >
-                                maxSize ||
-                                height >
-                                maxSize
-                            ) {
-
-                                if (
-                                    width >
-                                    height
-                                ) {
-
-                                    height =
-                                        Math.round(
-                                            height
-                                            *
-                                            maxSize
-                                            /
-                                            width
-                                        );
-
-
-                                    width =
-                                        maxSize;
-
-                                }
-
-                                else {
-
-                                    width =
-                                        Math.round(
-                                            width
-                                            *
-                                            maxSize
-                                            /
-                                            height
-                                        );
-
-
-                                    height =
-                                        maxSize;
-
-                                }
-
-                            }
-
-
-
-                            /*
-                            创建画布
-                            */
-
-                            const canvas =
-                                document
-                                    .createElement(
-                                        "canvas"
-                                    );
-
-
-                            canvas.width =
-                                width;
-
-
-                            canvas.height =
-                                height;
-
-
-
-                            const context =
-                                canvas
-                                    .getContext(
-                                        "2d"
-                                    );
-
-
-
-                            /*
-                            白色背景
-                            */
-
-                            context.fillStyle =
-                                "#ffffff";
-
-
-                            context.fillRect(
-                                0,
-                                0,
-                                width,
-                                height
-                            );
-
-
-
-                            /*
-                            绘制图片
-                            */
-
-                            context.drawImage(
-                                image,
-                                0,
-                                0,
-                                width,
-                                height
-                            );
-
-
-
-                            /*
-                            输出JPEG
-                            */
-
-                            const compressedData =
-                                canvas.toDataURL(
-                                    "image/jpeg",
-                                    0.7
-                                );
-
-
-                            resolve(
-                                compressedData
-                            );
-
-                        };
-
-
-                    image.onerror =
-                        function () {
-
-                            reject(
-                                new Error(
-                                    "图片读取失败"
-                                )
-                            );
-
-                        };
-
-
-                    image.src =
-                        event.target.result;
-
-                };
-
-
-            reader.onerror =
-                function () {
-
-                    reject(
-                        new Error(
-                            "文件读取失败"
-                        )
-                    );
-
-                };
-
-
-            reader.readAsDataURL(
-                file
-            );
-
-        }
-    );
-
-}
+</html>
