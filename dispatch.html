@@ -1,1 +1,631 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
 
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>生产调度</title>
+
+    <link
+        rel="stylesheet"
+        href="css/style.css"
+    >
+
+    <link
+        rel="stylesheet"
+        href="css/dispatch.css"
+    >
+
+</head>
+
+
+<body class="dispatch-body">
+
+    <header class="dispatch-header">
+
+        <div class="dispatch-header-inner">
+
+            <div>
+
+                <h1>
+                    生产调度
+                </h1>
+
+                <p>
+                    Dispatch Management
+                </p>
+
+            </div>
+
+
+            <div class="dispatch-header-badge">
+                📋 调度端
+            </div>
+
+        </div>
+
+    </header>
+
+
+    <main class="dispatch-main">
+
+
+        <!-- =====================================
+             调度概况
+        ====================================== -->
+
+        <section class="dispatch-section">
+
+            <h2>
+                调度概况
+            </h2>
+
+
+            <div class="dispatch-stat-grid">
+
+
+                <div class="dispatch-stat-card">
+
+                    <span>
+                        👷
+                    </span>
+
+                    <strong id="approvedDriverCount">
+                        0
+                    </strong>
+
+                    <small>
+                        可调度司机
+                    </small>
+
+                </div>
+
+
+                <div class="dispatch-stat-card">
+
+                    <span>
+                        📋
+                    </span>
+
+                    <strong id="activeTaskCount">
+                        0
+                    </strong>
+
+                    <small>
+                        当前任务
+                    </small>
+
+                </div>
+
+
+                <div class="dispatch-stat-card">
+
+                    <span>
+                        🚚
+                    </span>
+
+                    <strong id="todayTripCount">
+                        0
+                    </strong>
+
+                    <small>
+                        今日运输趟数
+                    </small>
+
+                </div>
+
+
+                <div class="dispatch-stat-card">
+
+                    <span>
+                        ⚠️
+                    </span>
+
+                    <strong id="abnormalCount">
+                        0
+                    </strong>
+
+                    <small>
+                        今日异常
+                    </small>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+
+        <!-- =====================================
+             当前任务
+        ====================================== -->
+
+        <section
+            id="currentTaskSection"
+            class="dispatch-section"
+        >
+
+            <div class="dispatch-title-row">
+
+                <h2>
+                    当前任务
+                </h2>
+
+
+                <span
+                    id="currentTaskStatus"
+                    class="dispatch-status status-none"
+                >
+                    无任务
+                </span>
+
+            </div>
+
+
+            <div
+                id="noCurrentTask"
+                class="dispatch-empty"
+            >
+
+                <div class="dispatch-empty-icon">
+                    📋
+                </div>
+
+                <strong>
+                    当前没有正在执行的任务
+                </strong>
+
+                <p>
+                    请在下方为司机创建生产任务。
+                </p>
+
+            </div>
+
+
+            <div
+                id="currentTaskCard"
+                class="current-task-card"
+                style="display:none;"
+            >
+
+
+                <div class="current-task-grid">
+
+
+                    <div>
+
+                        <span>
+                            司机
+                        </span>
+
+                        <strong id="currentDriver">
+                            -
+                        </strong>
+
+                    </div>
+
+
+                    <div>
+
+                        <span>
+                            车辆编号
+                        </span>
+
+                        <strong id="currentVehicle">
+                            -
+                        </strong>
+
+                    </div>
+
+
+                    <div>
+
+                        <span>
+                            跟随挖机
+                        </span>
+
+                        <strong id="currentExcavator">
+                            -
+                        </strong>
+
+                    </div>
+
+
+                    <div>
+
+                        <span>
+                            班次
+                        </span>
+
+                        <strong id="currentShift">
+                            -
+                        </strong>
+
+                    </div>
+
+
+                    <div>
+
+                        <span>
+                            作业区域
+                        </span>
+
+                        <strong id="currentArea">
+                            -
+                        </strong>
+
+                    </div>
+
+
+                    <div>
+
+                        <span>
+                            任务状态
+                        </span>
+
+                        <strong id="currentStatusText">
+                            -
+                        </strong>
+
+                    </div>
+
+                </div>
+
+
+                <div class="current-route">
+
+                    <div>
+
+                        <span>
+                            🟢 装载点
+                        </span>
+
+                        <strong id="currentLoadingPoint">
+                            -
+                        </strong>
+
+                    </div>
+
+
+                    <div class="route-arrow">
+                        ↓
+                    </div>
+
+
+                    <div>
+
+                        <span>
+                            🔴 卸载点
+                        </span>
+
+                        <strong id="currentUnloadingPoint">
+                            -
+                        </strong>
+
+                    </div>
+
+                </div>
+
+
+                <div class="current-task-line">
+
+                    <span>
+                        🛣️ 运输路线
+                    </span>
+
+                    <strong id="currentRoute">
+                        -
+                    </strong>
+
+                </div>
+
+
+                <div class="current-task-line">
+
+                    <span>
+                        📝 调度说明
+                    </span>
+
+                    <strong id="currentRemark">
+                        无
+                    </strong>
+
+                </div>
+
+
+                <div class="dispatch-action-grid">
+
+                    <button
+                        id="editTaskButton"
+                        type="button"
+                        class="edit-task-button"
+                    >
+                        ✏️ 修改任务
+                    </button>
+
+
+                    <button
+                        id="cancelTaskButton"
+                        type="button"
+                        class="cancel-task-button"
+                    >
+                        ✕ 取消任务
+                    </button>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+
+        <!-- =====================================
+             创建任务
+        ====================================== -->
+
+        <section
+            id="assignTaskSection"
+            class="dispatch-section"
+        >
+
+            <h2>
+                下发生产任务
+            </h2>
+
+
+            <p class="dispatch-description">
+                调度负责把司机、车辆、挖机和生产区域组合成当班任务。
+            </p>
+
+
+            <label for="dispatchDriver">
+                司机 *
+            </label>
+
+
+            <select id="dispatchDriver">
+
+                <option value="">
+                    请选择司机
+                </option>
+
+            </select>
+
+
+
+            <label for="vehicleNumber">
+                车辆编号 *
+            </label>
+
+
+            <input
+                id="vehicleNumber"
+                type="text"
+                placeholder="例如：TRUCK-026"
+            >
+
+
+
+            <label for="excavatorNumber">
+                跟随挖机 *
+            </label>
+
+
+            <input
+                id="excavatorNumber"
+                type="text"
+                placeholder="例如：EX-08"
+            >
+
+
+
+            <label for="shift">
+                班次 *
+            </label>
+
+
+            <select id="shift">
+
+                <option value="">
+                    请选择班次
+                </option>
+
+                <option value="白班">
+                    白班
+                </option>
+
+                <option value="夜班">
+                    夜班
+                </option>
+
+            </select>
+
+
+
+            <label for="workArea">
+                作业区域 *
+            </label>
+
+
+            <input
+                id="workArea"
+                type="text"
+                placeholder="例如：马西四采区"
+            >
+
+
+
+            <label for="loadingPoint">
+                装载点 *
+            </label>
+
+
+            <input
+                id="loadingPoint"
+                type="text"
+                placeholder="例如：1150平台"
+            >
+
+
+
+            <label for="unloadingPoint">
+                卸载点 *
+            </label>
+
+
+            <input
+                id="unloadingPoint"
+                type="text"
+                placeholder="例如：2号排土场"
+            >
+
+
+
+            <label for="route">
+                运输路线
+            </label>
+
+
+            <input
+                id="route"
+                type="text"
+                placeholder="例如：1150平台 → 西运输道路 → 2号排土场"
+            >
+
+
+
+            <label for="dispatchRemark">
+                调度说明
+            </label>
+
+
+            <textarea
+                id="dispatchRemark"
+                placeholder="例如：注意西侧道路会车，禁止超速。"
+            ></textarea>
+
+
+
+            <button
+                id="assignTaskButton"
+                type="button"
+                class="assign-task-button"
+            >
+                📤 下发生产任务
+            </button>
+
+        </section>
+
+
+
+        <!-- =====================================
+             今日运输
+        ====================================== -->
+
+        <section class="dispatch-section">
+
+            <div class="dispatch-title-row">
+
+                <h2>
+                    今日运输记录
+                </h2>
+
+
+                <span
+                    id="tripSummary"
+                    class="dispatch-small-badge"
+                >
+                    0 趟
+                </span>
+
+            </div>
+
+
+            <div
+                id="dispatchTripList"
+                class="dispatch-record-list"
+            >
+
+                <div class="dispatch-empty-record">
+                    暂无运输记录
+                </div>
+
+            </div>
+
+        </section>
+
+
+
+        <!-- =====================================
+             异常信息
+        ====================================== -->
+
+        <section class="dispatch-section">
+
+            <div class="dispatch-title-row">
+
+                <h2>
+                    司机异常上报
+                </h2>
+
+
+                <span
+                    id="abnormalSummary"
+                    class="dispatch-small-badge abnormal-badge"
+                >
+                    0 条
+                </span>
+
+            </div>
+
+
+            <div
+                id="dispatchAbnormalList"
+                class="dispatch-record-list"
+            >
+
+                <div class="dispatch-empty-record">
+                    今日暂无异常
+                </div>
+
+            </div>
+
+        </section>
+
+
+
+        <button
+            type="button"
+            class="dispatch-home-button"
+            onclick="location.href='index.html'"
+        >
+            返回系统首页
+        </button>
+
+    </main>
+
+
+    <footer>
+
+        <p>
+            矿山管理系统 · 调度端 V1.0
+        </p>
+
+    </footer>
+
+
+    <script
+        src="js/dispatch.js"
+    ></script>
+
+</body>
+
+</html>
