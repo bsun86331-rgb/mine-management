@@ -38,8 +38,8 @@
             <h2>首次登录登记</h2>
 
             <p>
-                请填写真实个人信息，提交后由管理员审核。
-                审核通过后，下次可直接进入司机工作界面。
+                请填写真实个人信息，并上传相关证件照片。
+                提交后由管理员审核。
             </p>
 
 
@@ -53,7 +53,6 @@
                 id="driverName"
                 type="text"
                 placeholder="请输入姓名"
-                autocomplete="name"
                 required
             >
 
@@ -68,7 +67,6 @@
                 id="phone"
                 type="tel"
                 placeholder="请输入手机号"
-                autocomplete="tel"
                 required
             >
 
@@ -96,6 +94,20 @@
                 id="passportNumber"
                 type="text"
                 placeholder="请输入护照号码"
+            >
+
+
+            <!-- 银行卡号 -->
+
+            <label for="bankCardNumber">
+                银行卡号
+            </label>
+
+            <input
+                id="bankCardNumber"
+                type="text"
+                inputmode="numeric"
+                placeholder="请输入银行卡号"
             >
 
 
@@ -143,20 +155,6 @@
             </select>
 
 
-            <!-- 车辆编号 -->
-
-            <label for="truckNumber">
-                车辆编号 *
-            </label>
-
-            <input
-                id="truckNumber"
-                type="text"
-                placeholder="例如：TRUCK-001"
-                required
-            >
-
-
             <!-- 入职日期 -->
 
             <label for="entryDate">
@@ -166,6 +164,58 @@
             <input
                 id="entryDate"
                 type="date"
+            >
+
+
+            <!-- 身份证照片 -->
+
+            <label for="idCardPhoto">
+                身份证照片
+            </label>
+
+            <input
+                id="idCardPhoto"
+                type="file"
+                accept="image/*"
+            >
+
+
+            <!-- 护照照片 -->
+
+            <label for="passportPhoto">
+                护照照片
+            </label>
+
+            <input
+                id="passportPhoto"
+                type="file"
+                accept="image/*"
+            >
+
+
+            <!-- 驾驶证照片 -->
+
+            <label for="driverLicensePhoto">
+                驾驶证照片
+            </label>
+
+            <input
+                id="driverLicensePhoto"
+                type="file"
+                accept="image/*"
+            >
+
+
+            <!-- 银行卡照片 -->
+
+            <label for="bankCardPhoto">
+                银行卡照片
+            </label>
+
+            <input
+                id="bankCardPhoto"
+                type="file"
+                accept="image/*"
             >
 
 
@@ -182,7 +232,7 @@
             ></textarea>
 
 
-            <!-- 提交审核 -->
+            <!-- 提交 -->
 
             <button
                 id="submitButton"
@@ -209,7 +259,7 @@
     <footer>
 
         <p>
-            矿山管理系统 · 司机端 V1.2
+            矿山管理系统 · 司机端 V2.0
         </p>
 
     </footer>
