@@ -1,7 +1,7 @@
 /*
 =========================================
 矿山管理系统
-driver-register.js V1.0
+driver-register.js V1.1
 司机首次登记
 =========================================
 */
@@ -22,11 +22,13 @@ document.addEventListener(
 
         /*
         如果本机已经登记过
-        就不重复进入登记页面
+        根据审核状态自动跳转
         */
 
         const oldData =
-            localStorage.getItem("driverProfile");
+            localStorage.getItem(
+                "driverProfile"
+            );
 
 
         if (oldData) {
@@ -37,7 +39,10 @@ document.addEventListener(
                     JSON.parse(oldData);
 
 
-                if (profile.status === "pending") {
+                if (
+                    profile.status ===
+                    "pending"
+                ) {
 
                     location.href =
                         "driver-waiting.html";
@@ -47,7 +52,10 @@ document.addEventListener(
                 }
 
 
-                if (profile.status === "approved") {
+                if (
+                    profile.status ===
+                    "approved"
+                ) {
 
                     location.href =
                         "driver-work.html";
@@ -80,54 +88,79 @@ document.addEventListener(
 
                 const driverName =
                     document
-                        .getElementById("driverName")
+                        .getElementById(
+                            "driverName"
+                        )
                         .value
                         .trim();
 
 
                 const phone =
                     document
-                        .getElementById("phone")
+                        .getElementById(
+                            "phone"
+                        )
                         .value
                         .trim();
 
 
-                const idNumber =
+                const idCardNumber =
                     document
-                        .getElementById("idNumber")
+                        .getElementById(
+                            "idCardNumber"
+                        )
+                        .value
+                        .trim();
+
+
+                const passportNumber =
+                    document
+                        .getElementById(
+                            "passportNumber"
+                        )
                         .value
                         .trim();
 
 
                 const position =
                     document
-                        .getElementById("position")
+                        .getElementById(
+                            "position"
+                        )
                         .value
                         .trim();
 
 
                 const team =
                     document
-                        .getElementById("team")
+                        .getElementById(
+                            "team"
+                        )
                         .value;
 
 
                 const truckNumber =
                     document
-                        .getElementById("truckNumber")
+                        .getElementById(
+                            "truckNumber"
+                        )
                         .value
                         .trim();
 
 
                 const entryDate =
                     document
-                        .getElementById("entryDate")
+                        .getElementById(
+                            "entryDate"
+                        )
                         .value;
 
 
                 const remark =
                     document
-                        .getElementById("remark")
+                        .getElementById(
+                            "remark"
+                        )
                         .value
                         .trim();
 
@@ -154,15 +187,6 @@ document.addEventListener(
                 }
 
 
-                if (!idNumber) {
-
-                    alert("请输入身份证或护照号码");
-
-                    return;
-
-                }
-
-
                 if (!team) {
 
                     alert("请选择所属车队");
@@ -175,6 +199,25 @@ document.addEventListener(
                 if (!truckNumber) {
 
                     alert("请输入车辆编号");
+
+                    return;
+
+                }
+
+
+                /*
+                身份证号和护照号
+                至少填写一个
+                */
+
+                if (
+                    !idCardNumber &&
+                    !passportNumber
+                ) {
+
+                    alert(
+                        "身份证号和护照号至少填写一项"
+                    );
 
                     return;
 
@@ -198,8 +241,11 @@ document.addEventListener(
                     phone:
                         phone,
 
-                    idNumber:
-                        idNumber,
+                    idCardNumber:
+                        idCardNumber,
+
+                    passportNumber:
+                        passportNumber,
 
                     position:
                         position,
@@ -231,10 +277,6 @@ document.addEventListener(
                     JSON.stringify(profile)
                 );
 
-
-                /*
-                跳转等待审核页面
-                */
 
                 location.href =
                     "driver-waiting.html";
