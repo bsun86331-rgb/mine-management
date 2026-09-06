@@ -1,1 +1,165 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
 
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>等待审核</title>
+
+    <link
+        rel="stylesheet"
+        href="css/style.css"
+    >
+
+</head>
+
+
+<body>
+
+    <header>
+
+        <h1>司机端</h1>
+
+        <p>Driver Application</p>
+
+    </header>
+
+
+    <main>
+
+        <section>
+
+            <h2>登记信息已提交</h2>
+
+
+            <p style="text-align:center; font-size:18px;">
+
+                ✅
+
+                <br><br>
+
+                您的个人信息已经提交。
+
+                <br><br>
+
+                当前状态：
+
+                <strong>
+                    等待管理员审核
+                </strong>
+
+            </p>
+
+
+            <div id="driverInfo"></div>
+
+
+            <button
+                type="button"
+                onclick="location.reload()"
+            >
+                刷新审核状态
+            </button>
+
+
+            <button
+                type="button"
+                onclick="location.href='index.html'"
+            >
+                返回首页
+            </button>
+
+        </section>
+
+    </main>
+
+
+    <footer>
+
+        <p>
+            矿山管理系统 · 司机端
+        </p>
+
+    </footer>
+
+
+    <script>
+
+        const data =
+            localStorage.getItem(
+                "driverProfile"
+            );
+
+
+        if (!data) {
+
+            location.href =
+                "driver-register.html";
+
+        }
+
+        else {
+
+            const profile =
+                JSON.parse(data);
+
+
+            /*
+            如果已经审核通过
+            */
+
+            if (
+                profile.status ===
+                "approved"
+            ) {
+
+                location.href =
+                    "driver-work.html";
+
+            }
+
+
+            /*
+            显示司机信息
+            */
+
+            document
+                .getElementById(
+                    "driverInfo"
+                )
+                .innerHTML =
+
+                "<p>"
+                +
+                "<b>姓名：</b>"
+                +
+                profile.name
+                +
+                "<br><br>"
+                +
+                "<b>车队：</b>"
+                +
+                profile.team
+                +
+                "<br><br>"
+                +
+                "<b>车辆编号：</b>"
+                +
+                profile.truckNumber
+                +
+                "</p>";
+
+        }
+
+    </script>
+
+
+</body>
+
+</html>
