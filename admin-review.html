@@ -1,1 +1,155 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
 
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>人员审核</title>
+
+    <link
+        rel="stylesheet"
+        href="css/style.css"
+    >
+
+</head>
+
+
+<body>
+
+    <header>
+
+        <h1>管理员端</h1>
+
+        <p>Personnel Review</p>
+
+    </header>
+
+
+    <main>
+
+        <section>
+
+            <h2>人员审核</h2>
+
+
+            <div id="emptyMessage">
+
+                <p>
+                    当前没有待审核人员。
+                </p>
+
+            </div>
+
+
+            <div
+                id="reviewCard"
+                style="display:none;"
+            >
+
+                <p>
+                    <strong>姓名：</strong>
+                    <span id="reviewName"></span>
+                </p>
+
+
+                <p>
+                    <strong>手机号：</strong>
+                    <span id="reviewPhone"></span>
+                </p>
+
+
+                <p>
+                    <strong>身份证 / 护照号：</strong>
+                    <span id="reviewIdNumber"></span>
+                </p>
+
+
+                <p>
+                    <strong>岗位：</strong>
+                    <span id="reviewPosition"></span>
+                </p>
+
+
+                <p>
+                    <strong>所属车队：</strong>
+                    <span id="reviewTeam"></span>
+                </p>
+
+
+                <p>
+                    <strong>车辆编号：</strong>
+                    <span id="reviewTruck"></span>
+                </p>
+
+
+                <p>
+                    <strong>入职日期：</strong>
+                    <span id="reviewEntryDate"></span>
+                </p>
+
+
+                <p>
+                    <strong>备注：</strong>
+                    <span id="reviewRemark"></span>
+                </p>
+
+
+                <p>
+                    <strong>当前状态：</strong>
+                    <span id="reviewStatus"></span>
+                </p>
+
+
+                <button
+                    id="approveButton"
+                    type="button"
+                >
+                    审核通过
+                </button>
+
+
+                <button
+                    id="rejectButton"
+                    type="button"
+                >
+                    审核不通过
+                </button>
+
+            </div>
+
+
+            <button
+                type="button"
+                onclick="location.href='index.html'"
+            >
+                返回登录端口
+            </button>
+
+        </section>
+
+    </main>
+
+
+    <footer>
+
+        <p>
+            矿山管理系统 · 管理员端 V1.0
+        </p>
+
+    </footer>
+
+
+    <script
+        src="js/admin-review.js"
+    ></script>
+
+
+</body>
+
+</html>
