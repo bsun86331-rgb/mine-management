@@ -24,9 +24,13 @@
 
     <header>
 
-        <h1>司机端</h1>
+        <h1>
+            司机审核状态
+        </h1>
 
-        <p>Driver Application</p>
+        <p>
+            Driver Review Status
+        </p>
 
     </header>
 
@@ -35,36 +39,257 @@
 
         <section>
 
-            <h2>登记信息已提交</h2>
+            <h2 id="pageTitle">
+                等待管理员审核
+            </h2>
 
 
-            <p style="text-align:center; font-size:18px;">
-
-                ✅
-
-                <br><br>
-
-                您的个人信息已经提交。
-
-                <br><br>
-
-                当前状态：
-
-                <strong>
-                    等待管理员审核
-                </strong>
-
+            <p id="statusDescription">
+                您的资料已经提交，请等待管理员审核。
             </p>
 
 
-            <div id="driverInfo"></div>
+
+            <!-- =========================
+                 审核状态
+            ========================== -->
+
+            <div
+                id="statusCard"
+                style="
+                    margin: 20px 0;
+                    padding: 18px;
+                    border-radius: 12px;
+                    background: #f8fafc;
+                    border: 1px solid #e5e7eb;
+                    text-align: center;
+                "
+            >
+
+                <div
+                    id="statusIcon"
+                    style="
+                        font-size: 42px;
+                        margin-bottom: 10px;
+                    "
+                >
+                    ⏳
+                </div>
+
+
+                <strong
+                    id="statusText"
+                    style="
+                        display: block;
+                        font-size: 20px;
+                        color: #d97706;
+                    "
+                >
+                    待审核
+                </strong>
+
+
+                <p
+                    id="statusTip"
+                    style="
+                        margin-top: 8px;
+                        margin-bottom: 0;
+                    "
+                >
+                    管理员审核通过后，将自动进入司机工作台。
+                </p>
+
+            </div>
+
+
+
+            <!-- =========================
+                 人员信息
+            ========================== -->
+
+            <div
+                style="
+                    margin-top: 20px;
+                    border-top: 1px solid #e5e7eb;
+                "
+            >
+
+
+                <div
+                    style="
+                        display: flex;
+                        justify-content: space-between;
+                        gap: 15px;
+                        padding: 14px 0;
+                        border-bottom: 1px solid #e5e7eb;
+                    "
+                >
+
+                    <span style="color:#6b7280;">
+                        姓名
+                    </span>
+
+                    <strong id="driverName">
+                        -
+                    </strong>
+
+                </div>
+
+
+
+                <div
+                    style="
+                        display: flex;
+                        justify-content: space-between;
+                        gap: 15px;
+                        padding: 14px 0;
+                        border-bottom: 1px solid #e5e7eb;
+                    "
+                >
+
+                    <span style="color:#6b7280;">
+                        岗位
+                    </span>
+
+                    <strong id="driverPosition">
+                        -
+                    </strong>
+
+                </div>
+
+
+
+                <div
+                    style="
+                        display: flex;
+                        justify-content: space-between;
+                        gap: 15px;
+                        padding: 14px 0;
+                        border-bottom: 1px solid #e5e7eb;
+                    "
+                >
+
+                    <span style="color:#6b7280;">
+                        所属车队
+                    </span>
+
+                    <strong id="driverTeam">
+                        -
+                    </strong>
+
+                </div>
+
+
+
+                <div
+                    style="
+                        display: flex;
+                        justify-content: space-between;
+                        gap: 15px;
+                        padding: 14px 0;
+                        border-bottom: 1px solid #e5e7eb;
+                    "
+                >
+
+                    <span style="color:#6b7280;">
+                        手机号
+                    </span>
+
+                    <strong id="driverPhone">
+                        -
+                    </strong>
+
+                </div>
+
+
+
+                <div
+                    style="
+                        display: flex;
+                        justify-content: space-between;
+                        gap: 15px;
+                        padding: 14px 0;
+                        border-bottom: 1px solid #e5e7eb;
+                    "
+                >
+
+                    <span style="color:#6b7280;">
+                        紧急联系人
+                    </span>
+
+                    <strong id="emergencyContact">
+                        -
+                    </strong>
+
+                </div>
+
+
+
+                <div
+                    style="
+                        display: flex;
+                        justify-content: space-between;
+                        gap: 15px;
+                        padding: 14px 0;
+                        border-bottom: 1px solid #e5e7eb;
+                    "
+                >
+
+                    <span style="color:#6b7280;">
+                        紧急联系人电话
+                    </span>
+
+                    <strong id="emergencyPhone">
+                        -
+                    </strong>
+
+                </div>
+
+
+
+                <div
+                    style="
+                        display: flex;
+                        justify-content: space-between;
+                        gap: 15px;
+                        padding: 14px 0;
+                        border-bottom: 1px solid #e5e7eb;
+                    "
+                >
+
+                    <span style="color:#6b7280;">
+                        提交时间
+                    </span>
+
+                    <strong id="submittedAt">
+                        -
+                    </strong>
+
+                </div>
+
+
+            </div>
+
+
+
+            <!-- =========================
+                 操作按钮
+            ========================== -->
+
+            <button
+                id="refreshButton"
+                type="button"
+            >
+                🔄 刷新审核状态
+            </button>
 
 
             <button
+                id="rewriteButton"
                 type="button"
-                onclick="location.reload()"
+                style="display:none;"
             >
-                刷新审核状态
+                重新填写资料
             </button>
 
 
@@ -72,8 +297,9 @@
                 type="button"
                 onclick="location.href='index.html'"
             >
-                返回首页
+                返回系统首页
             </button>
+
 
         </section>
 
@@ -83,77 +309,456 @@
     <footer>
 
         <p>
-            矿山管理系统 · 司机端
+            矿山管理系统 · 司机端 V2.0
         </p>
 
     </footer>
 
 
+
     <script>
 
-        const data =
-            localStorage.getItem(
-                "driverProfile"
-            );
+        document.addEventListener(
+            "DOMContentLoaded",
+            function () {
+
+                const data =
+                    localStorage.getItem(
+                        "driverProfile"
+                    );
 
 
-        if (!data) {
+                /*
+                =====================================
+                没有登记资料
+                =====================================
+                */
 
-            location.href =
-                "driver-register.html";
+                if (!data) {
+
+                    location.href =
+                        "driver-register.html";
+
+                    return;
+
+                }
+
+
+
+                let profile;
+
+
+                try {
+
+                    profile =
+                        JSON.parse(
+                            data
+                        );
+
+                }
+
+                catch (error) {
+
+                    console.error(
+                        "司机资料读取失败：",
+                        error
+                    );
+
+
+                    localStorage.removeItem(
+                        "driverProfile"
+                    );
+
+
+                    location.href =
+                        "driver-register.html";
+
+                    return;
+
+                }
+
+
+
+                /*
+                =====================================
+                如果审核通过
+                直接进入司机工作台
+                =====================================
+                */
+
+                if (
+                    profile.status ===
+                    "approved"
+                ) {
+
+                    location.href =
+                        "driver-work.html";
+
+                    return;
+
+                }
+
+
+
+                /*
+                =====================================
+                显示人员资料
+                =====================================
+                */
+
+                setText(
+                    "driverName",
+                    profile.name ||
+                    "未填写"
+                );
+
+
+                setText(
+                    "driverPosition",
+                    profile.position ||
+                    "卡车司机"
+                );
+
+
+                setText(
+                    "driverTeam",
+                    profile.team ||
+                    "未填写"
+                );
+
+
+                setText(
+                    "driverPhone",
+                    profile.phone ||
+                    "未填写"
+                );
+
+
+                setText(
+                    "emergencyContact",
+                    profile.emergencyContact ||
+                    "未填写"
+                );
+
+
+                setText(
+                    "emergencyPhone",
+                    profile.emergencyPhone ||
+                    "未填写"
+                );
+
+
+                setText(
+                    "submittedAt",
+                    formatDateTime(
+                        profile.submittedAt
+                    )
+                );
+
+
+
+                /*
+                =====================================
+                待审核
+                =====================================
+                */
+
+                if (
+                    profile.status ===
+                    "pending"
+                ) {
+
+                    setText(
+                        "pageTitle",
+                        "等待管理员审核"
+                    );
+
+
+                    setText(
+                        "statusDescription",
+                        "您的人员资料已经提交，请等待管理员审核。"
+                    );
+
+
+                    setText(
+                        "statusIcon",
+                        "⏳"
+                    );
+
+
+                    setText(
+                        "statusText",
+                        "待审核"
+                    );
+
+
+                    setText(
+                        "statusTip",
+                        "管理员审核通过后，将自动进入司机工作台。"
+                    );
+
+
+                    document
+                        .getElementById(
+                            "statusText"
+                        )
+                        .style
+                        .color =
+                        "#d97706";
+
+                }
+
+
+
+                /*
+                =====================================
+                审核未通过
+                =====================================
+                */
+
+                else if (
+                    profile.status ===
+                    "rejected"
+                ) {
+
+                    setText(
+                        "pageTitle",
+                        "审核未通过"
+                    );
+
+
+                    setText(
+                        "statusDescription",
+                        "您的人员资料暂未通过审核，请检查资料后重新提交。"
+                    );
+
+
+                    setText(
+                        "statusIcon",
+                        "❌"
+                    );
+
+
+                    setText(
+                        "statusText",
+                        "审核未通过"
+                    );
+
+
+                    setText(
+                        "statusTip",
+                        "点击“重新填写资料”返回登记页面修改后重新提交。"
+                    );
+
+
+                    document
+                        .getElementById(
+                            "statusText"
+                        )
+                        .style
+                        .color =
+                        "#dc2626";
+
+
+                    document
+                        .getElementById(
+                            "rewriteButton"
+                        )
+                        .style
+                        .display =
+                        "block";
+
+                }
+
+
+
+                /*
+                =====================================
+                未知状态
+                =====================================
+                */
+
+                else {
+
+                    setText(
+                        "statusIcon",
+                        "⚠️"
+                    );
+
+
+                    setText(
+                        "statusText",
+                        "状态异常"
+                    );
+
+
+                    setText(
+                        "statusTip",
+                        "当前审核状态无法识别，请联系管理员。"
+                    );
+
+
+                    document
+                        .getElementById(
+                            "statusText"
+                        )
+                        .style
+                        .color =
+                        "#dc2626";
+
+                }
+
+
+
+                /*
+                =====================================
+                刷新按钮
+                =====================================
+                */
+
+                document
+                    .getElementById(
+                        "refreshButton"
+                    )
+                    .addEventListener(
+                        "click",
+                        function () {
+
+                            location.reload();
+
+                        }
+                    );
+
+
+
+                /*
+                =====================================
+                重新填写
+                =====================================
+                */
+
+                document
+                    .getElementById(
+                        "rewriteButton"
+                    )
+                    .addEventListener(
+                        "click",
+                        function () {
+
+                            const confirmed =
+                                confirm(
+                                    "确认返回登记页面重新填写资料吗？"
+                                );
+
+
+                            if (!confirmed) {
+
+                                return;
+
+                            }
+
+
+                            /*
+                            保留资料，
+                            注册页面会识别 rejected 状态，
+                            允许重新填写。
+                            */
+
+                            location.href =
+                                "driver-register.html";
+
+                        }
+                    );
+
+            }
+        );
+
+
+
+        /*
+        =====================================
+        设置文字
+        =====================================
+        */
+
+        function setText(
+            id,
+            value
+        ) {
+
+            const element =
+                document.getElementById(
+                    id
+                );
+
+
+            if (element) {
+
+                element.textContent =
+                    value;
+
+            }
 
         }
 
-        else {
-
-            const profile =
-                JSON.parse(data);
 
 
-            /*
-            如果已经审核通过
-            */
+        /*
+        =====================================
+        时间格式
+        =====================================
+        */
 
-            if (
-                profile.status ===
-                "approved"
-            ) {
+        function formatDateTime(
+            dateString
+        ) {
 
-                location.href =
-                    "driver-work.html";
+            if (!dateString) {
+
+                return "未记录";
 
             }
 
 
-            /*
-            显示司机信息
-            */
+            const date =
+                new Date(
+                    dateString
+                );
 
-            document
-                .getElementById(
-                    "driverInfo"
+
+            if (
+                isNaN(
+                    date.getTime()
                 )
-                .innerHTML =
+            ) {
 
-                "<p>"
-                +
-                "<b>姓名：</b>"
-                +
-                profile.name
-                +
-                "<br><br>"
-                +
-                "<b>车队：</b>"
-                +
-                profile.team
-                +
-                "<br><br>"
-                +
-                "<b>车辆编号：</b>"
-                +
-                profile.truckNumber
-                +
-                "</p>";
+                return "未记录";
+
+            }
+
+
+            return date
+                .toLocaleString(
+                    "zh-CN",
+                    {
+
+                        year:
+                            "numeric",
+
+                        month:
+                            "2-digit",
+
+                        day:
+                            "2-digit",
+
+                        hour:
+                            "2-digit",
+
+                        minute:
+                            "2-digit"
+
+                    }
+                );
 
         }
 
