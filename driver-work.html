@@ -1,1 +1,155 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
 
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>司机工作台</title>
+
+    <link
+        rel="stylesheet"
+        href="css/style.css"
+    >
+
+</head>
+
+
+<body>
+
+    <header>
+
+        <h1>司机工作台</h1>
+
+        <p>Driver Work Center</p>
+
+    </header>
+
+
+    <main>
+
+        <section>
+
+            <h2>
+                登录成功
+            </h2>
+
+
+            <p id="welcomeText">
+                正在读取司机信息...
+            </p>
+
+
+            <button type="button">
+                当前任务
+            </button>
+
+
+            <button type="button">
+                今日运输记录
+            </button>
+
+
+            <button type="button">
+                异常上报
+            </button>
+
+
+            <button type="button">
+                我的信息
+            </button>
+
+
+            <button
+                type="button"
+                onclick="location.href='index.html'"
+            >
+                返回首页
+            </button>
+
+        </section>
+
+    </main>
+
+
+    <footer>
+
+        <p>
+            矿山管理系统 · 司机端 V1.0
+        </p>
+
+    </footer>
+
+
+    <script>
+
+        const data =
+            localStorage.getItem(
+                "driverProfile"
+            );
+
+
+        if (!data) {
+
+            location.href =
+                "driver-register.html";
+
+        }
+
+        else {
+
+            const profile =
+                JSON.parse(data);
+
+
+            if (
+                profile.status !==
+                "approved"
+            ) {
+
+                location.href =
+                    "driver-waiting.html";
+
+            }
+
+            else {
+
+                document
+                    .getElementById(
+                        "welcomeText"
+                    )
+                    .innerHTML =
+
+                    "欢迎，<strong>"
+                    +
+                    profile.name
+                    +
+                    "</strong>"
+                    +
+                    "<br><br>"
+                    +
+                    "车辆："
+                    +
+                    profile.truckNumber
+                    +
+                    "<br>"
+                    +
+                    "车队："
+                    +
+                    profile.team;
+
+            }
+
+        }
+
+    </script>
+
+
+</body>
+
+</html>
