@@ -38,8 +38,6 @@
             <h2>人员信息汇总表</h2>
 
 
-            <!-- 无数据提示 -->
-
             <div id="emptyMessage">
 
                 <p>
@@ -49,20 +47,15 @@
             </div>
 
 
-            <!-- 汇总表 -->
-
             <div
                 id="personnelTableArea"
-                style="display:none; overflow-x:auto;"
+                style="
+                    display:none;
+                    overflow-x:auto;
+                "
             >
 
-                <table
-                    style="
-                        width:100%;
-                        border-collapse:collapse;
-                        min-width:900px;
-                    "
-                >
+                <table>
 
                     <thead>
 
@@ -72,11 +65,9 @@
 
                             <th>手机号</th>
 
-                            <th>身份证号</th>
+                            <th>紧急联系人</th>
 
-                            <th>护照号</th>
-
-                            <th>银行卡号</th>
+                            <th>紧急联系电话</th>
 
                             <th>岗位</th>
 
@@ -93,8 +84,9 @@
                     </thead>
 
 
-                    <tbody id="personnelTableBody">
-
+                    <tbody
+                        id="personnelTableBody"
+                    >
                     </tbody>
 
                 </table>
@@ -111,10 +103,6 @@
 
         </section>
 
-
-        <!-- =================================
-             人员详细资料
-        ================================== -->
 
         <section
             id="detailSection"
@@ -138,6 +126,18 @@
             <p>
                 <strong>手机号：</strong>
                 <span id="detailPhone"></span>
+            </p>
+
+
+            <p>
+                <strong>紧急联系人：</strong>
+                <span id="detailEmergencyContact"></span>
+            </p>
+
+
+            <p>
+                <strong>紧急联系人电话：</strong>
+                <span id="detailEmergencyPhone"></span>
             </p>
 
 
@@ -189,10 +189,6 @@
             </p>
 
 
-            <!-- =================================
-                 证件照片
-            ================================== -->
-
             <h2
                 style="margin-top:30px;"
             >
@@ -202,27 +198,14 @@
 
             <div id="photoArea">
 
+                <div>
 
-                <!-- 身份证 -->
-
-                <div
-                    id="idCardPhotoBox"
-                    style="margin-bottom:25px;"
-                >
-
-                    <h3>
-                        身份证照片
-                    </h3>
+                    <h3>身份证照片</h3>
 
                     <img
                         id="detailIdCardPhoto"
                         alt="身份证照片"
-                        style="
-                            width:100%;
-                            max-width:500px;
-                            display:none;
-                            border-radius:8px;
-                        "
+                        style="display:none;"
                     >
 
                     <p id="idCardNoPhoto">
@@ -232,26 +215,14 @@
                 </div>
 
 
-                <!-- 护照 -->
+                <div>
 
-                <div
-                    id="passportPhotoBox"
-                    style="margin-bottom:25px;"
-                >
-
-                    <h3>
-                        护照照片
-                    </h3>
+                    <h3>护照照片</h3>
 
                     <img
                         id="detailPassportPhoto"
                         alt="护照照片"
-                        style="
-                            width:100%;
-                            max-width:500px;
-                            display:none;
-                            border-radius:8px;
-                        "
+                        style="display:none;"
                     >
 
                     <p id="passportNoPhoto">
@@ -261,26 +232,14 @@
                 </div>
 
 
-                <!-- 驾驶证 -->
+                <div>
 
-                <div
-                    id="driverLicensePhotoBox"
-                    style="margin-bottom:25px;"
-                >
-
-                    <h3>
-                        驾驶证照片
-                    </h3>
+                    <h3>驾驶证照片</h3>
 
                     <img
                         id="detailDriverLicensePhoto"
                         alt="驾驶证照片"
-                        style="
-                            width:100%;
-                            max-width:500px;
-                            display:none;
-                            border-radius:8px;
-                        "
+                        style="display:none;"
                     >
 
                     <p id="driverLicenseNoPhoto">
@@ -290,26 +249,14 @@
                 </div>
 
 
-                <!-- 银行卡 -->
+                <div>
 
-                <div
-                    id="bankCardPhotoBox"
-                    style="margin-bottom:25px;"
-                >
-
-                    <h3>
-                        银行卡照片
-                    </h3>
+                    <h3>银行卡照片</h3>
 
                     <img
                         id="detailBankCardPhoto"
                         alt="银行卡照片"
-                        style="
-                            width:100%;
-                            max-width:500px;
-                            display:none;
-                            border-radius:8px;
-                        "
+                        style="display:none;"
                     >
 
                     <p id="bankCardNoPhoto">
@@ -320,8 +267,6 @@
 
             </div>
 
-
-            <!-- 审核按钮 -->
 
             <button
                 id="approveButton"
@@ -339,8 +284,6 @@
             </button>
 
 
-            <!-- 打印 -->
-
             <button
                 id="printProfileButton"
                 type="button"
@@ -357,8 +300,6 @@
             </button>
 
 
-            <!-- 关闭详情 -->
-
             <button
                 id="closeDetailButton"
                 type="button"
@@ -374,7 +315,7 @@
     <footer>
 
         <p>
-            矿山管理系统 · 管理员端 V2.0
+            矿山管理系统 · 管理员端 V2.1
         </p>
 
     </footer>
