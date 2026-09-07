@@ -1,29 +1,33 @@
 /*
 ========================================================
-矿山管理系统 - 生产调度端
-dispatch.js V2.5.0
-任务中途设备调整版
-========================================================
-规则：
+矿山管理系统
+生产调度端
+dispatch.js V2.6.0
+
+核心规则：
 1. 生产任务看板只显示 pending / active。
-2. completed 保留为历史任务；withdrawn 旧数据自动删除。
-3. 撤回 = 删除任务并释放设备。
-4. pending / active 任务可中途增加、减少挖机及调整跟随卡车。
-5. 设备调整不改变任务编号、不清零运输趟数，并记录调整历史。
+2. completed 自动进入历史任务。
+3. 历史任务只显示 completed。
+4. 撤回 = 删除，不进入历史任务。
+5. pending / active 可中途增加、减少挖机和调整卡车。
+6. 中途调整不改变任务编号，不清零运输趟数。
 ========================================================
 */
 
-document.addEventListener("DOMContentLoaded", () => {
-    const STORAGE_TASKS = "dispatchPublishedTasks";
-    const STORAGE_LATEST = "publishedDispatchTask";
-    const STORAGE_TRIPS = "driverTripRecords";
+document.addEventListener("DOMContentLoaded", function () {
+
+    const TASK_STORAGE = "dispatchPublishedTasks";
+    const LATEST_TASK_STORAGE = "publishedDispatchTask";
+    const TRIP_STORAGE = "driverTripRecords";
 
     let currentTask = null;
+
     let selectedExcavatorId = null;
     let selectedTruckIds = [];
     let bindings = [];
     let auxiliaryAssignments = [];
     let selectedAuxDeviceId = null;
+
     let selectedPublishedTaskId = null;
 
     let adjustmentTaskId = null;
@@ -33,394 +37,1126 @@ document.addEventListener("DOMContentLoaded", () => {
     let adjustmentSelectedTruckIds = [];
     let adjustmentEditingExcavatorId = null;
 
-    const equipment = [
-        { id: "EX-01", type: "excavator", status: "available" },
-        { id: "EX-02", type: "excavator", status: "available" },
-        { id: "EX-03", type: "excavator", status: "maintenance", maintenance: { fault: "液压系统检查", startedAt: "08:20", expectedEnd: "12:00", responsible: "维修组" } },
-        { id: "EX-04", type: "excavator", status: "available" },
-        { id: "EX-05", type: "excavator", status: "available" },
-        { id: "EX-06", type: "excavator", status: "available" },
-        ...createTruckData(),
-        { id: "L-01", type: "loader", status: "available" },
-        { id: "L-02", type: "loader", status: "available" },
-        { id: "L-03", type: "loader", status: "available" },
-        { id: "L-04", type: "loader", status: "maintenance", maintenance: { fault: "轮胎维修", startedAt: "07:40", expectedEnd: "11:30", responsible: "维修组" } },
-        { id: "W-01", type: "water", status: "available" },
-        { id: "W-02", type: "water", status: "maintenance", maintenance: { fault: "水泵故障", startedAt: "06:50", expectedEnd: "13:00", responsible: "维修组" } },
-        { id: "W-03", type: "water", status: "available" },
-        { id: "F-01", type: "fuel", status: "available" },
-        { id: "F-02", type: "fuel", status: "available" },
-        { id: "G-01", type: "grader", status: "available" },
-        { id: "G-02", type: "grader", status: "maintenance", maintenance: { fault: "刀板维修", startedAt: "09:00", expectedEnd: "15:00", responsible: "维修组" } },
-        { id: "D-01", type: "dozer", status: "available" },
-        { id: "D-02", type: "dozer", status: "available" },
-        { id: "B-01", type: "bus", status: "available" },
-        { id: "B-02", type: "bus", status: "available" }
-    ];
 
-    const $ = id => document.getElementById(id);
+    const equipment = createEquipmentData();
 
-    const el = {
-        newTaskButton: $("newTaskButton"),
-        cancelCreateButton: $("cancelCreateButton"),
-        generateTaskButton: $("generateTaskButton"),
-        bindTrucksButton: $("bindTrucksButton"),
-        previewTaskButton: $("previewTaskButton"),
-        backEditButton: $("backEditButton"),
-        publishTaskButton: $("publishTaskButton"),
-        closeModalButton: $("closeModalButton"),
-        auxWorkType: $("auxWorkType"),
-        cancelAuxTaskButton: $("cancelAuxTaskButton"),
-        confirmAuxTaskButton: $("confirmAuxTaskButton"),
-        closePublishedTaskButton: $("closePublishedTaskButton"),
-        completePublishedTaskButton: $("completePublishedTaskButton"),
-        withdrawPublishedTaskButton: $("withdrawPublishedTaskButton")
-    };
 
-    injectV250Ui();
+    /*
+    ========================================================
+    DOM
+    ========================================================
+    */
 
-    const adjustTaskButton = $("adjustTaskButton");
-    const closeAdjustTaskButton = $("closeAdjustTaskButton");
-    const saveAdjustTaskButton = $("saveAdjustTaskButton");
-    const addAdjustmentBindingButton = $("addAdjustmentBindingButton");
+    const newTaskButton =
+        document.getElementById("newTaskButton");
 
-    if ($("taskShift")) {
-        $("taskShift").value = getDefaultShift();
-    }
+    const historyTaskButton =
+        document.getElementById("historyTaskButton");
 
-    hideOldStatusLegends();
+    const cancelCreateButton =
+        document.getElementById("cancelCreateButton");
+
+    const generateTaskButton =
+        document.getElementById("generateTaskButton");
+
+    const bindTrucksButton =
+        document.getElementById("bindTrucksButton");
+
+    const previewTaskButton =
+        document.getElementById("previewTaskButton");
+
+    const backEditButton =
+        document.getElementById("backEditButton");
+
+    const publishTaskButton =
+        document.getElementById("publishTaskButton");
+
+    const closeModalButton =
+        document.getElementById("closeModalButton");
+
+    const auxWorkType =
+        document.getElementById("auxWorkType");
+
+    const cancelAuxTaskButton =
+        document.getElementById("cancelAuxTaskButton");
+
+    const confirmAuxTaskButton =
+        document.getElementById("confirmAuxTaskButton");
+
+    const closePublishedTaskButton =
+        document.getElementById("closePublishedTaskButton");
+
+    const withdrawPublishedTaskButton =
+        document.getElementById("withdrawPublishedTaskButton");
+
+    const completePublishedTaskButton =
+        document.getElementById("completePublishedTaskButton");
+
+    const adjustTaskButton =
+        document.getElementById("adjustTaskButton");
+
+    const closeAdjustTaskButton =
+        document.getElementById("closeAdjustTaskButton");
+
+    const saveAdjustTaskButton =
+        document.getElementById("saveAdjustTaskButton");
+
+    const addAdjustmentBindingButton =
+        document.getElementById("addAdjustmentBindingButton");
+
+    const closeHistoryTaskButton =
+        document.getElementById("closeHistoryTaskButton");
+
+    const historyDateFilter =
+        document.getElementById("historyDateFilter");
+
+    const historyShiftFilter =
+        document.getElementById("historyShiftFilter");
+
+    const historyAreaFilter =
+        document.getElementById("historyAreaFilter");
+
+    const resetHistoryFilterButton =
+        document.getElementById("resetHistoryFilterButton");
+
+
+    /*
+    ========================================================
+    初始化
+    ========================================================
+    */
+
+    setValue(
+        "taskShift",
+        getDefaultShift()
+    );
+
     migrateLegacyWithdrawnTasks();
+
     migrateOldTaskStatuses();
+
     syncPublishedTaskExecutionStatus();
-    rebuildEquipmentStatusFromTasks();
+
+    rebuildEquipmentStatus();
+
     renderProductionTaskBoard();
 
-    el.newTaskButton?.addEventListener("click", () => {
-        $("taskShift").value = getDefaultShift();
-        showSection("taskCreateSection");
-        scrollToId("taskCreateSection");
-    });
+    renderHistoryTaskBoard();
 
-    el.cancelCreateButton?.addEventListener("click", () => {
-        hideSection("taskCreateSection");
-    });
 
-    el.generateTaskButton?.addEventListener("click", () => {
-        const shift = getValue("taskShift");
-        const area = getValue("taskArea");
-        const remark = getValue("taskRemark");
+    /*
+    ========================================================
+    顶部按钮
+    ========================================================
+    */
 
-        if (!area) {
-            alert("请输入作业区域");
-            return;
+    newTaskButton.addEventListener(
+        "click",
+        function () {
+
+            setValue(
+                "taskShift",
+                getDefaultShift()
+            );
+
+            showSection(
+                "taskCreateSection"
+            );
+
+            scrollToId(
+                "taskCreateSection"
+            );
+
         }
+    );
 
-        currentTask = {
-            taskId: "TASK_" + Date.now(),
-            date: new Date().toLocaleDateString("zh-CN"),
-            shift,
-            area,
-            remark,
-            status: "configuring",
-            createdAt: new Date().toISOString()
-        };
 
-        selectedExcavatorId = null;
-        selectedTruckIds = [];
-        bindings = [];
-        auxiliaryAssignments = [];
+    historyTaskButton.addEventListener(
+        "click",
+        function () {
 
-        setText("summaryDate", currentTask.date);
-        setText("summaryShift", currentTask.shift);
-        setText("summaryArea", currentTask.area);
-        setText("summaryRemark", currentTask.remark || "无");
-        setText("taskStateBadge", "配置中");
+            const section =
+                document.getElementById(
+                    "historyTaskSection"
+                );
 
-        hideSection("taskCreateSection");
-        showTaskBoards();
-        renderAll();
-        scrollToId("excavatorSection");
-    });
+            const isHidden =
+                section.classList.contains(
+                    "hidden"
+                );
 
-    el.bindTrucksButton?.addEventListener("click", () => {
-        if (!selectedExcavatorId) {
-            alert("请先选择一台挖机");
-            return;
-        }
+            if (isHidden) {
 
-        if (!selectedTruckIds.length) {
-            alert("请选择至少一台跟随卡车");
-            return;
-        }
+                renderHistoryTaskBoard();
 
-        const excavatorId = selectedExcavatorId;
-        const trucks = [...selectedTruckIds];
+                showSection(
+                    "historyTaskSection"
+                );
 
-        bindings.push({
-            excavatorId,
-            truckIds: trucks
-        });
+                scrollToId(
+                    "historyTaskSection"
+                );
 
-        markDraftBindingAssigned(excavatorId, trucks);
+                historyTaskButton.textContent =
+                    "📚 收起历史任务";
 
-        selectedExcavatorId = null;
-        selectedTruckIds = [];
-
-        renderAll();
-
-        alert(`${excavatorId} 已绑定 ${trucks.length} 台卡车`);
-    });
-
-    el.auxWorkType?.addEventListener("change", function () {
-        if (this.value === "manual") {
-            showSection("auxManualWorkBox");
-        } else {
-            hideSection("auxManualWorkBox");
-            setValue("auxManualWork", "");
-        }
-    });
-
-    el.cancelAuxTaskButton?.addEventListener("click", () => {
-        selectedAuxDeviceId = null;
-        hideSection("auxTaskModal");
-    });
-
-    el.confirmAuxTaskButton?.addEventListener("click", () => {
-        if (!selectedAuxDeviceId || !currentTask) return;
-
-        const device = findDevice(selectedAuxDeviceId);
-        if (!device) return;
-
-        let work = el.auxWorkType.value;
-
-        if (work === "manual") {
-            work = getValue("auxManualWork");
-
-            if (!work) {
-                alert("请输入具体工作内容");
-                return;
             }
+
+            else {
+
+                hideSection(
+                    "historyTaskSection"
+                );
+
+                historyTaskButton.textContent =
+                    "📚 历史任务";
+
+            }
+
         }
+    );
 
-        const remark = getValue("auxTaskRemark");
 
-        auxiliaryAssignments.push({
-            assignmentId: "AUX_" + Date.now(),
-            vehicleId: device.id,
-            type: device.type,
-            typeName: getTypeName(device.type),
-            work,
-            remark,
-            area: currentTask.area,
-            shift: currentTask.shift,
-            taskId: currentTask.taskId,
-            assignedAt: new Date().toISOString()
-        });
+    /*
+    ========================================================
+    创建任务
+    ========================================================
+    */
 
-        device.status = "assigned";
+    cancelCreateButton.addEventListener(
+        "click",
+        function () {
 
-        device.assignedTask = {
-            taskId: currentTask.taskId,
-            area: currentTask.area,
-            shift: currentTask.shift,
-            work,
-            remark
-        };
+            hideSection(
+                "taskCreateSection"
+            );
 
-        selectedAuxDeviceId = null;
-
-        hideSection("auxTaskModal");
-        renderAll();
-
-        alert(device.id + " 任务下发成功");
-    });
-
-    el.previewTaskButton?.addEventListener("click", () => {
-        if (!currentTask) return;
-
-        renderTaskPreview();
-        showSection("previewSection");
-        scrollToId("previewSection");
-    });
-
-    el.backEditButton?.addEventListener("click", () => {
-        hideSection("previewSection");
-    });
-
-    el.publishTaskButton?.addEventListener("click", () => {
-        if (!currentTask) return;
-
-        if (!confirm("确认发布当前生产任务吗？发布后为“待执行”，未产生运输前可以撤回。")) {
-            return;
         }
+    );
 
-        currentTask.status = "pending";
-        currentTask.publishedAt = new Date().toISOString();
 
-        const publishedTask = {
-            ...currentTask,
-            bindings: deepClone(bindings),
-            auxiliaryAssignments: deepClone(auxiliaryAssignments),
-            transportTripCount: 0,
-            equipmentAdjustments: []
-        };
+    generateTaskButton.addEventListener(
+        "click",
+        function () {
 
-        savePublishedTask(publishedTask);
+            const area =
+                getValue(
+                    "taskArea"
+                );
 
-        hideCurrentConfigurationSections();
+            if (!area) {
 
-        currentTask = null;
-        selectedExcavatorId = null;
-        selectedTruckIds = [];
-        bindings = [];
-        auxiliaryAssignments = [];
+                alert(
+                    "请输入作业区域"
+                );
 
-        rebuildEquipmentStatusFromTasks();
-        renderProductionTaskBoard();
+                return;
 
-        alert("任务发布成功，当前状态为“待执行”。");
+            }
 
-        scrollToId("productionTaskBoardSection");
-    });
 
-    el.closeModalButton?.addEventListener("click", () => {
-        hideSection("deviceModal");
-    });
+            currentTask = {
 
-    el.closePublishedTaskButton?.addEventListener("click", () => {
-        selectedPublishedTaskId = null;
-        hideSection("publishedTaskModal");
-    });
+                taskId:
+                    "TASK_" +
+                    Date.now(),
 
-    el.withdrawPublishedTaskButton?.addEventListener("click", () => {
-        if (!selectedPublishedTaskId) return;
+                date:
+                    new Date()
+                        .toLocaleDateString(
+                            "zh-CN"
+                        ),
 
-        const stats = getTaskTripStats(selectedPublishedTaskId);
+                shift:
+                    getValue(
+                        "taskShift"
+                    ),
 
-        if (stats.count > 0) {
-            syncPublishedTaskExecutionStatus();
+                area:
+                    area,
+
+                remark:
+                    getValue(
+                        "taskRemark"
+                    ),
+
+                status:
+                    "configuring",
+
+                createdAt:
+                    new Date()
+                        .toISOString()
+
+            };
+
+
+            selectedExcavatorId =
+                null;
+
+            selectedTruckIds =
+                [];
+
+            bindings =
+                [];
+
+            auxiliaryAssignments =
+                [];
+
+
+            setText(
+                "summaryDate",
+                currentTask.date
+            );
+
+            setText(
+                "summaryShift",
+                currentTask.shift
+            );
+
+            setText(
+                "summaryArea",
+                currentTask.area
+            );
+
+            setText(
+                "summaryRemark",
+                currentTask.remark ||
+                "无"
+            );
+
+
+            hideSection(
+                "taskCreateSection"
+            );
+
+            showConfigurationSections();
+
+            renderConfiguration();
+
+            scrollToId(
+                "excavatorSection"
+            );
+
+        }
+    );
+
+
+    /*
+    ========================================================
+    绑定挖机卡车
+    ========================================================
+    */
+
+    bindTrucksButton.addEventListener(
+        "click",
+        function () {
+
+            if (
+                !selectedExcavatorId
+            ) {
+
+                alert(
+                    "请先选择挖机"
+                );
+
+                return;
+
+            }
+
+
+            if (
+                selectedTruckIds.length ===
+                0
+            ) {
+
+                alert(
+                    "请选择至少一台跟随卡车"
+                );
+
+                return;
+
+            }
+
+
+            bindings.push({
+
+                excavatorId:
+                    selectedExcavatorId,
+
+                truckIds:
+                    [
+                        ...selectedTruckIds
+                    ]
+
+            });
+
+
+            selectedExcavatorId =
+                null;
+
+            selectedTruckIds =
+                [];
+
+
+            renderConfiguration();
+
+        }
+    );
+
+
+    /*
+    ========================================================
+    辅助车辆
+    ========================================================
+    */
+
+    auxWorkType.addEventListener(
+        "change",
+        function () {
+
+            if (
+                this.value ===
+                "manual"
+            ) {
+
+                showSection(
+                    "auxManualWorkBox"
+                );
+
+            }
+
+            else {
+
+                hideSection(
+                    "auxManualWorkBox"
+                );
+
+                setValue(
+                    "auxManualWork",
+                    ""
+                );
+
+            }
+
+        }
+    );
+
+
+    cancelAuxTaskButton.addEventListener(
+        "click",
+        function () {
+
+            selectedAuxDeviceId =
+                null;
+
+            hideSection(
+                "auxTaskModal"
+            );
+
+        }
+    );
+
+
+    confirmAuxTaskButton.addEventListener(
+        "click",
+        function () {
+
+            if (
+                !selectedAuxDeviceId ||
+                !currentTask
+            ) {
+
+                return;
+
+            }
+
+
+            const device =
+                findDevice(
+                    selectedAuxDeviceId
+                );
+
+            if (!device) {
+
+                return;
+
+            }
+
+
+            let work =
+                auxWorkType.value;
+
+
+            if (
+                work ===
+                "manual"
+            ) {
+
+                work =
+                    getValue(
+                        "auxManualWork"
+                    );
+
+                if (!work) {
+
+                    alert(
+                        "请输入具体工作内容"
+                    );
+
+                    return;
+
+                }
+
+            }
+
+
+            auxiliaryAssignments.push({
+
+                assignmentId:
+                    "AUX_" +
+                    Date.now(),
+
+                vehicleId:
+                    device.id,
+
+                type:
+                    device.type,
+
+                typeName:
+                    getTypeName(
+                        device.type
+                    ),
+
+                work:
+                    work,
+
+                remark:
+                    getValue(
+                        "auxTaskRemark"
+                    ),
+
+                area:
+                    currentTask.area,
+
+                shift:
+                    currentTask.shift,
+
+                taskId:
+                    currentTask.taskId,
+
+                assignedAt:
+                    new Date()
+                        .toISOString()
+
+            });
+
+
+            selectedAuxDeviceId =
+                null;
+
+
+            hideSection(
+                "auxTaskModal"
+            );
+
+
+            renderConfiguration();
+
+        }
+    );
+
+
+    /*
+    ========================================================
+    发布任务
+    ========================================================
+    */
+
+    previewTaskButton.addEventListener(
+        "click",
+        function () {
+
+            if (!currentTask) {
+
+                return;
+
+            }
+
+
+            renderTaskPreview();
+
+            showSection(
+                "previewSection"
+            );
+
+            scrollToId(
+                "previewSection"
+            );
+
+        }
+    );
+
+
+    backEditButton.addEventListener(
+        "click",
+        function () {
+
+            hideSection(
+                "previewSection"
+            );
+
+        }
+    );
+
+
+    publishTaskButton.addEventListener(
+        "click",
+        function () {
+
+            if (!currentTask) {
+
+                return;
+
+            }
+
+
+            if (
+                !bindings.length &&
+                !auxiliaryAssignments.length
+            ) {
+
+                alert(
+                    "请至少配置一组主采设备或一台辅助车辆"
+                );
+
+                return;
+
+            }
+
+
+            const conflict =
+                validatePublishConflict();
+
+            if (conflict) {
+
+                alert(
+                    conflict
+                );
+
+                return;
+
+            }
+
+
+            const confirmed =
+                confirm(
+                    "确认发布当前生产任务吗？"
+                );
+
+            if (!confirmed) {
+
+                return;
+
+            }
+
+
+            const task = {
+
+                ...currentTask,
+
+                status:
+                    "pending",
+
+                publishedAt:
+                    new Date()
+                        .toISOString(),
+
+                bindings:
+                    deepClone(
+                        bindings
+                    ),
+
+                auxiliaryAssignments:
+                    deepClone(
+                        auxiliaryAssignments
+                    ),
+
+                equipmentAdjustments:
+                    [],
+
+                transportTripCount:
+                    0
+
+            };
+
+
+            savePublishedTask(
+                task
+            );
+
+
+            currentTask =
+                null;
+
+            selectedExcavatorId =
+                null;
+
+            selectedTruckIds =
+                [];
+
+            bindings =
+                [];
+
+            auxiliaryAssignments =
+                [];
+
+
+            hideConfigurationSections();
+
+            rebuildEquipmentStatus();
+
             renderProductionTaskBoard();
-            hideSection("publishedTaskModal");
 
-            selectedPublishedTaskId = null;
+            renderHistoryTaskBoard();
 
-            alert(`该任务已经产生运输记录，共 ${stats.count} 趟，不能撤回。`);
-            return;
+
+            alert(
+                "生产任务发布成功"
+            );
+
+
+            scrollToId(
+                "productionTaskBoardSection"
+            );
+
         }
+    );
 
-        const tasks = getPublishedTasks();
 
-        const task = tasks.find(
-            item => item.taskId === selectedPublishedTaskId
-        );
+    /*
+    ========================================================
+    普通弹窗
+    ========================================================
+    */
 
-        if (!task) return;
+    closeModalButton.addEventListener(
+        "click",
+        function () {
 
-        if (
-            task.status === "active" &&
-            stats.count === 0
-        ) {
-            task.status = "pending";
+            hideSection(
+                "deviceModal"
+            );
+
         }
+    );
 
-        if (task.status !== "pending") {
-            alert("该任务当前状态不允许撤回。");
-            return;
+
+    closePublishedTaskButton.addEventListener(
+        "click",
+        function () {
+
+            selectedPublishedTaskId =
+                null;
+
+            hideSection(
+                "publishedTaskModal"
+            );
+
         }
+    );
 
-        if (!confirm("确认撤回该生产任务吗？撤回相当于删除，该任务将不再保留。")) {
-            return;
+
+    /*
+    ========================================================
+    撤回 = 删除
+    ========================================================
+    */
+
+    withdrawPublishedTaskButton.addEventListener(
+        "click",
+        function () {
+
+            if (
+                !selectedPublishedTaskId
+            ) {
+
+                return;
+
+            }
+
+
+            const stats =
+                getTaskTripStats(
+                    selectedPublishedTaskId
+                );
+
+
+            if (
+                stats.count >
+                0
+            ) {
+
+                alert(
+                    "任务已经产生运输记录，不能撤回"
+                );
+
+                syncPublishedTaskExecutionStatus();
+
+                renderProductionTaskBoard();
+
+                return;
+
+            }
+
+
+            const tasks =
+                getPublishedTasks();
+
+
+            const task =
+                tasks.find(
+                    function (item) {
+
+                        return (
+                            item.taskId ===
+                            selectedPublishedTaskId
+                        );
+
+                    }
+                );
+
+
+            if (!task) {
+
+                return;
+
+            }
+
+
+            if (
+                task.status !==
+                "pending"
+            ) {
+
+                alert(
+                    "当前任务状态不能撤回"
+                );
+
+                return;
+
+            }
+
+
+            const confirmed =
+                confirm(
+                    "确认撤回任务吗？撤回后任务将直接删除，不进入历史任务。"
+                );
+
+            if (!confirmed) {
+
+                return;
+
+            }
+
+
+            const taskId =
+                task.taskId;
+
+
+            saveTaskArray(
+
+                tasks.filter(
+                    function (item) {
+
+                        return (
+                            item.taskId !==
+                            taskId
+                        );
+
+                    }
+                )
+
+            );
+
+
+            clearLatestTaskIfMatch(
+                taskId
+            );
+
+
+            selectedPublishedTaskId =
+                null;
+
+
+            hideSection(
+                "publishedTaskModal"
+            );
+
+
+            rebuildEquipmentStatus();
+
+            renderProductionTaskBoard();
+
+            renderHistoryTaskBoard();
+
+
+            alert(
+                "任务已撤回并删除"
+            );
+
         }
+    );
 
-        const removedId = task.taskId;
 
-        saveTaskArray(
-            tasks.filter(
-                item => item.taskId !== removedId
-            )
-        );
+    /*
+    ========================================================
+    完成任务
+    ========================================================
+    */
 
-        clearLegacyLatestTaskIfMatch(removedId);
+    completePublishedTaskButton.addEventListener(
+        "click",
+        function () {
 
-        hideSection("publishedTaskModal");
-        selectedPublishedTaskId = null;
+            if (
+                !selectedPublishedTaskId
+            ) {
 
-        rebuildEquipmentStatusFromTasks();
-        renderProductionTaskBoard();
+                return;
 
-        alert("任务已撤回并删除，相关设备已恢复为可调配状态。");
-    });
+            }
 
-    el.completePublishedTaskButton?.addEventListener("click", () => {
-        if (!selectedPublishedTaskId) return;
 
-        syncPublishedTaskExecutionStatus();
+            syncPublishedTaskExecutionStatus();
 
-        const tasks = getPublishedTasks();
 
-        const task = tasks.find(
-            item => item.taskId === selectedPublishedTaskId
-        );
+            const tasks =
+                getPublishedTasks();
 
-        if (!task) return;
 
-        const stats = getTaskTripStats(task.taskId);
+            const task =
+                tasks.find(
+                    function (item) {
 
-        if (!stats.count) {
-            alert("该任务尚未产生运输记录，不能完成。");
-            return;
+                        return (
+                            item.taskId ===
+                            selectedPublishedTaskId
+                        );
+
+                    }
+                );
+
+
+            if (!task) {
+
+                return;
+
+            }
+
+
+            const stats =
+                getTaskTripStats(
+                    task.taskId
+                );
+
+
+            if (
+                stats.count ===
+                0
+            ) {
+
+                alert(
+                    "任务尚未产生运输记录，不能完成"
+                );
+
+                return;
+
+            }
+
+
+            if (
+                task.status !==
+                "active"
+            ) {
+
+                alert(
+                    "只有执行中的任务才能完成"
+                );
+
+                return;
+
+            }
+
+
+            const confirmed =
+                confirm(
+                    "确认完成本任务吗？完成后任务将进入历史任务。"
+                );
+
+            if (!confirmed) {
+
+                return;
+
+            }
+
+
+            task.status =
+                "completed";
+
+            task.completedAt =
+                new Date()
+                    .toISOString();
+
+            task.transportTripCount =
+                stats.count;
+
+
+            saveTaskArray(
+                tasks
+            );
+
+
+            selectedPublishedTaskId =
+                null;
+
+
+            hideSection(
+                "publishedTaskModal"
+            );
+
+
+            rebuildEquipmentStatus();
+
+            renderProductionTaskBoard();
+
+            renderHistoryTaskBoard();
+
+
+            alert(
+                "任务已完成并进入历史任务"
+            );
+
         }
+    );
 
-        if (task.status !== "active") {
-            alert("只有执行中的任务才能完成。");
-            return;
+
+    /*
+    ========================================================
+    调整设备入口
+    ========================================================
+    */
+
+    adjustTaskButton.addEventListener(
+        "click",
+        function () {
+
+            if (
+                !selectedPublishedTaskId
+            ) {
+
+                return;
+
+            }
+
+
+            const taskId =
+                selectedPublishedTaskId;
+
+
+            hideSection(
+                "publishedTaskModal"
+            );
+
+
+            openAdjustmentModal(
+                taskId
+            );
+
         }
+    );
 
-        if (!confirm("确认完成该生产任务吗？完成后将从生产任务看板移除，并进入历史任务。")) {
-            return;
-        }
 
-        task.status = "completed";
-        task.completedAt = new Date().toISOString();
-        task.transportTripCount = stats.count;
-
-        saveTaskArray(tasks);
-
-        hideSection("publishedTaskModal");
-        selectedPublishedTaskId = null;
-
-        rebuildEquipmentStatusFromTasks();
-        renderProductionTaskBoard();
-
-        alert("任务已完成，已从生产任务看板移除，并保留在历史任务中。");
-    });
-
-    adjustTaskButton?.addEventListener("click", () => {
-        if (!selectedPublishedTaskId) return;
-
-        hideSection("publishedTaskModal");
-
-        openAdjustmentModal(
-            selectedPublishedTaskId
-        );
-    });
-
-    closeAdjustTaskButton?.addEventListener(
+    closeAdjustTaskButton.addEventListener(
         "click",
         closeAdjustmentModal
     );
 
-    saveAdjustTaskButton?.addEventListener(
-        "click",
-        saveAdjustmentChanges
-    );
 
-    addAdjustmentBindingButton?.addEventListener(
+    addAdjustmentBindingButton.addEventListener(
         "click",
         addOrUpdateAdjustmentBinding
     );
 
-    function showTaskBoards() {
+
+    saveAdjustTaskButton.addEventListener(
+        "click",
+        saveAdjustmentChanges
+    );
+
+
+    /*
+    ========================================================
+    历史任务筛选
+    ========================================================
+    */
+
+    historyDateFilter.addEventListener(
+        "change",
+        renderHistoryTaskBoard
+    );
+
+
+    historyShiftFilter.addEventListener(
+        "change",
+        renderHistoryTaskBoard
+    );
+
+
+    historyAreaFilter.addEventListener(
+        "input",
+        renderHistoryTaskBoard
+    );
+
+
+    resetHistoryFilterButton.addEventListener(
+        "click",
+        function () {
+
+            historyDateFilter.value =
+                "";
+
+            historyShiftFilter.value =
+                "";
+
+            historyAreaFilter.value =
+                "";
+
+            renderHistoryTaskBoard();
+
+        }
+    );
+
+
+    closeHistoryTaskButton.addEventListener(
+        "click",
+        function () {
+
+            hideSection(
+                "historyTaskModal"
+            );
+
+        }
+    );
+
+
+    /*
+    ========================================================
+    配置界面
+    ========================================================
+    */
+
+    function showConfigurationSections() {
+
         [
             "taskSummarySection",
             "legendSection",
@@ -435,10 +1171,15 @@ document.addEventListener("DOMContentLoaded", () => {
             "busSection",
             "auxiliarySummarySection",
             "publishSection"
-        ].forEach(showSection);
+        ].forEach(
+            showSection
+        );
+
     }
 
-    function hideCurrentConfigurationSections() {
+
+    function hideConfigurationSections() {
+
         [
             "taskSummarySection",
             "legendSection",
@@ -454,1746 +1195,658 @@ document.addEventListener("DOMContentLoaded", () => {
             "auxiliarySummarySection",
             "publishSection",
             "previewSection"
-        ].forEach(hideSection);
-    }
-
-    function renderAll() {
-        renderExcavators();
-        renderTrucks();
-        renderBindings();
-        renderAuxiliaryBoards();
-        renderAuxiliaryAssignments();
-    }
-
-    function renderProductionTaskBoard() {
-        migrateLegacyWithdrawnTasks();
-        migrateOldTaskStatuses();
-        syncPublishedTaskExecutionStatus();
-
-        const board = $("productionTaskBoard");
-
-        if (!board) return;
-
-        const tasks = getPublishedTasks()
-            .filter(
-                task =>
-                    task.status === "pending" ||
-                    task.status === "active"
-            )
-            .sort(
-                (a, b) =>
-                    new Date(b.publishedAt || b.createdAt) -
-                    new Date(a.publishedAt || a.createdAt)
-            );
-
-        setText(
-            "productionTaskCount",
-            tasks.length + " 个进行中任务"
+        ].forEach(
+            hideSection
         );
 
-        if (!tasks.length) {
-            board.innerHTML =
-                '<div class="empty-placeholder">当前没有进行中的生产任务</div>';
+    }
 
-            return;
-        }
 
-        board.innerHTML = "";
+    function renderConfiguration() {
 
-        tasks.forEach(task => {
-            const stats =
-                getTaskTripStats(task.taskId);
+        renderExcavators();
 
-            const excavatorCount =
-                Array.isArray(task.bindings)
-                    ? task.bindings.length
-                    : 0;
+        renderTrucks();
 
-            const truckCount =
-                Array.isArray(task.bindings)
-                    ? task.bindings.reduce(
-                        (total, binding) =>
-                            total +
-                            (
-                                Array.isArray(binding.truckIds)
-                                    ? binding.truckIds.length
-                                    : 0
-                            ),
-                        0
-                    )
-                    : 0;
+        renderBindings();
 
-            const auxiliaryCount =
-                Array.isArray(task.auxiliaryAssignments)
-                    ? task.auxiliaryAssignments.length
-                    : 0;
+        renderAuxiliaryBoard(
+            "loader",
+            "loaderBoard",
+            "loaderCount"
+        );
 
-            const adjustmentCount =
-                Array.isArray(task.equipmentAdjustments)
-                    ? task.equipmentAdjustments.length
-                    : 0;
+        renderAuxiliaryBoard(
+            "water",
+            "waterBoard",
+            "waterCount"
+        );
 
-            const card =
-                document.createElement("button");
+        renderAuxiliaryBoard(
+            "fuel",
+            "fuelBoard",
+            "fuelCount"
+        );
 
-            card.type = "button";
+        renderAuxiliaryBoard(
+            "grader",
+            "graderBoard",
+            "graderCount"
+        );
 
-            card.className =
-                "production-task-card " +
-                getTaskCardClass(task.status);
+        renderAuxiliaryBoard(
+            "dozer",
+            "dozerBoard",
+            "dozerCount"
+        );
 
-            card.innerHTML = `
-                <div class="production-task-card-header">
+        renderAuxiliaryBoard(
+            "bus",
+            "busBoard",
+            "busCount"
+        );
 
-                    <div>
-                        <strong class="production-task-area">
-                            ${escapeHtml(task.area)}
-                        </strong>
+        renderAuxiliaryAssignments();
 
-                        <span class="production-task-shift">
-                            ${escapeHtml(task.shift)}
-                        </span>
-                    </div>
+    }
 
-                    <span class="production-task-status">
-                        ${getTaskStatusText(task.status)}
-                    </span>
 
-                </div>
+    /*
+    ========================================================
+    创建任务：挖机
+    ========================================================
+    */
 
-                <div class="production-task-date">
-                    ${escapeHtml(task.date)}
-                </div>
+    function renderExcavators() {
 
-                <div class="production-task-stat-grid">
+        const board =
+            document.getElementById(
+                "excavatorBoard"
+            );
 
-                    <div>
-                        <span>挖机</span>
-                        <strong>${excavatorCount}</strong>
-                    </div>
 
-                    <div>
-                        <span>卡车</span>
-                        <strong>${truckCount}</strong>
-                    </div>
+        const excavators =
+            equipment.filter(
+                function (device) {
 
-                    <div>
-                        <span>辅助车辆</span>
-                        <strong>${auxiliaryCount}</strong>
-                    </div>
+                    return (
+                        device.type ===
+                        "excavator"
+                    );
 
-                    <div class="trip-stat">
-                        <span>运输趟数</span>
-                        <strong>${stats.count}</strong>
-                    </div>
+                }
+            );
 
-                </div>
 
-                ${
-                    adjustmentCount
-                        ? `<div class="production-task-time">
-                            设备调整：${adjustmentCount} 次
-                           </div>`
-                        : ""
+        setText(
+            "excavatorCount",
+            excavators.length +
+            " 台"
+        );
+
+
+        board.innerHTML =
+            "";
+
+
+        excavators.forEach(
+            function (device) {
+
+                const state =
+                    getDraftDeviceState(
+                        device
+                    );
+
+
+                const card =
+                    createDeviceCard(
+                        device,
+                        state
+                    );
+
+
+                if (
+                    selectedExcavatorId ===
+                    device.id
+                ) {
+
+                    card.classList.add(
+                        "selected-device"
+                    );
+
                 }
 
-                <div class="production-task-time">
-                    发布时间：
-                    ${formatDateTime(task.publishedAt)}
-                </div>
-            `;
 
-            card.addEventListener(
-                "click",
-                () => openPublishedTask(task.taskId)
-            );
+                card.addEventListener(
+                    "click",
+                    function () {
 
-            board.appendChild(card);
-        });
-    }
+                        if (
+                            device.status ===
+                            "maintenance"
+                        ) {
 
-    function openPublishedTask(taskId) {
-        migrateOldTaskStatuses();
-        syncPublishedTaskExecutionStatus();
+                            showMaintenanceModal(
+                                device
+                            );
 
-        const task =
-            getPublishedTasks().find(
-                item => item.taskId === taskId
-            );
+                            return;
 
-        if (
-            !task ||
-            !["pending", "active"].includes(task.status)
-        ) {
-            return;
-        }
+                        }
 
-        selectedPublishedTaskId =
-            task.taskId;
 
-        const stats =
-            getTaskTripStats(task.taskId);
+                        if (
+                            device.status ===
+                            "assigned"
+                        ) {
 
-        setText(
-            "publishedTaskModalTitle",
-            `${task.area} · ${task.shift}`
+                            showAssignedModal(
+                                device
+                            );
+
+                            return;
+
+                        }
+
+
+                        if (
+                            isDeviceInDraft(
+                                device.id
+                            )
+                        ) {
+
+                            alert(
+                                device.id +
+                                " 已经加入当前任务"
+                            );
+
+                            return;
+
+                        }
+
+
+                        selectedExcavatorId =
+                            device.id;
+
+                        selectedTruckIds =
+                            [];
+
+
+                        renderExcavators();
+
+                        renderTrucks();
+
+                    }
+                );
+
+
+                board.appendChild(
+                    card
+                );
+
+            }
         );
 
-        let html = `
-            <div class="task-detail-status-row">
-                <span>当前状态</span>
-                <strong>
-                    ${getTaskStatusText(task.status)}
-                </strong>
-            </div>
-
-            <div class="transport-stat-box">
-
-                <div>
-                    <span>运输总趟数</span>
-                    <strong>${stats.count}</strong>
-                </div>
-
-                <div>
-                    <span>第一趟</span>
-                    <strong>
-                        ${
-                            stats.firstTime
-                                ? formatDateTime(stats.firstTime)
-                                : "-"
-                        }
-                    </strong>
-                </div>
-
-                <div>
-                    <span>最后一趟</span>
-                    <strong>
-                        ${
-                            stats.lastTime
-                                ? formatDateTime(stats.lastTime)
-                                : "-"
-                        }
-                    </strong>
-                </div>
-
-            </div>
-
-            <div class="modal-detail-row">
-                <span>日期</span>
-                <strong>${escapeHtml(task.date)}</strong>
-            </div>
-
-            <div class="modal-detail-row">
-                <span>作业区域</span>
-                <strong>${escapeHtml(task.area)}</strong>
-            </div>
-
-            <div class="modal-detail-row">
-                <span>班次</span>
-                <strong>${escapeHtml(task.shift)}</strong>
-            </div>
-
-            <div class="published-detail-block">
-                <h4>🚜 挖机及跟随卡车</h4>
-        `;
-
-        if (
-            !Array.isArray(task.bindings) ||
-            !task.bindings.length
-        ) {
-            html += "<p>未配置主采设备</p>";
-        } else {
-            task.bindings.forEach(binding => {
-                html += `
-                    <div class="published-binding">
-
-                        <strong>
-                            🚜
-                            ${escapeHtml(binding.excavatorId)}
-                        </strong>
-                `;
-
-                (binding.truckIds || [])
-                    .forEach(truckId => {
-                        html += `
-                            <span>
-                                🚚
-                                ${escapeHtml(truckId)}
-                                ·
-                                ${getTruckTaskTripCount(
-                                    task.taskId,
-                                    truckId
-                                )} 趟
-                            </span>
-                        `;
-                    });
-
-                html += "</div>";
-            });
-        }
-
-        html += `
-            </div>
-
-            <div class="published-detail-block">
-                <h4>🚧 辅助车辆</h4>
-        `;
-
-        if (
-            !Array.isArray(task.auxiliaryAssignments) ||
-            !task.auxiliaryAssignments.length
-        ) {
-            html += "<p>未配置辅助车辆</p>";
-        } else {
-            task.auxiliaryAssignments.forEach(item => {
-                html += `
-                    <div class="published-aux-row">
-
-                        <strong>
-                            ${escapeHtml(item.typeName)}
-                            ·
-                            ${escapeHtml(item.vehicleId)}
-                        </strong>
-
-                        <span>
-                            ${escapeHtml(item.work)}
-                        </span>
-
-                    </div>
-                `;
-            });
-        }
-
-        html += `
-            </div>
-
-            <div class="published-detail-block">
-                <h4>调度说明</h4>
-                <p>
-                    ${escapeHtml(task.remark || "无")}
-                </p>
-            </div>
-        `;
-
-        if (
-            Array.isArray(task.equipmentAdjustments) &&
-            task.equipmentAdjustments.length
-        ) {
-            html += `
-                <div class="published-detail-block">
-                    <h4>🔄 设备调整记录</h4>
-            `;
-
-            [...task.equipmentAdjustments]
-                .reverse()
-                .slice(0, 10)
-                .forEach(record => {
-                    html += `
-                        <div class="v250-history-row">
-
-                            <strong>
-                                ${formatDateTime(record.time)}
-                            </strong>
-
-                            <span>
-                                ${escapeHtml(record.summary)}
-                            </span>
-
-                        </div>
-                    `;
-                });
-
-            html += "</div>";
-        }
-
-        $("publishedTaskModalContent").innerHTML =
-            html;
-
-        el.withdrawPublishedTaskButton
-            .classList
-            .add("hidden");
-
-        el.completePublishedTaskButton
-            .classList
-            .add("hidden");
-
-        adjustTaskButton
-            .classList
-            .remove("hidden");
-
-        if (
-            task.status === "pending" &&
-            stats.count === 0
-        ) {
-            el.withdrawPublishedTaskButton
-                .classList
-                .remove("hidden");
-        }
-
-        if (
-            task.status === "active" &&
-            stats.count > 0
-        ) {
-            el.completePublishedTaskButton
-                .classList
-                .remove("hidden");
-        }
-
-        showSection("publishedTaskModal");
     }
 
-    function openAdjustmentModal(taskId) {
-        const task =
-            getPublishedTasks().find(
-                item => item.taskId === taskId
+
+    /*
+    ========================================================
+    创建任务：卡车
+    ========================================================
+    */
+
+    function renderTrucks() {
+
+        const board =
+            document.getElementById(
+                "truckBoard"
             );
 
-        if (
-            !task ||
-            !["pending", "active"].includes(task.status)
-        ) {
-            alert("当前任务状态不能调整设备。");
-            return;
-        }
 
-        adjustmentTaskId =
-            taskId;
+        const trucks =
+            equipment.filter(
+                function (device) {
 
-        adjustmentOriginalBindings =
-            deepClone(task.bindings || []);
+                    return (
+                        device.type ===
+                        "truck"
+                    );
 
-        adjustmentDraftBindings =
-            deepClone(task.bindings || []);
+                }
+            );
 
-        adjustmentSelectedExcavatorId =
-            null;
-
-        adjustmentSelectedTruckIds =
-            [];
-
-        adjustmentEditingExcavatorId =
-            null;
 
         setText(
-            "adjustTaskModalTitle",
-            `调整设备 · ${task.area} · ${task.shift}`
+            "truckCount",
+            trucks.length +
+            " 台"
         );
 
-        renderAdjustmentUi();
 
-        showSection("adjustTaskModal");
-    }
+        board.innerHTML =
+            "";
 
-    function closeAdjustmentModal() {
-        adjustmentTaskId = null;
-        adjustmentOriginalBindings = [];
-        adjustmentDraftBindings = [];
-        adjustmentSelectedExcavatorId = null;
-        adjustmentSelectedTruckIds = [];
-        adjustmentEditingExcavatorId = null;
 
-        hideSection("adjustTaskModal");
-    }
+        trucks.forEach(
+            function (device) {
 
-    function renderAdjustmentUi() {
-        renderAdjustmentCurrentBindings();
-        renderAdjustmentExcavators();
-        renderAdjustmentTrucks();
+                const state =
+                    getDraftDeviceState(
+                        device
+                    );
 
-        const hasChange =
-            JSON.stringify(
-                normalizeBindings(
-                    adjustmentOriginalBindings
-                )
-            ) !==
-            JSON.stringify(
-                normalizeBindings(
-                    adjustmentDraftBindings
-                )
+
+                const card =
+                    createDeviceCard(
+                        device,
+                        state
+                    );
+
+
+                if (
+                    selectedTruckIds.includes(
+                        device.id
+                    )
+                ) {
+
+                    card.classList.add(
+                        "selected-device"
+                    );
+
+                }
+
+
+                card.addEventListener(
+                    "click",
+                    function () {
+
+                        if (
+                            device.status ===
+                            "maintenance"
+                        ) {
+
+                            showMaintenanceModal(
+                                device
+                            );
+
+                            return;
+
+                        }
+
+
+                        if (
+                            device.status ===
+                            "assigned"
+                        ) {
+
+                            showAssignedModal(
+                                device
+                            );
+
+                            return;
+
+                        }
+
+
+                        if (
+                            isDeviceInDraft(
+                                device.id
+                            )
+                        ) {
+
+                            alert(
+                                device.id +
+                                " 已经加入当前任务"
+                            );
+
+                            return;
+
+                        }
+
+
+                        if (
+                            !selectedExcavatorId
+                        ) {
+
+                            alert(
+                                "请先选择挖机"
+                            );
+
+                            return;
+
+                        }
+
+
+                        toggleArrayValue(
+                            selectedTruckIds,
+                            device.id
+                        );
+
+
+                        renderTrucks();
+
+                    }
+                );
+
+
+                board.appendChild(
+                    card
+                );
+
+            }
+        );
+
+
+        if (
+            selectedExcavatorId
+        ) {
+
+            document.getElementById(
+                "selectedExcavatorInfo"
+            ).innerHTML =
+
+                "当前挖机：<strong>" +
+                escapeHtml(
+                    selectedExcavatorId
+                ) +
+                "</strong> ｜ 已选择 <strong>" +
+                selectedTruckIds.length +
+                "</strong> 台卡车";
+
+
+            bindTrucksButton.classList.remove(
+                "hidden"
             );
 
-        $("saveAdjustTaskButton").disabled =
-            !hasChange;
 
-        $("saveAdjustTaskButton").textContent =
-            hasChange
-                ? "保存本次设备调整"
-                : "暂无修改";
-    }
+            bindTrucksButton.textContent =
+                "绑定所选卡车（" +
+                selectedTruckIds.length +
+                "台）";
 
-    function renderAdjustmentCurrentBindings() {
-        const box =
-            $("adjustCurrentBindings");
-
-        if (!adjustmentDraftBindings.length) {
-            box.innerHTML =
-                '<div class="empty-placeholder">当前任务没有挖机绑定</div>';
-
-            return;
         }
 
-        box.innerHTML = "";
+        else {
 
-        adjustmentDraftBindings.forEach(
-            binding => {
-                const row =
-                    document.createElement("div");
+            setText(
+                "selectedExcavatorInfo",
+                "当前未选择挖机"
+            );
 
-                row.className =
-                    "v250-binding-edit-card";
+            bindTrucksButton.classList.add(
+                "hidden"
+            );
 
-                row.innerHTML = `
+        }
+
+    }
+
+
+    /*
+    ========================================================
+    创建任务：绑定列表
+    ========================================================
+    */
+
+    function renderBindings() {
+
+        const container =
+            document.getElementById(
+                "bindingList"
+            );
+
+
+        if (
+            bindings.length ===
+            0
+        ) {
+
+            container.innerHTML =
+                '<div class="empty-placeholder">暂无绑定关系</div>';
+
+            return;
+
+        }
+
+
+        container.innerHTML =
+            "";
+
+
+        bindings.forEach(
+            function (binding) {
+
+                const card =
+                    document.createElement(
+                        "div"
+                    );
+
+
+                card.className =
+                    "binding-card";
+
+
+                card.innerHTML = `
+
                     <div>
 
                         <strong>
                             🚜
-                            ${escapeHtml(binding.excavatorId)}
+                            ${escapeHtml(
+                                binding.excavatorId
+                            )}
                         </strong>
 
-                        <div class="v250-mini-list">
+                        <div class="mini-device-list">
 
                             ${
-                                (binding.truckIds || [])
+                                binding.truckIds
                                     .map(
-                                        id =>
-                                            `<span>
-                                                🚚
-                                                ${escapeHtml(id)}
-                                             </span>`
+                                        function (truckId) {
+
+                                            return (
+                                                "<span>🚚 " +
+                                                escapeHtml(
+                                                    truckId
+                                                ) +
+                                                "</span>"
+                                            );
+
+                                        }
                                     )
                                     .join("")
-                                ||
-                                "<span>暂无卡车</span>"
                             }
 
                         </div>
 
                     </div>
 
-                    <div class="v250-row-actions">
-
-                        <button
-                            type="button"
-                            class="v250-edit-btn"
-                        >
-                            调整卡车
-                        </button>
-
-                        <button
-                            type="button"
-                            class="v250-remove-btn"
-                        >
-                            减少挖机
-                        </button>
-
-                    </div>
                 `;
 
-                row.querySelector(".v250-edit-btn")
-                    .addEventListener(
-                        "click",
-                        () =>
-                            startEditBinding(
-                                binding.excavatorId
-                            )
-                    );
 
-                row.querySelector(".v250-remove-btn")
-                    .addEventListener(
-                        "click",
-                        () =>
-                            removeAdjustmentBinding(
-                                binding.excavatorId
-                            )
-                    );
-
-                box.appendChild(row);
-            }
-        );
-    }
-
-    function startEditBinding(excavatorId) {
-        const binding =
-            adjustmentDraftBindings.find(
-                item =>
-                    item.excavatorId ===
-                    excavatorId
-            );
-
-        if (!binding) return;
-
-        adjustmentEditingExcavatorId =
-            excavatorId;
-
-        adjustmentSelectedExcavatorId =
-            excavatorId;
-
-        adjustmentSelectedTruckIds =
-            [...(binding.truckIds || [])];
-
-        setText(
-            "adjustSelectionInfo",
-            `正在调整 ${excavatorId} 的跟随卡车`
-        );
-
-        renderAdjustmentExcavators();
-        renderAdjustmentTrucks();
-
-        addAdjustmentBindingButton.textContent =
-            "保存该挖机卡车调整";
-
-        scrollToId("adjustTruckBoard");
-    }
-
-    function removeAdjustmentBinding(excavatorId) {
-        if (
-            !confirm(
-                `确认从本任务减少挖机 ${excavatorId} 吗？其跟随卡车也会从该挖机解除。`
-            )
-        ) {
-            return;
-        }
-
-        adjustmentDraftBindings =
-            adjustmentDraftBindings.filter(
-                item =>
-                    item.excavatorId !==
-                    excavatorId
-            );
-
-        if (
-            adjustmentSelectedExcavatorId ===
-            excavatorId
-        ) {
-            adjustmentSelectedExcavatorId = null;
-            adjustmentSelectedTruckIds = [];
-            adjustmentEditingExcavatorId = null;
-        }
-
-        setText(
-            "adjustSelectionInfo",
-            "请选择新增挖机，再选择跟随卡车"
-        );
-
-        addAdjustmentBindingButton.textContent =
-            "加入本任务";
-
-        renderAdjustmentUi();
-    }
-
-    function renderAdjustmentExcavators() {
-        const board =
-            $("adjustExcavatorBoard");
-
-        board.innerHTML = "";
-
-        const usedOther =
-            getEquipmentUsedByOtherTasks(
-                adjustmentTaskId
-            );
-
-        equipment
-            .filter(
-                device =>
-                    device.type === "excavator"
-            )
-            .forEach(device => {
-                const inDraft =
-                    adjustmentDraftBindings.some(
-                        binding =>
-                            binding.excavatorId ===
-                            device.id
-                    );
-
-                const blockedOther =
-                    usedOther.has(device.id);
-
-                const maintenance =
-                    device.status ===
-                    "maintenance";
-
-                const button =
-                    document.createElement("button");
-
-                button.type = "button";
-                button.className =
-                    "v250-adjust-device";
-
-                if (
-                    adjustmentSelectedExcavatorId ===
-                    device.id
-                ) {
-                    button.classList.add(
-                        "selected"
-                    );
-                }
-
-                if (
-                    maintenance ||
-                    blockedOther ||
-                    (
-                        inDraft &&
-                        adjustmentEditingExcavatorId !==
-                        device.id
-                    )
-                ) {
-                    button.classList.add(
-                        "blocked"
-                    );
-                }
-
-                let state =
-                    "可增加";
-
-                if (maintenance) {
-                    state = "维修中";
-                } else if (blockedOther) {
-                    state = "其他任务占用";
-                } else if (
-                    inDraft &&
-                    adjustmentEditingExcavatorId !==
-                    device.id
-                ) {
-                    state = "已在本任务";
-                } else if (
-                    adjustmentEditingExcavatorId ===
-                    device.id
-                ) {
-                    state = "正在调整";
-                }
-
-                button.innerHTML = `
-                    <strong>
-                        ${device.id}
-                    </strong>
-
-                    <span>
-                        ${state}
-                    </span>
-                `;
-
-                button.addEventListener(
-                    "click",
-                    () => {
-                        if (maintenance) {
-                            showMaintenanceModal(device);
-                            return;
-                        }
-
-                        if (blockedOther) {
-                            alert(
-                                device.id +
-                                " 已被其他生产任务占用。"
-                            );
-                            return;
-                        }
-
-                        if (
-                            inDraft &&
-                            adjustmentEditingExcavatorId !==
-                            device.id
-                        ) {
-                            alert(
-                                device.id +
-                                " 已经在当前任务中，可在上方点击“调整卡车”。"
-                            );
-                            return;
-                        }
-
-                        if (
-                            adjustmentEditingExcavatorId &&
-                            adjustmentEditingExcavatorId !==
-                            device.id
-                        ) {
-                            alert(
-                                "请先完成或取消当前挖机的卡车调整。"
-                            );
-                            return;
-                        }
-
-                        adjustmentSelectedExcavatorId =
-                            device.id;
-
-                        adjustmentSelectedTruckIds =
-                            [];
-
-                        setText(
-                            "adjustSelectionInfo",
-                            `已选择新增挖机 ${device.id}，请继续选择卡车`
-                        );
-
-                        renderAdjustmentExcavators();
-                        renderAdjustmentTrucks();
-
-                        addAdjustmentBindingButton.textContent =
-                            "加入本任务";
-                    }
+                container.appendChild(
+                    card
                 );
 
-                board.appendChild(button);
-            });
-    }
-
-    function renderAdjustmentTrucks() {
-        const board =
-            $("adjustTruckBoard");
-
-        board.innerHTML = "";
-
-        const usedOther =
-            getEquipmentUsedByOtherTasks(
-                adjustmentTaskId
-            );
-
-        const usedInOtherDraftBindings =
-            new Set();
-
-        adjustmentDraftBindings.forEach(
-            binding => {
-                if (
-                    binding.excavatorId !==
-                    adjustmentEditingExcavatorId
-                ) {
-                    (binding.truckIds || [])
-                        .forEach(
-                            id =>
-                                usedInOtherDraftBindings
-                                    .add(id)
-                        );
-                }
             }
         );
 
-        equipment
-            .filter(
-                device =>
-                    device.type === "truck"
-            )
-            .forEach(device => {
-                const selected =
-                    adjustmentSelectedTruckIds
-                        .includes(device.id);
-
-                const maintenance =
-                    device.status ===
-                    "maintenance";
-
-                const blockedOther =
-                    usedOther.has(device.id);
-
-                const blockedDraft =
-                    usedInOtherDraftBindings
-                        .has(device.id);
-
-                const button =
-                    document.createElement("button");
-
-                button.type = "button";
-                button.className =
-                    "v250-adjust-device";
-
-                if (selected) {
-                    button.classList.add(
-                        "selected"
-                    );
-                }
-
-                if (
-                    maintenance ||
-                    blockedOther ||
-                    blockedDraft ||
-                    !adjustmentSelectedExcavatorId
-                ) {
-                    button.classList.add(
-                        "blocked"
-                    );
-                }
-
-                let state =
-                    selected
-                        ? "✓ 已选择"
-                        : "可选择";
-
-                if (
-                    !adjustmentSelectedExcavatorId
-                ) {
-                    state = "先选挖机";
-                } else if (maintenance) {
-                    state = "维修中";
-                } else if (blockedOther) {
-                    state = "其他任务占用";
-                } else if (blockedDraft) {
-                    state = "已跟随其他挖机";
-                }
-
-                button.innerHTML = `
-                    <strong>
-                        ${device.id}
-                    </strong>
-
-                    <span>
-                        ${state}
-                    </span>
-                `;
-
-                button.addEventListener(
-                    "click",
-                    () => {
-                        if (
-                            !adjustmentSelectedExcavatorId
-                        ) {
-                            alert("请先选择挖机。");
-                            return;
-                        }
-
-                        if (maintenance) {
-                            showMaintenanceModal(device);
-                            return;
-                        }
-
-                        if (
-                            blockedOther ||
-                            blockedDraft
-                        ) {
-                            alert(
-                                device.id +
-                                " 当前不可分配。"
-                            );
-                            return;
-                        }
-
-                        const index =
-                            adjustmentSelectedTruckIds
-                                .indexOf(device.id);
-
-                        if (index >= 0) {
-                            adjustmentSelectedTruckIds
-                                .splice(index, 1);
-                        } else {
-                            adjustmentSelectedTruckIds
-                                .push(device.id);
-                        }
-
-                        renderAdjustmentTrucks();
-                    }
-                );
-
-                board.appendChild(button);
-            });
-
-        setText(
-            "adjustTruckSelectionCount",
-            `已选择 ${adjustmentSelectedTruckIds.length} 台卡车`
-        );
     }
 
-    function addOrUpdateAdjustmentBinding() {
-        if (!adjustmentSelectedExcavatorId) {
-            alert("请先选择挖机。");
-            return;
-        }
 
-        if (!adjustmentSelectedTruckIds.length) {
-            alert("请至少选择一台跟随卡车。");
-            return;
-        }
-
-        if (adjustmentEditingExcavatorId) {
-            const binding =
-                adjustmentDraftBindings.find(
-                    item =>
-                        item.excavatorId ===
-                        adjustmentEditingExcavatorId
-                );
-
-            if (binding) {
-                binding.truckIds =
-                    [...adjustmentSelectedTruckIds];
-            }
-        } else {
-            if (
-                adjustmentDraftBindings.some(
-                    item =>
-                        item.excavatorId ===
-                        adjustmentSelectedExcavatorId
-                )
-            ) {
-                alert("该挖机已经在任务中。");
-                return;
-            }
-
-            adjustmentDraftBindings.push({
-                excavatorId:
-                    adjustmentSelectedExcavatorId,
-
-                truckIds:
-                    [...adjustmentSelectedTruckIds]
-            });
-        }
-
-        adjustmentSelectedExcavatorId = null;
-        adjustmentSelectedTruckIds = [];
-        adjustmentEditingExcavatorId = null;
-
-        setText(
-            "adjustSelectionInfo",
-            "请选择新增挖机，再选择跟随卡车"
-        );
-
-        addAdjustmentBindingButton.textContent =
-            "加入本任务";
-
-        renderAdjustmentUi();
-    }
-
-    function saveAdjustmentChanges() {
-        if (!adjustmentTaskId) return;
-
-        const before =
-            normalizeBindings(
-                adjustmentOriginalBindings
-            );
-
-        const after =
-            normalizeBindings(
-                adjustmentDraftBindings
-            );
-
-        if (
-            JSON.stringify(before) ===
-            JSON.stringify(after)
-        ) {
-            alert("设备没有发生变化。");
-            return;
-        }
-
-        if (
-            !confirm(
-                "确认保存本次设备调整吗？任务编号和原运输趟数不会变化。"
-            )
-        ) {
-            return;
-        }
-
-        const tasks =
-            getPublishedTasks();
-
-        const task =
-            tasks.find(
-                item =>
-                    item.taskId ===
-                    adjustmentTaskId
-            );
-
-        if (
-            !task ||
-            !["pending", "active"]
-                .includes(task.status)
-        ) {
-            alert(
-                "任务状态已变化，无法保存调整。"
-            );
-            return;
-        }
-
-        const conflict =
-            validateAdjustmentConflicts(
-                after,
-                task.taskId
-            );
-
-        if (conflict) {
-            alert(conflict);
-            return;
-        }
-
-        const summary =
-            buildAdjustmentSummary(
-                before,
-                after
-            );
-
-        task.bindings =
-            deepClone(after);
-
-        if (
-            !Array.isArray(
-                task.equipmentAdjustments
-            )
-        ) {
-            task.equipmentAdjustments = [];
-        }
-
-        task.equipmentAdjustments.push({
-            adjustmentId:
-                "ADJ_" + Date.now(),
-
-            time:
-                new Date().toISOString(),
-
-            summary,
-
-            beforeBindings:
-                deepClone(before),
-
-            afterBindings:
-                deepClone(after)
-        });
-
-        task.lastEquipmentAdjustedAt =
-            new Date().toISOString();
-
-        saveTaskArray(tasks);
-
-        rebuildEquipmentStatusFromTasks();
-
-        closeAdjustmentModal();
-
-        renderProductionTaskBoard();
-
-        selectedPublishedTaskId =
-            task.taskId;
-
-        openPublishedTask(
-            task.taskId
-        );
-
-        alert(
-            "设备调整已保存：" +
-            summary
-        );
-    }
-
-    function validateAdjustmentConflicts(
-        afterBindings,
-        taskId
-    ) {
-        const usedOther =
-            getEquipmentUsedByOtherTasks(
-                taskId
-            );
-
-        const seen =
-            new Set();
-
-        for (
-            const binding
-            of afterBindings
-        ) {
-            if (
-                usedOther.has(
-                    binding.excavatorId
-                )
-            ) {
-                return (
-                    binding.excavatorId +
-                    " 已被其他生产任务占用。"
-                );
-            }
-
-            if (
-                seen.has(
-                    binding.excavatorId
-                )
-            ) {
-                return (
-                    binding.excavatorId +
-                    " 重复绑定。"
-                );
-            }
-
-            seen.add(
-                binding.excavatorId
-            );
-
-            const excavator =
-                findDevice(
-                    binding.excavatorId
-                );
-
-            if (
-                excavator?.status ===
-                "maintenance"
-            ) {
-                return (
-                    binding.excavatorId +
-                    " 正在维修，不能加入任务。"
-                );
-            }
-
-            for (
-                const truckId
-                of (binding.truckIds || [])
-            ) {
-                if (
-                    usedOther.has(truckId)
-                ) {
-                    return (
-                        truckId +
-                        " 已被其他生产任务占用。"
-                    );
-                }
-
-                if (
-                    seen.has(truckId)
-                ) {
-                    return (
-                        truckId +
-                        " 被重复分配。"
-                    );
-                }
-
-                seen.add(truckId);
-
-                const truck =
-                    findDevice(truckId);
-
-                if (
-                    truck?.status ===
-                    "maintenance"
-                ) {
-                    return (
-                        truckId +
-                        " 正在维修，不能加入任务。"
-                    );
-                }
-            }
-        }
-
-        return "";
-    }
-
-    function buildAdjustmentSummary(
-        before,
-        after
-    ) {
-        const beforeMap =
-            new Map(
-                before.map(
-                    item => [
-                        item.excavatorId,
-                        item.truckIds || []
-                    ]
-                )
-            );
-
-        const afterMap =
-            new Map(
-                after.map(
-                    item => [
-                        item.excavatorId,
-                        item.truckIds || []
-                    ]
-                )
-            );
-
-        const parts = [];
-
-        const addedExcavators =
-            [...afterMap.keys()]
-                .filter(
-                    id =>
-                        !beforeMap.has(id)
-                );
-
-        const removedExcavators =
-            [...beforeMap.keys()]
-                .filter(
-                    id =>
-                        !afterMap.has(id)
-                );
-
-        if (addedExcavators.length) {
-            parts.push(
-                "增加挖机 " +
-                addedExcavators.join("、")
-            );
-        }
-
-        if (removedExcavators.length) {
-            parts.push(
-                "减少挖机 " +
-                removedExcavators.join("、")
-            );
-        }
-
-        [...afterMap.keys()]
-            .filter(
-                id =>
-                    beforeMap.has(id)
-            )
-            .forEach(id => {
-                const oldSet =
-                    new Set(
-                        beforeMap.get(id)
-                    );
-
-                const newSet =
-                    new Set(
-                        afterMap.get(id)
-                    );
-
-                const added =
-                    [...newSet]
-                        .filter(
-                            truck =>
-                                !oldSet.has(truck)
-                        );
-
-                const removed =
-                    [...oldSet]
-                        .filter(
-                            truck =>
-                                !newSet.has(truck)
-                        );
-
-                if (added.length) {
-                    parts.push(
-                        `${id} 增加卡车 ${added.join("、")}`
-                    );
-                }
-
-                if (removed.length) {
-                    parts.push(
-                        `${id} 减少卡车 ${removed.join("、")}`
-                    );
-                }
-            });
-
-        return (
-            parts.join("；") ||
-            "设备配置发生调整"
-        );
-    }
-
-    function getEquipmentUsedByOtherTasks(
-        taskId
-    ) {
-        const used =
-            new Set();
-
-        getPublishedTasks()
-            .filter(
-                task =>
-                    [
-                        "pending",
-                        "active"
-                    ].includes(task.status) &&
-                    task.taskId !== taskId
-            )
-            .forEach(task => {
-                (task.bindings || [])
-                    .forEach(binding => {
-                        used.add(
-                            binding.excavatorId
-                        );
-
-                        (binding.truckIds || [])
-                            .forEach(
-                                id =>
-                                    used.add(id)
-                            );
-                    });
-
-                (task.auxiliaryAssignments || [])
-                    .forEach(
-                        item =>
-                            used.add(
-                                item.vehicleId
-                            )
-                    );
-            });
-
-        return used;
-    }
-
-    function normalizeBindings(list) {
-        return deepClone(list || [])
-            .map(item => ({
-                excavatorId:
-                    item.excavatorId,
-
-                truckIds:
-                    [
-                        ...new Set(
-                            item.truckIds || []
-                        )
-                    ].sort()
-            }))
-            .sort(
-                (a, b) =>
-                    a.excavatorId
-                        .localeCompare(
-                            b.excavatorId
-                        )
-            );
-    }
-
-    function renderExcavators() {
-        const board =
-            $("excavatorBoard");
-
-        if (!board) return;
-
-        const devices =
-            equipment.filter(
-                item =>
-                    item.type ===
-                    "excavator"
-            );
-
-        setText(
-            "excavatorCount",
-            devices.length + " 台"
-        );
-
-        board.innerHTML = "";
-
-        devices.forEach(device => {
-            const card =
-                createDeviceCard(device);
-
-            if (
-                selectedExcavatorId ===
-                device.id
-            ) {
-                card.classList.add(
-                    "selected-device"
-                );
-
-                card
-                    .querySelector(
-                        ".device-status"
-                    )
-                    .textContent =
-                    "✓ 当前选择";
-            }
-
-            card.addEventListener(
-                "click",
-                () =>
-                    handleExcavatorClick(
-                        device
-                    )
-            );
-
-            board.appendChild(card);
-        });
-    }
-
-    function handleExcavatorClick(device) {
-        if (
-            device.status ===
-            "maintenance"
-        ) {
-            showMaintenanceModal(device);
-            return;
-        }
-
-        if (
-            device.status ===
-            "assigned"
-        ) {
-            showAssignedModal(device);
-            return;
-        }
-
-        selectedExcavatorId =
-            device.id;
-
-        selectedTruckIds =
-            [];
-
-        renderExcavators();
-        renderTrucks();
-
-        scrollToId("truckSection");
-    }
-
-    function renderTrucks() {
-        const board =
-            $("truckBoard");
-
-        if (!board) return;
-
-        const trucks =
-            equipment.filter(
-                item =>
-                    item.type === "truck"
-            );
-
-        setText(
-            "truckCount",
-            trucks.length + " 台"
-        );
-
-        board.innerHTML = "";
-
-        trucks.forEach(device => {
-            const card =
-                createDeviceCard(device);
-
-            if (
-                selectedTruckIds
-                    .includes(device.id)
-            ) {
-                card.classList.add(
-                    "selected-device"
-                );
-
-                card
-                    .querySelector(
-                        ".device-status"
-                    )
-                    .textContent =
-                    "✓ 已选择";
-            }
-
-            card.addEventListener(
-                "click",
-                () =>
-                    handleTruckClick(device)
-            );
-
-            board.appendChild(card);
-        });
-
-        updateTruckSelectionInfo();
-    }
-
-    function handleTruckClick(device) {
-        if (
-            device.status ===
-            "maintenance"
-        ) {
-            showMaintenanceModal(device);
-            return;
-        }
-
-        if (
-            device.status ===
-            "assigned"
-        ) {
-            showAssignedModal(device);
-            return;
-        }
-
-        if (!selectedExcavatorId) {
-            alert(
-                "请先点击一台绿色挖机"
-            );
-            return;
-        }
-
-        const index =
-            selectedTruckIds
-                .indexOf(device.id);
-
-        if (index >= 0) {
-            selectedTruckIds
-                .splice(index, 1);
-        } else {
-            selectedTruckIds
-                .push(device.id);
-        }
-
-        renderTrucks();
-    }
-
-    function updateTruckSelectionInfo() {
-        if (!selectedExcavatorId) {
-            setText(
-                "selectedExcavatorInfo",
-                "当前未选择挖机"
-            );
-
-            el.bindTrucksButton
-                ?.classList
-                .add("hidden");
-
-            return;
-        }
-
-        $("selectedExcavatorInfo").innerHTML =
-            `当前挖机：<strong>${escapeHtml(selectedExcavatorId)}</strong> ｜ 已选择 <strong>${selectedTruckIds.length}</strong> 台卡车`;
-
-        el.bindTrucksButton
-            ?.classList
-            .remove("hidden");
-
-        el.bindTrucksButton.textContent =
-            `绑定所选卡车（${selectedTruckIds.length}台）`;
-    }
-
-    function renderBindings() {
-        const box =
-            $("bindingList");
-
-        if (!box) return;
-
-        if (!bindings.length) {
-            box.innerHTML =
-                '<div class="empty-placeholder">暂无绑定关系</div>';
-
-            return;
-        }
-
-        box.innerHTML =
-            bindings
-                .map(
-                    binding =>
-                        `
-                        <div class="binding-card">
-
-                            <div class="binding-excavator">
-                                🚜
-                                <strong>
-                                    ${escapeHtml(binding.excavatorId)}
-                                </strong>
-                            </div>
-
-                            <div class="binding-truck-list">
-
-                                ${
-                                    (binding.truckIds || [])
-                                        .map(
-                                            id =>
-                                                `<div class="binding-truck-item">
-                                                    🚚
-                                                    ${escapeHtml(id)}
-                                                 </div>`
-                                        )
-                                        .join("")
-                                }
-
-                            </div>
-
-                        </div>
-                        `
-                )
-                .join("");
-    }
-
-    function renderAuxiliaryBoards() {
-        [
-            [
-                "loader",
-                "loaderBoard",
-                "loaderCount"
-            ],
-            [
-                "water",
-                "waterBoard",
-                "waterCount"
-            ],
-            [
-                "fuel",
-                "fuelBoard",
-                "fuelCount"
-            ],
-            [
-                "grader",
-                "graderBoard",
-                "graderCount"
-            ],
-            [
-                "dozer",
-                "dozerBoard",
-                "dozerCount"
-            ],
-            [
-                "bus",
-                "busBoard",
-                "busCount"
-            ]
-        ].forEach(
-            args =>
-                renderAuxiliaryBoard(
-                    ...args
-                )
-        );
-    }
+    /*
+    ========================================================
+    创建任务：辅助车辆
+    ========================================================
+    */
 
     function renderAuxiliaryBoard(
         type,
         boardId,
         countId
     ) {
-        const board =
-            $(boardId);
 
-        if (!board) return;
+        const board =
+            document.getElementById(
+                boardId
+            );
+
 
         const devices =
             equipment.filter(
-                item =>
-                    item.type === type
+                function (device) {
+
+                    return (
+                        device.type ===
+                        type
+                    );
+
+                }
             );
+
 
         setText(
             countId,
-            devices.length + " 台"
+            devices.length +
+            " 台"
         );
 
-        board.innerHTML = "";
 
-        devices.forEach(device => {
-            const card =
-                createDeviceCard(device);
+        board.innerHTML =
+            "";
 
-            card.addEventListener(
-                "click",
-                () =>
-                    handleAuxiliaryDeviceClick(
+
+        devices.forEach(
+            function (device) {
+
+                const state =
+                    getDraftDeviceState(
                         device
-                    )
-            );
+                    );
 
-            board.appendChild(card);
-        });
+
+                const card =
+                    createDeviceCard(
+                        device,
+                        state
+                    );
+
+
+                card.addEventListener(
+                    "click",
+                    function () {
+
+                        if (
+                            device.status ===
+                            "maintenance"
+                        ) {
+
+                            showMaintenanceModal(
+                                device
+                            );
+
+                            return;
+
+                        }
+
+
+                        if (
+                            device.status ===
+                            "assigned"
+                        ) {
+
+                            showAssignedModal(
+                                device
+                            );
+
+                            return;
+
+                        }
+
+
+                        if (
+                            isDeviceInDraft(
+                                device.id
+                            )
+                        ) {
+
+                            alert(
+                                device.id +
+                                " 已经加入当前任务"
+                            );
+
+                            return;
+
+                        }
+
+
+                        if (!currentTask) {
+
+                            alert(
+                                "请先创建生产任务"
+                            );
+
+                            return;
+
+                        }
+
+
+                        openAuxiliaryModal(
+                            device
+                        );
+
+                    }
+                );
+
+
+                board.appendChild(
+                    card
+                );
+
+            }
+        );
+
     }
 
-    function handleAuxiliaryDeviceClick(device) {
-        if (
-            device.status ===
-            "maintenance"
-        ) {
-            showMaintenanceModal(device);
-            return;
-        }
 
-        if (
-            device.status ===
-            "assigned"
-        ) {
-            showAssignedModal(device);
-            return;
-        }
-
-        if (!currentTask) {
-            alert("请先创建生产任务");
-            return;
-        }
+    function openAuxiliaryModal(
+        device
+    ) {
 
         selectedAuxDeviceId =
             device.id;
 
+
         setText(
             "auxSelectedVehicle",
-            `${getTypeName(device.type)} · ${device.id}`
+            getTypeName(
+                device.type
+            ) +
+            " · " +
+            device.id
         );
+
 
         setText(
             "auxTaskModalTitle",
-            "下发" +
-            getTypeName(device.type) +
+            "配置" +
+            getTypeName(
+                device.type
+            ) +
             "任务"
         );
 
-        el.auxWorkType.innerHTML = "";
 
-        getWorkOptions(device.type)
-            .forEach(item => {
+        auxWorkType.innerHTML =
+            "";
+
+
+        getWorkOptions(
+            device.type
+        ).forEach(
+            function (item) {
+
                 const option =
                     document.createElement(
                         "option"
@@ -2205,9 +1858,18 @@ document.addEventListener("DOMContentLoaded", () => {
                 option.textContent =
                     item.label;
 
-                el.auxWorkType
-                    .appendChild(option);
-            });
+
+                auxWorkType.appendChild(
+                    option
+                );
+
+            }
+        );
+
+
+        hideSection(
+            "auxManualWorkBox"
+        );
 
         setValue(
             "auxManualWork",
@@ -2219,1170 +1881,4539 @@ document.addEventListener("DOMContentLoaded", () => {
             ""
         );
 
-        hideSection(
-            "auxManualWorkBox"
-        );
 
         showSection(
             "auxTaskModal"
         );
+
     }
 
+
     function renderAuxiliaryAssignments() {
-        const box =
-            $("auxiliaryAssignmentList");
 
-        if (!box) return;
+        const container =
+            document.getElementById(
+                "auxiliaryAssignmentList"
+            );
 
-        if (!auxiliaryAssignments.length) {
-            box.innerHTML =
+
+        if (
+            auxiliaryAssignments.length ===
+            0
+        ) {
+
+            container.innerHTML =
                 '<div class="empty-placeholder">暂未配置辅助车辆</div>';
 
             return;
+
         }
 
-        box.innerHTML =
+
+        container.innerHTML =
             auxiliaryAssignments
                 .map(
-                    item =>
-                        `
-                        <div class="aux-assignment-card">
+                    function (item) {
 
-                            <div>
+                        return `
+
+                            <div class="aux-assignment-card">
+
                                 <strong>
-                                    ${escapeHtml(item.typeName)}
+                                    ${escapeHtml(
+                                        item.typeName
+                                    )}
                                     ·
-                                    ${escapeHtml(item.vehicleId)}
+                                    ${escapeHtml(
+                                        item.vehicleId
+                                    )}
                                 </strong>
 
                                 <span>
-                                    ${escapeHtml(item.work)}
+                                    ${escapeHtml(
+                                        item.work
+                                    )}
                                 </span>
+
                             </div>
 
-                            <div class="aux-assignment-area">
-                                ${escapeHtml(item.area)}
+                        `;
+
+                    }
+                )
+                .join("");
+
+    }
+
+
+    /*
+    ========================================================
+    发布预览
+    ========================================================
+    */
+
+    function renderTaskPreview() {
+
+        const container =
+            document.getElementById(
+                "taskPreviewContent"
+            );
+
+
+        let html = `
+
+            <div class="preview-header">
+
+                <strong>
+                    ${escapeHtml(
+                        currentTask.area
+                    )}
+                </strong>
+
+                <span>
+                    ${escapeHtml(
+                        currentTask.date
+                    )}
+                    ·
+                    ${escapeHtml(
+                        currentTask.shift
+                    )}
+                </span>
+
+            </div>
+
+
+            <div class="published-detail-block">
+
+                <h4>
+                    🚜 主采设备
+                </h4>
+
+        `;
+
+
+        if (
+            bindings.length ===
+            0
+        ) {
+
+            html +=
+                "<p>未配置挖机和卡车</p>";
+
+        }
+
+        else {
+
+            html +=
+                renderBindingsHtml(
+                    bindings
+                );
+
+        }
+
+
+        html += `
+
+            </div>
+
+
+            <div class="published-detail-block">
+
+                <h4>
+                    🚧 辅助车辆
+                </h4>
+
+                ${
+                    renderAuxiliaryHtml(
+                        auxiliaryAssignments
+                    )
+                }
+
+            </div>
+
+
+            <div class="published-detail-block">
+
+                <h4>
+                    调度说明
+                </h4>
+
+                <p>
+                    ${escapeHtml(
+                        currentTask.remark ||
+                        "无"
+                    )}
+                </p>
+
+            </div>
+
+        `;
+
+
+        container.innerHTML =
+            html;
+
+    }
+
+
+    /*
+    ========================================================
+    生产任务看板
+    ========================================================
+    */
+
+    function renderProductionTaskBoard() {
+
+        migrateOldTaskStatuses();
+
+        syncPublishedTaskExecutionStatus();
+
+
+        const board =
+            document.getElementById(
+                "productionTaskBoard"
+            );
+
+
+        const tasks =
+            getPublishedTasks()
+                .filter(
+                    function (task) {
+
+                        return (
+                            task.status ===
+                            "pending" ||
+                            task.status ===
+                            "active"
+                        );
+
+                    }
+                )
+                .sort(
+                    sortTasksNewestFirst
+                );
+
+
+        setText(
+            "productionTaskCount",
+            tasks.length +
+            " 个进行中任务"
+        );
+
+
+        if (
+            tasks.length ===
+            0
+        ) {
+
+            board.innerHTML =
+                '<div class="empty-placeholder">当前没有进行中的生产任务</div>';
+
+            return;
+
+        }
+
+
+        board.innerHTML =
+            "";
+
+
+        tasks.forEach(
+            function (task) {
+
+                const card =
+                    createTaskCard(
+                        task,
+                        false
+                    );
+
+
+                card.addEventListener(
+                    "click",
+                    function () {
+
+                        openPublishedTask(
+                            task.taskId
+                        );
+
+                    }
+                );
+
+
+                board.appendChild(
+                    card
+                );
+
+            }
+        );
+
+    }
+
+
+    /*
+    ========================================================
+    当前任务详情
+    ========================================================
+    */
+
+    function openPublishedTask(
+        taskId
+    ) {
+
+        syncPublishedTaskExecutionStatus();
+
+
+        const task =
+            getPublishedTasks()
+                .find(
+                    function (item) {
+
+                        return (
+                            item.taskId ===
+                            taskId
+                        );
+
+                    }
+                );
+
+
+        if (
+            !task ||
+            ![
+                "pending",
+                "active"
+            ].includes(
+                task.status
+            )
+        ) {
+
+            return;
+
+        }
+
+
+        selectedPublishedTaskId =
+            task.taskId;
+
+
+        const stats =
+            getTaskTripStats(
+                task.taskId
+            );
+
+
+        setText(
+            "publishedTaskModalTitle",
+            task.area +
+            " · " +
+            task.shift
+        );
+
+
+        document.getElementById(
+            "publishedTaskModalContent"
+        ).innerHTML =
+            renderTaskDetailHtml(
+                task,
+                stats,
+                false
+            );
+
+
+        adjustTaskButton.classList.remove(
+            "hidden"
+        );
+
+
+        withdrawPublishedTaskButton.classList.add(
+            "hidden"
+        );
+
+
+        completePublishedTaskButton.classList.add(
+            "hidden"
+        );
+
+
+        if (
+            task.status ===
+            "pending" &&
+            stats.count ===
+            0
+        ) {
+
+            withdrawPublishedTaskButton.classList.remove(
+                "hidden"
+            );
+
+        }
+
+
+        if (
+            task.status ===
+            "active" &&
+            stats.count >
+            0
+        ) {
+
+            completePublishedTaskButton.classList.remove(
+                "hidden"
+            );
+
+        }
+
+
+        showSection(
+            "publishedTaskModal"
+        );
+
+    }
+
+
+    /*
+    ========================================================
+    中途调整设备
+    ========================================================
+    */
+
+    function openAdjustmentModal(
+        taskId
+    ) {
+
+        const task =
+            getPublishedTasks()
+                .find(
+                    function (item) {
+
+                        return (
+                            item.taskId ===
+                            taskId
+                        );
+
+                    }
+                );
+
+
+        if (
+            !task ||
+            ![
+                "pending",
+                "active"
+            ].includes(
+                task.status
+            )
+        ) {
+
+            alert(
+                "当前任务不能调整设备"
+            );
+
+            return;
+
+        }
+
+
+        adjustmentTaskId =
+            task.taskId;
+
+
+        adjustmentOriginalBindings =
+            normalizeBindings(
+                task.bindings ||
+                []
+            );
+
+
+        adjustmentDraftBindings =
+            deepClone(
+                adjustmentOriginalBindings
+            );
+
+
+        adjustmentSelectedExcavatorId =
+            null;
+
+        adjustmentSelectedTruckIds =
+            [];
+
+        adjustmentEditingExcavatorId =
+            null;
+
+
+        setText(
+            "adjustTaskModalTitle",
+            "调整设备 · " +
+            task.area +
+            " · " +
+            task.shift
+        );
+
+
+        setText(
+            "adjustSelectionInfo",
+            "请选择一台挖机"
+        );
+
+
+        addAdjustmentBindingButton.textContent =
+            "加入本任务";
+
+
+        renderAdjustmentUi();
+
+
+        showSection(
+            "adjustTaskModal"
+        );
+
+    }
+
+
+    function closeAdjustmentModal() {
+
+        adjustmentTaskId =
+            null;
+
+        adjustmentOriginalBindings =
+            [];
+
+        adjustmentDraftBindings =
+            [];
+
+        adjustmentSelectedExcavatorId =
+            null;
+
+        adjustmentSelectedTruckIds =
+            [];
+
+        adjustmentEditingExcavatorId =
+            null;
+
+
+        hideSection(
+            "adjustTaskModal"
+        );
+
+    }
+
+
+    function renderAdjustmentUi() {
+
+        renderAdjustmentCurrentBindings();
+
+        renderAdjustmentExcavators();
+
+        renderAdjustmentTrucks();
+
+
+        const changed =
+            JSON.stringify(
+                normalizeBindings(
+                    adjustmentOriginalBindings
+                )
+            ) !==
+            JSON.stringify(
+                normalizeBindings(
+                    adjustmentDraftBindings
+                )
+            );
+
+
+        saveAdjustTaskButton.disabled =
+            !changed;
+
+
+        saveAdjustTaskButton.textContent =
+            changed
+                ?
+                "保存本次设备调整"
+                :
+                "暂无修改";
+
+    }
+
+
+    function renderAdjustmentCurrentBindings() {
+
+        const container =
+            document.getElementById(
+                "adjustCurrentBindings"
+            );
+
+
+        if (
+            adjustmentDraftBindings.length ===
+            0
+        ) {
+
+            container.innerHTML =
+                '<div class="empty-placeholder">当前没有挖机配置</div>';
+
+            return;
+
+        }
+
+
+        container.innerHTML =
+            "";
+
+
+        adjustmentDraftBindings.forEach(
+            function (binding) {
+
+                const card =
+                    document.createElement(
+                        "div"
+                    );
+
+
+                card.className =
+                    "adjust-binding-card";
+
+
+                card.innerHTML = `
+
+                    <div>
+
+                        <strong>
+                            🚜
+                            ${escapeHtml(
+                                binding.excavatorId
+                            )}
+                        </strong>
+
+                        <div class="mini-device-list">
+
+                            ${
+                                (
+                                    binding.truckIds ||
+                                    []
+                                )
+                                    .map(
+                                        function (truckId) {
+
+                                            return (
+                                                "<span>🚚 " +
+                                                escapeHtml(
+                                                    truckId
+                                                ) +
+                                                "</span>"
+                                            );
+
+                                        }
+                                    )
+                                    .join("")
+                                ||
+                                "<span>暂无卡车</span>"
+                            }
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="adjust-row-buttons">
+
+                        <button
+                            type="button"
+                            class="adjust-edit-button"
+                        >
+                            调整卡车
+                        </button>
+
+                        <button
+                            type="button"
+                            class="adjust-remove-button"
+                        >
+                            减少挖机
+                        </button>
+
+                    </div>
+
+                `;
+
+
+                card.querySelector(
+                    ".adjust-edit-button"
+                ).addEventListener(
+                    "click",
+                    function () {
+
+                        startEditBinding(
+                            binding.excavatorId
+                        );
+
+                    }
+                );
+
+
+                card.querySelector(
+                    ".adjust-remove-button"
+                ).addEventListener(
+                    "click",
+                    function () {
+
+                        removeAdjustmentExcavator(
+                            binding.excavatorId
+                        );
+
+                    }
+                );
+
+
+                container.appendChild(
+                    card
+                );
+
+            }
+        );
+
+    }
+
+
+    function startEditBinding(
+        excavatorId
+    ) {
+
+        const binding =
+            adjustmentDraftBindings
+                .find(
+                    function (item) {
+
+                        return (
+                            item.excavatorId ===
+                            excavatorId
+                        );
+
+                    }
+                );
+
+
+        if (!binding) {
+
+            return;
+
+        }
+
+
+        adjustmentEditingExcavatorId =
+            excavatorId;
+
+        adjustmentSelectedExcavatorId =
+            excavatorId;
+
+        adjustmentSelectedTruckIds =
+            [
+                ...(
+                    binding.truckIds ||
+                    []
+                )
+            ];
+
+
+        setText(
+            "adjustSelectionInfo",
+            "正在调整 " +
+            excavatorId +
+            " 的跟随卡车"
+        );
+
+
+        addAdjustmentBindingButton.textContent =
+            "保存该挖机卡车调整";
+
+
+        renderAdjustmentUi();
+
+    }
+
+
+    function removeAdjustmentExcavator(
+        excavatorId
+    ) {
+
+        const confirmed =
+            confirm(
+                "确认减少挖机 " +
+                excavatorId +
+                " 吗？该挖机的跟随关系也会解除。"
+            );
+
+
+        if (!confirmed) {
+
+            return;
+
+        }
+
+
+        adjustmentDraftBindings =
+            adjustmentDraftBindings
+                .filter(
+                    function (item) {
+
+                        return (
+                            item.excavatorId !==
+                            excavatorId
+                        );
+
+                    }
+                );
+
+
+        if (
+            adjustmentSelectedExcavatorId ===
+            excavatorId
+        ) {
+
+            adjustmentSelectedExcavatorId =
+                null;
+
+            adjustmentSelectedTruckIds =
+                [];
+
+            adjustmentEditingExcavatorId =
+                null;
+
+        }
+
+
+        setText(
+            "adjustSelectionInfo",
+            "请选择一台挖机"
+        );
+
+
+        addAdjustmentBindingButton.textContent =
+            "加入本任务";
+
+
+        renderAdjustmentUi();
+
+    }
+
+
+    function renderAdjustmentExcavators() {
+
+        const board =
+            document.getElementById(
+                "adjustExcavatorBoard"
+            );
+
+
+        const otherTaskUsed =
+            getOtherTaskUsedEquipment(
+                adjustmentTaskId
+            );
+
+
+        board.innerHTML =
+            "";
+
+
+        equipment
+            .filter(
+                function (device) {
+
+                    return (
+                        device.type ===
+                        "excavator"
+                    );
+
+                }
+            )
+            .forEach(
+                function (device) {
+
+                    const inDraft =
+                        adjustmentDraftBindings
+                            .some(
+                                function (binding) {
+
+                                    return (
+                                        binding.excavatorId ===
+                                        device.id
+                                    );
+
+                                }
+                            );
+
+
+                    const blocked =
+                        device.status ===
+                        "maintenance" ||
+                        otherTaskUsed.has(
+                            device.id
+                        ) ||
+                        (
+                            inDraft &&
+                            adjustmentEditingExcavatorId !==
+                            device.id
+                        );
+
+
+                    const button =
+                        createAdjustDeviceButton(
+                            device.id,
+                            getAdjustExcavatorText(
+                                device,
+                                inDraft,
+                                otherTaskUsed
+                            ),
+                            blocked
+                        );
+
+
+                    if (
+                        adjustmentSelectedExcavatorId ===
+                        device.id
+                    ) {
+
+                        button.classList.add(
+                            "selected"
+                        );
+
+                    }
+
+
+                    button.addEventListener(
+                        "click",
+                        function () {
+
+                            if (
+                                device.status ===
+                                "maintenance"
+                            ) {
+
+                                showMaintenanceModal(
+                                    device
+                                );
+
+                                return;
+
+                            }
+
+
+                            if (
+                                otherTaskUsed.has(
+                                    device.id
+                                )
+                            ) {
+
+                                alert(
+                                    device.id +
+                                    " 已被其他任务占用"
+                                );
+
+                                return;
+
+                            }
+
+
+                            if (
+                                inDraft &&
+                                adjustmentEditingExcavatorId !==
+                                device.id
+                            ) {
+
+                                alert(
+                                    device.id +
+                                    " 已经在当前任务中"
+                                );
+
+                                return;
+
+                            }
+
+
+                            if (
+                                adjustmentEditingExcavatorId &&
+                                adjustmentEditingExcavatorId !==
+                                device.id
+                            ) {
+
+                                alert(
+                                    "请先完成当前挖机的卡车调整"
+                                );
+
+                                return;
+
+                            }
+
+
+                            adjustmentSelectedExcavatorId =
+                                device.id;
+
+                            adjustmentSelectedTruckIds =
+                                [];
+
+
+                            setText(
+                                "adjustSelectionInfo",
+                                "已选择 " +
+                                device.id +
+                                "，请选择跟随卡车"
+                            );
+
+
+                            addAdjustmentBindingButton.textContent =
+                                "加入本任务";
+
+
+                            renderAdjustmentUi();
+
+                        }
+                    );
+
+
+                    board.appendChild(
+                        button
+                    );
+
+                }
+            );
+
+    }
+
+
+    function renderAdjustmentTrucks() {
+
+        const board =
+            document.getElementById(
+                "adjustTruckBoard"
+            );
+
+
+        const otherTaskUsed =
+            getOtherTaskUsedEquipment(
+                adjustmentTaskId
+            );
+
+
+        const usedByOtherBinding =
+            new Set();
+
+
+        adjustmentDraftBindings.forEach(
+            function (binding) {
+
+                if (
+                    binding.excavatorId !==
+                    adjustmentEditingExcavatorId
+                ) {
+
+                    (
+                        binding.truckIds ||
+                        []
+                    ).forEach(
+                        function (truckId) {
+
+                            usedByOtherBinding.add(
+                                truckId
+                            );
+
+                        }
+                    );
+
+                }
+
+            }
+        );
+
+
+        board.innerHTML =
+            "";
+
+
+        equipment
+            .filter(
+                function (device) {
+
+                    return (
+                        device.type ===
+                        "truck"
+                    );
+
+                }
+            )
+            .forEach(
+                function (device) {
+
+                    const selected =
+                        adjustmentSelectedTruckIds
+                            .includes(
+                                device.id
+                            );
+
+
+                    const blocked =
+                        !adjustmentSelectedExcavatorId ||
+                        device.status ===
+                        "maintenance" ||
+                        otherTaskUsed.has(
+                            device.id
+                        ) ||
+                        usedByOtherBinding.has(
+                            device.id
+                        );
+
+
+                    let stateText =
+                        selected
+                            ?
+                            "✓ 已选择"
+                            :
+                            "可选择";
+
+
+                    if (
+                        !adjustmentSelectedExcavatorId
+                    ) {
+
+                        stateText =
+                            "先选挖机";
+
+                    }
+
+                    else if (
+                        device.status ===
+                        "maintenance"
+                    ) {
+
+                        stateText =
+                            "维修中";
+
+                    }
+
+                    else if (
+                        otherTaskUsed.has(
+                            device.id
+                        )
+                    ) {
+
+                        stateText =
+                            "其他任务占用";
+
+                    }
+
+                    else if (
+                        usedByOtherBinding.has(
+                            device.id
+                        )
+                    ) {
+
+                        stateText =
+                            "已跟随其他挖机";
+
+                    }
+
+
+                    const button =
+                        createAdjustDeviceButton(
+                            device.id,
+                            stateText,
+                            blocked
+                        );
+
+
+                    if (selected) {
+
+                        button.classList.add(
+                            "selected"
+                        );
+
+                    }
+
+
+                    button.addEventListener(
+                        "click",
+                        function () {
+
+                            if (
+                                !adjustmentSelectedExcavatorId
+                            ) {
+
+                                alert(
+                                    "请先选择挖机"
+                                );
+
+                                return;
+
+                            }
+
+
+                            if (
+                                device.status ===
+                                "maintenance"
+                            ) {
+
+                                showMaintenanceModal(
+                                    device
+                                );
+
+                                return;
+
+                            }
+
+
+                            if (
+                                otherTaskUsed.has(
+                                    device.id
+                                ) ||
+                                usedByOtherBinding.has(
+                                    device.id
+                                )
+                            ) {
+
+                                alert(
+                                    device.id +
+                                    " 当前不可分配"
+                                );
+
+                                return;
+
+                            }
+
+
+                            toggleArrayValue(
+                                adjustmentSelectedTruckIds,
+                                device.id
+                            );
+
+
+                            renderAdjustmentTrucks();
+
+                        }
+                    );
+
+
+                    board.appendChild(
+                        button
+                    );
+
+                }
+            );
+
+
+        setText(
+            "adjustTruckSelectionCount",
+            "已选择 " +
+            adjustmentSelectedTruckIds.length +
+            " 台卡车"
+        );
+
+    }
+
+
+    function addOrUpdateAdjustmentBinding() {
+
+        if (
+            !adjustmentSelectedExcavatorId
+        ) {
+
+            alert(
+                "请先选择挖机"
+            );
+
+            return;
+
+        }
+
+
+        if (
+            adjustmentSelectedTruckIds.length ===
+            0
+        ) {
+
+            alert(
+                "请至少选择一台跟随卡车"
+            );
+
+            return;
+
+        }
+
+
+        if (
+            adjustmentEditingExcavatorId
+        ) {
+
+            const binding =
+                adjustmentDraftBindings
+                    .find(
+                        function (item) {
+
+                            return (
+                                item.excavatorId ===
+                                adjustmentEditingExcavatorId
+                            );
+
+                        }
+                    );
+
+
+            if (binding) {
+
+                binding.truckIds =
+                    [
+                        ...adjustmentSelectedTruckIds
+                    ];
+
+            }
+
+        }
+
+        else {
+
+            adjustmentDraftBindings.push({
+
+                excavatorId:
+                    adjustmentSelectedExcavatorId,
+
+                truckIds:
+                    [
+                        ...adjustmentSelectedTruckIds
+                    ]
+
+            });
+
+        }
+
+
+        adjustmentSelectedExcavatorId =
+            null;
+
+        adjustmentSelectedTruckIds =
+            [];
+
+        adjustmentEditingExcavatorId =
+            null;
+
+
+        setText(
+            "adjustSelectionInfo",
+            "请选择一台挖机"
+        );
+
+
+        addAdjustmentBindingButton.textContent =
+            "加入本任务";
+
+
+        renderAdjustmentUi();
+
+    }
+
+
+    function saveAdjustmentChanges() {
+
+        if (!adjustmentTaskId) {
+
+            return;
+
+        }
+
+
+        const before =
+            normalizeBindings(
+                adjustmentOriginalBindings
+            );
+
+
+        const after =
+            normalizeBindings(
+                adjustmentDraftBindings
+            );
+
+
+        if (
+            JSON.stringify(
+                before
+            ) ===
+            JSON.stringify(
+                after
+            )
+        ) {
+
+            alert(
+                "设备没有发生变化"
+            );
+
+            return;
+
+        }
+
+
+        const conflict =
+            validateAdjustmentConflict(
+                after,
+                adjustmentTaskId
+            );
+
+
+        if (conflict) {
+
+            alert(
+                conflict
+            );
+
+            return;
+
+        }
+
+
+        const confirmed =
+            confirm(
+                "确认保存本次设备调整吗？任务编号和运输趟数不会变化。"
+            );
+
+
+        if (!confirmed) {
+
+            return;
+
+        }
+
+
+        const tasks =
+            getPublishedTasks();
+
+
+        const task =
+            tasks.find(
+                function (item) {
+
+                    return (
+                        item.taskId ===
+                        adjustmentTaskId
+                    );
+
+                }
+            );
+
+
+        if (
+            !task ||
+            ![
+                "pending",
+                "active"
+            ].includes(
+                task.status
+            )
+        ) {
+
+            alert(
+                "任务状态已经变化，不能继续调整"
+            );
+
+            return;
+
+        }
+
+
+        const summary =
+            buildAdjustmentSummary(
+                before,
+                after
+            );
+
+
+        task.bindings =
+            deepClone(
+                after
+            );
+
+
+        if (
+            !Array.isArray(
+                task.equipmentAdjustments
+            )
+        ) {
+
+            task.equipmentAdjustments =
+                [];
+
+        }
+
+
+        task.equipmentAdjustments.push({
+
+            adjustmentId:
+                "ADJ_" +
+                Date.now(),
+
+            time:
+                new Date()
+                    .toISOString(),
+
+            summary:
+                summary,
+
+            beforeBindings:
+                deepClone(
+                    before
+                ),
+
+            afterBindings:
+                deepClone(
+                    after
+                )
+
+        });
+
+
+        task.lastEquipmentAdjustedAt =
+            new Date()
+                .toISOString();
+
+
+        saveTaskArray(
+            tasks
+        );
+
+
+        const taskId =
+            task.taskId;
+
+
+        closeAdjustmentModal();
+
+        rebuildEquipmentStatus();
+
+        renderProductionTaskBoard();
+
+
+        selectedPublishedTaskId =
+            taskId;
+
+
+        openPublishedTask(
+            taskId
+        );
+
+
+        alert(
+            "设备调整已保存"
+        );
+
+    }
+
+
+    /*
+    ========================================================
+    历史任务
+    ========================================================
+    */
+
+    function renderHistoryTaskBoard() {
+
+        const board =
+            document.getElementById(
+                "historyTaskBoard"
+            );
+
+
+        const dateFilter =
+            historyDateFilter.value;
+
+
+        const shiftFilter =
+            historyShiftFilter.value;
+
+
+        const areaFilter =
+            historyAreaFilter.value
+                .trim()
+                .toLowerCase();
+
+
+        let tasks =
+            getPublishedTasks()
+                .filter(
+                    function (task) {
+
+                        return (
+                            task.status ===
+                            "completed"
+                        );
+
+                    }
+                );
+
+
+        tasks =
+            tasks.filter(
+                function (task) {
+
+                    if (
+                        dateFilter &&
+                        getTaskDateValue(
+                            task
+                        ) !==
+                        dateFilter
+                    ) {
+
+                        return false;
+
+                    }
+
+
+                    if (
+                        shiftFilter &&
+                        task.shift !==
+                        shiftFilter
+                    ) {
+
+                        return false;
+
+                    }
+
+
+                    if (
+                        areaFilter &&
+                        !String(
+                            task.area ||
+                            ""
+                        )
+                            .toLowerCase()
+                            .includes(
+                                areaFilter
+                            )
+                    ) {
+
+                        return false;
+
+                    }
+
+
+                    return true;
+
+                }
+            );
+
+
+        tasks.sort(
+            function (a, b) {
+
+                return (
+                    new Date(
+                        b.completedAt ||
+                        b.publishedAt
+                    ) -
+                    new Date(
+                        a.completedAt ||
+                        a.publishedAt
+                    )
+                );
+
+            }
+        );
+
+
+        setText(
+            "historyTaskCount",
+            tasks.length +
+            " 个已完成任务"
+        );
+
+
+        if (
+            tasks.length ===
+            0
+        ) {
+
+            board.innerHTML =
+                '<div class="empty-placeholder">没有符合条件的已完成任务</div>';
+
+            return;
+
+        }
+
+
+        board.innerHTML =
+            "";
+
+
+        tasks.forEach(
+            function (task) {
+
+                const card =
+                    createTaskCard(
+                        task,
+                        true
+                    );
+
+
+                card.addEventListener(
+                    "click",
+                    function () {
+
+                        openHistoryTask(
+                            task.taskId
+                        );
+
+                    }
+                );
+
+
+                board.appendChild(
+                    card
+                );
+
+            }
+        );
+
+    }
+
+
+    function openHistoryTask(
+        taskId
+    ) {
+
+        const task =
+            getPublishedTasks()
+                .find(
+                    function (item) {
+
+                        return (
+                            item.taskId ===
+                            taskId &&
+                            item.status ===
+                            "completed"
+                        );
+
+                    }
+                );
+
+
+        if (!task) {
+
+            return;
+
+        }
+
+
+        const stats =
+            getTaskTripStats(
+                task.taskId
+            );
+
+
+        setText(
+            "historyTaskModalTitle",
+            "历史任务 · " +
+            task.area +
+            " · " +
+            task.shift
+        );
+
+
+        document.getElementById(
+            "historyTaskModalContent"
+        ).innerHTML =
+            renderTaskDetailHtml(
+                task,
+                stats,
+                true
+            );
+
+
+        showSection(
+            "historyTaskModal"
+        );
+
+    }
+
+
+    /*
+    ========================================================
+    任务卡片
+    ========================================================
+    */
+
+    function createTaskCard(
+        task,
+        historyMode
+    ) {
+
+        const stats =
+            getTaskTripStats(
+                task.taskId
+            );
+
+
+        const effectiveTripCount =
+            Math.max(
+                stats.count,
+                Number(
+                    task.transportTripCount ||
+                    0
+                )
+            );
+
+
+        const excavatorCount =
+            Array.isArray(
+                task.bindings
+            )
+                ?
+                task.bindings.length
+                :
+                0;
+
+
+        const truckCount =
+            Array.isArray(
+                task.bindings
+            )
+                ?
+                task.bindings.reduce(
+                    function (
+                        total,
+                        binding
+                    ) {
+
+                        return (
+                            total +
+                            (
+                                Array.isArray(
+                                    binding.truckIds
+                                )
+                                    ?
+                                    binding.truckIds.length
+                                    :
+                                    0
+                            )
+                        );
+
+                    },
+                    0
+                )
+                :
+                0;
+
+
+        const auxiliaryCount =
+            Array.isArray(
+                task.auxiliaryAssignments
+            )
+                ?
+                task.auxiliaryAssignments.length
+                :
+                0;
+
+
+        const adjustmentCount =
+            Array.isArray(
+                task.equipmentAdjustments
+            )
+                ?
+                task.equipmentAdjustments.length
+                :
+                0;
+
+
+        const card =
+            document.createElement(
+                "button"
+            );
+
+
+        card.type =
+            "button";
+
+
+        card.className =
+            "production-task-card " +
+            (
+                historyMode
+                    ?
+                    "history-task-card"
+                    :
+                    getTaskCardClass(
+                        task.status
+                    )
+            );
+
+
+        card.innerHTML = `
+
+            <div class="production-task-card-header">
+
+                <div>
+
+                    <strong class="production-task-area">
+                        ${escapeHtml(
+                            task.area
+                        )}
+                    </strong>
+
+                    <span class="production-task-shift">
+                        ${escapeHtml(
+                            task.shift
+                        )}
+                    </span>
+
+                </div>
+
+
+                <span class="production-task-status">
+
+                    ${
+                        historyMode
+                            ?
+                            "已完成"
+                            :
+                            getTaskStatusText(
+                                task.status
+                            )
+                    }
+
+                </span>
+
+            </div>
+
+
+            <div class="production-task-date">
+                ${escapeHtml(
+                    task.date
+                )}
+            </div>
+
+
+            <div class="production-task-stat-grid">
+
+                <div>
+                    <span>挖机</span>
+                    <strong>
+                        ${excavatorCount}
+                    </strong>
+                </div>
+
+                <div>
+                    <span>卡车</span>
+                    <strong>
+                        ${truckCount}
+                    </strong>
+                </div>
+
+                <div>
+                    <span>辅助车辆</span>
+                    <strong>
+                        ${auxiliaryCount}
+                    </strong>
+                </div>
+
+                <div class="trip-stat">
+                    <span>运输趟数</span>
+                    <strong>
+                        ${effectiveTripCount}
+                    </strong>
+                </div>
+
+            </div>
+
+
+            ${
+                adjustmentCount >
+                0
+                    ?
+                    `
+                    <div class="task-adjustment-note">
+                        🔄 中途设备调整 ${adjustmentCount} 次
+                    </div>
+                    `
+                    :
+                    ""
+            }
+
+
+            <div class="production-task-time">
+
+                ${
+                    historyMode
+                        ?
+                        "完成时间："
+                        :
+                        "发布时间："
+                }
+
+                ${
+                    formatDateTime(
+                        historyMode
+                            ?
+                            task.completedAt
+                            :
+                            task.publishedAt
+                    )
+                }
+
+            </div>
+
+        `;
+
+
+        return card;
+
+    }
+
+
+    /*
+    ========================================================
+    任务详情共用
+    ========================================================
+    */
+
+    function renderTaskDetailHtml(
+        task,
+        stats,
+        historyMode
+    ) {
+
+        const effectiveTripCount =
+            Math.max(
+                stats.count,
+                Number(
+                    task.transportTripCount ||
+                    0
+                )
+            );
+
+
+        let html = `
+
+            <div class="task-detail-status-row">
+
+                <span>
+                    当前状态
+                </span>
+
+                <strong>
+                    ${
+                        historyMode
+                            ?
+                            "已完成"
+                            :
+                            getTaskStatusText(
+                                task.status
+                            )
+                    }
+                </strong>
+
+            </div>
+
+
+            <div class="transport-stat-box">
+
+                <div>
+                    <span>运输总趟数</span>
+                    <strong>
+                        ${effectiveTripCount}
+                    </strong>
+                </div>
+
+                <div>
+                    <span>第一趟</span>
+                    <strong>
+                        ${
+                            stats.firstTime
+                                ?
+                                formatDateTime(
+                                    stats.firstTime
+                                )
+                                :
+                                "-"
+                        }
+                    </strong>
+                </div>
+
+                <div>
+                    <span>最后一趟</span>
+                    <strong>
+                        ${
+                            stats.lastTime
+                                ?
+                                formatDateTime(
+                                    stats.lastTime
+                                )
+                                :
+                                "-"
+                        }
+                    </strong>
+                </div>
+
+            </div>
+
+
+            <div class="modal-detail-row">
+                <span>任务编号</span>
+                <strong>
+                    ${escapeHtml(
+                        task.taskId
+                    )}
+                </strong>
+            </div>
+
+
+            <div class="modal-detail-row">
+                <span>日期</span>
+                <strong>
+                    ${escapeHtml(
+                        task.date
+                    )}
+                </strong>
+            </div>
+
+
+            <div class="modal-detail-row">
+                <span>班次</span>
+                <strong>
+                    ${escapeHtml(
+                        task.shift
+                    )}
+                </strong>
+            </div>
+
+
+            <div class="modal-detail-row">
+                <span>作业区域</span>
+                <strong>
+                    ${escapeHtml(
+                        task.area
+                    )}
+                </strong>
+            </div>
+
+
+            <div class="modal-detail-row">
+                <span>发布时间</span>
+                <strong>
+                    ${formatDateTime(
+                        task.publishedAt
+                    )}
+                </strong>
+            </div>
+
+        `;
+
+
+        if (historyMode) {
+
+            html += `
+
+                <div class="modal-detail-row">
+                    <span>完成时间</span>
+                    <strong>
+                        ${formatDateTime(
+                            task.completedAt
+                        )}
+                    </strong>
+                </div>
+
+            `;
+
+        }
+
+
+        html += `
+
+            <div class="published-detail-block">
+
+                <h4>
+                    🚜 挖机及跟随卡车
+                </h4>
+
+                ${
+                    renderBindingsHtml(
+                        task.bindings ||
+                        [],
+                        task.taskId
+                    )
+                }
+
+            </div>
+
+
+            <div class="published-detail-block">
+
+                <h4>
+                    🚧 辅助车辆
+                </h4>
+
+                ${
+                    renderAuxiliaryHtml(
+                        task.auxiliaryAssignments ||
+                        []
+                    )
+                }
+
+            </div>
+
+
+            <div class="published-detail-block">
+
+                <h4>
+                    调度说明
+                </h4>
+
+                <p>
+                    ${escapeHtml(
+                        task.remark ||
+                        "无"
+                    )}
+                </p>
+
+            </div>
+
+        `;
+
+
+        if (
+            Array.isArray(
+                task.equipmentAdjustments
+            ) &&
+            task.equipmentAdjustments.length >
+            0
+        ) {
+
+            html += `
+
+                <div class="published-detail-block">
+
+                    <h4>
+                        🔄 中途设备调整记录
+                    </h4>
+
+                    <div class="adjustment-history-list">
+
+            `;
+
+
+            [
+                ...task.equipmentAdjustments
+            ]
+                .reverse()
+                .forEach(
+                    function (record) {
+
+                        html += `
+
+                            <div class="adjustment-history-row">
+
+                                <strong>
+                                    ${formatDateTime(
+                                        record.time
+                                    )}
+                                </strong>
+
+                                <span>
+                                    ${escapeHtml(
+                                        record.summary
+                                    )}
+                                </span>
+
+                            </div>
+
+                        `;
+
+                    }
+                );
+
+
+            html += `
+
+                    </div>
+
+                </div>
+
+            `;
+
+        }
+
+
+        return html;
+
+    }
+
+
+    function renderBindingsHtml(
+        taskBindings,
+        taskId
+    ) {
+
+        if (
+            !Array.isArray(
+                taskBindings
+            ) ||
+            taskBindings.length ===
+            0
+        ) {
+
+            return "<p>未配置主采设备</p>";
+
+        }
+
+
+        return taskBindings
+            .map(
+                function (binding) {
+
+                    const trucks =
+                        (
+                            binding.truckIds ||
+                            []
+                        )
+                            .map(
+                                function (truckId) {
+
+                                    let extra =
+                                        "";
+
+
+                                    if (taskId) {
+
+                                        extra =
+                                            " · " +
+                                            getTruckTaskTripCount(
+                                                taskId,
+                                                truckId
+                                            ) +
+                                            " 趟";
+
+                                    }
+
+
+                                    return `
+
+                                        <span>
+                                            🚚
+                                            ${escapeHtml(
+                                                truckId
+                                            )}
+                                            ${extra}
+                                        </span>
+
+                                    `;
+
+                                }
+                            )
+                            .join("");
+
+
+                    return `
+
+                        <div class="published-binding">
+
+                            <strong>
+                                🚜
+                                ${escapeHtml(
+                                    binding.excavatorId
+                                )}
+                            </strong>
+
+                            <div class="published-truck-list">
+                                ${
+                                    trucks ||
+                                    "<span>暂无卡车</span>"
+                                }
                             </div>
 
                         </div>
-                        `
-                )
-                .join("");
+
+                    `;
+
+                }
+            )
+            .join("");
+
     }
 
-    function createDeviceCard(device) {
-        const card =
-            document.createElement("button");
 
-        card.type = "button";
+    function renderAuxiliaryHtml(
+        assignments
+    ) {
+
+        if (
+            !Array.isArray(
+                assignments
+            ) ||
+            assignments.length ===
+            0
+        ) {
+
+            return "<p>未配置辅助车辆</p>";
+
+        }
+
+
+        return assignments
+            .map(
+                function (item) {
+
+                    return `
+
+                        <div class="published-aux-row">
+
+                            <strong>
+                                ${escapeHtml(
+                                    item.typeName ||
+                                    getTypeName(
+                                        item.type
+                                    )
+                                )}
+                                ·
+                                ${escapeHtml(
+                                    item.vehicleId
+                                )}
+                            </strong>
+
+                            <span>
+                                ${escapeHtml(
+                                    item.work
+                                )}
+                            </span>
+
+                        </div>
+
+                    `;
+
+                }
+            )
+            .join("");
+
+    }
+
+
+    /*
+    ========================================================
+    设备状态
+    ========================================================
+    */
+
+    function rebuildEquipmentStatus() {
+
+        equipment.forEach(
+            function (device) {
+
+                if (
+                    device.baseStatus ===
+                    "maintenance"
+                ) {
+
+                    device.status =
+                        "maintenance";
+
+                }
+
+                else {
+
+                    device.status =
+                        "available";
+
+                    delete device.assignedTask;
+
+                }
+
+            }
+        );
+
+
+        getPublishedTasks()
+            .filter(
+                function (task) {
+
+                    return (
+                        task.status ===
+                        "pending" ||
+                        task.status ===
+                        "active"
+                    );
+
+                }
+            )
+            .forEach(
+                function (task) {
+
+                    (
+                        task.bindings ||
+                        []
+                    ).forEach(
+                        function (binding) {
+
+                            assignDeviceToTask(
+                                binding.excavatorId,
+                                task,
+                                "采装作业"
+                            );
+
+
+                            (
+                                binding.truckIds ||
+                                []
+                            ).forEach(
+                                function (truckId) {
+
+                                    assignDeviceToTask(
+                                        truckId,
+                                        task,
+                                        "跟随 " +
+                                        binding.excavatorId
+                                    );
+
+                                }
+                            );
+
+                        }
+                    );
+
+
+                    (
+                        task.auxiliaryAssignments ||
+                        []
+                    ).forEach(
+                        function (item) {
+
+                            assignDeviceToTask(
+                                item.vehicleId,
+                                task,
+                                item.work
+                            );
+
+                        }
+                    );
+
+                }
+            );
+
+    }
+
+
+    function assignDeviceToTask(
+        deviceId,
+        task,
+        work
+    ) {
+
+        const device =
+            findDevice(
+                deviceId
+            );
+
+
+        if (
+            !device ||
+            device.baseStatus ===
+            "maintenance"
+        ) {
+
+            return;
+
+        }
+
+
+        device.status =
+            "assigned";
+
+
+        device.assignedTask = {
+
+            taskId:
+                task.taskId,
+
+            area:
+                task.area,
+
+            shift:
+                task.shift,
+
+            work:
+                work
+
+        };
+
+    }
+
+
+    function getDraftDeviceState(
+        device
+    ) {
+
+        if (
+            device.status ===
+            "maintenance"
+        ) {
+
+            return {
+                text:
+                    "维修中",
+                className:
+                    "device-maintenance"
+            };
+
+        }
+
+
+        if (
+            device.status ===
+            "assigned"
+        ) {
+
+            return {
+                text:
+                    "已分配",
+                className:
+                    "device-assigned"
+            };
+
+        }
+
+
+        if (
+            isDeviceInDraft(
+                device.id
+            )
+        ) {
+
+            return {
+                text:
+                    "本任务已选",
+                className:
+                    "device-draft"
+            };
+
+        }
+
+
+        return {
+            text:
+                "可调配",
+            className:
+                "device-available"
+        };
+
+    }
+
+
+    function isDeviceInDraft(
+        deviceId
+    ) {
+
+        const inMain =
+            bindings.some(
+                function (binding) {
+
+                    return (
+                        binding.excavatorId ===
+                        deviceId ||
+                        (
+                            binding.truckIds ||
+                            []
+                        ).includes(
+                            deviceId
+                        )
+                    );
+
+                }
+            );
+
+
+        const inAux =
+            auxiliaryAssignments.some(
+                function (item) {
+
+                    return (
+                        item.vehicleId ===
+                        deviceId
+                    );
+
+                }
+            );
+
+
+        return (
+            inMain ||
+            inAux
+        );
+
+    }
+
+
+    /*
+    ========================================================
+    设备弹窗
+    ========================================================
+    */
+
+    function createDeviceCard(
+        device,
+        state
+    ) {
+
+        const card =
+            document.createElement(
+                "button"
+            );
+
+
+        card.type =
+            "button";
+
 
         card.className =
             "device-card " +
-            getStatusClass(device.status);
+            state.className;
+
 
         card.innerHTML = `
+
             <strong class="device-number">
-                ${escapeHtml(device.id)}
+                ${escapeHtml(
+                    device.id
+                )}
             </strong>
 
             <span class="device-status">
-                ${getStatusText(device.status)}
+                ${escapeHtml(
+                    state.text
+                )}
             </span>
+
         `;
 
+
         return card;
+
     }
 
-    function showMaintenanceModal(device) {
+
+    function showMaintenanceModal(
+        device
+    ) {
+
         const maintenance =
-            device.maintenance || {};
+            device.maintenance ||
+            {};
+
 
         setText(
             "modalTitle",
-            `${device.id} · 维修状态`
+            device.id +
+            " · 维修状态"
         );
 
-        $("modalContent").innerHTML =
+
+        document.getElementById(
+            "modalContent"
+        ).innerHTML =
+
             detailRow(
-                "车型",
-                getTypeName(device.type)
-            )
-            +
+                "设备类型",
+                getTypeName(
+                    device.type
+                )
+            ) +
+
             detailRow(
-                "故障",
+                "故障内容",
                 maintenance.fault ||
                 "未填写"
-            )
-            +
+            ) +
+
             detailRow(
-                "开始时间",
+                "维修开始",
                 maintenance.startedAt ||
                 "-"
-            )
-            +
+            ) +
+
             detailRow(
-                "预计完成",
+                "预计结束",
                 maintenance.expectedEnd ||
                 "-"
-            )
-            +
+            ) +
+
             detailRow(
                 "维修负责人",
                 maintenance.responsible ||
                 "-"
             );
 
-        showSection("deviceModal");
+
+        showSection(
+            "deviceModal"
+        );
+
     }
 
-    function showAssignedModal(device) {
+
+    function showAssignedModal(
+        device
+    ) {
+
         const task =
-            device.assignedTask || {};
+            device.assignedTask ||
+            {};
+
 
         setText(
             "modalTitle",
-            `${device.id} · 当前任务`
+            device.id +
+            " · 当前任务"
         );
 
-        $("modalContent").innerHTML =
+
+        document.getElementById(
+            "modalContent"
+        ).innerHTML =
+
             detailRow(
-                "车型",
-                getTypeName(device.type)
-            )
-            +
+                "设备类型",
+                getTypeName(
+                    device.type
+                )
+            ) +
+
             detailRow(
                 "作业区域",
-                task.area || "-"
-            )
-            +
+                task.area ||
+                "-"
+            ) +
+
             detailRow(
                 "班次",
-                task.shift || "-"
-            )
-            +
+                task.shift ||
+                "-"
+            ) +
+
             detailRow(
                 "工作内容",
-                task.work || "-"
+                task.work ||
+                "-"
             );
 
-        showSection("deviceModal");
+
+        showSection(
+            "deviceModal"
+        );
+
     }
 
-    function detailRow(label, value) {
+
+    function detailRow(
+        name,
+        value
+    ) {
+
         return `
+
             <div class="modal-detail-row">
 
                 <span>
-                    ${escapeHtml(label)}
+                    ${escapeHtml(
+                        name
+                    )}
                 </span>
 
                 <strong>
-                    ${escapeHtml(value)}
+                    ${escapeHtml(
+                        value
+                    )}
                 </strong>
 
             </div>
+
         `;
+
     }
 
-    function renderTaskPreview() {
-        const box =
-            $("taskPreviewContent");
 
-        let html = `
-            <div class="preview-header">
+    /*
+    ========================================================
+    调整设备帮助函数
+    ========================================================
+    */
 
-                <strong>
-                    ${escapeHtml(currentTask.area)}
-                </strong>
-
-                <span>
-                    ${escapeHtml(currentTask.date)}
-                    ·
-                    ${escapeHtml(currentTask.shift)}
-                </span>
-
-            </div>
-
-            <div class="preview-block">
-                <h3>主采设备</h3>
-        `;
-
-        if (!bindings.length) {
-            html +=
-                "<p>未配置挖机和卡车</p>";
-        }
-
-        bindings.forEach(binding => {
-            html += `
-                <div class="preview-binding">
-
-                    <strong>
-                        🚜
-                        ${escapeHtml(binding.excavatorId)}
-                    </strong>
-
-                    ${
-                        (binding.truckIds || [])
-                            .map(
-                                id =>
-                                    `<span>
-                                        └ 🚚
-                                        ${escapeHtml(id)}
-                                     </span>`
-                            )
-                            .join("")
-                    }
-
-                </div>
-            `;
-        });
-
-        html += `
-            </div>
-
-            <div class="preview-block">
-                <h3>辅助车辆</h3>
-        `;
-
-        if (!auxiliaryAssignments.length) {
-            html +=
-                "<p>未配置辅助车辆</p>";
-        }
-
-        auxiliaryAssignments.forEach(item => {
-            html += `
-                <div class="preview-auxiliary">
-
-                    <strong>
-                        ${escapeHtml(item.typeName)}
-                        ·
-                        ${escapeHtml(item.vehicleId)}
-                    </strong>
-
-                    <span>
-                        ${escapeHtml(item.work)}
-                    </span>
-
-                </div>
-            `;
-        });
-
-        html += `
-            </div>
-
-            <div class="preview-block">
-
-                <h3>调度说明</h3>
-
-                <p>
-                    ${escapeHtml(currentTask.remark || "无")}
-                </p>
-
-            </div>
-        `;
-
-        box.innerHTML =
-            html;
-    }
-
-    function markDraftBindingAssigned(
-        excavatorId,
-        truckIds
+    function createAdjustDeviceButton(
+        number,
+        status,
+        blocked
     ) {
-        const excavator =
-            findDevice(excavatorId);
 
-        if (excavator) {
-            excavator.status =
-                "assigned";
+        const button =
+            document.createElement(
+                "button"
+            );
 
-            excavator.assignedTask = {
-                taskId:
-                    currentTask.taskId,
 
-                area:
-                    currentTask.area,
+        button.type =
+            "button";
 
-                shift:
-                    currentTask.shift,
 
-                work:
-                    "采装作业"
-            };
+        button.className =
+            "adjust-device-button";
+
+
+        if (blocked) {
+
+            button.classList.add(
+                "blocked"
+            );
+
         }
 
-        truckIds.forEach(id => {
-            const truck =
-                findDevice(id);
 
-            if (truck) {
-                truck.status =
-                    "assigned";
+        button.innerHTML = `
 
-                truck.assignedTask = {
-                    taskId:
-                        currentTask.taskId,
+            <strong>
+                ${escapeHtml(
+                    number
+                )}
+            </strong>
 
-                    area:
-                        currentTask.area,
+            <span>
+                ${escapeHtml(
+                    status
+                )}
+            </span>
 
-                    shift:
-                        currentTask.shift,
+        `;
 
-                    work:
-                        "跟随 " +
-                        excavatorId,
 
-                    excavatorId
-                };
-            }
-        });
+        return button;
+
     }
 
-    function rebuildEquipmentStatusFromTasks() {
-        equipment.forEach(device => {
-            if (
-                device.status !==
-                "maintenance"
-            ) {
-                device.status =
-                    "available";
 
-                delete device.assignedTask;
-            }
-        });
+    function getAdjustExcavatorText(
+        device,
+        inDraft,
+        otherTaskUsed
+    ) {
+
+        if (
+            device.status ===
+            "maintenance"
+        ) {
+
+            return "维修中";
+
+        }
+
+
+        if (
+            otherTaskUsed.has(
+                device.id
+            )
+        ) {
+
+            return "其他任务占用";
+
+        }
+
+
+        if (
+            adjustmentEditingExcavatorId ===
+            device.id
+        ) {
+
+            return "正在调整";
+
+        }
+
+
+        if (inDraft) {
+
+            return "已在本任务";
+
+        }
+
+
+        return "可增加";
+
+    }
+
+
+    function getOtherTaskUsedEquipment(
+        currentTaskId
+    ) {
+
+        const used =
+            new Set();
+
 
         getPublishedTasks()
             .filter(
-                task =>
-                    [
-                        "pending",
-                        "active"
-                    ].includes(task.status)
+                function (task) {
+
+                    return (
+                        task.taskId !==
+                        currentTaskId &&
+                        (
+                            task.status ===
+                            "pending" ||
+                            task.status ===
+                            "active"
+                        )
+                    );
+
+                }
             )
-            .forEach(task => {
-                (task.bindings || [])
-                    .forEach(binding => {
-                        const excavator =
-                            findDevice(
+            .forEach(
+                function (task) {
+
+                    (
+                        task.bindings ||
+                        []
+                    ).forEach(
+                        function (binding) {
+
+                            used.add(
                                 binding.excavatorId
                             );
 
-                        if (
-                            excavator &&
-                            excavator.status !==
-                            "maintenance"
-                        ) {
-                            excavator.status =
-                                "assigned";
 
-                            excavator.assignedTask = {
-                                taskId:
-                                    task.taskId,
+                            (
+                                binding.truckIds ||
+                                []
+                            ).forEach(
+                                function (truckId) {
 
-                                area:
-                                    task.area,
+                                    used.add(
+                                        truckId
+                                    );
 
-                                shift:
-                                    task.shift,
-
-                                work:
-                                    "采装作业"
-                            };
-                        }
-
-                        (binding.truckIds || [])
-                            .forEach(id => {
-                                const truck =
-                                    findDevice(id);
-
-                                if (
-                                    truck &&
-                                    truck.status !==
-                                    "maintenance"
-                                ) {
-                                    truck.status =
-                                        "assigned";
-
-                                    truck.assignedTask = {
-                                        taskId:
-                                            task.taskId,
-
-                                        area:
-                                            task.area,
-
-                                        shift:
-                                            task.shift,
-
-                                        work:
-                                            "跟随 " +
-                                            binding.excavatorId,
-
-                                        excavatorId:
-                                            binding.excavatorId
-                                    };
                                 }
-                            });
-                    });
+                            );
 
-                (task.auxiliaryAssignments || [])
-                    .forEach(item => {
-                        const device =
-                            findDevice(
+                        }
+                    );
+
+
+                    (
+                        task.auxiliaryAssignments ||
+                        []
+                    ).forEach(
+                        function (item) {
+
+                            used.add(
                                 item.vehicleId
                             );
 
-                        if (
-                            device &&
-                            device.status !==
-                            "maintenance"
-                        ) {
-                            device.status =
-                                "assigned";
-
-                            device.assignedTask = {
-                                taskId:
-                                    task.taskId,
-
-                                area:
-                                    task.area,
-
-                                shift:
-                                    task.shift,
-
-                                work:
-                                    item.work,
-
-                                remark:
-                                    item.remark
-                            };
                         }
-                    });
-            });
+                    );
+
+                }
+            );
+
+
+        return used;
+
     }
 
-    function findDevice(id) {
-        return equipment.find(
-            item => item.id === id
+
+    function validateAdjustmentConflict(
+        newBindings,
+        taskId
+    ) {
+
+        const otherTaskUsed =
+            getOtherTaskUsedEquipment(
+                taskId
+            );
+
+
+        const used =
+            new Set();
+
+
+        for (
+            const binding
+            of newBindings
+        ) {
+
+            if (
+                otherTaskUsed.has(
+                    binding.excavatorId
+                )
+            ) {
+
+                return (
+                    binding.excavatorId +
+                    " 已被其他任务占用"
+                );
+
+            }
+
+
+            const excavator =
+                findDevice(
+                    binding.excavatorId
+                );
+
+
+            if (
+                excavator &&
+                excavator.baseStatus ===
+                "maintenance"
+            ) {
+
+                return (
+                    binding.excavatorId +
+                    " 正在维修"
+                );
+
+            }
+
+
+            if (
+                used.has(
+                    binding.excavatorId
+                )
+            ) {
+
+                return (
+                    binding.excavatorId +
+                    " 重复使用"
+                );
+
+            }
+
+
+            used.add(
+                binding.excavatorId
+            );
+
+
+            for (
+                const truckId
+                of (
+                    binding.truckIds ||
+                    []
+                )
+            ) {
+
+                if (
+                    otherTaskUsed.has(
+                        truckId
+                    )
+                ) {
+
+                    return (
+                        truckId +
+                        " 已被其他任务占用"
+                    );
+
+                }
+
+
+                const truck =
+                    findDevice(
+                        truckId
+                    );
+
+
+                if (
+                    truck &&
+                    truck.baseStatus ===
+                    "maintenance"
+                ) {
+
+                    return (
+                        truckId +
+                        " 正在维修"
+                    );
+
+                }
+
+
+                if (
+                    used.has(
+                        truckId
+                    )
+                ) {
+
+                    return (
+                        truckId +
+                        " 被重复分配"
+                    );
+
+                }
+
+
+                used.add(
+                    truckId
+                );
+
+            }
+
+        }
+
+
+        return "";
+
+    }
+
+
+    function buildAdjustmentSummary(
+        before,
+        after
+    ) {
+
+        const beforeMap =
+            new Map();
+
+
+        const afterMap =
+            new Map();
+
+
+        before.forEach(
+            function (binding) {
+
+                beforeMap.set(
+                    binding.excavatorId,
+                    binding.truckIds ||
+                    []
+                );
+
+            }
         );
-    }
 
-    function injectV250Ui() {
-        const actionArea =
-            $("publishedTaskActionArea");
+
+        after.forEach(
+            function (binding) {
+
+                afterMap.set(
+                    binding.excavatorId,
+                    binding.truckIds ||
+                    []
+                );
+
+            }
+        );
+
+
+        const result =
+            [];
+
+
+        const addedExcavators =
+            [
+                ...afterMap.keys()
+            ].filter(
+                function (id) {
+
+                    return (
+                        !beforeMap.has(
+                            id
+                        )
+                    );
+
+                }
+            );
+
+
+        const removedExcavators =
+            [
+                ...beforeMap.keys()
+            ].filter(
+                function (id) {
+
+                    return (
+                        !afterMap.has(
+                            id
+                        )
+                    );
+
+                }
+            );
+
 
         if (
-            actionArea &&
-            !$("adjustTaskButton")
+            addedExcavators.length
         ) {
-            const button =
-                document.createElement(
-                    "button"
-                );
 
-            button.id =
-                "adjustTaskButton";
-
-            button.type =
-                "button";
-
-            button.className =
-                "v250-adjust-main-button hidden";
-
-            button.textContent =
-                "调整设备";
-
-            actionArea.insertBefore(
-                button,
-                el.withdrawPublishedTaskButton ||
-                actionArea.firstChild
+            result.push(
+                "增加挖机 " +
+                addedExcavators.join(
+                    "、"
+                )
             );
+
         }
 
-        if (!$("adjustTaskModal")) {
-            const modal =
-                document.createElement(
-                    "div"
-                );
 
-            modal.id =
-                "adjustTaskModal";
+        if (
+            removedExcavators.length
+        ) {
 
-            modal.className =
-                "device-modal hidden";
+            result.push(
+                "减少挖机 " +
+                removedExcavators.join(
+                    "、"
+                )
+            );
 
-            modal.innerHTML = `
-                <div class="device-modal-card v250-adjust-modal-card">
-
-                    <h3 id="adjustTaskModalTitle">
-                        调整设备
-                    </h3>
-
-                    <p class="v250-help">
-                        可中途增加/减少挖机，也可调整每台挖机的跟随卡车。
-                        保存后任务编号和运输趟数不变。
-                    </p>
-
-                    <div class="v250-adjust-section">
-
-                        <h4>
-                            当前挖机配置
-                        </h4>
-
-                        <div id="adjustCurrentBindings"></div>
-
-                    </div>
-
-                    <div class="v250-adjust-section">
-
-                        <h4>
-                            增加挖机
-                        </h4>
-
-                        <div
-                            id="adjustSelectionInfo"
-                            class="selected-equipment-info"
-                        >
-                            请选择新增挖机，再选择跟随卡车
-                        </div>
-
-                        <div
-                            id="adjustExcavatorBoard"
-                            class="v250-adjust-board"
-                        ></div>
-
-                    </div>
-
-                    <div class="v250-adjust-section">
-
-                        <h4>
-                            选择跟随卡车
-                        </h4>
-
-                        <div
-                            id="adjustTruckSelectionCount"
-                            class="v250-count-line"
-                        >
-                            已选择 0 台卡车
-                        </div>
-
-                        <div
-                            id="adjustTruckBoard"
-                            class="v250-adjust-board"
-                        ></div>
-
-                        <button
-                            id="addAdjustmentBindingButton"
-                            type="button"
-                            class="success-button"
-                        >
-                            加入本任务
-                        </button>
-
-                    </div>
-
-                    <div class="double-button-row">
-
-                        <button
-                            id="closeAdjustTaskButton"
-                            type="button"
-                            class="secondary-button"
-                        >
-                            取消
-                        </button>
-
-                        <button
-                            id="saveAdjustTaskButton"
-                            type="button"
-                            class="publish-button"
-                            disabled
-                        >
-                            暂无修改
-                        </button>
-
-                    </div>
-
-                </div>
-            `;
-
-            document.body
-                .appendChild(modal);
         }
 
-        if (!$("v250Style")) {
-            const style =
-                document.createElement(
-                    "style"
-                );
 
-            style.id =
-                "v250Style";
+        [
+            ...afterMap.keys()
+        ]
+            .filter(
+                function (id) {
 
-            style.textContent = `
-                .v250-adjust-main-button{
-                    background:#2563eb!important;
-                    color:#fff!important;
-                    border:none!important;
+                    return (
+                        beforeMap.has(
+                            id
+                        )
+                    );
+
                 }
+            )
+            .forEach(
+                function (id) {
 
-                .v250-adjust-modal-card{
-                    width:min(920px,94vw);
-                    max-height:90vh;
-                    overflow:auto;
-                }
-
-                .v250-help{
-                    margin:0 0 14px;
-                    color:#64748b;
-                    line-height:1.6;
-                }
-
-                .v250-adjust-section{
-                    margin:14px 0;
-                    padding:14px;
-                    border:1px solid #e2e8f0;
-                    border-radius:12px;
-                }
-
-                .v250-adjust-section h4{
-                    margin:0 0 12px;
-                }
-
-                .v250-adjust-board{
-                    display:grid;
-                    grid-template-columns:
-                        repeat(
-                            auto-fill,
-                            minmax(105px,1fr)
+                    const oldTrucks =
+                        new Set(
+                            beforeMap.get(
+                                id
+                            )
                         );
-                    gap:10px;
-                    margin:10px 0 14px;
-                }
 
-                .v250-adjust-device{
-                    min-height:72px;
-                    border:2px solid #bbf7d0;
-                    background:#f0fdf4;
-                    border-radius:10px;
-                    padding:9px;
-                    display:flex;
-                    flex-direction:column;
-                    gap:5px;
-                    align-items:center;
-                    justify-content:center;
-                }
 
-                .v250-adjust-device strong{
-                    font-size:15px;
-                }
+                    const newTrucks =
+                        new Set(
+                            afterMap.get(
+                                id
+                            )
+                        );
 
-                .v250-adjust-device span{
-                    font-size:12px;
-                }
 
-                .v250-adjust-device.selected{
-                    border-color:#2563eb;
-                    background:#eff6ff;
-                }
+                    const added =
+                        [
+                            ...newTrucks
+                        ].filter(
+                            function (truckId) {
 
-                .v250-adjust-device.blocked{
-                    border-color:#e5e7eb;
-                    background:#f3f4f6;
-                    color:#9ca3af;
-                }
+                                return (
+                                    !oldTrucks.has(
+                                        truckId
+                                    )
+                                );
 
-                .v250-binding-edit-card{
-                    display:flex;
-                    justify-content:space-between;
-                    gap:12px;
-                    align-items:center;
-                    padding:12px;
-                    border:1px solid #e5e7eb;
-                    border-radius:10px;
-                    margin:8px 0;
-                }
+                            }
+                        );
 
-                .v250-mini-list{
-                    display:flex;
-                    flex-wrap:wrap;
-                    gap:6px;
-                    margin-top:7px;
-                }
 
-                .v250-mini-list span{
-                    font-size:12px;
-                    padding:4px 7px;
-                    border-radius:999px;
-                    background:#f1f5f9;
-                }
+                    const removed =
+                        [
+                            ...oldTrucks
+                        ].filter(
+                            function (truckId) {
 
-                .v250-row-actions{
-                    display:flex;
-                    gap:7px;
-                    flex-wrap:wrap;
-                    justify-content:flex-end;
-                }
+                                return (
+                                    !newTrucks.has(
+                                        truckId
+                                    )
+                                );
 
-                .v250-row-actions button{
-                    width:auto!important;
-                    margin:0!important;
-                    padding:8px 10px!important;
-                    font-size:12px;
-                }
+                            }
+                        );
 
-                .v250-edit-btn{
-                    background:#2563eb!important;
-                    color:white!important;
-                }
 
-                .v250-remove-btn{
-                    background:#dc2626!important;
-                    color:white!important;
-                }
+                    if (
+                        added.length
+                    ) {
 
-                .v250-count-line{
-                    font-size:13px;
-                    color:#475569;
-                    margin-bottom:6px;
-                }
+                        result.push(
+                            id +
+                            " 增加卡车 " +
+                            added.join(
+                                "、"
+                            )
+                        );
 
-                .v250-history-row{
-                    display:flex;
-                    gap:10px;
-                    align-items:flex-start;
-                    padding:8px 0;
-                    border-bottom:1px solid #eef2f7;
-                }
-
-                .v250-history-row strong{
-                    font-size:12px;
-                    white-space:nowrap;
-                }
-
-                .v250-history-row span{
-                    font-size:13px;
-                    line-height:1.5;
-                }
-
-                @media(max-width:600px){
-                    .v250-binding-edit-card{
-                        align-items:flex-start;
-                        flex-direction:column;
                     }
 
-                    .v250-row-actions{
-                        width:100%;
-                        justify-content:flex-start;
+
+                    if (
+                        removed.length
+                    ) {
+
+                        result.push(
+                            id +
+                            " 减少卡车 " +
+                            removed.join(
+                                "、"
+                            )
+                        );
+
                     }
 
-                    .v250-adjust-board{
-                        grid-template-columns:
-                            repeat(3,1fr);
-                    }
                 }
-            `;
+            );
 
-            document.head
-                .appendChild(style);
-        }
-    }
 
-    function hideOldStatusLegends() {
-        document.querySelectorAll(
-            ".task-status-legend .completed,.task-status-legend .withdrawn"
-        ).forEach(
-            element =>
-                element.style.display =
-                    "none"
+        return (
+            result.join(
+                "；"
+            ) ||
+            "设备配置调整"
         );
+
     }
+
+
+    /*
+    ========================================================
+    发布冲突
+    ========================================================
+    */
+
+    function validatePublishConflict() {
+
+        const occupied =
+            getOtherTaskUsedEquipment(
+                null
+            );
+
+
+        const used =
+            new Set();
+
+
+        for (
+            const binding
+            of bindings
+        ) {
+
+            const ids = [
+                binding.excavatorId,
+                ...(
+                    binding.truckIds ||
+                    []
+                )
+            ];
+
+
+            for (
+                const id
+                of ids
+            ) {
+
+                const device =
+                    findDevice(
+                        id
+                    );
+
+
+                if (
+                    device &&
+                    device.baseStatus ===
+                    "maintenance"
+                ) {
+
+                    return (
+                        id +
+                        " 正在维修，不能发布任务"
+                    );
+
+                }
+
+
+                if (
+                    occupied.has(
+                        id
+                    )
+                ) {
+
+                    return (
+                        id +
+                        " 已被其他任务占用"
+                    );
+
+                }
+
+
+                if (
+                    used.has(
+                        id
+                    )
+                ) {
+
+                    return (
+                        id +
+                        " 被重复分配"
+                    );
+
+                }
+
+
+                used.add(
+                    id
+                );
+
+            }
+
+        }
+
+
+        for (
+            const item
+            of auxiliaryAssignments
+        ) {
+
+            if (
+                occupied.has(
+                    item.vehicleId
+                )
+            ) {
+
+                return (
+                    item.vehicleId +
+                    " 已被其他任务占用"
+                );
+
+            }
+
+        }
+
+
+        return "";
+
+    }
+
+
+    /*
+    ========================================================
+    数据迁移和任务状态
+    ========================================================
+    */
 
     function migrateLegacyWithdrawnTasks() {
+
         const tasks =
             getPublishedTasks();
 
-        const keep =
+
+        const remaining =
             tasks.filter(
-                task =>
-                    task.status !==
-                    "withdrawn"
+                function (task) {
+
+                    return (
+                        task.status !==
+                        "withdrawn"
+                    );
+
+                }
             );
+
 
         if (
-            keep.length !==
+            remaining.length !==
             tasks.length
         ) {
-            saveTaskArray(keep);
+
+            saveTaskArray(
+                remaining
+            );
+
         }
+
     }
+
 
     function migrateOldTaskStatuses() {
+
         const tasks =
             getPublishedTasks();
+
 
         let changed =
             false;
 
-        tasks.forEach(task => {
-            if (
-                task.status === "active" &&
-                getTaskTripStats(task.taskId)
-                    .count === 0
-            ) {
-                task.status =
-                    "pending";
 
-                task.transportTripCount =
-                    0;
+        tasks.forEach(
+            function (task) {
 
-                delete task.startedAt;
+                if (
+                    task.status ===
+                    "active"
+                ) {
 
-                changed =
-                    true;
+                    const stats =
+                        getTaskTripStats(
+                            task.taskId
+                        );
+
+
+                    if (
+                        stats.count ===
+                        0
+                    ) {
+
+                        task.status =
+                            "pending";
+
+                        delete task.startedAt;
+
+                        changed =
+                            true;
+
+                    }
+
+                }
+
             }
-        });
+        );
+
 
         if (changed) {
-            saveTaskArray(tasks);
+
+            saveTaskArray(
+                tasks
+            );
+
         }
+
     }
+
 
     function syncPublishedTaskExecutionStatus() {
+
         const tasks =
             getPublishedTasks();
+
 
         let changed =
             false;
 
-        tasks.forEach(task => {
-            if (
-                task.status !==
-                "pending"
-            ) {
-                return;
+
+        tasks.forEach(
+            function (task) {
+
+                if (
+                    task.status !==
+                    "pending"
+                ) {
+
+                    return;
+
+                }
+
+
+                const stats =
+                    getTaskTripStats(
+                        task.taskId
+                    );
+
+
+                if (
+                    stats.count >
+                    0
+                ) {
+
+                    task.status =
+                        "active";
+
+                    task.startedAt =
+                        stats.firstTime ||
+                        new Date()
+                            .toISOString();
+
+                    task.transportTripCount =
+                        stats.count;
+
+                    changed =
+                        true;
+
+                }
+
             }
+        );
 
-            const stats =
-                getTaskTripStats(
-                    task.taskId
-                );
-
-            if (stats.count > 0) {
-                task.status =
-                    "active";
-
-                task.startedAt =
-                    stats.firstTime ||
-                    new Date()
-                        .toISOString();
-
-                task.transportTripCount =
-                    stats.count;
-
-                changed =
-                    true;
-            }
-        });
 
         if (changed) {
-            saveTaskArray(tasks);
+
+            saveTaskArray(
+                tasks
+            );
+
+            rebuildEquipmentStatus();
+
         }
+
     }
 
-    function getTaskTripRecords(taskId) {
-        let records = [];
+
+    /*
+    ========================================================
+    运输记录
+    ========================================================
+    */
+
+    function getTaskTripRecords(
+        taskId
+    ) {
+
+        let records =
+            [];
+
 
         try {
+
             records =
                 JSON.parse(
+
                     localStorage.getItem(
-                        STORAGE_TRIPS
+                        TRIP_STORAGE
                     ) ||
                     "[]"
+
                 );
-        } catch {
-            records = [];
+
         }
 
-        if (!Array.isArray(records)) {
-            records = [];
+        catch (error) {
+
+            records =
+                [];
+
         }
 
-        return records.filter(record => {
-            if (!record) {
-                return false;
+
+        if (
+            !Array.isArray(
+                records
+            )
+        ) {
+
+            records =
+                [];
+
+        }
+
+
+        return records.filter(
+            function (record) {
+
+                if (!record) {
+
+                    return false;
+
+                }
+
+
+                const id =
+                    record.taskId ||
+                    record.dispatchTaskId ||
+                    (
+                        record.task &&
+                        record.task.taskId
+                    ) ||
+                    "";
+
+
+                return (
+                    String(
+                        id
+                    ) ===
+                    String(
+                        taskId
+                    )
+                );
+
             }
+        );
 
-            const id =
-                record.taskId ||
-                record.dispatchTaskId ||
-                (
-                    record.task &&
-                    record.task.taskId
-                )
-                ||
-                "";
-
-            return (
-                String(id) ===
-                String(taskId)
-            );
-        });
     }
 
-    function getTaskTripStats(taskId) {
+
+    function getTaskTripStats(
+        taskId
+    ) {
+
         const records =
-            getTaskTripRecords(taskId);
+            getTaskTripRecords(
+                taskId
+            );
+
 
         const times =
             records
                 .map(
-                    record =>
-                        record.completedAt ||
-                        record.endTime ||
-                        record.finishedAt ||
-                        record.createdAt ||
-                        record.time ||
-                        null
-                )
-                .filter(Boolean)
-                .map(
-                    value =>
-                        new Date(value)
+                    function (record) {
+
+                        return (
+                            record.completedAt ||
+                            record.endTime ||
+                            record.finishedAt ||
+                            record.createdAt ||
+                            record.time ||
+                            null
+                        );
+
+                    }
                 )
                 .filter(
-                    date =>
-                        !Number.isNaN(
-                            date.getTime()
-                        )
+                    Boolean
+                )
+                .map(
+                    function (value) {
+
+                        return new Date(
+                            value
+                        );
+
+                    }
+                )
+                .filter(
+                    function (date) {
+
+                        return (
+                            !Number.isNaN(
+                                date.getTime()
+                            )
+                        );
+
+                    }
                 )
                 .sort(
-                    (a, b) =>
-                        a - b
+                    function (a, b) {
+
+                        return (
+                            a.getTime() -
+                            b.getTime()
+                        );
+
+                    }
                 );
 
+
         return {
+
             count:
                 records.length,
 
             firstTime:
                 times.length
-                    ? times[0]
+                    ?
+                    times[0]
                         .toISOString()
-                    : null,
+                    :
+                    null,
 
             lastTime:
                 times.length
-                    ? times[
+                    ?
+                    times[
                         times.length - 1
-                    ].toISOString()
-                    : null
+                    ]
+                        .toISOString()
+                    :
+                    null
+
         };
+
     }
+
 
     function getTruckTaskTripCount(
         taskId,
         truckId
     ) {
-        return getTaskTripRecords(taskId)
-            .filter(record => {
-                const id =
-                    record.vehicleNumber ||
-                    record.vehicleId ||
-                    record.truckId ||
-                    record.vehicle ||
-                    "";
 
-                return (
-                    String(id) ===
-                    String(truckId)
-                );
-            })
-            .length;
-    }
+        return getTaskTripRecords(
+            taskId
+        )
+            .filter(
+                function (record) {
 
-    function createTruckData() {
-        const result = [];
+                    const vehicle =
+                        record.vehicleNumber ||
+                        record.vehicleId ||
+                        record.truckId ||
+                        record.vehicle ||
+                        "";
 
-        for (
-            let index = 1;
-            index <= 20;
-            index++
-        ) {
-            const id =
-                "T-" +
-                String(index)
-                    .padStart(
-                        3,
-                        "0"
+
+                    return (
+                        String(
+                            vehicle
+                        ) ===
+                        String(
+                            truckId
+                        )
                     );
 
-            const truck = {
-                id,
-                type:
-                    "truck",
-                status:
-                    "available"
-            };
+                }
+            )
+            .length;
 
-            if (
-                index === 5 ||
-                index === 12
-            ) {
-                truck.status =
-                    "maintenance";
-
-                truck.maintenance = {
-                    fault:
-                        index === 5
-                            ? "轮胎维修"
-                            : "发动机故障检查",
-
-                    startedAt:
-                        "08:00",
-
-                    expectedEnd:
-                        "14:00",
-
-                    responsible:
-                        "维修组"
-                };
-            }
-
-            result.push(truck);
-        }
-
-        return result;
     }
 
-    function savePublishedTask(task) {
+
+    /*
+    ========================================================
+    localStorage
+    ========================================================
+    */
+
+    function getPublishedTasks() {
+
+        let tasks =
+            [];
+
+
+        try {
+
+            tasks =
+                JSON.parse(
+
+                    localStorage.getItem(
+                        TASK_STORAGE
+                    ) ||
+                    "[]"
+
+                );
+
+        }
+
+        catch (error) {
+
+            tasks =
+                [];
+
+        }
+
+
+        return (
+            Array.isArray(
+                tasks
+            )
+                ?
+                tasks
+                :
+                []
+        );
+
+    }
+
+
+    function saveTaskArray(
+        tasks
+    ) {
+
+        localStorage.setItem(
+            TASK_STORAGE,
+            JSON.stringify(
+                tasks
+            )
+        );
+
+    }
+
+
+    function savePublishedTask(
+        task
+    ) {
+
         const tasks =
             getPublishedTasks();
 
-        tasks.push(task);
 
-        saveTaskArray(tasks);
+        tasks.push(
+            task
+        );
+
+
+        saveTaskArray(
+            tasks
+        );
+
 
         localStorage.setItem(
-            STORAGE_LATEST,
-            JSON.stringify(task)
+            LATEST_TASK_STORAGE,
+            JSON.stringify(
+                task
+            )
         );
+
     }
 
-    function saveTaskArray(tasks) {
-        localStorage.setItem(
-            STORAGE_TASKS,
-            JSON.stringify(tasks)
-        );
-    }
 
-    function getPublishedTasks() {
-        let tasks = [];
+    function clearLatestTaskIfMatch(
+        taskId
+    ) {
 
         try {
-            tasks =
-                JSON.parse(
-                    localStorage.getItem(
-                        STORAGE_TASKS
-                    ) ||
-                    "[]"
-                );
-        } catch {
-            tasks = [];
-        }
 
-        return Array.isArray(tasks)
-            ? tasks
-            : [];
-    }
-
-    function clearLegacyLatestTaskIfMatch(taskId) {
-        try {
             const latest =
                 JSON.parse(
+
                     localStorage.getItem(
-                        STORAGE_LATEST
+                        LATEST_TASK_STORAGE
                     ) ||
                     "null"
+
                 );
+
 
             if (
                 latest &&
-                String(latest.taskId) ===
-                String(taskId)
+                String(
+                    latest.taskId
+                ) ===
+                String(
+                    taskId
+                )
             ) {
+
                 localStorage.removeItem(
-                    STORAGE_LATEST
+                    LATEST_TASK_STORAGE
                 );
+
             }
-        } catch {}
+
+        }
+
+        catch (error) {
+
+            return;
+
+        }
+
     }
 
-    function getWorkOptions(type) {
-        if (type === "loader") {
-            return [
-                "日常作业",
-                "清理挖机附近散料",
-                "修整运输道路",
-                "装煤",
-                "排土场作业"
-            ]
-                .map(
-                    value => ({
-                        value,
-                        label:
-                            value
-                    })
-                )
-                .concat({
-                    value:
-                        "manual",
-                    label:
-                        "手动录入"
-                });
-        }
 
-        if (type === "water") {
-            return [
-                "日常洒水",
-                "运输道路洒水",
-                "采区洒水",
-                "排土场洒水",
-                "临时调配"
-            ]
-                .map(
-                    value => ({
-                        value,
-                        label:
-                            value
-                    })
-                )
-                .concat({
-                    value:
-                        "manual",
-                    label:
-                        "手动录入"
-                });
-        }
+    /*
+    ========================================================
+    设备数据
+    ========================================================
+    */
 
-        return [
-            {
-                value:
-                    "日常作业",
-                label:
-                    "日常作业"
-            },
-            {
-                value:
-                    "manual",
-                label:
-                    "手动录入"
-            }
+    function createEquipmentData() {
+
+        const list = [
+
+            createDevice(
+                "EX-01",
+                "excavator"
+            ),
+
+            createDevice(
+                "EX-02",
+                "excavator"
+            ),
+
+            createMaintenanceDevice(
+                "EX-03",
+                "excavator",
+                "液压系统检查",
+                "08:20",
+                "12:00"
+            ),
+
+            createDevice(
+                "EX-04",
+                "excavator"
+            ),
+
+            createDevice(
+                "EX-05",
+                "excavator"
+            ),
+
+            createDevice(
+                "EX-06",
+                "excavator"
+            )
+
         ];
+
+
+        for (
+            let i = 1;
+            i <= 20;
+            i++
+        ) {
+
+            const id =
+                "T-" +
+                String(
+                    i
+                ).padStart(
+                    3,
+                    "0"
+                );
+
+
+            if (
+                i === 5
+            ) {
+
+                list.push(
+                    createMaintenanceDevice(
+                        id,
+                        "truck",
+                        "轮胎维修",
+                        "08:00",
+                        "14:00"
+                    )
+                );
+
+            }
+
+            else if (
+                i === 12
+            ) {
+
+                list.push(
+                    createMaintenanceDevice(
+                        id,
+                        "truck",
+                        "发动机检查",
+                        "08:00",
+                        "14:00"
+                    )
+                );
+
+            }
+
+            else {
+
+                list.push(
+                    createDevice(
+                        id,
+                        "truck"
+                    )
+                );
+
+            }
+
+        }
+
+
+        [
+            [
+                "L-01",
+                "loader"
+            ],
+            [
+                "L-02",
+                "loader"
+            ],
+            [
+                "L-03",
+                "loader"
+            ],
+            [
+                "W-01",
+                "water"
+            ],
+            [
+                "W-03",
+                "water"
+            ],
+            [
+                "F-01",
+                "fuel"
+            ],
+            [
+                "F-02",
+                "fuel"
+            ],
+            [
+                "G-01",
+                "grader"
+            ],
+            [
+                "D-01",
+                "dozer"
+            ],
+            [
+                "D-02",
+                "dozer"
+            ],
+            [
+                "B-01",
+                "bus"
+            ],
+            [
+                "B-02",
+                "bus"
+            ]
+        ].forEach(
+            function (item) {
+
+                list.push(
+                    createDevice(
+                        item[0],
+                        item[1]
+                    )
+                );
+
+            }
+        );
+
+
+        list.push(
+            createMaintenanceDevice(
+                "L-04",
+                "loader",
+                "轮胎维修",
+                "07:40",
+                "11:30"
+            )
+        );
+
+
+        list.push(
+            createMaintenanceDevice(
+                "W-02",
+                "water",
+                "水泵故障",
+                "06:50",
+                "13:00"
+            )
+        );
+
+
+        list.push(
+            createMaintenanceDevice(
+                "G-02",
+                "grader",
+                "刀板维修",
+                "09:00",
+                "15:00"
+            )
+        );
+
+
+        return list;
+
     }
 
-    function getTypeName(type) {
-        return ({
+
+    function createDevice(
+        id,
+        type
+    ) {
+
+        return {
+
+            id:
+                id,
+
+            type:
+                type,
+
+            baseStatus:
+                "available",
+
+            status:
+                "available"
+
+        };
+
+    }
+
+
+    function createMaintenanceDevice(
+        id,
+        type,
+        fault,
+        startedAt,
+        expectedEnd
+    ) {
+
+        return {
+
+            id:
+                id,
+
+            type:
+                type,
+
+            baseStatus:
+                "maintenance",
+
+            status:
+                "maintenance",
+
+            maintenance: {
+
+                fault:
+                    fault,
+
+                startedAt:
+                    startedAt,
+
+                expectedEnd:
+                    expectedEnd,
+
+                responsible:
+                    "维修组"
+
+            }
+
+        };
+
+    }
+
+
+    function findDevice(
+        id
+    ) {
+
+        return equipment.find(
+            function (device) {
+
+                return (
+                    device.id ===
+                    id
+                );
+
+            }
+        );
+
+    }
+
+
+    /*
+    ========================================================
+    任务辅助函数
+    ========================================================
+    */
+
+    function normalizeBindings(
+        source
+    ) {
+
+        return deepClone(
+            source ||
+            []
+        )
+            .map(
+                function (binding) {
+
+                    return {
+
+                        excavatorId:
+                            binding.excavatorId,
+
+                        truckIds:
+                            [
+                                ...new Set(
+                                    binding.truckIds ||
+                                    []
+                                )
+                            ].sort()
+
+                    };
+
+                }
+            )
+            .sort(
+                function (a, b) {
+
+                    return a.excavatorId
+                        .localeCompare(
+                            b.excavatorId
+                        );
+
+                }
+            );
+
+    }
+
+
+    function toggleArrayValue(
+        array,
+        value
+    ) {
+
+        const index =
+            array.indexOf(
+                value
+            );
+
+
+        if (
+            index >=
+            0
+        ) {
+
+            array.splice(
+                index,
+                1
+            );
+
+        }
+
+        else {
+
+            array.push(
+                value
+            );
+
+        }
+
+    }
+
+
+    function sortTasksNewestFirst(
+        a,
+        b
+    ) {
+
+        return (
+            new Date(
+                b.publishedAt ||
+                b.createdAt
+            ) -
+            new Date(
+                a.publishedAt ||
+                a.createdAt
+            )
+        );
+
+    }
+
+
+    function getTaskDateValue(
+        task
+    ) {
+
+        const values = [
+
+            task.date,
+
+            task.publishedAt,
+
+            task.createdAt
+
+        ];
+
+
+        for (
+            const value
+            of values
+        ) {
+
+            if (!value) {
+
+                continue;
+
+            }
+
+
+            const date =
+                new Date(
+                    value
+                );
+
+
+            if (
+                !Number.isNaN(
+                    date.getTime()
+                )
+            ) {
+
+                return (
+
+                    date.getFullYear() +
+                    "-" +
+                    String(
+                        date.getMonth() +
+                        1
+                    ).padStart(
+                        2,
+                        "0"
+                    ) +
+                    "-" +
+                    String(
+                        date.getDate()
+                    ).padStart(
+                        2,
+                        "0"
+                    )
+
+                );
+
+            }
+
+        }
+
+
+        return "";
+
+    }
+
+
+    function getTaskStatusText(
+        status
+    ) {
+
+        const map = {
+
+            pending:
+                "待执行",
+
+            active:
+                "执行中",
+
+            completed:
+                "已完成"
+
+        };
+
+
+        return (
+            map[
+                status
+            ] ||
+            "未知"
+        );
+
+    }
+
+
+    function getTaskCardClass(
+        status
+    ) {
+
+        if (
+            status ===
+            "pending"
+        ) {
+
+            return "task-pending-card";
+
+        }
+
+
+        if (
+            status ===
+            "active"
+        ) {
+
+            return "task-active-card";
+
+        }
+
+
+        return "";
+
+    }
+
+
+    function getTypeName(
+        type
+    ) {
+
+        const map = {
+
             excavator:
                 "挖机",
 
@@ -3406,101 +6437,212 @@ document.addEventListener("DOMContentLoaded", () => {
 
             bus:
                 "大巴"
-        }[type] || "其他车辆");
+
+        };
+
+
+        return (
+            map[
+                type
+            ] ||
+            "其他车辆"
+        );
+
     }
 
-    function getTaskStatusText(status) {
-        return ({
-            pending:
-                "待执行",
 
-            active:
-                "执行中",
+    function getWorkOptions(
+        type
+    ) {
 
-            completed:
-                "已完成",
+        if (
+            type ===
+            "loader"
+        ) {
 
-            configuring:
-                "配置中"
-        }[status] || "未知");
+            return [
+
+                {
+                    value:
+                        "日常作业",
+                    label:
+                        "日常作业"
+                },
+
+                {
+                    value:
+                        "清理挖机附近散料",
+                    label:
+                        "清理挖机附近散料"
+                },
+
+                {
+                    value:
+                        "修整运输道路",
+                    label:
+                        "修整运输道路"
+                },
+
+                {
+                    value:
+                        "装煤",
+                    label:
+                        "装煤"
+                },
+
+                {
+                    value:
+                        "排土场作业",
+                    label:
+                        "排土场作业"
+                },
+
+                {
+                    value:
+                        "manual",
+                    label:
+                        "手动录入"
+                }
+
+            ];
+
+        }
+
+
+        if (
+            type ===
+            "water"
+        ) {
+
+            return [
+
+                {
+                    value:
+                        "日常洒水",
+                    label:
+                        "日常洒水"
+                },
+
+                {
+                    value:
+                        "运输道路洒水",
+                    label:
+                        "运输道路洒水"
+                },
+
+                {
+                    value:
+                        "采区洒水",
+                    label:
+                        "采区洒水"
+                },
+
+                {
+                    value:
+                        "排土场洒水",
+                    label:
+                        "排土场洒水"
+                },
+
+                {
+                    value:
+                        "临时调配",
+                    label:
+                        "临时调配"
+                },
+
+                {
+                    value:
+                        "manual",
+                    label:
+                        "手动录入"
+                }
+
+            ];
+
+        }
+
+
+        return [
+
+            {
+                value:
+                    "日常作业",
+                label:
+                    "日常作业"
+            },
+
+            {
+                value:
+                    "manual",
+                label:
+                    "手动录入"
+            }
+
+        ];
+
     }
 
-    function getTaskCardClass(status) {
-        if (status === "pending") {
-            return "task-pending-card";
-        }
 
-        if (status === "active") {
-            return "task-active-card";
-        }
-
-        return "";
-    }
-
-    function getStatusClass(status) {
-        if (status === "available") {
-            return "device-available";
-        }
-
-        if (status === "maintenance") {
-            return "device-maintenance";
-        }
-
-        if (status === "assigned") {
-            return "device-assigned";
-        }
-
-        return "";
-    }
-
-    function getStatusText(status) {
-        if (status === "available") {
-            return "可调配";
-        }
-
-        if (status === "maintenance") {
-            return "维修中";
-        }
-
-        if (status === "assigned") {
-            return "已分配";
-        }
-
-        return "未知";
-    }
+    /*
+    ========================================================
+    通用
+    ========================================================
+    */
 
     function getDefaultShift() {
+
         const hour =
             new Date()
                 .getHours();
 
+
         return (
-            hour >= 8 &&
-            hour < 20
+            hour >=
+            8 &&
+            hour <
+            20
         )
-            ? "白班"
-            : "夜班";
+            ?
+            "白班"
+            :
+            "夜班";
+
     }
 
-    function formatDateTime(value) {
+
+    function formatDateTime(
+        value
+    ) {
+
         if (!value) {
+
             return "-";
+
         }
 
+
         const date =
-            new Date(value);
+            new Date(
+                value
+            );
+
 
         if (
             Number.isNaN(
                 date.getTime()
             )
         ) {
+
             return "-";
+
         }
+
 
         return date.toLocaleString(
             "zh-CN",
             {
+
                 month:
                     "2-digit",
 
@@ -3512,100 +6654,189 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 minute:
                     "2-digit"
+
             }
         );
+
     }
 
-    function getValue(id) {
+
+    function getValue(
+        id
+    ) {
+
         const element =
-            $(id);
+            document.getElementById(
+                id
+            );
+
 
         return element
-            ? String(
+            ?
+            String(
                 element.value ||
                 ""
             ).trim()
-            : "";
+            :
+            "";
+
     }
 
-    function setValue(id, value) {
+
+    function setValue(
+        id,
+        value
+    ) {
+
         const element =
-            $(id);
+            document.getElementById(
+                id
+            );
+
 
         if (element) {
+
             element.value =
-                value || "";
+                value ||
+                "";
+
         }
+
     }
 
-    function setText(id, value) {
+
+    function setText(
+        id,
+        value
+    ) {
+
         const element =
-            $(id);
+            document.getElementById(
+                id
+            );
+
 
         if (element) {
+
             element.textContent =
                 value;
+
         }
+
     }
 
-    function showSection(id) {
+
+    function showSection(
+        id
+    ) {
+
         const element =
-            $(id);
-
-        if (element) {
-            element
-                .classList
-                .remove("hidden");
-        }
-    }
-
-    function hideSection(id) {
-        const element =
-            $(id);
-
-        if (element) {
-            element
-                .classList
-                .add("hidden");
-        }
-    }
-
-    function scrollToId(id) {
-        const element =
-            $(id);
-
-        if (element) {
-            setTimeout(
-                () =>
-                    element.scrollIntoView({
-                        behavior:
-                            "smooth",
-
-                        block:
-                            "start"
-                    }),
-                50
+            document.getElementById(
+                id
             );
+
+
+        if (element) {
+
+            element.classList.remove(
+                "hidden"
+            );
+
         }
+
     }
 
-    function escapeHtml(value) {
+
+    function hideSection(
+        id
+    ) {
+
+        const element =
+            document.getElementById(
+                id
+            );
+
+
+        if (element) {
+
+            element.classList.add(
+                "hidden"
+            );
+
+        }
+
+    }
+
+
+    function scrollToId(
+        id
+    ) {
+
+        const element =
+            document.getElementById(
+                id
+            );
+
+
+        if (!element) {
+
+            return;
+
+        }
+
+
+        setTimeout(
+            function () {
+
+                element.scrollIntoView({
+
+                    behavior:
+                        "smooth",
+
+                    block:
+                        "start"
+
+                });
+
+            },
+            50
+        );
+
+    }
+
+
+    function escapeHtml(
+        value
+    ) {
+
         const div =
             document.createElement(
                 "div"
             );
 
+
         div.textContent =
             String(
-                value ?? ""
+                value ??
+                ""
             );
 
+
         return div.innerHTML;
+
     }
 
-    function deepClone(value) {
+
+    function deepClone(
+        value
+    ) {
+
         return JSON.parse(
-            JSON.stringify(value)
+            JSON.stringify(
+                value
+            )
         );
+
     }
+
 });
