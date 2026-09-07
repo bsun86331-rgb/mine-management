@@ -1,16 +1,10 @@
-/*
-========================================================
-矿山管理系统
-生产调度端
-dispatch.css V2.6.0
-========================================================
-*/
-
-
 * {
     box-sizing: border-box;
 }
 
+.hidden {
+    display: none !important;
+}
 
 .dispatch-body {
     margin: 0;
@@ -18,413 +12,326 @@ dispatch.css V2.6.0
     color: #1f2937;
 }
 
-
-.hidden {
-    display: none !important;
-}
-
-
-/* ==============================
-   顶部
-============================== */
-
 .dispatch-header {
-    background:
-        linear-gradient(
-            135deg,
-            #0f172a,
-            #1e293b
-        );
-    color: white;
     padding: 22px 16px;
+    color: white;
+    background: linear-gradient(135deg, #0f172a, #1e293b);
 }
-
 
 .dispatch-header-inner {
     width: min(1120px, 100%);
-    margin: 0 auto;
+    margin: auto;
     display: flex;
-    justify-content: space-between;
     align-items: center;
+    justify-content: space-between;
     gap: 15px;
 }
 
-
 .dispatch-header h1 {
     margin: 0;
-    font-size: 26px;
+    font-size: 25px;
 }
-
 
 .dispatch-header p {
-    margin: 6px 0 0;
-    opacity: .72;
+    margin: 5px 0 0;
     font-size: 13px;
+    opacity: .7;
 }
-
 
 .dispatch-header-badge {
     padding: 9px 13px;
+    border-radius: 10px;
     background: rgba(255,255,255,.12);
-    border-radius: 12px;
-    white-space: nowrap;
 }
-
-
-/* ==============================
-   主体
-============================== */
 
 .dispatch-main {
     width: min(1120px, calc(100% - 24px));
-    margin: 20px auto 40px;
+    margin: 18px auto 40px;
 }
-
 
 .dispatch-section {
+    margin-bottom: 15px;
+    padding: 17px;
     background: white;
     border-radius: 14px;
-    padding: 18px;
-    margin-bottom: 16px;
-    box-shadow:
-        0 4px 18px
-        rgba(15,23,42,.07);
+    box-shadow: 0 4px 18px rgba(15,23,42,.07);
 }
-
 
 .dispatch-section-title {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    gap: 14px;
-    margin-bottom: 15px;
+    gap: 12px;
+    margin-bottom: 14px;
 }
-
 
 .dispatch-section-title h2 {
     margin: 0;
     font-size: 19px;
 }
 
-
 .dispatch-section-title p {
     margin: 5px 0 0;
-    font-size: 13px;
     color: #64748b;
+    font-size: 12px;
 }
-
 
 .top-action-buttons {
     display: flex;
     gap: 8px;
     flex-wrap: wrap;
-    justify-content: flex-end;
 }
 
-
-/* ==============================
-   表单
-============================== */
-
-.dispatch-section label,
-.device-modal label {
+label {
     display: block;
+    margin: 11px 0 6px;
     font-size: 13px;
     font-weight: 700;
-    margin: 12px 0 6px;
 }
 
-
-.dispatch-section input,
-.dispatch-section select,
-.dispatch-section textarea,
-.device-modal input,
-.device-modal select,
-.device-modal textarea {
+input,
+select,
+textarea {
     width: 100%;
-    min-height: 43px;
-    padding: 10px 12px;
+    min-height: 42px;
+    padding: 9px 11px;
     border: 1px solid #cbd5e1;
     border-radius: 9px;
     background: white;
-    color: #1f2937;
     font-size: 14px;
 }
 
-
-.dispatch-section textarea,
-.device-modal textarea {
-    min-height: 90px;
+textarea {
+    min-height: 88px;
     resize: vertical;
 }
 
-
-/* ==============================
-   按钮
-============================== */
-
-.dispatch-main button,
-.device-modal button {
+button {
     cursor: pointer;
     border: 0;
     border-radius: 9px;
-    min-height: 42px;
-    padding: 10px 14px;
-    font-size: 14px;
+    min-height: 41px;
+    padding: 9px 13px;
     font-weight: 700;
 }
 
-
 .primary-small-button,
 .primary-button {
-    background: #2563eb;
     color: white;
+    background: #2563eb;
 }
 
-
-.primary-button {
+.primary-button,
+.home-button {
     width: 100%;
 }
 
-
 .history-button {
-    background: #475569;
     color: white;
+    background: #475569;
 }
-
 
 .success-button {
-    background: #16a34a;
     color: white;
+    background: #16a34a;
 }
-
 
 .secondary-button {
-    background: #e2e8f0;
     color: #334155;
+    background: #e2e8f0;
 }
-
 
 .publish-button {
-    background: #7c3aed;
     color: white;
+    background: #7c3aed;
 }
-
 
 .publish-button:disabled {
     opacity: .45;
-    cursor: not-allowed;
 }
-
 
 .withdraw-button {
-    background: #dc2626;
     color: white;
+    background: #dc2626;
 }
-
 
 .adjust-button {
-    background: #2563eb;
     color: white;
+    background: #2563eb;
 }
 
+.driver-button {
+    color: white;
+    background: #0891b2;
+}
 
 .home-button {
-    width: 100%;
-    background: #334155;
-    color: white;
     margin-top: 5px;
+    color: white;
+    background: #334155;
 }
 
+.double-button-row,
+.triple-button-row {
+    display: grid;
+    gap: 9px;
+    margin-top: 15px;
+}
 
 .double-button-row {
-    display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 10px;
-    margin-top: 16px;
 }
 
-
-/* ==============================
-   徽章
-============================== */
+.triple-button-row {
+    grid-template-columns: repeat(3,1fr);
+}
 
 .count-badge,
 .draft-badge,
 .task-state-badge {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 30px;
     padding: 5px 10px;
     border-radius: 999px;
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 800;
     white-space: nowrap;
 }
 
-
 .count-badge {
-    color: #334155;
     background: #f1f5f9;
 }
 
-
 .draft-badge {
-    background: #fef3c7;
     color: #92400e;
+    background: #fef3c7;
 }
-
 
 .task-state-badge {
-    background: #dbeafe;
     color: #1d4ed8;
+    background: #dbeafe;
 }
 
-
-/* ==============================
-   任务状态
-============================== */
-
-.task-status-legend {
+.task-status-legend,
+.legend-row {
     display: flex;
+    gap: 8px;
     flex-wrap: wrap;
-    gap: 7px;
-    margin-bottom: 13px;
+    margin-bottom: 12px;
 }
-
 
 .status-legend {
-    font-size: 12px;
-    font-weight: 800;
-    padding: 6px 10px;
+    padding: 5px 9px;
     border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
 }
-
 
 .status-legend.pending {
     color: #92400e;
     background: #fef3c7;
 }
 
-
 .status-legend.active {
     color: #1d4ed8;
     background: #dbeafe;
 }
 
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+}
 
-/* ==============================
-   任务看板
-============================== */
+.legend-dot {
+    width: 11px;
+    height: 11px;
+    border-radius: 50%;
+}
+
+.green-dot { background:#22c55e; }
+.yellow-dot { background:#facc15; }
+.red-dot { background:#ef4444; }
+.blue-dot { background:#3b82f6; }
 
 .production-task-board {
     display: grid;
-    grid-template-columns:
-        repeat(
-            auto-fit,
-            minmax(270px, 1fr)
-        );
-    gap: 12px;
+    grid-template-columns: repeat(auto-fit,minmax(270px,1fr));
+    gap: 11px;
 }
-
 
 .production-task-card {
     width: 100%;
-    min-height: 180px !important;
-    padding: 15px !important;
+    padding: 14px !important;
     text-align: left;
     color: #1f2937;
     background: white;
     border: 2px solid #e2e8f0 !important;
-    border-radius: 12px !important;
-    box-shadow: none;
 }
-
-
-.production-task-card:hover {
-    transform: translateY(-1px);
-}
-
 
 .task-pending-card {
     border-color: #fbbf24 !important;
     background: #fffbeb;
 }
 
-
 .task-active-card {
     border-color: #60a5fa !important;
     background: #eff6ff;
 }
-
 
 .history-task-card {
     border-color: #86efac !important;
     background: #f0fdf4;
 }
 
-
 .production-task-card-header {
     display: flex;
     justify-content: space-between;
     gap: 10px;
-    align-items: flex-start;
 }
-
 
 .production-task-area {
     display: block;
     font-size: 17px;
-    margin-bottom: 5px;
 }
 
-
 .production-task-shift {
-    font-size: 12px;
+    font-size: 11px;
     color: #64748b;
 }
 
-
 .production-task-status {
-    flex-shrink: 0;
-    padding: 5px 9px;
+    padding: 4px 8px;
     border-radius: 999px;
-    background: rgba(255,255,255,.8);
+    background: white;
     font-size: 11px;
 }
 
-
-.production-task-date {
+.production-task-date,
+.production-task-time {
+    margin-top: 8px;
     color: #64748b;
-    font-size: 12px;
-    margin: 9px 0;
+    font-size: 11px;
 }
-
 
 .production-task-stat-grid {
     display: grid;
-    grid-template-columns:
-        repeat(4, 1fr);
+    grid-template-columns: repeat(4,1fr);
     gap: 6px;
-    margin: 11px 0;
+    margin: 10px 0;
 }
 
-
 .production-task-stat-grid div {
+    padding: 6px;
     text-align: center;
     border-radius: 8px;
     background: rgba(255,255,255,.75);
-    padding: 7px 4px;
 }
-
 
 .production-task-stat-grid span {
     display: block;
-    font-size: 10px;
     color: #64748b;
+    font-size: 10px;
 }
-
 
 .production-task-stat-grid strong {
     display: block;
@@ -432,167 +339,74 @@ dispatch.css V2.6.0
     font-size: 15px;
 }
 
-
-.production-task-time {
-    margin-top: 9px;
-    color: #64748b;
-    font-size: 11px;
+.change-request-board {
+    display: grid;
+    gap: 9px;
 }
 
-
-.task-adjustment-note {
-    padding: 7px 9px;
-    background: #eef2ff;
-    color: #4338ca;
-    border-radius: 7px;
-    font-size: 11px;
+.change-request-card {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    gap: 15px;
+    padding: 12px !important;
+    text-align: left;
+    color: #7f1d1d;
+    background: #fef2f2;
+    border: 1px solid #fecaca !important;
 }
 
+.change-request-card div {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
 
-/* ==============================
-   历史任务筛选
-============================== */
+.change-request-card span {
+    font-size: 11px;
+}
 
 .history-filter-grid {
     display: grid;
-    grid-template-columns:
-        1fr
-        1fr
-        1.5fr
-        auto;
-    gap: 10px;
+    grid-template-columns: 1fr 1fr 1.5fr auto;
+    gap: 9px;
     align-items: end;
-    margin-bottom: 16px;
-    padding: 13px;
+    margin-bottom: 14px;
+    padding: 12px;
+    border-radius: 10px;
     background: #f8fafc;
-    border-radius: 11px;
 }
-
-
-.history-filter-grid label {
-    margin-top: 0;
-}
-
-
-.history-filter-action button {
-    white-space: nowrap;
-}
-
-
-/* ==============================
-   摘要
-============================== */
 
 .task-summary-grid {
     display: grid;
-    grid-template-columns:
-        repeat(3, 1fr);
-    gap: 10px;
+    grid-template-columns: repeat(3,1fr);
+    gap: 9px;
 }
 
-
-.task-summary-card {
-    background: #f8fafc;
-    border: 1px solid #e2e8f0;
-    padding: 12px;
-    border-radius: 10px;
-}
-
-
-.task-summary-card span {
-    display: block;
-    color: #64748b;
-    font-size: 11px;
-}
-
-
-.task-summary-card strong {
-    display: block;
-    margin-top: 5px;
-    font-size: 14px;
-}
-
-
+.task-summary-card,
 .remark-box {
-    margin-top: 10px;
-    padding: 12px;
-    border-radius: 10px;
+    padding: 11px;
+    border-radius: 9px;
     background: #f8fafc;
 }
 
-
+.task-summary-card span,
 .remark-box span {
     display: block;
     color: #64748b;
-    font-size: 11px;
-    margin-bottom: 5px;
+    font-size: 10px;
 }
-
-
-/* ==============================
-   三色状态
-============================== */
-
-.legend-row {
-    display: flex;
-    gap: 15px;
-    flex-wrap: wrap;
-}
-
-
-.legend-item {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 13px;
-}
-
-
-.legend-dot {
-    width: 12px;
-    height: 12px;
-    border-radius: 50%;
-}
-
-
-.green-dot {
-    background: #22c55e;
-}
-
-
-.yellow-dot {
-    background: #facc15;
-}
-
-
-.red-dot {
-    background: #ef4444;
-}
-
-
-.blue-dot {
-    background: #3b82f6;
-}
-
-
-/* ==============================
-   设备看板
-============================== */
 
 .device-board,
 .adjust-device-board {
     display: grid;
-    grid-template-columns:
-        repeat(
-            auto-fill,
-            minmax(100px, 1fr)
-        );
-    gap: 9px;
+    grid-template-columns: repeat(auto-fill,minmax(98px,1fr));
+    gap: 8px;
 }
 
-
-.device-card {
-    min-height: 72px !important;
+.device-card,
+.adjust-device-button {
+    min-height: 70px !important;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -601,587 +415,317 @@ dispatch.css V2.6.0
     border: 2px solid transparent !important;
 }
 
-
-.device-number {
-    font-size: 15px;
+.device-status,
+.adjust-device-button span {
+    font-size: 10px;
 }
-
-
-.device-status {
-    font-size: 11px;
-}
-
 
 .device-available {
-    background: #f0fdf4 !important;
-    color: #166534 !important;
+    color: #166534;
+    background: #f0fdf4;
     border-color: #86efac !important;
 }
 
-
 .device-maintenance {
-    background: #fefce8 !important;
-    color: #854d0e !important;
+    color: #854d0e;
+    background: #fefce8;
     border-color: #fde047 !important;
 }
 
-
 .device-assigned {
-    background: #fef2f2 !important;
-    color: #991b1b !important;
+    color: #991b1b;
+    background: #fef2f2;
     border-color: #fca5a5 !important;
 }
 
-
 .device-draft,
 .selected-device {
-    background: #eff6ff !important;
     color: #1d4ed8 !important;
+    background: #eff6ff !important;
     border-color: #3b82f6 !important;
 }
 
-
 .selected-equipment-info {
-    margin-bottom: 10px;
-    padding: 10px 12px;
-    background: #f8fafc;
+    margin-bottom: 9px;
+    padding: 9px 11px;
     border-radius: 8px;
-    font-size: 13px;
+    background: #f8fafc;
+    font-size: 12px;
 }
-
-
-/* ==============================
-   绑定关系
-============================== */
 
 .binding-card,
+.aux-assignment-card,
 .adjust-binding-card,
-.aux-assignment-card {
-    padding: 12px;
-    margin-bottom: 9px;
-    background: #f8fafc;
+.driver-assign-row {
+    margin-bottom: 8px;
+    padding: 11px;
     border: 1px solid #e2e8f0;
-    border-radius: 10px;
+    border-radius: 9px;
+    background: #f8fafc;
 }
-
 
 .mini-device-list,
 .published-truck-list {
     display: flex;
-    gap: 6px;
+    gap: 5px;
     flex-wrap: wrap;
-    margin-top: 8px;
+    margin-top: 7px;
 }
-
 
 .mini-device-list span,
 .published-truck-list span {
     padding: 4px 7px;
     border-radius: 999px;
     background: white;
-    font-size: 11px;
+    font-size: 10px;
 }
-
-
-/* ==============================
-   弹窗
-============================== */
 
 .device-modal {
     position: fixed;
     inset: 0;
-    z-index: 1000;
+    z-index: 999;
     display: flex;
     justify-content: center;
     align-items: center;
-    padding: 15px;
-    background: rgba(15,23,42,.62);
+    padding: 14px;
+    background: rgba(15,23,42,.65);
 }
-
 
 .device-modal-card {
-    width: min(520px, 100%);
+    width: min(520px,100%);
     max-height: 90vh;
     overflow: auto;
-    background: white;
+    padding: 17px;
     border-radius: 14px;
-    padding: 18px;
-    box-shadow:
-        0 22px 70px
-        rgba(15,23,42,.25);
+    background: white;
 }
-
 
 .task-detail-modal {
-    width: min(760px, 100%);
+    width: min(760px,100%);
 }
-
 
 .adjust-modal-card {
-    width: min(900px, 100%);
+    width: min(900px,100%);
 }
-
-
-.device-modal-card h3 {
-    margin: 0 0 14px;
-}
-
-
-.device-modal-content {
-    margin-bottom: 14px;
-}
-
-
-.modal-detail-row {
-    display: flex;
-    justify-content: space-between;
-    gap: 12px;
-    padding: 10px 0;
-    border-bottom: 1px solid #e2e8f0;
-    font-size: 13px;
-}
-
-
-.modal-detail-row span {
-    color: #64748b;
-}
-
 
 .modal-help-text {
-    margin: -4px 0 15px;
     color: #64748b;
-    font-size: 12px;
-    line-height: 1.6;
-}
-
-
-.selected-aux-device {
-    padding: 10px 12px;
-    background: #eff6ff;
-    border-radius: 9px;
-    margin-bottom: 10px;
-}
-
-
-/* ==============================
-   当前任务详情
-============================== */
-
-.published-task-action-area {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-}
-
-
-.published-task-action-area button {
-    flex: 1;
-    min-width: 120px;
-}
-
-
-.task-detail-status-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 11px 12px;
-    background: #f8fafc;
-    border-radius: 9px;
-    margin-bottom: 12px;
-}
-
-
-.transport-stat-box {
-    display: grid;
-    grid-template-columns:
-        repeat(3, 1fr);
-    gap: 8px;
-    margin-bottom: 13px;
-}
-
-
-.transport-stat-box div {
-    padding: 10px;
-    text-align: center;
-    background: #eff6ff;
-    border-radius: 9px;
-}
-
-
-.transport-stat-box span {
-    display: block;
-    color: #64748b;
-    font-size: 10px;
-}
-
-
-.transport-stat-box strong {
-    display: block;
-    margin-top: 4px;
-    font-size: 14px;
-}
-
-
-.published-detail-block {
-    padding-top: 14px;
-}
-
-
-.published-detail-block h4 {
-    margin: 0 0 9px;
-}
-
-
-.published-detail-block p {
-    margin: 0;
-    padding: 9px;
-    background: #f8fafc;
-    border-radius: 8px;
-    font-size: 13px;
-}
-
-
-.published-binding,
-.published-aux-row {
-    padding: 10px;
-    margin-bottom: 8px;
-    border: 1px solid #e2e8f0;
-    border-radius: 9px;
-}
-
-
-.published-aux-row {
-    display: flex;
-    justify-content: space-between;
-    gap: 10px;
-    align-items: center;
-}
-
-
-.published-aux-row span {
-    color: #64748b;
-    font-size: 12px;
-}
-
-
-/* ==============================
-   中途调整
-============================== */
-
-.adjust-block {
-    padding: 13px;
-    margin-bottom: 13px;
-    border: 1px solid #e2e8f0;
-    border-radius: 11px;
-}
-
-
-.adjust-block h4 {
-    margin: 0 0 10px;
-}
-
-
-.adjust-binding-card {
-    display: flex;
-    justify-content: space-between;
-    gap: 12px;
-    align-items: center;
-}
-
-
-.adjust-row-buttons {
-    display: flex;
-    gap: 6px;
-    flex-wrap: wrap;
-}
-
-
-.adjust-row-buttons button {
-    min-height: 34px;
-    padding: 7px 9px;
-    font-size: 11px;
-}
-
-
-.adjust-edit-button {
-    background: #2563eb;
-    color: white;
-}
-
-
-.adjust-remove-button {
-    background: #dc2626;
-    color: white;
-}
-
-
-.adjust-device-button {
-    min-height: 68px !important;
-    border: 2px solid #86efac !important;
-    background: #f0fdf4;
-    color: #166534;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 5px;
-}
-
-
-.adjust-device-button span {
-    font-size: 10px;
-}
-
-
-.adjust-device-button.selected {
-    border-color: #3b82f6 !important;
-    background: #eff6ff;
-    color: #1d4ed8;
-}
-
-
-.adjust-device-button.blocked {
-    border-color: #cbd5e1 !important;
-    background: #f1f5f9;
-    color: #94a3b8;
-}
-
-
-.adjust-count-text {
-    font-size: 12px;
-    color: #64748b;
-    margin-bottom: 8px;
-}
-
-
-/* ==============================
-   调整记录
-============================== */
-
-.adjustment-history-list {
-    border-top: 1px solid #e2e8f0;
-}
-
-
-.adjustment-history-row {
-    display: grid;
-    grid-template-columns: 110px 1fr;
-    gap: 10px;
-    padding: 9px 0;
-    border-bottom: 1px solid #e2e8f0;
-}
-
-
-.adjustment-history-row strong {
-    font-size: 11px;
-}
-
-
-.adjustment-history-row span {
     font-size: 12px;
     line-height: 1.5;
 }
 
+.modal-detail-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 9px 0;
+    border-bottom: 1px solid #e2e8f0;
+    font-size: 12px;
+}
 
-/* ==============================
-   空内容
-============================== */
+.published-task-action-area {
+    display: flex;
+    gap: 7px;
+    flex-wrap: wrap;
+    margin-top: 14px;
+}
 
-.empty-placeholder {
-    width: 100%;
-    padding: 25px 15px;
-    text-align: center;
-    color: #94a3b8;
-    font-size: 13px;
-    background: #f8fafc;
-    border: 1px dashed #cbd5e1;
+.published-task-action-area button {
+    flex: 1;
+    min-width: 110px;
+}
+
+.published-detail-block {
+    padding-top: 13px;
+}
+
+.published-detail-block h4 {
+    margin: 0 0 8px;
+}
+
+.published-binding,
+.published-aux-row,
+.driver-history-row,
+.change-history-row,
+.adjustment-history-row {
+    margin-bottom: 7px;
+    padding: 9px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+}
+
+.driver-history-row,
+.change-history-row {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.driver-history-row span,
+.change-history-row span,
+.change-history-row small {
+    color: #64748b;
+    font-size: 11px;
+}
+
+.driver-assign-row {
+    display: grid;
+    grid-template-columns: 170px 1fr;
+    gap: 9px;
+    align-items: center;
+}
+
+.driver-assign-row div {
+    display: flex;
+    flex-direction: column;
+}
+
+.driver-assign-row span,
+.driver-assign-row small {
+    color: #64748b;
+    font-size: 10px;
+}
+
+.warning-box {
+    margin-bottom: 10px;
+    padding: 10px;
+    color: #92400e;
+    border-radius: 8px;
+    background: #fef3c7;
+    font-size: 12px;
+}
+
+.adjust-block {
+    margin-bottom: 11px;
+    padding: 12px;
+    border: 1px solid #e2e8f0;
     border-radius: 10px;
 }
 
+.adjust-binding-card {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+}
 
-/* ==============================
-   预览
-============================== */
+.adjust-row-buttons {
+    display: flex;
+    gap: 5px;
+}
+
+.adjust-edit-button {
+    color: white;
+    background: #2563eb;
+}
+
+.adjust-remove-button {
+    color: white;
+    background: #dc2626;
+}
+
+.adjust-device-button {
+    color: #166534;
+    background: #f0fdf4;
+    border-color: #86efac !important;
+}
+
+.adjust-device-button.selected {
+    color: #1d4ed8;
+    background: #eff6ff;
+    border-color: #3b82f6 !important;
+}
+
+.adjust-device-button.blocked {
+    color: #94a3b8;
+    background: #f1f5f9;
+    border-color: #cbd5e1 !important;
+}
+
+.adjust-count-text {
+    margin-bottom: 7px;
+    color: #64748b;
+    font-size: 11px;
+}
 
 .preview-header {
     display: flex;
     justify-content: space-between;
-    gap: 10px;
-    padding: 12px;
-    border-radius: 10px;
+    gap: 8px;
+    padding: 11px;
+    border-radius: 9px;
     background: #eff6ff;
 }
 
-
-/* ==============================
-   footer
-============================== */
+.empty-placeholder {
+    width: 100%;
+    padding: 23px 14px;
+    text-align: center;
+    color: #94a3b8;
+    border: 1px dashed #cbd5e1;
+    border-radius: 9px;
+    background: #f8fafc;
+    font-size: 12px;
+}
 
 footer {
     padding: 20px;
     text-align: center;
     color: #64748b;
-    font-size: 12px;
+    font-size: 11px;
 }
 
-
-/* ==============================
-   手机
-============================== */
-
-@media (
-    max-width: 720px
-) {
-
-    .dispatch-header-inner {
-        align-items: flex-start;
-    }
-
-
-    .dispatch-header h1 {
-        font-size: 21px;
-    }
-
+@media (max-width:720px) {
 
     .dispatch-main {
-        width:
-            min(
-                100% - 14px,
-                1120px
-            );
-        margin-top: 10px;
+        width: calc(100% - 14px);
+        margin-top: 9px;
     }
-
 
     .dispatch-section {
         padding: 13px;
-        border-radius: 11px;
     }
 
-
-    .dispatch-section-title {
-        align-items: flex-start;
-    }
-
-
-    .dispatch-section-title h2 {
-        font-size: 17px;
-    }
-
-
-    .top-action-buttons {
-        flex-direction: column;
-        min-width: 125px;
-    }
-
-
-    .top-action-buttons button {
-        width: 100%;
-        font-size: 12px;
-        padding: 8px;
-    }
-
-
+    .history-filter-grid,
     .task-summary-grid {
         grid-template-columns: 1fr;
     }
-
-
-    .history-filter-grid {
-        grid-template-columns: 1fr;
-    }
-
 
     .production-task-board {
         grid-template-columns: 1fr;
     }
 
-
-    .production-task-stat-grid {
-        grid-template-columns:
-            repeat(4, 1fr);
-    }
-
-
     .device-board,
     .adjust-device-board {
-        grid-template-columns:
-            repeat(3, 1fr);
+        grid-template-columns: repeat(3,1fr);
     }
 
+    .driver-assign-row {
+        grid-template-columns: 1fr;
+    }
 
     .adjust-binding-card {
+        flex-direction: column;
+    }
+
+    .triple-button-row {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width:430px) {
+
+    .dispatch-section-title {
         align-items: flex-start;
         flex-direction: column;
     }
 
+    .production-task-stat-grid {
+        grid-template-columns: repeat(2,1fr);
+    }
 
+    .double-button-row,
     .published-task-action-area {
         display: grid;
-        grid-template-columns:
-            1fr 1fr;
-    }
-
-
-    .transport-stat-box {
-        grid-template-columns:
-            repeat(3, 1fr);
-    }
-
-
-    .adjustment-history-row {
-        grid-template-columns: 1fr;
-        gap: 4px;
-    }
-
-}
-
-
-@media (
-    max-width: 430px
-) {
-
-    .dispatch-section-title {
-        flex-direction: column;
-    }
-
-
-    .top-action-buttons {
-        width: 100%;
-        flex-direction: row;
-    }
-
-
-    .top-action-buttons button {
-        flex: 1;
-    }
-
-
-    .device-board,
-    .adjust-device-board {
-        grid-template-columns:
-            repeat(3, 1fr);
-    }
-
-
-    .production-task-stat-grid {
-        grid-template-columns:
-            repeat(2, 1fr);
-    }
-
-
-    .double-button-row {
         grid-template-columns: 1fr;
     }
-
-
-    .published-task-action-area {
-        grid-template-columns: 1fr;
-    }
-
-
-    .transport-stat-box {
-        grid-template-columns: 1fr;
-    }
-
 }
