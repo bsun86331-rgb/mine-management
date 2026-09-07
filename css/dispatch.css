@@ -1,10 +1,22 @@
 /*
-==================================================
+========================================================
 矿山管理系统
-调度端 V2.4
-任务撤回与执行判定版
-==================================================
+生产调度端
+dispatch.css V2.6.0
+========================================================
 */
+
+
+* {
+    box-sizing: border-box;
+}
+
+
+.dispatch-body {
+    margin: 0;
+    background: #eef2f6;
+    color: #1f2937;
+}
 
 
 .hidden {
@@ -12,1109 +24,1061 @@
 }
 
 
-.dispatch-body {
-    background: #eef2f6;
-}
-
-
-.dispatch-main {
-    width: 100%;
-    max-width: 1100px;
-
-    margin: 0 auto;
-
-    padding: 18px 12px;
-}
-
+/* ==============================
+   顶部
+============================== */
 
 .dispatch-header {
+    background:
+        linear-gradient(
+            135deg,
+            #0f172a,
+            #1e293b
+        );
+    color: white;
     padding: 22px 16px;
 }
 
 
 .dispatch-header-inner {
-    width: 100%;
-    max-width: 1100px;
-
+    width: min(1120px, 100%);
     margin: 0 auto;
-
     display: flex;
-
     justify-content: space-between;
     align-items: center;
-
     gap: 15px;
 }
 
 
-.dispatch-header-inner h1 {
+.dispatch-header h1 {
     margin: 0;
-
-    text-align: left;
-
     font-size: 26px;
 }
 
 
-.dispatch-header-inner p {
-    margin: 5px 0 0;
-
-    text-align: left;
+.dispatch-header p {
+    margin: 6px 0 0;
+    opacity: .72;
+    font-size: 13px;
 }
 
 
 .dispatch-header-badge {
-    padding: 8px 13px;
+    padding: 9px 13px;
+    background: rgba(255,255,255,.12);
+    border-radius: 12px;
+    white-space: nowrap;
+}
 
-    border-radius: 20px;
 
-    background:
-        rgba(255, 255, 255, .14);
+/* ==============================
+   主体
+============================== */
 
-    font-size: 13px;
-
-    font-weight: 700;
+.dispatch-main {
+    width: min(1120px, calc(100% - 24px));
+    margin: 20px auto 40px;
 }
 
 
 .dispatch-section {
-    margin-bottom: 14px;
+    background: white;
+    border-radius: 14px;
+    padding: 18px;
+    margin-bottom: 16px;
+    box-shadow:
+        0 4px 18px
+        rgba(15,23,42,.07);
 }
 
 
 .dispatch-section-title {
     display: flex;
-
     justify-content: space-between;
     align-items: center;
-
-    gap: 15px;
-
+    gap: 14px;
     margin-bottom: 15px;
 }
 
 
 .dispatch-section-title h2 {
     margin: 0;
-
-    text-align: left;
+    font-size: 19px;
 }
 
 
 .dispatch-section-title p {
     margin: 5px 0 0;
-
-    color: #6b7280;
+    font-size: 13px;
+    color: #64748b;
 }
 
 
-.primary-small-button {
-    width: auto;
+.top-action-buttons {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
 
-    min-height: 42px;
 
-    margin: 0;
+/* ==============================
+   表单
+============================== */
 
-    padding: 0 16px;
+.dispatch-section label,
+.device-modal label {
+    display: block;
+    font-size: 13px;
+    font-weight: 700;
+    margin: 12px 0 6px;
+}
 
-    background: #2563eb;
 
+.dispatch-section input,
+.dispatch-section select,
+.dispatch-section textarea,
+.device-modal input,
+.device-modal select,
+.device-modal textarea {
+    width: 100%;
+    min-height: 43px;
+    padding: 10px 12px;
+    border: 1px solid #cbd5e1;
+    border-radius: 9px;
+    background: white;
+    color: #1f2937;
     font-size: 14px;
 }
 
 
-.draft-badge,
-.task-state-badge,
-.count-badge {
-    padding: 6px 10px;
+.dispatch-section textarea,
+.device-modal textarea {
+    min-height: 90px;
+    resize: vertical;
+}
 
-    border-radius: 18px;
 
-    background: #e5e7eb;
+/* ==============================
+   按钮
+============================== */
 
-    color: #374151;
-
-    font-size: 12px;
-
+.dispatch-main button,
+.device-modal button {
+    cursor: pointer;
+    border: 0;
+    border-radius: 9px;
+    min-height: 42px;
+    padding: 10px 14px;
+    font-size: 14px;
     font-weight: 700;
 }
 
 
-/*
-=========================================
-任务状态说明
-=========================================
-*/
+.primary-small-button,
+.primary-button {
+    background: #2563eb;
+    color: white;
+}
+
+
+.primary-button {
+    width: 100%;
+}
+
+
+.history-button {
+    background: #475569;
+    color: white;
+}
+
+
+.success-button {
+    background: #16a34a;
+    color: white;
+}
+
+
+.secondary-button {
+    background: #e2e8f0;
+    color: #334155;
+}
+
+
+.publish-button {
+    background: #7c3aed;
+    color: white;
+}
+
+
+.publish-button:disabled {
+    opacity: .45;
+    cursor: not-allowed;
+}
+
+
+.withdraw-button {
+    background: #dc2626;
+    color: white;
+}
+
+
+.adjust-button {
+    background: #2563eb;
+    color: white;
+}
+
+
+.home-button {
+    width: 100%;
+    background: #334155;
+    color: white;
+    margin-top: 5px;
+}
+
+
+.double-button-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 16px;
+}
+
+
+/* ==============================
+   徽章
+============================== */
+
+.count-badge,
+.draft-badge,
+.task-state-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 30px;
+    padding: 5px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 800;
+    white-space: nowrap;
+}
+
+
+.count-badge {
+    color: #334155;
+    background: #f1f5f9;
+}
+
+
+.draft-badge {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+
+.task-state-badge {
+    background: #dbeafe;
+    color: #1d4ed8;
+}
+
+
+/* ==============================
+   任务状态
+============================== */
 
 .task-status-legend {
     display: flex;
-
     flex-wrap: wrap;
-
-    gap: 8px;
-
-    margin-bottom: 14px;
+    gap: 7px;
+    margin-bottom: 13px;
 }
 
 
 .status-legend {
-    padding: 6px 10px;
-
-    border-radius: 14px;
-
     font-size: 12px;
-
-    font-weight: 700;
+    font-weight: 800;
+    padding: 6px 10px;
+    border-radius: 999px;
 }
 
 
 .status-legend.pending {
-    background: #ffedd5;
-
-    color: #c2410c;
+    color: #92400e;
+    background: #fef3c7;
 }
 
 
 .status-legend.active {
-    background: #dcfce7;
-
-    color: #166534;
+    color: #1d4ed8;
+    background: #dbeafe;
 }
 
 
-.status-legend.completed {
-    background: #e5e7eb;
-
-    color: #374151;
-}
-
-
-.status-legend.withdrawn {
-    background: #fee2e2;
-
-    color: #991b1b;
-}
-
-
-
-/*
-=========================================
-生产任务看板
-=========================================
-*/
+/* ==============================
+   任务看板
+============================== */
 
 .production-task-board {
     display: grid;
-
     grid-template-columns:
-        repeat(3, minmax(0, 1fr));
-
+        repeat(
+            auto-fit,
+            minmax(270px, 1fr)
+        );
     gap: 12px;
 }
 
 
 .production-task-card {
     width: 100%;
-
-    margin: 0;
-
-    padding: 15px;
-
-    border: 2px solid transparent;
-
-    border-radius: 13px;
-
+    min-height: 180px !important;
+    padding: 15px !important;
     text-align: left;
+    color: #1f2937;
+    background: white;
+    border: 2px solid #e2e8f0 !important;
+    border-radius: 12px !important;
+    box-shadow: none;
+}
 
-    color: #111827;
 
-    box-shadow:
-        0 3px 10px
-        rgba(0, 0, 0, .08);
+.production-task-card:hover {
+    transform: translateY(-1px);
 }
 
 
 .task-pending-card {
-    background: #fff7ed;
-
-    border-color: #fdba74;
+    border-color: #fbbf24 !important;
+    background: #fffbeb;
 }
 
 
 .task-active-card {
-    background: #ecfdf5;
-
-    border-color: #86efac;
+    border-color: #60a5fa !important;
+    background: #eff6ff;
 }
 
 
-.task-completed-card {
-    background: #f3f4f6;
-
-    border-color: #d1d5db;
-
-    opacity: .78;
-}
-
-
-.task-withdrawn-card {
-    background: #fef2f2;
-
-    border-color: #fca5a5;
-
-    opacity: .78;
+.history-task-card {
+    border-color: #86efac !important;
+    background: #f0fdf4;
 }
 
 
 .production-task-card-header {
     display: flex;
-
     justify-content: space-between;
-
-    gap: 12px;
+    gap: 10px;
+    align-items: flex-start;
 }
 
 
 .production-task-area {
     display: block;
-
-    font-size: 18px;
+    font-size: 17px;
+    margin-bottom: 5px;
 }
 
 
 .production-task-shift {
-    display: inline-block;
-
-    margin-top: 5px;
-
-    padding: 4px 8px;
-
-    border-radius: 12px;
-
-    background: #dbeafe;
-
-    color: #1d4ed8;
-
-    font-size: 11px;
-
-    font-weight: 700;
+    font-size: 12px;
+    color: #64748b;
 }
 
 
 .production-task-status {
-    height: fit-content;
-
+    flex-shrink: 0;
     padding: 5px 9px;
-
-    border-radius: 15px;
-
-    background: #374151;
-
-    color: #ffffff;
-
+    border-radius: 999px;
+    background: rgba(255,255,255,.8);
     font-size: 11px;
-
-    font-weight: 700;
-}
-
-
-.task-pending-card
-.production-task-status {
-    background: #ea580c;
-}
-
-
-.task-active-card
-.production-task-status {
-    background: #16a34a;
-}
-
-
-.task-completed-card
-.production-task-status {
-    background: #6b7280;
-}
-
-
-.task-withdrawn-card
-.production-task-status {
-    background: #dc2626;
 }
 
 
 .production-task-date {
-    margin-top: 12px;
-
-    color: #6b7280;
-
-    font-size: 13px;
+    color: #64748b;
+    font-size: 12px;
+    margin: 9px 0;
 }
 
 
 .production-task-stat-grid {
     display: grid;
-
     grid-template-columns:
         repeat(4, 1fr);
-
-    gap: 7px;
-
-    margin-top: 12px;
+    gap: 6px;
+    margin: 11px 0;
 }
 
 
 .production-task-stat-grid div {
-    padding: 9px 4px;
-
-    border-radius: 8px;
-
-    background:
-        rgba(255, 255, 255, .78);
-
     text-align: center;
+    border-radius: 8px;
+    background: rgba(255,255,255,.75);
+    padding: 7px 4px;
 }
 
 
 .production-task-stat-grid span {
     display: block;
-
-    color: #6b7280;
-
     font-size: 10px;
+    color: #64748b;
 }
 
 
 .production-task-stat-grid strong {
     display: block;
-
     margin-top: 3px;
-
-    font-size: 18px;
-}
-
-
-.trip-stat strong {
-    color: #2563eb;
+    font-size: 15px;
 }
 
 
 .production-task-time {
-    margin-top: 12px;
-
-    padding-top: 10px;
-
-    border-top:
-        1px solid rgba(0, 0, 0, .08);
-
-    color: #6b7280;
-
+    margin-top: 9px;
+    color: #64748b;
     font-size: 11px;
 }
 
 
+.task-adjustment-note {
+    padding: 7px 9px;
+    background: #eef2ff;
+    color: #4338ca;
+    border-radius: 7px;
+    font-size: 11px;
+}
 
-/*
-=========================================
-运输统计
-=========================================
-*/
 
-.transport-stat-box {
+/* ==============================
+   历史任务筛选
+============================== */
+
+.history-filter-grid {
     display: grid;
-
     grid-template-columns:
-        repeat(3, 1fr);
-
-    gap: 8px;
-
-    margin-bottom: 12px;
+        1fr
+        1fr
+        1.5fr
+        auto;
+    gap: 10px;
+    align-items: end;
+    margin-bottom: 16px;
+    padding: 13px;
+    background: #f8fafc;
+    border-radius: 11px;
 }
 
 
-.transport-stat-box div {
-    padding: 10px 5px;
-
-    border-radius: 9px;
-
-    background: #eff6ff;
-
-    text-align: center;
+.history-filter-grid label {
+    margin-top: 0;
 }
 
 
-.transport-stat-box span {
-    display: block;
-
-    color: #6b7280;
-
-    font-size: 11px;
+.history-filter-action button {
+    white-space: nowrap;
 }
 
 
-.transport-stat-box strong {
-    display: block;
-
-    margin-top: 5px;
-
-    color: #1d4ed8;
-}
-
-
-
-/*
-=========================================
-任务摘要
-=========================================
-*/
+/* ==============================
+   摘要
+============================== */
 
 .task-summary-grid {
     display: grid;
-
     grid-template-columns:
         repeat(3, 1fr);
-
     gap: 10px;
 }
 
 
-.task-summary-card,
-.remark-box {
-    padding: 13px;
-
-    border: 1px solid #e5e7eb;
-
-    border-radius: 10px;
-
+.task-summary-card {
     background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    padding: 12px;
+    border-radius: 10px;
 }
 
 
-.task-summary-card span,
-.remark-box span {
+.task-summary-card span {
     display: block;
-
-    color: #6b7280;
-
-    font-size: 12px;
+    color: #64748b;
+    font-size: 11px;
 }
 
 
-.task-summary-card strong,
-.remark-box strong {
+.task-summary-card strong {
     display: block;
-
     margin-top: 5px;
+    font-size: 14px;
 }
 
 
 .remark-box {
     margin-top: 10px;
+    padding: 12px;
+    border-radius: 10px;
+    background: #f8fafc;
 }
 
 
+.remark-box span {
+    display: block;
+    color: #64748b;
+    font-size: 11px;
+    margin-bottom: 5px;
+}
 
-/*
-=========================================
-设备看板
-=========================================
-*/
+
+/* ==============================
+   三色状态
+============================== */
 
 .legend-row {
     display: flex;
-
+    gap: 15px;
     flex-wrap: wrap;
-
-    gap: 20px;
 }
 
 
 .legend-item {
     display: flex;
-
     align-items: center;
-
-    gap: 7px;
-
-    font-size: 14px;
-
-    font-weight: 600;
+    gap: 6px;
+    font-size: 13px;
 }
 
 
 .legend-dot {
-    width: 14px;
-    height: 14px;
-
+    width: 12px;
+    height: 12px;
     border-radius: 50%;
 }
 
 
 .green-dot {
-    background: #16a34a;
+    background: #22c55e;
 }
 
 
 .yellow-dot {
-    background: #eab308;
+    background: #facc15;
 }
 
 
 .red-dot {
-    background: #dc2626;
+    background: #ef4444;
 }
 
 
-.device-board {
+.blue-dot {
+    background: #3b82f6;
+}
+
+
+/* ==============================
+   设备看板
+============================== */
+
+.device-board,
+.adjust-device-board {
     display: grid;
-
     grid-template-columns:
-        repeat(5, minmax(0, 1fr));
-
-    gap: 10px;
+        repeat(
+            auto-fill,
+            minmax(100px, 1fr)
+        );
+    gap: 9px;
 }
 
 
 .device-card {
-    width: 100%;
-
-    min-height: 76px;
-
-    margin: 0;
-
-    padding: 10px 6px;
-
-    border: 3px solid transparent;
-
-    border-radius: 11px;
-
+    min-height: 72px !important;
     display: flex;
-
     flex-direction: column;
-
-    justify-content: center;
     align-items: center;
-
+    justify-content: center;
     gap: 5px;
-
-    box-shadow:
-        0 2px 6px
-        rgba(0, 0, 0, .08);
+    border: 2px solid transparent !important;
 }
 
 
 .device-number {
-    font-size: 17px;
+    font-size: 15px;
 }
 
 
 .device-status {
     font-size: 11px;
-
-    font-weight: 600;
 }
 
 
 .device-available {
-    background: #16a34a;
-
-    color: #ffffff;
-}
-
-
-.device-assigned {
-    background: #dc2626;
-
-    color: #ffffff;
+    background: #f0fdf4 !important;
+    color: #166534 !important;
+    border-color: #86efac !important;
 }
 
 
 .device-maintenance {
-    background: #facc15;
-
-    color: #292524;
+    background: #fefce8 !important;
+    color: #854d0e !important;
+    border-color: #fde047 !important;
 }
 
 
+.device-assigned {
+    background: #fef2f2 !important;
+    color: #991b1b !important;
+    border-color: #fca5a5 !important;
+}
+
+
+.device-draft,
 .selected-device {
-    border-color: #111827;
-
-    box-shadow:
-        0 0 0 3px
-        rgba(17, 24, 39, .18);
-
-    transform: scale(.96);
+    background: #eff6ff !important;
+    color: #1d4ed8 !important;
+    border-color: #3b82f6 !important;
 }
 
 
 .selected-equipment-info {
-    margin-bottom: 12px;
-
-    padding: 12px;
-
-    border-radius: 9px;
-
-    background: #eff6ff;
-
-    color: #1d4ed8;
-
-    font-size: 14px;
-
-    font-weight: 600;
-}
-
-
-
-/*
-=========================================
-绑定
-=========================================
-*/
-
-.binding-card {
     margin-bottom: 10px;
-
-    padding: 14px;
-
-    border: 1px solid #e5e7eb;
-
-    border-radius: 10px;
-
+    padding: 10px 12px;
     background: #f8fafc;
-}
-
-
-.binding-excavator {
-    margin-bottom: 10px;
-
-    font-size: 18px;
-}
-
-
-.binding-truck-list {
-    display: flex;
-
-    flex-wrap: wrap;
-
-    gap: 7px;
-}
-
-
-.binding-truck-item {
-    padding: 7px 10px;
-
     border-radius: 8px;
-
-    background: #fee2e2;
-
-    color: #991b1b;
-
     font-size: 13px;
-
-    font-weight: 700;
 }
 
 
+/* ==============================
+   绑定关系
+============================== */
 
-/*
-=========================================
-辅助任务
-=========================================
-*/
-
+.binding-card,
+.adjust-binding-card,
 .aux-assignment-card {
+    padding: 12px;
     margin-bottom: 9px;
-
-    padding: 12px;
-
-    border: 1px solid #bbf7d0;
-
-    border-radius: 9px;
-
-    background: #ecfdf5;
-
-    display: flex;
-
-    justify-content: space-between;
-    align-items: center;
-
-    gap: 15px;
-}
-
-
-.aux-assignment-card strong,
-.aux-assignment-card span {
-    display: block;
-}
-
-
-.aux-assignment-card span {
-    margin-top: 4px;
-
-    color: #4b5563;
-
-    font-size: 13px;
-}
-
-
-.aux-assignment-area {
-    color: #166534;
-
-    font-size: 12px;
-
-    font-weight: 700;
-}
-
-
-
-/*
-=========================================
-任务详情
-=========================================
-*/
-
-.task-detail-status-row {
-    margin-bottom: 12px;
-
-    padding: 12px;
-
-    border-radius: 9px;
-
-    background: #f3f4f6;
-
-    display: flex;
-
-    justify-content: space-between;
-}
-
-
-.published-detail-block {
-    margin-top: 15px;
-
-    padding: 13px;
-
-    border: 1px solid #e5e7eb;
-
-    border-radius: 10px;
-}
-
-
-.published-detail-block h4 {
-    margin: 0 0 10px;
-}
-
-
-.published-binding {
-    margin-bottom: 12px;
-
-    padding: 10px;
-
-    border-radius: 8px;
-
     background: #f8fafc;
-}
-
-
-.published-binding strong {
-    display: block;
-
-    margin-bottom: 7px;
-}
-
-
-.published-binding span {
-    display: inline-block;
-
-    margin: 3px;
-
-    padding: 6px 8px;
-
-    border-radius: 7px;
-
-    background: #fee2e2;
-
-    color: #991b1b;
-
-    font-size: 12px;
-
-    font-weight: 700;
-}
-
-
-.published-aux-row {
-    margin-bottom: 8px;
-
-    padding: 9px;
-
-    border-radius: 8px;
-
-    background: #f8fafc;
-}
-
-
-.published-aux-row strong,
-.published-aux-row span {
-    display: block;
-}
-
-
-.published-aux-row span {
-    margin-top: 4px;
-
-    color: #6b7280;
-
-    font-size: 12px;
-}
-
-
-
-/*
-=========================================
-操作按钮
-=========================================
-*/
-
-.published-task-action-area {
-    display: grid;
-
-    gap: 9px;
-
-    margin-top: 18px;
-}
-
-
-.withdraw-button {
-    background: #dc2626;
-
-    color: #ffffff;
-}
-
-
-.double-button-row {
-    display: grid;
-
-    grid-template-columns:
-        1fr 1fr;
-
-    gap: 10px;
-
-    margin-top: 18px;
-}
-
-
-.double-button-row button {
-    margin: 0;
-}
-
-
-.secondary-button {
-    background: #6b7280;
-}
-
-
-.success-button {
-    background: #16a34a;
-}
-
-
-.primary-button {
-    background: #2563eb;
-}
-
-
-.publish-button {
-    background: #16a34a;
-}
-
-
-.home-button {
-    background: #6b7280;
-}
-
-
-
-/*
-=========================================
-预览
-=========================================
-*/
-
-.preview-header {
-    padding: 14px;
-
+    border: 1px solid #e2e8f0;
     border-radius: 10px;
-
-    background: #111827;
-
-    color: #ffffff;
 }
 
 
-.preview-header strong,
-.preview-header span {
-    display: block;
+.mini-device-list,
+.published-truck-list {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-top: 8px;
 }
 
 
-.preview-header span {
-    margin-top: 5px;
-
-    opacity: .8;
-
-    font-size: 13px;
+.mini-device-list span,
+.published-truck-list span {
+    padding: 4px 7px;
+    border-radius: 999px;
+    background: white;
+    font-size: 11px;
 }
 
 
-.preview-block {
-    margin-top: 12px;
-
-    padding: 14px;
-
-    border: 1px solid #e5e7eb;
-
-    border-radius: 10px;
-
-    background: #ffffff;
-}
-
-
-.preview-block h3 {
-    margin-top: 0;
-}
-
-
-.preview-binding {
-    margin-bottom: 13px;
-}
-
-
-.preview-binding strong,
-.preview-binding span {
-    display: block;
-}
-
-
-.preview-binding span {
-    margin-top: 5px;
-
-    padding-left: 16px;
-}
-
-
-
-/*
-=========================================
-弹窗
-=========================================
-*/
+/* ==============================
+   弹窗
+============================== */
 
 .device-modal {
     position: fixed;
-
     inset: 0;
-
-    z-index: 999;
-
+    z-index: 1000;
     display: flex;
-
     justify-content: center;
     align-items: center;
-
-    padding: 18px;
-
-    background:
-        rgba(0, 0, 0, .58);
+    padding: 15px;
+    background: rgba(15,23,42,.62);
 }
 
 
 .device-modal-card {
-    width: 100%;
-    max-width: 440px;
-
+    width: min(520px, 100%);
     max-height: 90vh;
-
-    overflow-y: auto;
-
-    padding: 20px;
-
+    overflow: auto;
+    background: white;
     border-radius: 14px;
-
-    background: #ffffff;
+    padding: 18px;
+    box-shadow:
+        0 22px 70px
+        rgba(15,23,42,.25);
 }
 
 
 .task-detail-modal {
-    max-width: 540px;
+    width: min(760px, 100%);
+}
+
+
+.adjust-modal-card {
+    width: min(900px, 100%);
+}
+
+
+.device-modal-card h3 {
+    margin: 0 0 14px;
+}
+
+
+.device-modal-content {
+    margin-bottom: 14px;
 }
 
 
 .modal-detail-row {
     display: flex;
-
     justify-content: space-between;
-
-    gap: 16px;
-
-    padding: 11px 0;
-
-    border-bottom:
-        1px solid #e5e7eb;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid #e2e8f0;
+    font-size: 13px;
 }
 
 
 .modal-detail-row span {
-    color: #6b7280;
+    color: #64748b;
 }
 
 
-.modal-detail-row strong {
-    text-align: right;
+.modal-help-text {
+    margin: -4px 0 15px;
+    color: #64748b;
+    font-size: 12px;
+    line-height: 1.6;
 }
 
 
 .selected-aux-device {
-    margin-bottom: 15px;
-
-    padding: 11px;
-
-    border-radius: 9px;
-
+    padding: 10px 12px;
     background: #eff6ff;
+    border-radius: 9px;
+    margin-bottom: 10px;
+}
 
+
+/* ==============================
+   当前任务详情
+============================== */
+
+.published-task-action-area {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+
+.published-task-action-area button {
+    flex: 1;
+    min-width: 120px;
+}
+
+
+.task-detail-status-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 11px 12px;
+    background: #f8fafc;
+    border-radius: 9px;
+    margin-bottom: 12px;
+}
+
+
+.transport-stat-box {
+    display: grid;
+    grid-template-columns:
+        repeat(3, 1fr);
+    gap: 8px;
+    margin-bottom: 13px;
+}
+
+
+.transport-stat-box div {
+    padding: 10px;
+    text-align: center;
+    background: #eff6ff;
+    border-radius: 9px;
+}
+
+
+.transport-stat-box span {
+    display: block;
+    color: #64748b;
+    font-size: 10px;
+}
+
+
+.transport-stat-box strong {
+    display: block;
+    margin-top: 4px;
+    font-size: 14px;
+}
+
+
+.published-detail-block {
+    padding-top: 14px;
+}
+
+
+.published-detail-block h4 {
+    margin: 0 0 9px;
+}
+
+
+.published-detail-block p {
+    margin: 0;
+    padding: 9px;
+    background: #f8fafc;
+    border-radius: 8px;
+    font-size: 13px;
+}
+
+
+.published-binding,
+.published-aux-row {
+    padding: 10px;
+    margin-bottom: 8px;
+    border: 1px solid #e2e8f0;
+    border-radius: 9px;
+}
+
+
+.published-aux-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    align-items: center;
+}
+
+
+.published-aux-row span {
+    color: #64748b;
+    font-size: 12px;
+}
+
+
+/* ==============================
+   中途调整
+============================== */
+
+.adjust-block {
+    padding: 13px;
+    margin-bottom: 13px;
+    border: 1px solid #e2e8f0;
+    border-radius: 11px;
+}
+
+
+.adjust-block h4 {
+    margin: 0 0 10px;
+}
+
+
+.adjust-binding-card {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    align-items: center;
+}
+
+
+.adjust-row-buttons {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+
+.adjust-row-buttons button {
+    min-height: 34px;
+    padding: 7px 9px;
+    font-size: 11px;
+}
+
+
+.adjust-edit-button {
+    background: #2563eb;
+    color: white;
+}
+
+
+.adjust-remove-button {
+    background: #dc2626;
+    color: white;
+}
+
+
+.adjust-device-button {
+    min-height: 68px !important;
+    border: 2px solid #86efac !important;
+    background: #f0fdf4;
+    color: #166534;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+}
+
+
+.adjust-device-button span {
+    font-size: 10px;
+}
+
+
+.adjust-device-button.selected {
+    border-color: #3b82f6 !important;
+    background: #eff6ff;
     color: #1d4ed8;
 }
 
 
-.empty-placeholder {
-    padding: 20px;
-
-    border: 1px dashed #cbd5e1;
-
-    border-radius: 9px;
-
-    color: #9ca3af;
-
-    text-align: center;
+.adjust-device-button.blocked {
+    border-color: #cbd5e1 !important;
+    background: #f1f5f9;
+    color: #94a3b8;
 }
 
 
+.adjust-count-text {
+    font-size: 12px;
+    color: #64748b;
+    margin-bottom: 8px;
+}
 
-/*
-=========================================
-平板
-=========================================
-*/
 
-@media (max-width: 800px) {
+/* ==============================
+   调整记录
+============================== */
 
-    .production-task-board {
-        grid-template-columns:
-            repeat(2, minmax(0, 1fr));
+.adjustment-history-list {
+    border-top: 1px solid #e2e8f0;
+}
+
+
+.adjustment-history-row {
+    display: grid;
+    grid-template-columns: 110px 1fr;
+    gap: 10px;
+    padding: 9px 0;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+
+.adjustment-history-row strong {
+    font-size: 11px;
+}
+
+
+.adjustment-history-row span {
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+
+/* ==============================
+   空内容
+============================== */
+
+.empty-placeholder {
+    width: 100%;
+    padding: 25px 15px;
+    text-align: center;
+    color: #94a3b8;
+    font-size: 13px;
+    background: #f8fafc;
+    border: 1px dashed #cbd5e1;
+    border-radius: 10px;
+}
+
+
+/* ==============================
+   预览
+============================== */
+
+.preview-header {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 12px;
+    border-radius: 10px;
+    background: #eff6ff;
+}
+
+
+/* ==============================
+   footer
+============================== */
+
+footer {
+    padding: 20px;
+    text-align: center;
+    color: #64748b;
+    font-size: 12px;
+}
+
+
+/* ==============================
+   手机
+============================== */
+
+@media (
+    max-width: 720px
+) {
+
+    .dispatch-header-inner {
+        align-items: flex-start;
     }
 
 
-    .device-board {
-        grid-template-columns:
-            repeat(4, minmax(0, 1fr));
+    .dispatch-header h1 {
+        font-size: 21px;
+    }
+
+
+    .dispatch-main {
+        width:
+            min(
+                100% - 14px,
+                1120px
+            );
+        margin-top: 10px;
+    }
+
+
+    .dispatch-section {
+        padding: 13px;
+        border-radius: 11px;
+    }
+
+
+    .dispatch-section-title {
+        align-items: flex-start;
+    }
+
+
+    .dispatch-section-title h2 {
+        font-size: 17px;
+    }
+
+
+    .top-action-buttons {
+        flex-direction: column;
+        min-width: 125px;
+    }
+
+
+    .top-action-buttons button {
+        width: 100%;
+        font-size: 12px;
+        padding: 8px;
     }
 
 
@@ -1122,26 +1086,81 @@
         grid-template-columns: 1fr;
     }
 
-}
 
+    .history-filter-grid {
+        grid-template-columns: 1fr;
+    }
 
-
-/*
-=========================================
-手机
-=========================================
-*/
-
-@media (max-width: 540px) {
 
     .production-task-board {
         grid-template-columns: 1fr;
     }
 
 
-    .device-board {
+    .production-task-stat-grid {
         grid-template-columns:
-            repeat(3, minmax(0, 1fr));
+            repeat(4, 1fr);
+    }
+
+
+    .device-board,
+    .adjust-device-board {
+        grid-template-columns:
+            repeat(3, 1fr);
+    }
+
+
+    .adjust-binding-card {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+
+    .published-task-action-area {
+        display: grid;
+        grid-template-columns:
+            1fr 1fr;
+    }
+
+
+    .transport-stat-box {
+        grid-template-columns:
+            repeat(3, 1fr);
+    }
+
+
+    .adjustment-history-row {
+        grid-template-columns: 1fr;
+        gap: 4px;
+    }
+
+}
+
+
+@media (
+    max-width: 430px
+) {
+
+    .dispatch-section-title {
+        flex-direction: column;
+    }
+
+
+    .top-action-buttons {
+        width: 100%;
+        flex-direction: row;
+    }
+
+
+    .top-action-buttons button {
+        flex: 1;
+    }
+
+
+    .device-board,
+    .adjust-device-board {
+        grid-template-columns:
+            repeat(3, 1fr);
     }
 
 
@@ -1151,35 +1170,17 @@
     }
 
 
-    .transport-stat-box {
+    .double-button-row {
         grid-template-columns: 1fr;
     }
 
 
-    .dispatch-header-inner h1 {
-        font-size: 22px;
+    .published-task-action-area {
+        grid-template-columns: 1fr;
     }
 
 
-    .aux-assignment-card {
-        flex-direction: column;
-
-        align-items: flex-start;
-    }
-
-}
-
-
-
-@media (max-width: 380px) {
-
-    .device-board {
-        grid-template-columns:
-            repeat(2, minmax(0, 1fr));
-    }
-
-
-    .double-button-row {
+    .transport-stat-box {
         grid-template-columns: 1fr;
     }
 
