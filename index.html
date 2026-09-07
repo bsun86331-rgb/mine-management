@@ -1,117 +1,206 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
-
 <head>
-
     <meta charset="UTF-8">
-
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0"
-    >
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <title>矿山管理系统</title>
 
-    <link
-        rel="stylesheet"
-        href="css/style.css"
-    >
-
+    <link rel="stylesheet" href="css/style.css">
 </head>
-
 
 <body>
 
-    <header>
+<header>
+    <h1>矿山管理系统</h1>
+    <p>Mine Management System</p>
+</header>
 
-        <h1>
-            矿山管理系统
-        </h1>
+<main>
 
-        <p>
-            Mine Management System
-        </p>
+    <section>
 
-    </header>
+        <h2>请选择登录端口</h2>
 
+        <!--
+        司机端不能直接固定进入注册页面。
+        点击以后由 enterDriverPortal() 判断审核状态。
+        -->
+        <button
+            type="button"
+            onclick="enterDriverPortal()"
+        >
+            🚚 司机端
+        </button>
 
-    <main>
+        <button
+            type="button"
+            onclick="alert('挖机端正在建设中')"
+        >
+            🚜 挖机端
+        </button>
 
-        <section>
+        <button
+            type="button"
+            onclick="alert('加油端正在建设中')"
+        >
+            ⛽ 加油端
+        </button>
 
-            <h2>
-                请选择登录端口
-            </h2>
+        <button
+            type="button"
+            onclick="alert('维修端正在建设中')"
+        >
+            🔧 维修端
+        </button>
 
+        <button
+            type="button"
+            onclick="alert('辅助车辆端正在建设中')"
+        >
+            🚧 辅助车辆端
+        </button>
 
-            <button
-                type="button"
-                onclick="location.href='driver-register.html'"
-            >
-                🚚 司机端
-            </button>
+        <button
+            type="button"
+            onclick="location.href='dispatch.html'"
+        >
+            📋 调度端
+        </button>
 
+        <button
+            type="button"
+            onclick="location.href='admin-review.html'"
+        >
+            ⚙️ 管理员端
+        </button>
 
-            <button
-                type="button"
-                onclick="alert('挖机端正在建设中')"
-            >
-                🚜 挖机端
-            </button>
+    </section>
 
+</main>
 
-            <button
-                type="button"
-                onclick="alert('加油端正在建设中')"
-            >
-                ⛽ 加油端
-            </button>
-
-
-            <button
-                type="button"
-                onclick="alert('维修端正在建设中')"
-            >
-                🔧 维修端
-            </button>
-
-
-            <button
-                type="button"
-                onclick="alert('辅助车辆端正在建设中')"
-            >
-                🚧 辅助车辆端
-            </button>
-
-
-            <button
-                type="button"
-                onclick="location.href='dispatch.html'"
-            >
-                📋 调度端
-            </button>
-
-
-            <button
-                type="button"
-                onclick="location.href='admin-review.html'"
-            >
-                ⚙️ 管理员端
-            </button>
-
-        </section>
-
-    </main>
+<footer>
+    <p>矿山管理系统 V2.8.1</p>
+</footer>
 
 
-    <footer>
+<script>
 
-        <p>
-            矿山管理系统 V1.5
-        </p>
+/*
+========================================
+司机入口
+V2.8.1
+========================================
+*/
 
-    </footer>
+function enterDriverPortal() {
+
+    let profile = null;
+
+    try {
+
+        const saved =
+            localStorage.getItem(
+                "driverProfile"
+            );
+
+        if (saved) {
+            profile = JSON.parse(saved);
+        }
+
+    } catch (error) {
+
+        console.error(
+            "司机资料读取失败：",
+            error
+        );
+
+        /*
+        数据损坏时清除错误数据，
+        重新进入注册。
+        */
+
+        localStorage.removeItem(
+            "driverProfile"
+        );
+
+        location.href =
+            "driver-register.html";
+
+        return;
+    }
+
+
+    /*
+    没有注册资料
+    */
+
+    if (!profile) {
+
+        location.href =
+            "driver-register.html";
+
+        return;
+    }
+
+
+    /*
+    等待审核
+    */
+
+    if (
+        profile.status ===
+        "pending"
+    ) {
+
+        location.href =
+            "driver-waiting.html";
+
+        return;
+    }
+
+
+    /*
+    审核通过
+    */
+
+    if (
+        profile.status ===
+        "approved"
+    ) {
+
+        location.href =
+            "driver-work.html";
+
+        return;
+    }
+
+
+    /*
+    审核未通过
+    */
+
+    if (
+        profile.status ===
+        "rejected"
+    ) {
+
+        location.href =
+            "driver-register.html";
+
+        return;
+    }
+
+
+    /*
+    未知状态
+    */
+
+    location.href =
+        "driver-register.html";
+}
+
+</script>
 
 </body>
-
 </html>
