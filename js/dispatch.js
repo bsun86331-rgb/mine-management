@@ -2,44 +2,39 @@
 ========================================================
 矿山管理系统
 生产调度端
-dispatch.js V2.4
-任务撤回与执行判定版
+dispatch.js V2.4.1
+任务撤回 + 运输执行判定 + 旧任务状态兼容修正版
 ========================================================
 */
 
-
 document.addEventListener("DOMContentLoaded", function () {
 
-
     let currentTask = null;
-
     let selectedExcavatorId = null;
-
     let selectedTruckIds = [];
-
     let bindings = [];
-
     let auxiliaryAssignments = [];
-
     let selectedAuxDeviceId = null;
-
     let selectedPublishedTaskId = null;
 
+    /*
+    ========================================================
+    模拟设备资料
+    后期改由管理员端设备基础资料维护
+    ========================================================
+    */
 
     let equipment = [
-
         {
             id: "EX-01",
             type: "excavator",
             status: "available"
         },
-
         {
             id: "EX-02",
             type: "excavator",
             status: "available"
         },
-
         {
             id: "EX-03",
             type: "excavator",
@@ -51,47 +46,39 @@ document.addEventListener("DOMContentLoaded", function () {
                 responsible: "维修组"
             }
         },
-
         {
             id: "EX-04",
             type: "excavator",
             status: "available"
         },
-
         {
             id: "EX-05",
             type: "excavator",
             status: "available"
         },
-
         {
             id: "EX-06",
             type: "excavator",
             status: "available"
         },
 
-
         ...createTruckData(),
-
 
         {
             id: "L-01",
             type: "loader",
             status: "available"
         },
-
         {
             id: "L-02",
             type: "loader",
             status: "available"
         },
-
         {
             id: "L-03",
             type: "loader",
             status: "available"
         },
-
         {
             id: "L-04",
             type: "loader",
@@ -104,13 +91,11 @@ document.addEventListener("DOMContentLoaded", function () {
             }
         },
 
-
         {
             id: "W-01",
             type: "water",
             status: "available"
         },
-
         {
             id: "W-02",
             type: "water",
@@ -122,33 +107,28 @@ document.addEventListener("DOMContentLoaded", function () {
                 responsible: "维修组"
             }
         },
-
         {
             id: "W-03",
             type: "water",
             status: "available"
         },
 
-
         {
             id: "F-01",
             type: "fuel",
             status: "available"
         },
-
         {
             id: "F-02",
             type: "fuel",
             status: "available"
         },
 
-
         {
             id: "G-01",
             type: "grader",
             status: "available"
         },
-
         {
             id: "G-02",
             type: "grader",
@@ -161,35 +141,35 @@ document.addEventListener("DOMContentLoaded", function () {
             }
         },
 
-
         {
             id: "D-01",
             type: "dozer",
             status: "available"
         },
-
         {
             id: "D-02",
             type: "dozer",
             status: "available"
         },
 
-
         {
             id: "B-01",
             type: "bus",
             status: "available"
         },
-
         {
             id: "B-02",
             type: "bus",
             status: "available"
         }
-
     ];
 
 
+    /*
+    ========================================================
+    DOM
+    ========================================================
+    */
 
     const newTaskButton =
         document.getElementById("newTaskButton");
@@ -234,10 +214,16 @@ document.addEventListener("DOMContentLoaded", function () {
         document.getElementById("withdrawPublishedTaskButton");
 
 
+    /*
+    ========================================================
+    初始化
+    ========================================================
+    */
 
     document.getElementById("taskShift").value =
         getDefaultShift();
 
+    migrateOldTaskStatuses();
 
     syncPublishedTaskExecutionStatus();
 
@@ -246,651 +232,459 @@ document.addEventListener("DOMContentLoaded", function () {
     renderProductionTaskBoard();
 
 
-
     /*
     ========================================================
-    新建任务
+    创建任务
     ========================================================
     */
 
-    newTaskButton.addEventListener(
-        "click",
-        function () {
+    newTaskButton.addEventListener("click", function () {
 
-            document.getElementById("taskShift").value =
-                getDefaultShift();
+        document.getElementById("taskShift").value =
+            getDefaultShift();
 
-            showSection("taskCreateSection");
+        showSection("taskCreateSection");
 
-            scrollToId("taskCreateSection");
+        scrollToId("taskCreateSection");
+    });
 
+
+    cancelCreateButton.addEventListener("click", function () {
+
+        hideSection("taskCreateSection");
+    });
+
+
+    generateTaskButton.addEventListener("click", function () {
+
+        const shift =
+            getValue("taskShift");
+
+        const area =
+            getValue("taskArea");
+
+        const remark =
+            getValue("taskRemark");
+
+
+        if (!area) {
+
+            alert("请输入作业区域");
+
+            return;
         }
-    );
 
 
-
-    cancelCreateButton.addEventListener(
-        "click",
-        function () {
-
-            hideSection("taskCreateSection");
-
-        }
-    );
-
-
-
-    generateTaskButton.addEventListener(
-        "click",
-        function () {
-
-            const shift =
-                getValue("taskShift");
-
-            const area =
-                getValue("taskArea");
-
-            const remark =
-                getValue("taskRemark");
+        currentTask = {
+            taskId: "TASK_" + Date.now(),
+            date: new Date().toLocaleDateString("zh-CN"),
+            shift: shift,
+            area: area,
+            remark: remark,
+            status: "configuring",
+            createdAt: new Date().toISOString()
+        };
 
 
-            if (!area) {
-
-                alert("请输入作业区域");
-
-                return;
-
-            }
+        selectedExcavatorId = null;
+        selectedTruckIds = [];
+        bindings = [];
+        auxiliaryAssignments = [];
 
 
-            currentTask = {
+        setText(
+            "summaryDate",
+            currentTask.date
+        );
 
-                taskId:
-                    "TASK_" +
-                    Date.now(),
+        setText(
+            "summaryShift",
+            currentTask.shift
+        );
 
-                date:
-                    new Date()
-                        .toLocaleDateString("zh-CN"),
+        setText(
+            "summaryArea",
+            currentTask.area
+        );
 
-                shift:
-                    shift,
+        setText(
+            "summaryRemark",
+            currentTask.remark || "无"
+        );
 
-                area:
-                    area,
-
-                remark:
-                    remark,
-
-                status:
-                    "configuring",
-
-                createdAt:
-                    new Date()
-                        .toISOString()
-
-            };
+        setText(
+            "taskStateBadge",
+            "配置中"
+        );
 
 
-            selectedExcavatorId =
-                null;
+        hideSection("taskCreateSection");
 
-            selectedTruckIds =
-                [];
+        showTaskBoards();
 
-            bindings =
-                [];
+        renderAll();
 
-            auxiliaryAssignments =
-                [];
-
-
-            setText(
-                "summaryDate",
-                currentTask.date
-            );
-
-            setText(
-                "summaryShift",
-                currentTask.shift
-            );
-
-            setText(
-                "summaryArea",
-                currentTask.area
-            );
-
-            setText(
-                "summaryRemark",
-                currentTask.remark || "无"
-            );
-
-            setText(
-                "taskStateBadge",
-                "配置中"
-            );
-
-
-            hideSection("taskCreateSection");
-
-            showTaskBoards();
-
-            renderAll();
-
-            scrollToId("excavatorSection");
-
-        }
-    );
-
+        scrollToId("excavatorSection");
+    });
 
 
     /*
     ========================================================
-    挖机卡车绑定
+    挖机 + 卡车绑定
     ========================================================
     */
 
-    bindTrucksButton.addEventListener(
-        "click",
-        function () {
+    bindTrucksButton.addEventListener("click", function () {
 
-            if (!selectedExcavatorId) {
+        if (!selectedExcavatorId) {
 
-                alert("请先选择一台挖机");
+            alert("请先选择一台挖机");
 
-                return;
-
-            }
-
-
-            if (selectedTruckIds.length === 0) {
-
-                alert("请选择至少一台跟随卡车");
-
-                return;
-
-            }
-
-
-            const excavatorId =
-                selectedExcavatorId;
-
-            const trucks =
-                [...selectedTruckIds];
-
-
-            bindings.push({
-
-                excavatorId:
-                    excavatorId,
-
-                truckIds:
-                    trucks
-
-            });
-
-
-            const excavator =
-                findDevice(excavatorId);
-
-
-            if (excavator) {
-
-                excavator.status =
-                    "assigned";
-
-                excavator.assignedTask = {
-
-                    area:
-                        currentTask.area,
-
-                    shift:
-                        currentTask.shift,
-
-                    work:
-                        "采装作业",
-
-                    taskId:
-                        currentTask.taskId
-
-                };
-
-            }
-
-
-            trucks.forEach(
-                function (truckId) {
-
-                    const truck =
-                        findDevice(truckId);
-
-
-                    if (truck) {
-
-                        truck.status =
-                            "assigned";
-
-                        truck.assignedTask = {
-
-                            area:
-                                currentTask.area,
-
-                            shift:
-                                currentTask.shift,
-
-                            work:
-                                "跟随 " +
-                                excavatorId,
-
-                            excavatorId:
-                                excavatorId,
-
-                            taskId:
-                                currentTask.taskId
-
-                        };
-
-                    }
-
-                }
-            );
-
-
-            selectedExcavatorId =
-                null;
-
-            selectedTruckIds =
-                [];
-
-
-            renderAll();
-
-
-            alert(
-                excavatorId +
-                " 已绑定 " +
-                trucks.length +
-                " 台卡车"
-            );
-
+            return;
         }
-    );
 
 
+        if (selectedTruckIds.length === 0) {
 
-    /*
-    ========================================================
-    辅助车辆
-    ========================================================
-    */
+            alert("请选择至少一台跟随卡车");
 
-    auxWorkType.addEventListener(
-        "change",
-        function () {
-
-            if (this.value === "manual") {
-
-                showSection(
-                    "auxManualWorkBox"
-                );
-
-            }
-
-            else {
-
-                hideSection(
-                    "auxManualWorkBox"
-                );
-
-                setValue(
-                    "auxManualWork",
-                    ""
-                );
-
-            }
-
+            return;
         }
-    );
 
 
+        const excavatorId =
+            selectedExcavatorId;
 
-    cancelAuxTaskButton.addEventListener(
-        "click",
-        function () {
-
-            selectedAuxDeviceId =
-                null;
-
-            hideSection(
-                "auxTaskModal"
-            );
-
-        }
-    );
+        const trucks =
+            [...selectedTruckIds];
 
 
-
-    confirmAuxTaskButton.addEventListener(
-        "click",
-        function () {
-
-            if (!selectedAuxDeviceId) {
-
-                return;
-
-            }
+        bindings.push({
+            excavatorId: excavatorId,
+            truckIds: trucks
+        });
 
 
-            const device =
-                findDevice(
-                    selectedAuxDeviceId
-                );
+        const excavator =
+            findDevice(excavatorId);
 
 
-            if (!device) {
+        if (excavator) {
 
-                return;
-
-            }
-
-
-            let work =
-                auxWorkType.value;
-
-
-            if (work === "manual") {
-
-                work =
-                    getValue(
-                        "auxManualWork"
-                    );
-
-
-                if (!work) {
-
-                    alert(
-                        "请输入具体工作内容"
-                    );
-
-                    return;
-
-                }
-
-            }
-
-
-            const remark =
-                getValue(
-                    "auxTaskRemark"
-                );
-
-
-            auxiliaryAssignments.push({
-
-                assignmentId:
-                    "AUX_" +
-                    Date.now(),
-
-                vehicleId:
-                    device.id,
-
-                type:
-                    device.type,
-
-                typeName:
-                    getTypeName(
-                        device.type
-                    ),
-
-                work:
-                    work,
-
-                remark:
-                    remark,
-
-                area:
-                    currentTask.area,
-
-                shift:
-                    currentTask.shift,
-
-                taskId:
-                    currentTask.taskId,
-
-                assignedAt:
-                    new Date()
-                        .toISOString()
-
-            });
-
-
-            device.status =
+            excavator.status =
                 "assigned";
 
-
-            device.assignedTask = {
-
-                area:
-                    currentTask.area,
-
-                shift:
-                    currentTask.shift,
-
-                work:
-                    work,
-
-                remark:
-                    remark,
-
-                taskId:
-                    currentTask.taskId
-
+            excavator.assignedTask = {
+                taskId: currentTask.taskId,
+                area: currentTask.area,
+                shift: currentTask.shift,
+                work: "采装作业"
             };
-
-
-            selectedAuxDeviceId =
-                null;
-
-
-            hideSection(
-                "auxTaskModal"
-            );
-
-
-            renderAll();
-
-
-            alert(
-                device.id +
-                " 任务下发成功"
-            );
-
         }
-    );
 
+
+        trucks.forEach(function (truckId) {
+
+            const truck =
+                findDevice(truckId);
+
+
+            if (truck) {
+
+                truck.status =
+                    "assigned";
+
+                truck.assignedTask = {
+                    taskId: currentTask.taskId,
+                    area: currentTask.area,
+                    shift: currentTask.shift,
+                    work: "跟随 " + excavatorId,
+                    excavatorId: excavatorId
+                };
+            }
+        });
+
+
+        selectedExcavatorId =
+            null;
+
+        selectedTruckIds =
+            [];
+
+
+        renderAll();
+
+
+        alert(
+            excavatorId +
+            " 已绑定 " +
+            trucks.length +
+            " 台卡车"
+        );
+    });
 
 
     /*
     ========================================================
-    任务预览
+    辅助车辆任务
     ========================================================
     */
 
-    previewTaskButton.addEventListener(
-        "click",
-        function () {
+    auxWorkType.addEventListener("change", function () {
 
-            if (!currentTask) {
+        if (this.value === "manual") {
+
+            showSection("auxManualWorkBox");
+        }
+
+        else {
+
+            hideSection("auxManualWorkBox");
+
+            setValue(
+                "auxManualWork",
+                ""
+            );
+        }
+    });
+
+
+    cancelAuxTaskButton.addEventListener("click", function () {
+
+        selectedAuxDeviceId =
+            null;
+
+        hideSection("auxTaskModal");
+    });
+
+
+    confirmAuxTaskButton.addEventListener("click", function () {
+
+        if (!selectedAuxDeviceId) {
+
+            return;
+        }
+
+
+        const device =
+            findDevice(selectedAuxDeviceId);
+
+
+        if (!device) {
+
+            return;
+        }
+
+
+        let work =
+            auxWorkType.value;
+
+
+        if (work === "manual") {
+
+            work =
+                getValue("auxManualWork");
+
+
+            if (!work) {
+
+                alert("请输入具体工作内容");
 
                 return;
-
             }
-
-
-            renderTaskPreview();
-
-            showSection(
-                "previewSection"
-            );
-
-            scrollToId(
-                "previewSection"
-            );
-
         }
-    );
 
 
+        const remark =
+            getValue("auxTaskRemark");
 
-    backEditButton.addEventListener(
-        "click",
-        function () {
 
-            hideSection(
-                "previewSection"
-            );
+        auxiliaryAssignments.push({
+            assignmentId: "AUX_" + Date.now(),
+            vehicleId: device.id,
+            type: device.type,
+            typeName: getTypeName(device.type),
+            work: work,
+            remark: remark,
+            area: currentTask.area,
+            shift: currentTask.shift,
+            taskId: currentTask.taskId,
+            assignedAt: new Date().toISOString()
+        });
 
-        }
-    );
 
+        device.status =
+            "assigned";
+
+
+        device.assignedTask = {
+            taskId: currentTask.taskId,
+            area: currentTask.area,
+            shift: currentTask.shift,
+            work: work,
+            remark: remark
+        };
+
+
+        selectedAuxDeviceId =
+            null;
+
+
+        hideSection("auxTaskModal");
+
+        renderAll();
+
+
+        alert(
+            device.id +
+            " 任务下发成功"
+        );
+    });
 
 
     /*
     ========================================================
-    发布任务
+    发布预览
     ========================================================
     */
 
-    publishTaskButton.addEventListener(
-        "click",
-        function () {
+    previewTaskButton.addEventListener("click", function () {
 
-            if (!currentTask) {
+        if (!currentTask) {
 
-                return;
-
-            }
-
-
-            const confirmed =
-                confirm(
-                    "确认发布当前生产任务吗？发布后状态为“待执行”。"
-                );
-
-
-            if (!confirmed) {
-
-                return;
-
-            }
-
-
-            currentTask.status =
-                "pending";
-
-
-            currentTask.publishedAt =
-                new Date()
-                    .toISOString();
-
-
-            const publishedTask = {
-
-                ...currentTask,
-
-                bindings:
-                    JSON.parse(
-                        JSON.stringify(
-                            bindings
-                        )
-                    ),
-
-                auxiliaryAssignments:
-                    JSON.parse(
-                        JSON.stringify(
-                            auxiliaryAssignments
-                        )
-                    ),
-
-                transportTripCount:
-                    0
-
-            };
-
-
-            savePublishedTask(
-                publishedTask
-            );
-
-
-            hideCurrentConfigurationSections();
-
-
-            currentTask =
-                null;
-
-            bindings =
-                [];
-
-            auxiliaryAssignments =
-                [];
-
-            selectedExcavatorId =
-                null;
-
-            selectedTruckIds =
-                [];
-
-
-            renderProductionTaskBoard();
-
-
-            alert(
-                "任务发布成功，当前状态：待执行。未产生运输前可以撤回。"
-            );
-
-
-            scrollToId(
-                "productionTaskBoardSection"
-            );
-
+            return;
         }
-    );
 
+
+        renderTaskPreview();
+
+        showSection("previewSection");
+
+        scrollToId("previewSection");
+    });
+
+
+    backEditButton.addEventListener("click", function () {
+
+        hideSection("previewSection");
+    });
 
 
     /*
     ========================================================
-    关闭弹窗
+    正式发布
     ========================================================
     */
 
-    closeModalButton.addEventListener(
-        "click",
-        function () {
+    publishTaskButton.addEventListener("click", function () {
 
-            hideSection(
-                "deviceModal"
+        if (!currentTask) {
+
+            return;
+        }
+
+
+        const confirmed =
+            confirm(
+                "确认发布当前生产任务吗？发布后状态为“待执行”，产生运输前可以撤回。"
             );
 
+
+        if (!confirmed) {
+
+            return;
         }
-    );
 
 
-    closePublishedTaskButton.addEventListener(
-        "click",
-        function () {
+        currentTask.status =
+            "pending";
 
-            selectedPublishedTaskId =
-                null;
+        currentTask.publishedAt =
+            new Date().toISOString();
 
-            hideSection(
-                "publishedTaskModal"
-            );
 
-        }
-    );
+        const publishedTask = {
+            ...currentTask,
 
+            bindings:
+                JSON.parse(
+                    JSON.stringify(bindings)
+                ),
+
+            auxiliaryAssignments:
+                JSON.parse(
+                    JSON.stringify(
+                        auxiliaryAssignments
+                    )
+                ),
+
+            transportTripCount: 0
+        };
+
+
+        savePublishedTask(
+            publishedTask
+        );
+
+
+        hideCurrentConfigurationSections();
+
+
+        currentTask =
+            null;
+
+        selectedExcavatorId =
+            null;
+
+        selectedTruckIds =
+            [];
+
+        bindings =
+            [];
+
+        auxiliaryAssignments =
+            [];
+
+
+        renderProductionTaskBoard();
+
+
+        alert(
+            "生产任务发布成功，当前状态为“待执行”。"
+        );
+
+
+        scrollToId(
+            "productionTaskBoardSection"
+        );
+    });
+
+
+    /*
+    ========================================================
+    普通设备弹窗
+    ========================================================
+    */
+
+    closeModalButton.addEventListener("click", function () {
+
+        hideSection("deviceModal");
+    });
+
+
+    /*
+    ========================================================
+    任务详情弹窗
+    ========================================================
+    */
+
+    closePublishedTaskButton.addEventListener("click", function () {
+
+        selectedPublishedTaskId =
+            null;
+
+        hideSection("publishedTaskModal");
+    });
 
 
     /*
@@ -899,145 +693,133 @@ document.addEventListener("DOMContentLoaded", function () {
     ========================================================
     */
 
-    withdrawPublishedTaskButton.addEventListener(
-        "click",
-        function () {
+    withdrawPublishedTaskButton.addEventListener("click", function () {
 
-            if (!selectedPublishedTaskId) {
+        if (!selectedPublishedTaskId) {
 
-                return;
-
-            }
+            return;
+        }
 
 
-            /*
-            再次读取运输记录
-            防止页面状态未及时更新
-            */
+        /*
+        再次实时检查运输记录。
+        只要已经发生 1 趟运输，立即禁止撤回。
+        */
 
-            const tripStats =
-                getTaskTripStats(
-                    selectedPublishedTaskId
-                );
-
-
-            if (tripStats.count > 0) {
-
-                syncPublishedTaskExecutionStatus();
-
-                renderProductionTaskBoard();
-
-
-                alert(
-                    "该任务已经产生运输记录，共 " +
-                    tripStats.count +
-                    " 趟，不能撤回。"
-                );
-
-
-                hideSection(
-                    "publishedTaskModal"
-                );
-
-
-                selectedPublishedTaskId =
-                    null;
-
-
-                return;
-
-            }
-
-
-            const tasks =
-                getPublishedTasks();
-
-
-            const task =
-                tasks.find(
-                    function (item) {
-
-                        return (
-                            item.taskId ===
-                            selectedPublishedTaskId
-                        );
-
-                    }
-                );
-
-
-            if (!task) {
-
-                return;
-
-            }
-
-
-            if (
-                task.status !==
-                "pending"
-            ) {
-
-                alert(
-                    "该任务当前状态不允许撤回。"
-                );
-
-                return;
-
-            }
-
-
-            const confirmed =
-                confirm(
-                    "确认撤回该任务吗？撤回后相关设备将恢复为可调配状态。"
-                );
-
-
-            if (!confirmed) {
-
-                return;
-
-            }
-
-
-            task.status =
-                "withdrawn";
-
-
-            task.withdrawnAt =
-                new Date()
-                    .toISOString();
-
-
-            saveTaskArray(
-                tasks
+        const tripStats =
+            getTaskTripStats(
+                selectedPublishedTaskId
             );
 
 
-            releaseTaskEquipment(
-                task
-            );
+        if (tripStats.count > 0) {
 
+            syncPublishedTaskExecutionStatus();
 
-            hideSection(
-                "publishedTaskModal"
-            );
+            renderProductionTaskBoard();
 
+            hideSection("publishedTaskModal");
 
             selectedPublishedTaskId =
                 null;
 
 
-            renderProductionTaskBoard();
-
-
             alert(
-                "任务已撤回，相关设备已释放。"
+                "该任务已经产生运输记录，共 " +
+                tripStats.count +
+                " 趟，不能撤回。"
             );
 
+            return;
         }
-    );
 
+
+        const tasks =
+            getPublishedTasks();
+
+
+        const task =
+            tasks.find(function (item) {
+
+                return (
+                    item.taskId ===
+                    selectedPublishedTaskId
+                );
+            });
+
+
+        if (!task) {
+
+            return;
+        }
+
+
+        /*
+        兼容旧任务：
+        只要没有运输记录，即使旧数据写成 active，
+        也按当前业务规则允许恢复为待执行。
+        */
+
+        if (
+            task.status === "active" &&
+            tripStats.count === 0
+        ) {
+
+            task.status =
+                "pending";
+        }
+
+
+        if (task.status !== "pending") {
+
+            alert(
+                "该任务当前状态不允许撤回。"
+            );
+
+            return;
+        }
+
+
+        const confirmed =
+            confirm(
+                "确认撤回该生产任务吗？撤回后相关设备将恢复为可调配状态。"
+            );
+
+
+        if (!confirmed) {
+
+            return;
+        }
+
+
+        task.status =
+            "withdrawn";
+
+        task.withdrawnAt =
+            new Date().toISOString();
+
+
+        saveTaskArray(tasks);
+
+        releaseTaskEquipment(task);
+
+
+        hideSection(
+            "publishedTaskModal"
+        );
+
+
+        selectedPublishedTaskId =
+            null;
+
+
+        renderProductionTaskBoard();
+
+
+        alert(
+            "任务已撤回，相关设备已释放。"
+        );
+    });
 
 
     /*
@@ -1046,121 +828,114 @@ document.addEventListener("DOMContentLoaded", function () {
     ========================================================
     */
 
-    completePublishedTaskButton.addEventListener(
-        "click",
-        function () {
+    completePublishedTaskButton.addEventListener("click", function () {
 
-            if (!selectedPublishedTaskId) {
+        if (!selectedPublishedTaskId) {
 
-                return;
-
-            }
+            return;
+        }
 
 
-            syncPublishedTaskExecutionStatus();
+        syncPublishedTaskExecutionStatus();
 
 
-            const tasks =
-                getPublishedTasks();
+        const tasks =
+            getPublishedTasks();
 
 
-            const task =
-                tasks.find(
-                    function (item) {
+        const task =
+            tasks.find(function (item) {
 
-                        return (
-                            item.taskId ===
-                            selectedPublishedTaskId
-                        );
-
-                    }
+                return (
+                    item.taskId ===
+                    selectedPublishedTaskId
                 );
+            });
 
 
-            if (!task) {
+        if (!task) {
 
-                return;
-
-            }
-
-
-            if (
-                task.status !==
-                "active"
-            ) {
-
-                alert(
-                    "只有执行中的任务才能完成。"
-                );
-
-                return;
-
-            }
+            return;
+        }
 
 
-            const confirmed =
-                confirm(
-                    "确认完成该生产任务吗？"
-                );
-
-
-            if (!confirmed) {
-
-                return;
-
-            }
-
-
-            task.status =
-                "completed";
-
-
-            task.completedAt =
-                new Date()
-                    .toISOString();
-
-
-            saveTaskArray(
-                tasks
+        const stats =
+            getTaskTripStats(
+                task.taskId
             );
 
 
-            releaseTaskEquipment(
-                task
-            );
-
-
-            hideSection(
-                "publishedTaskModal"
-            );
-
-
-            selectedPublishedTaskId =
-                null;
-
-
-            renderProductionTaskBoard();
-
+        if (stats.count === 0) {
 
             alert(
-                "任务已完成，相关设备已释放。"
+                "该任务尚未产生运输记录，不能按执行中任务完成。"
             );
 
+            return;
         }
-    );
 
+
+        if (task.status !== "active") {
+
+            alert(
+                "只有执行中的任务才能完成。"
+            );
+
+            return;
+        }
+
+
+        const confirmed =
+            confirm(
+                "确认完成该生产任务吗？"
+            );
+
+
+        if (!confirmed) {
+
+            return;
+        }
+
+
+        task.status =
+            "completed";
+
+        task.completedAt =
+            new Date().toISOString();
+
+
+        saveTaskArray(tasks);
+
+        releaseTaskEquipment(task);
+
+
+        hideSection(
+            "publishedTaskModal"
+        );
+
+
+        selectedPublishedTaskId =
+            null;
+
+
+        renderProductionTaskBoard();
+
+
+        alert(
+            "任务已完成，相关设备已释放。"
+        );
+    });
 
 
     /*
     ========================================================
-    看板区域控制
+    显示任务配置区
     ========================================================
     */
 
     function showTaskBoards() {
 
         [
-
             "taskSummarySection",
             "legendSection",
             "excavatorSection",
@@ -1174,23 +949,16 @@ document.addEventListener("DOMContentLoaded", function () {
             "busSection",
             "auxiliarySummarySection",
             "publishSection"
+        ].forEach(function (id) {
 
-        ].forEach(
-            function (id) {
-
-                showSection(id);
-
-            }
-        );
-
+            showSection(id);
+        });
     }
-
 
 
     function hideCurrentConfigurationSections() {
 
         [
-
             "taskSummarySection",
             "legendSection",
             "excavatorSection",
@@ -1205,18 +973,18 @@ document.addEventListener("DOMContentLoaded", function () {
             "auxiliarySummarySection",
             "publishSection",
             "previewSection"
+        ].forEach(function (id) {
 
-        ].forEach(
-            function (id) {
-
-                hideSection(id);
-
-            }
-        );
-
+            hideSection(id);
+        });
     }
 
 
+    /*
+    ========================================================
+    总渲染
+    ========================================================
+    */
 
     function renderAll() {
 
@@ -1229,9 +997,7 @@ document.addEventListener("DOMContentLoaded", function () {
         renderAuxiliaryBoards();
 
         renderAuxiliaryAssignments();
-
     }
-
 
 
     /*
@@ -1241,6 +1007,8 @@ document.addEventListener("DOMContentLoaded", function () {
     */
 
     function renderProductionTaskBoard() {
+
+        migrateOldTaskStatuses();
 
         syncPublishedTaskExecutionStatus();
 
@@ -1256,18 +1024,13 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
         const runningCount =
-            tasks.filter(
-                function (task) {
+            tasks.filter(function (task) {
 
-                    return (
-                        task.status ===
-                        "pending" ||
-                        task.status ===
-                        "active"
-                    );
-
-                }
-            ).length;
+                return (
+                    task.status === "pending" ||
+                    task.status === "active"
+                );
+            }).length;
 
 
         setText(
@@ -1280,17 +1043,12 @@ document.addEventListener("DOMContentLoaded", function () {
         if (tasks.length === 0) {
 
             board.innerHTML = `
-
                 <div class="empty-placeholder">
-
                     当前没有生产任务
-
                 </div>
-
             `;
 
             return;
-
         }
 
 
@@ -1299,238 +1057,185 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
         const sorted =
-            [...tasks].sort(
-                function (a, b) {
+            [...tasks].sort(function (a, b) {
 
-                    return (
-                        new Date(
-                            b.publishedAt ||
-                            b.createdAt
-                        ) -
-                        new Date(
-                            a.publishedAt ||
-                            a.createdAt
-                        )
-                    );
-
-                }
-            );
-
-
-        sorted.forEach(
-            function (task) {
-
-                const tripStats =
-                    getTaskTripStats(
-                        task.taskId
-                    );
-
-
-                const excavatorCount =
-                    Array.isArray(task.bindings)
-                        ?
-                        task.bindings.length
-                        :
-                        0;
-
-
-                const truckCount =
-                    Array.isArray(task.bindings)
-                        ?
-                        task.bindings.reduce(
-                            function (
-                                total,
-                                binding
-                            ) {
-
-                                return (
-                                    total +
-                                    (
-                                        Array.isArray(
-                                            binding.truckIds
-                                        )
-                                            ?
-                                            binding.truckIds.length
-                                            :
-                                            0
-                                    )
-                                );
-
-                            },
-                            0
-                        )
-                        :
-                        0;
-
-
-                const auxiliaryCount =
-                    Array.isArray(
-                        task.auxiliaryAssignments
+                return (
+                    new Date(
+                        b.publishedAt ||
+                        b.createdAt
+                    ) -
+                    new Date(
+                        a.publishedAt ||
+                        a.createdAt
                     )
-                        ?
-                        task.auxiliaryAssignments.length
-                        :
-                        0;
+                );
+            });
 
 
-                const card =
-                    document.createElement(
-                        "button"
-                    );
+        sorted.forEach(function (task) {
+
+            const tripStats =
+                getTaskTripStats(
+                    task.taskId
+                );
 
 
-                card.type =
-                    "button";
+            const excavatorCount =
+                Array.isArray(task.bindings)
+                    ?
+                    task.bindings.length
+                    :
+                    0;
 
 
-                card.className =
-                    "production-task-card " +
-                    getTaskCardClass(
-                        task.status
-                    );
+            const truckCount =
+                Array.isArray(task.bindings)
+                    ?
+                    task.bindings.reduce(
+                        function (
+                            total,
+                            binding
+                        ) {
 
-
-                card.innerHTML = `
-
-                    <div class="production-task-card-header">
-
-                        <div>
-
-                            <strong class="production-task-area">
-
-                                ${escapeHtml(task.area)}
-
-                            </strong>
-
-                            <span class="production-task-shift">
-
-                                ${escapeHtml(task.shift)}
-
-                            </span>
-
-                        </div>
-
-
-                        <span class="production-task-status">
-
-                            ${escapeHtml(
-                                getTaskStatusText(
-                                    task.status
+                            return (
+                                total +
+                                (
+                                    Array.isArray(
+                                        binding.truckIds
+                                    )
+                                        ?
+                                        binding.truckIds.length
+                                        :
+                                        0
                                 )
-                            )}
+                            );
+                        },
+                        0
+                    )
+                    :
+                    0;
 
+
+            const auxiliaryCount =
+                Array.isArray(
+                    task.auxiliaryAssignments
+                )
+                    ?
+                    task.auxiliaryAssignments.length
+                    :
+                    0;
+
+
+            const card =
+                document.createElement(
+                    "button"
+                );
+
+
+            card.type =
+                "button";
+
+
+            card.className =
+                "production-task-card " +
+                getTaskCardClass(
+                    task.status
+                );
+
+
+            card.innerHTML = `
+                <div class="production-task-card-header">
+
+                    <div>
+
+                        <strong class="production-task-area">
+                            ${escapeHtml(task.area)}
+                        </strong>
+
+                        <span class="production-task-shift">
+                            ${escapeHtml(task.shift)}
                         </span>
 
                     </div>
 
 
-                    <div class="production-task-date">
-
-                        ${escapeHtml(task.date)}
-
-                    </div>
-
-
-                    <div class="production-task-stat-grid">
-
-                        <div>
-
-                            <span>
-                                挖机
-                            </span>
-
-                            <strong>
-                                ${excavatorCount}
-                            </strong>
-
-                        </div>
-
-
-                        <div>
-
-                            <span>
-                                卡车
-                            </span>
-
-                            <strong>
-                                ${truckCount}
-                            </strong>
-
-                        </div>
-
-
-                        <div>
-
-                            <span>
-                                辅助车辆
-                            </span>
-
-                            <strong>
-                                ${auxiliaryCount}
-                            </strong>
-
-                        </div>
-
-
-                        <div class="trip-stat">
-
-                            <span>
-                                运输趟数
-                            </span>
-
-                            <strong>
-                                ${tripStats.count}
-                            </strong>
-
-                        </div>
-
-                    </div>
-
-
-                    <div class="production-task-time">
-
-                        发布时间：
-                        ${formatDateTime(
-                            task.publishedAt
+                    <span class="production-task-status">
+                        ${escapeHtml(
+                            getTaskStatusText(
+                                task.status
+                            )
                         )}
+                    </span>
 
+                </div>
+
+
+                <div class="production-task-date">
+                    ${escapeHtml(task.date)}
+                </div>
+
+
+                <div class="production-task-stat-grid">
+
+                    <div>
+                        <span>挖机</span>
+                        <strong>${excavatorCount}</strong>
                     </div>
 
-                `;
+                    <div>
+                        <span>卡车</span>
+                        <strong>${truckCount}</strong>
+                    </div>
+
+                    <div>
+                        <span>辅助车辆</span>
+                        <strong>${auxiliaryCount}</strong>
+                    </div>
+
+                    <div class="trip-stat">
+                        <span>运输趟数</span>
+                        <strong>${tripStats.count}</strong>
+                    </div>
+
+                </div>
 
 
-                card.addEventListener(
-                    "click",
-                    function () {
+                <div class="production-task-time">
 
-                        openPublishedTask(
-                            task.taskId
-                        );
+                    发布时间：
+                    ${formatDateTime(
+                        task.publishedAt
+                    )}
 
-                    }
-                );
+                </div>
+            `;
 
 
-                board.appendChild(
-                    card
-                );
+            card.addEventListener(
+                "click",
+                function () {
 
-            }
-        );
+                    openPublishedTask(
+                        task.taskId
+                    );
+                }
+            );
 
+
+            board.appendChild(card);
+        });
     }
-
 
 
     /*
     ========================================================
-    任务详情
+    打开生产任务详情
     ========================================================
     */
 
-    function openPublishedTask(
-        taskId
-    ) {
+    function openPublishedTask(taskId) {
+
+        migrateOldTaskStatuses();
 
         syncPublishedTaskExecutionStatus();
 
@@ -1540,22 +1245,17 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
         const task =
-            tasks.find(
-                function (item) {
+            tasks.find(function (item) {
 
-                    return (
-                        item.taskId ===
-                        taskId
-                    );
-
-                }
-            );
+                return (
+                    item.taskId === taskId
+                );
+            });
 
 
         if (!task) {
 
             return;
-
         }
 
 
@@ -1578,7 +1278,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
         let html = `
-
             <div class="task-detail-status-row">
 
                 <span>
@@ -1586,13 +1285,11 @@ document.addEventListener("DOMContentLoaded", function () {
                 </span>
 
                 <strong>
-
                     ${escapeHtml(
                         getTaskStatusText(
                             task.status
                         )
                     )}
-
                 </strong>
 
             </div>
@@ -1601,26 +1298,14 @@ document.addEventListener("DOMContentLoaded", function () {
             <div class="transport-stat-box">
 
                 <div>
-
-                    <span>
-                        运输总趟数
-                    </span>
-
-                    <strong>
-                        ${tripStats.count}
-                    </strong>
-
+                    <span>运输总趟数</span>
+                    <strong>${tripStats.count}</strong>
                 </div>
 
-
                 <div>
-
-                    <span>
-                        第一趟
-                    </span>
+                    <span>第一趟</span>
 
                     <strong>
-
                         ${
                             tripStats.firstTime
                                 ?
@@ -1630,20 +1315,13 @@ document.addEventListener("DOMContentLoaded", function () {
                                 :
                                 "-"
                         }
-
                     </strong>
-
                 </div>
 
-
                 <div>
-
-                    <span>
-                        最后一趟
-                    </span>
+                    <span>最后一趟</span>
 
                     <strong>
-
                         ${
                             tripStats.lastTime
                                 ?
@@ -1653,50 +1331,25 @@ document.addEventListener("DOMContentLoaded", function () {
                                 :
                                 "-"
                         }
-
                     </strong>
-
                 </div>
 
             </div>
 
 
             <div class="modal-detail-row">
-
-                <span>
-                    日期
-                </span>
-
-                <strong>
-                    ${escapeHtml(task.date)}
-                </strong>
-
+                <span>日期</span>
+                <strong>${escapeHtml(task.date)}</strong>
             </div>
 
-
             <div class="modal-detail-row">
-
-                <span>
-                    作业区域
-                </span>
-
-                <strong>
-                    ${escapeHtml(task.area)}
-                </strong>
-
+                <span>作业区域</span>
+                <strong>${escapeHtml(task.area)}</strong>
             </div>
 
-
             <div class="modal-detail-row">
-
-                <span>
-                    班次
-                </span>
-
-                <strong>
-                    ${escapeHtml(task.shift)}
-                </strong>
-
+                <span>班次</span>
+                <strong>${escapeHtml(task.shift)}</strong>
             </div>
 
 
@@ -1705,7 +1358,6 @@ document.addEventListener("DOMContentLoaded", function () {
                 <h4>
                     🚜 挖机及跟随卡车
                 </h4>
-
         `;
 
 
@@ -1715,13 +1367,10 @@ document.addEventListener("DOMContentLoaded", function () {
         ) {
 
             html += `
-
                 <p>
                     未配置主采设备
                 </p>
-
             `;
-
         }
 
         else {
@@ -1730,64 +1379,55 @@ document.addEventListener("DOMContentLoaded", function () {
                 function (binding) {
 
                     html += `
-
                         <div class="published-binding">
 
                             <strong>
-
                                 🚜
                                 ${escapeHtml(
                                     binding.excavatorId
                                 )}
-
                             </strong>
-
                     `;
 
 
-                    binding.truckIds.forEach(
-                        function (truckId) {
+                    if (
+                        Array.isArray(
+                            binding.truckIds
+                        )
+                    ) {
 
-                            const truckTrips =
-                                getTruckTaskTripCount(
-                                    task.taskId,
-                                    truckId
-                                );
+                        binding.truckIds.forEach(
+                            function (truckId) {
+
+                                const truckTrips =
+                                    getTruckTaskTripCount(
+                                        task.taskId,
+                                        truckId
+                                    );
 
 
-                            html += `
-
-                                <span>
-
-                                    🚚
-                                    ${escapeHtml(truckId)}
-
-                                    ·
-
-                                    ${truckTrips} 趟
-
-                                </span>
-
-                            `;
-
-                        }
-                    );
+                                html += `
+                                    <span>
+                                        🚚
+                                        ${escapeHtml(truckId)}
+                                        ·
+                                        ${truckTrips} 趟
+                                    </span>
+                                `;
+                            }
+                        );
+                    }
 
 
                     html += `
-
                         </div>
-
                     `;
-
                 }
             );
-
         }
 
 
         html += `
-
             </div>
 
 
@@ -1796,7 +1436,6 @@ document.addEventListener("DOMContentLoaded", function () {
                 <h4>
                     🚧 辅助车辆
                 </h4>
-
         `;
 
 
@@ -1808,13 +1447,10 @@ document.addEventListener("DOMContentLoaded", function () {
         ) {
 
             html += `
-
                 <p>
                     未配置辅助车辆
                 </p>
-
             `;
-
         }
 
         else {
@@ -1823,43 +1459,32 @@ document.addEventListener("DOMContentLoaded", function () {
                 function (item) {
 
                     html += `
-
                         <div class="published-aux-row">
 
                             <strong>
-
                                 ${escapeHtml(
                                     item.typeName
                                 )}
-
                                 ·
-
                                 ${escapeHtml(
                                     item.vehicleId
                                 )}
-
                             </strong>
 
                             <span>
-
                                 ${escapeHtml(
                                     item.work
                                 )}
-
                             </span>
 
                         </div>
-
                     `;
-
                 }
             );
-
         }
 
 
         html += `
-
             </div>
 
 
@@ -1870,16 +1495,13 @@ document.addEventListener("DOMContentLoaded", function () {
                 </h4>
 
                 <p>
-
                     ${escapeHtml(
                         task.remark ||
                         "无"
                     )}
-
                 </p>
 
             </div>
-
         `;
 
 
@@ -1890,6 +1512,10 @@ document.addEventListener("DOMContentLoaded", function () {
             .innerHTML =
             html;
 
+
+        /*
+        默认隐藏两个动作按钮
+        */
 
         withdrawPublishedTaskButton
             .classList
@@ -1905,9 +1531,14 @@ document.addEventListener("DOMContentLoaded", function () {
             );
 
 
+        /*
+        核心规则：
+        0趟 + pending = 显示撤回
+        */
+
         if (
-            task.status ===
-            "pending"
+            task.status === "pending" &&
+            tripStats.count === 0
         ) {
 
             withdrawPublishedTaskButton
@@ -1915,13 +1546,16 @@ document.addEventListener("DOMContentLoaded", function () {
                 .remove(
                     "hidden"
                 );
-
         }
 
 
+        /*
+        已有运输 = 执行中 = 只能完成
+        */
+
         if (
-            task.status ===
-            "active"
+            task.status === "active" &&
+            tripStats.count > 0
         ) {
 
             completePublishedTaskButton
@@ -1929,21 +1563,18 @@ document.addEventListener("DOMContentLoaded", function () {
                 .remove(
                     "hidden"
                 );
-
         }
 
 
         showSection(
             "publishedTaskModal"
         );
-
     }
-
 
 
     /*
     ========================================================
-    挖机
+    挖机看板
     ========================================================
     */
 
@@ -1963,7 +1594,6 @@ document.addEventListener("DOMContentLoaded", function () {
                         item.type ===
                         "excavator"
                     );
-
                 }
             );
 
@@ -1998,19 +1628,17 @@ document.addEventListener("DOMContentLoaded", function () {
                     );
 
 
-                    const label =
+                    const status =
                         card.querySelector(
                             ".device-status"
                         );
 
 
-                    if (label) {
+                    if (status) {
 
-                        label.textContent =
+                        status.textContent =
                             "✓ 当前选择";
-
                     }
-
                 }
 
 
@@ -2021,25 +1649,17 @@ document.addEventListener("DOMContentLoaded", function () {
                         handleExcavatorClick(
                             device
                         );
-
                     }
                 );
 
 
-                board.appendChild(
-                    card
-                );
-
+                board.appendChild(card);
             }
         );
-
     }
 
 
-
-    function handleExcavatorClick(
-        device
-    ) {
+    function handleExcavatorClick(device) {
 
         if (
             device.status ===
@@ -2051,7 +1671,6 @@ document.addEventListener("DOMContentLoaded", function () {
             );
 
             return;
-
         }
 
 
@@ -2065,7 +1684,6 @@ document.addEventListener("DOMContentLoaded", function () {
             );
 
             return;
-
         }
 
 
@@ -2085,14 +1703,12 @@ document.addEventListener("DOMContentLoaded", function () {
         scrollToId(
             "truckSection"
         );
-
     }
-
 
 
     /*
     ========================================================
-    卡车
+    卡车看板
     ========================================================
     */
 
@@ -2112,7 +1728,6 @@ document.addEventListener("DOMContentLoaded", function () {
                         item.type ===
                         "truck"
                     );
-
                 }
             );
 
@@ -2148,19 +1763,17 @@ document.addEventListener("DOMContentLoaded", function () {
                     );
 
 
-                    const label =
+                    const status =
                         card.querySelector(
                             ".device-status"
                         );
 
 
-                    if (label) {
+                    if (status) {
 
-                        label.textContent =
+                        status.textContent =
                             "✓ 已选择";
-
                     }
-
                 }
 
 
@@ -2171,28 +1784,20 @@ document.addEventListener("DOMContentLoaded", function () {
                         handleTruckClick(
                             device
                         );
-
                     }
                 );
 
 
-                board.appendChild(
-                    card
-                );
-
+                board.appendChild(card);
             }
         );
 
 
         updateTruckSelectionInfo();
-
     }
 
 
-
-    function handleTruckClick(
-        device
-    ) {
+    function handleTruckClick(device) {
 
         if (
             device.status ===
@@ -2204,7 +1809,6 @@ document.addEventListener("DOMContentLoaded", function () {
             );
 
             return;
-
         }
 
 
@@ -2218,7 +1822,6 @@ document.addEventListener("DOMContentLoaded", function () {
             );
 
             return;
-
         }
 
 
@@ -2229,7 +1832,6 @@ document.addEventListener("DOMContentLoaded", function () {
             );
 
             return;
-
         }
 
 
@@ -2245,7 +1847,6 @@ document.addEventListener("DOMContentLoaded", function () {
                 index,
                 1
             );
-
         }
 
         else {
@@ -2253,14 +1854,11 @@ document.addEventListener("DOMContentLoaded", function () {
             selectedTruckIds.push(
                 device.id
             );
-
         }
 
 
         renderTrucks();
-
     }
-
 
 
     function updateTruckSelectionInfo() {
@@ -2280,7 +1878,6 @@ document.addEventListener("DOMContentLoaded", function () {
                 );
 
             return;
-
         }
 
 
@@ -2314,14 +1911,12 @@ document.addEventListener("DOMContentLoaded", function () {
             "绑定所选卡车（" +
             count +
             "台）";
-
     }
-
 
 
     /*
     ========================================================
-    绑定列表
+    绑定关系
     ========================================================
     */
 
@@ -2333,23 +1928,15 @@ document.addEventListener("DOMContentLoaded", function () {
             );
 
 
-        if (
-            bindings.length ===
-            0
-        ) {
+        if (bindings.length === 0) {
 
             container.innerHTML = `
-
                 <div class="empty-placeholder">
-
                     暂无绑定关系
-
                 </div>
-
             `;
 
             return;
-
         }
 
 
@@ -2361,24 +1948,18 @@ document.addEventListener("DOMContentLoaded", function () {
             function (binding) {
 
                 html += `
-
                     <div class="binding-card">
 
                         <div class="binding-excavator">
-
                             🚜
-
                             <strong>
                                 ${escapeHtml(
                                     binding.excavatorId
                                 )}
                             </strong>
-
                         </div>
 
-
                         <div class="binding-truck-list">
-
                 `;
 
 
@@ -2386,37 +1967,27 @@ document.addEventListener("DOMContentLoaded", function () {
                     function (truckId) {
 
                         html += `
-
                             <div class="binding-truck-item">
-
                                 🚚
                                 ${escapeHtml(truckId)}
-
                             </div>
-
                         `;
-
                     }
                 );
 
 
                 html += `
-
                         </div>
 
                     </div>
-
                 `;
-
             }
         );
 
 
         container.innerHTML =
             html;
-
     }
-
 
 
     /*
@@ -2462,9 +2033,7 @@ document.addEventListener("DOMContentLoaded", function () {
             "busBoard",
             "busCount"
         );
-
     }
-
 
 
     function renderAuxiliaryBoard(
@@ -2486,7 +2055,6 @@ document.addEventListener("DOMContentLoaded", function () {
                     return (
                         item.type === type
                     );
-
                 }
             );
 
@@ -2518,20 +2086,14 @@ document.addEventListener("DOMContentLoaded", function () {
                         handleAuxiliaryDeviceClick(
                             device
                         );
-
                     }
                 );
 
 
-                board.appendChild(
-                    card
-                );
-
+                board.appendChild(card);
             }
         );
-
     }
-
 
 
     function handleAuxiliaryDeviceClick(
@@ -2548,7 +2110,6 @@ document.addEventListener("DOMContentLoaded", function () {
             );
 
             return;
-
         }
 
 
@@ -2562,7 +2123,6 @@ document.addEventListener("DOMContentLoaded", function () {
             );
 
             return;
-
         }
 
 
@@ -2573,7 +2133,6 @@ document.addEventListener("DOMContentLoaded", function () {
             );
 
             return;
-
         }
 
 
@@ -2583,6 +2142,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
         setText(
             "auxSelectedVehicle",
+
             getTypeName(
                 device.type
             ) +
@@ -2593,6 +2153,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
         setText(
             "auxTaskModalTitle",
+
             "下发" +
             getTypeName(
                 device.type
@@ -2607,8 +2168,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
         getWorkOptions(
             device.type
-        )
-        .forEach(
+        ).forEach(
             function (item) {
 
                 const option =
@@ -2620,16 +2180,13 @@ document.addEventListener("DOMContentLoaded", function () {
                 option.value =
                     item.value;
 
-
                 option.textContent =
                     item.label;
 
 
-                auxWorkType
-                    .appendChild(
-                        option
-                    );
-
+                auxWorkType.appendChild(
+                    option
+                );
             }
         );
 
@@ -2638,7 +2195,6 @@ document.addEventListener("DOMContentLoaded", function () {
             "auxManualWork",
             ""
         );
-
 
         setValue(
             "auxTaskRemark",
@@ -2654,9 +2210,7 @@ document.addEventListener("DOMContentLoaded", function () {
         showSection(
             "auxTaskModal"
         );
-
     }
-
 
 
     function renderAuxiliaryAssignments() {
@@ -2673,17 +2227,12 @@ document.addEventListener("DOMContentLoaded", function () {
         ) {
 
             container.innerHTML = `
-
                 <div class="empty-placeholder">
-
                     暂未配置辅助车辆
-
                 </div>
-
             `;
 
             return;
-
         }
 
 
@@ -2695,57 +2244,43 @@ document.addEventListener("DOMContentLoaded", function () {
             function (item) {
 
                 html += `
-
                     <div class="aux-assignment-card">
 
                         <div>
 
                             <strong>
-
                                 ${escapeHtml(
                                     item.typeName
                                 )}
-
                                 ·
-
                                 ${escapeHtml(
                                     item.vehicleId
                                 )}
-
                             </strong>
 
                             <span>
-
                                 ${escapeHtml(
                                     item.work
                                 )}
-
                             </span>
 
                         </div>
 
-
                         <div class="aux-assignment-area">
-
                             ${escapeHtml(
                                 item.area
                             )}
-
                         </div>
 
                     </div>
-
                 `;
-
             }
         );
 
 
         container.innerHTML =
             html;
-
     }
-
 
 
     /*
@@ -2754,9 +2289,7 @@ document.addEventListener("DOMContentLoaded", function () {
     ========================================================
     */
 
-    function createDeviceCard(
-        device
-    ) {
+    function createDeviceCard(device) {
 
         const card =
             document.createElement(
@@ -2776,32 +2309,22 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
         card.innerHTML = `
-
             <strong class="device-number">
-
-                ${escapeHtml(
-                    device.id
-                )}
-
+                ${escapeHtml(device.id)}
             </strong>
 
             <span class="device-status">
-
                 ${escapeHtml(
                     getStatusText(
                         device.status
                     )
                 )}
-
             </span>
-
         `;
 
 
         return card;
-
     }
-
 
 
     /*
@@ -2826,114 +2349,72 @@ document.addEventListener("DOMContentLoaded", function () {
         );
 
 
-        document.getElementById(
-            "modalContent"
-        ).innerHTML = `
+        document
+            .getElementById(
+                "modalContent"
+            )
+            .innerHTML = `
 
             <div class="modal-detail-row">
-
-                <span>
-                    车型
-                </span>
-
+                <span>车型</span>
                 <strong>
-
                     ${escapeHtml(
                         getTypeName(
                             device.type
                         )
                     )}
-
                 </strong>
-
             </div>
 
-
             <div class="modal-detail-row">
-
-                <span>
-                    故障
-                </span>
-
+                <span>故障</span>
                 <strong>
-
                     ${escapeHtml(
                         maintenance.fault ||
                         "未填写"
                     )}
-
                 </strong>
-
             </div>
 
-
             <div class="modal-detail-row">
-
-                <span>
-                    开始时间
-                </span>
-
+                <span>开始时间</span>
                 <strong>
-
                     ${escapeHtml(
                         maintenance.startedAt ||
                         "-"
                     )}
-
                 </strong>
-
             </div>
 
-
             <div class="modal-detail-row">
-
-                <span>
-                    预计完成
-                </span>
-
+                <span>预计完成</span>
                 <strong>
-
                     ${escapeHtml(
                         maintenance.expectedEnd ||
                         "-"
                     )}
-
                 </strong>
-
             </div>
 
-
             <div class="modal-detail-row">
-
-                <span>
-                    维修负责人
-                </span>
-
+                <span>维修负责人</span>
                 <strong>
-
                     ${escapeHtml(
                         maintenance.responsible ||
                         "-"
                     )}
-
                 </strong>
-
             </div>
-
         `;
 
 
         showSection(
             "deviceModal"
         );
-
     }
 
 
-
-    function showAssignedModal(
-        device
-    ) {
+    function showAssignedModal(device) {
 
         const task =
             device.assignedTask ||
@@ -2947,91 +2428,59 @@ document.addEventListener("DOMContentLoaded", function () {
         );
 
 
-        document.getElementById(
-            "modalContent"
-        ).innerHTML = `
+        document
+            .getElementById(
+                "modalContent"
+            )
+            .innerHTML = `
 
             <div class="modal-detail-row">
-
-                <span>
-                    车型
-                </span>
-
+                <span>车型</span>
                 <strong>
-
                     ${escapeHtml(
                         getTypeName(
                             device.type
                         )
                     )}
-
                 </strong>
-
             </div>
 
-
             <div class="modal-detail-row">
-
-                <span>
-                    作业区域
-                </span>
-
+                <span>作业区域</span>
                 <strong>
-
                     ${escapeHtml(
                         task.area ||
                         "-"
                     )}
-
                 </strong>
-
             </div>
 
-
             <div class="modal-detail-row">
-
-                <span>
-                    班次
-                </span>
-
+                <span>班次</span>
                 <strong>
-
                     ${escapeHtml(
                         task.shift ||
                         "-"
                     )}
-
                 </strong>
-
             </div>
 
-
             <div class="modal-detail-row">
-
-                <span>
-                    工作内容
-                </span>
-
+                <span>工作内容</span>
                 <strong>
-
                     ${escapeHtml(
                         task.work ||
                         "-"
                     )}
-
                 </strong>
-
             </div>
-
         `;
 
 
         showSection(
             "deviceModal"
         );
-
     }
-
 
 
     /*
@@ -3049,29 +2498,22 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
         let html = `
-
             <div class="preview-header">
 
                 <strong>
-
                     ${escapeHtml(
                         currentTask.area
                     )}
-
                 </strong>
 
                 <span>
-
                     ${escapeHtml(
                         currentTask.date
                     )}
-
                     ·
-
                     ${escapeHtml(
                         currentTask.shift
                     )}
-
                 </span>
 
             </div>
@@ -3082,23 +2524,16 @@ document.addEventListener("DOMContentLoaded", function () {
                 <h3>
                     主采设备
                 </h3>
-
         `;
 
 
-        if (
-            bindings.length ===
-            0
-        ) {
+        if (bindings.length === 0) {
 
             html += `
-
                 <p>
                     未配置挖机和卡车
                 </p>
-
             `;
-
         }
 
 
@@ -3106,18 +2541,14 @@ document.addEventListener("DOMContentLoaded", function () {
             function (binding) {
 
                 html += `
-
                     <div class="preview-binding">
 
                         <strong>
-
                             🚜
                             ${escapeHtml(
                                 binding.excavatorId
                             )}
-
                         </strong>
-
                 `;
 
 
@@ -3125,34 +2556,25 @@ document.addEventListener("DOMContentLoaded", function () {
                     function (truckId) {
 
                         html += `
-
                             <span>
-
                                 └ 🚚
                                 ${escapeHtml(
                                     truckId
                                 )}
-
                             </span>
-
                         `;
-
                     }
                 );
 
 
                 html += `
-
                     </div>
-
                 `;
-
             }
         );
 
 
         html += `
-
             </div>
 
 
@@ -3161,7 +2583,6 @@ document.addEventListener("DOMContentLoaded", function () {
                 <h3>
                     辅助车辆
                 </h3>
-
         `;
 
 
@@ -3171,13 +2592,10 @@ document.addEventListener("DOMContentLoaded", function () {
         ) {
 
             html += `
-
                 <p>
                     未配置辅助车辆
                 </p>
-
             `;
-
         }
 
 
@@ -3185,41 +2603,31 @@ document.addEventListener("DOMContentLoaded", function () {
             function (item) {
 
                 html += `
-
                     <div class="preview-auxiliary">
 
                         <strong>
-
                             ${escapeHtml(
                                 item.typeName
                             )}
-
                             ·
-
                             ${escapeHtml(
                                 item.vehicleId
                             )}
-
                         </strong>
 
                         <span>
-
                             ${escapeHtml(
                                 item.work
                             )}
-
                         </span>
 
                     </div>
-
                 `;
-
             }
         );
 
 
         html += `
-
             </div>
 
 
@@ -3230,35 +2638,28 @@ document.addEventListener("DOMContentLoaded", function () {
                 </h3>
 
                 <p>
-
                     ${escapeHtml(
                         currentTask.remark ||
                         "无"
                     )}
-
                 </p>
 
             </div>
-
         `;
 
 
         container.innerHTML =
             html;
-
     }
-
 
 
     /*
     ========================================================
-    设备查找 / 释放
+    查找设备
     ========================================================
     */
 
-    function findDevice(
-        id
-    ) {
+    function findDevice(id) {
 
         return equipment.find(
             function (item) {
@@ -3266,17 +2667,18 @@ document.addEventListener("DOMContentLoaded", function () {
                 return (
                     item.id === id
                 );
-
             }
         );
-
     }
 
 
+    /*
+    ========================================================
+    释放设备
+    ========================================================
+    */
 
-    function releaseTaskEquipment(
-        task
-    ) {
+    function releaseTaskEquipment(task) {
 
         if (
             Array.isArray(
@@ -3304,7 +2706,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
                         delete excavator
                             .assignedTask;
-
                     }
 
 
@@ -3315,9 +2716,7 @@ document.addEventListener("DOMContentLoaded", function () {
                     ) {
 
                         binding.truckIds.forEach(
-                            function (
-                                truckId
-                            ) {
+                            function (truckId) {
 
                                 const truck =
                                     findDevice(
@@ -3336,17 +2735,12 @@ document.addEventListener("DOMContentLoaded", function () {
 
                                     delete truck
                                         .assignedTask;
-
                                 }
-
                             }
                         );
-
                     }
-
                 }
             );
-
         }
 
 
@@ -3376,21 +2770,16 @@ document.addEventListener("DOMContentLoaded", function () {
 
                         delete device
                             .assignedTask;
-
                     }
-
                 }
             );
-
         }
-
     }
-
 
 
     /*
     ========================================================
-    从任务恢复设备状态
+    恢复进行中任务占用的设备
     ========================================================
     */
 
@@ -3410,7 +2799,6 @@ document.addEventListener("DOMContentLoaded", function () {
                         task.status ===
                         "active"
                     );
-
                 }
             )
             .forEach(
@@ -3441,21 +2829,11 @@ document.addEventListener("DOMContentLoaded", function () {
                                         "assigned";
 
                                     excavator.assignedTask = {
-
-                                        area:
-                                            task.area,
-
-                                        shift:
-                                            task.shift,
-
-                                        work:
-                                            "采装作业",
-
-                                        taskId:
-                                            task.taskId
-
+                                        taskId: task.taskId,
+                                        area: task.area,
+                                        shift: task.shift,
+                                        work: "采装作业"
                                     };
-
                                 }
 
 
@@ -3466,9 +2844,7 @@ document.addEventListener("DOMContentLoaded", function () {
                                 ) {
 
                                     binding.truckIds.forEach(
-                                        function (
-                                            truckId
-                                        ) {
+                                        function (truckId) {
 
                                             const truck =
                                                 findDevice(
@@ -3486,32 +2862,21 @@ document.addEventListener("DOMContentLoaded", function () {
                                                     "assigned";
 
                                                 truck.assignedTask = {
-
-                                                    area:
-                                                        task.area,
-
-                                                    shift:
-                                                        task.shift,
-
+                                                    taskId: task.taskId,
+                                                    area: task.area,
+                                                    shift: task.shift,
                                                     work:
                                                         "跟随 " +
                                                         binding.excavatorId,
-
-                                                    taskId:
-                                                        task.taskId
-
+                                                    excavatorId:
+                                                        binding.excavatorId
                                                 };
-
                                             }
-
                                         }
                                     );
-
                                 }
-
                             }
                         );
-
                     }
 
 
@@ -3540,34 +2905,18 @@ document.addEventListener("DOMContentLoaded", function () {
                                         "assigned";
 
                                     device.assignedTask = {
-
-                                        area:
-                                            task.area,
-
-                                        shift:
-                                            task.shift,
-
-                                        work:
-                                            item.work,
-
-                                        remark:
-                                            item.remark,
-
-                                        taskId:
-                                            task.taskId
-
+                                        taskId: task.taskId,
+                                        area: task.area,
+                                        shift: task.shift,
+                                        work: item.work,
+                                        remark: item.remark
                                     };
-
                                 }
-
                             }
                         );
-
                     }
-
                 }
             );
-
     }
 
 });
@@ -3576,7 +2925,75 @@ document.addEventListener("DOMContentLoaded", function () {
 
 /*
 ========================================================
-任务执行状态自动判定
+V2.4.1 旧任务状态迁移
+========================================================
+
+以前 V2.3 发布任务后直接保存为 active。
+现在规则改成：
+
+0趟 = 待执行
+有运输 = 执行中
+
+因此旧任务 active + 0趟 自动改回 pending。
+========================================================
+*/
+
+function migrateOldTaskStatuses() {
+
+    const tasks =
+        getPublishedTasks();
+
+
+    let changed =
+        false;
+
+
+    tasks.forEach(
+        function (task) {
+
+            if (
+                task.status !==
+                "active"
+            ) {
+
+                return;
+            }
+
+
+            const stats =
+                getTaskTripStats(
+                    task.taskId
+                );
+
+
+            if (stats.count === 0) {
+
+                task.status =
+                    "pending";
+
+                task.transportTripCount =
+                    0;
+
+                delete task.startedAt;
+
+                changed =
+                    true;
+            }
+        }
+    );
+
+
+    if (changed) {
+
+        saveTaskArray(tasks);
+    }
+}
+
+
+
+/*
+========================================================
+运输记录触发执行状态
 ========================================================
 */
 
@@ -3599,7 +3016,6 @@ function syncPublishedTaskExecutionStatus() {
             ) {
 
                 return;
-
             }
 
 
@@ -3609,54 +3025,41 @@ function syncPublishedTaskExecutionStatus() {
                 );
 
 
-            if (
-                stats.count > 0
-            ) {
+            if (stats.count > 0) {
 
                 task.status =
                     "active";
-
 
                 task.startedAt =
                     stats.firstTime ||
                     new Date()
                         .toISOString();
 
-
                 task.transportTripCount =
                     stats.count;
 
-
                 changed =
                     true;
-
             }
-
         }
     );
 
 
     if (changed) {
 
-        saveTaskArray(
-            tasks
-        );
-
+        saveTaskArray(tasks);
     }
-
 }
 
 
 
 /*
 ========================================================
-读取某任务运输记录
+读取某任务的运输记录
 ========================================================
 */
 
-function getTaskTripRecords(
-    taskId
-) {
+function getTaskTripRecords(taskId) {
 
     let records =
         [];
@@ -3666,34 +3069,25 @@ function getTaskTripRecords(
 
         records =
             JSON.parse(
-
                 localStorage.getItem(
                     "driverTripRecords"
                 )
                 ||
                 "[]"
-
             );
-
     }
 
     catch (error) {
 
         records =
             [];
-
     }
 
 
-    if (
-        !Array.isArray(
-            records
-        )
-    ) {
+    if (!Array.isArray(records)) {
 
         records =
             [];
-
     }
 
 
@@ -3703,27 +3097,17 @@ function getTaskTripRecords(
             if (!record) {
 
                 return false;
-
             }
 
 
-            /*
-            兼容几种可能字段
-            */
-
             const recordTaskId =
-
                 record.taskId ||
-
                 record.dispatchTaskId ||
-
                 (
                     record.task &&
                     record.task.taskId
                 )
-
                 ||
-
                 "";
 
 
@@ -3731,10 +3115,8 @@ function getTaskTripRecords(
                 String(recordTaskId) ===
                 String(taskId)
             );
-
         }
     );
-
 }
 
 
@@ -3745,9 +3127,7 @@ function getTaskTripRecords(
 ========================================================
 */
 
-function getTaskTripStats(
-    taskId
-) {
+function getTaskTripStats(taskId) {
 
     const records =
         getTaskTripRecords(
@@ -3761,31 +3141,20 @@ function getTaskTripStats(
                 function (record) {
 
                     return (
-
                         record.completedAt ||
-
                         record.endTime ||
-
                         record.finishedAt ||
-
                         record.createdAt ||
-
                         record.time ||
-
                         null
-
                     );
-
                 }
             )
             .filter(Boolean)
             .map(
                 function (value) {
 
-                    return new Date(
-                        value
-                    );
-
+                    return new Date(value);
                 }
             )
             .filter(
@@ -3796,7 +3165,6 @@ function getTaskTripStats(
                             date.getTime()
                         )
                     );
-
                 }
             )
             .sort(
@@ -3806,21 +3174,17 @@ function getTaskTripStats(
                         a.getTime() -
                         b.getTime()
                     );
-
                 }
             );
 
 
     return {
-
-        count:
-            records.length,
+        count: records.length,
 
         firstTime:
             times.length
                 ?
-                times[0]
-                    .toISOString()
+                times[0].toISOString()
                 :
                 null,
 
@@ -3829,20 +3193,17 @@ function getTaskTripStats(
                 ?
                 times[
                     times.length - 1
-                ]
-                    .toISOString()
+                ].toISOString()
                 :
                 null
-
     };
-
 }
 
 
 
 /*
 ========================================================
-某卡车运输趟数
+某卡车任务趟数
 ========================================================
 */
 
@@ -3861,15 +3222,10 @@ function getTruckTaskTripCount(
         function (record) {
 
             const recordTruck =
-
                 record.vehicleNumber ||
-
                 record.vehicleId ||
-
                 record.truckId ||
-
                 record.vehicle ||
-
                 "";
 
 
@@ -3877,17 +3233,15 @@ function getTruckTaskTripCount(
                 String(recordTruck) ===
                 String(truckId)
             );
-
         }
     ).length;
-
 }
 
 
 
 /*
 ========================================================
-模拟卡车
+生成卡车
 ========================================================
 */
 
@@ -3912,17 +3266,9 @@ function createTruckData() {
 
 
         const truck = {
-
-            id:
-                "T-" +
-                number,
-
-            type:
-                "truck",
-
-            status:
-                "available"
-
+            id: "T-" + number,
+            type: "truck",
+            status: "available"
         };
 
 
@@ -3936,7 +3282,6 @@ function createTruckData() {
 
 
             truck.maintenance = {
-
                 fault:
                     i === 5
                         ?
@@ -3952,76 +3297,52 @@ function createTruckData() {
 
                 responsible:
                     "维修组"
-
             };
-
         }
 
 
-        trucks.push(
-            truck
-        );
-
+        trucks.push(truck);
     }
 
 
     return trucks;
-
 }
 
 
 
 /*
 ========================================================
-保存任务
+任务保存
 ========================================================
 */
 
-function savePublishedTask(
-    task
-) {
+function savePublishedTask(task) {
 
     const tasks =
         getPublishedTasks();
 
 
-    tasks.push(
-        task
-    );
+    tasks.push(task);
 
 
-    saveTaskArray(
-        tasks
-    );
+    saveTaskArray(tasks);
 
 
     localStorage.setItem(
         "publishedDispatchTask",
         JSON.stringify(task)
     );
-
 }
 
 
-
-function saveTaskArray(
-    tasks
-) {
+function saveTaskArray(tasks) {
 
     localStorage.setItem(
         "dispatchPublishedTasks",
         JSON.stringify(tasks)
     );
-
 }
 
-
-
-/*
-========================================================
-读取任务
-========================================================
-*/
 
 function getPublishedTasks() {
 
@@ -4033,191 +3354,134 @@ function getPublishedTasks() {
 
         tasks =
             JSON.parse(
-
                 localStorage.getItem(
                     "dispatchPublishedTasks"
                 )
                 ||
                 "[]"
-
             );
-
     }
 
     catch (error) {
 
         tasks =
             [];
-
     }
 
 
-    if (
-        !Array.isArray(
-            tasks
-        )
-    ) {
+    if (!Array.isArray(tasks)) {
 
         tasks =
             [];
-
     }
 
 
     return tasks;
-
 }
 
 
 
 /*
 ========================================================
-辅助车辆任务
+辅助车辆任务选项
 ========================================================
 */
 
-function getWorkOptions(
-    type
-) {
+function getWorkOptions(type) {
 
-    if (
-        type ===
-        "loader"
-    ) {
+    if (type === "loader") {
 
         return [
-
             {
                 value: "日常作业",
                 label: "日常作业"
             },
-
             {
                 value: "清理挖机附近散料",
                 label: "清理挖机附近散料"
             },
-
             {
                 value: "修整运输道路",
                 label: "修整运输道路"
             },
-
             {
                 value: "装煤",
                 label: "装煤"
             },
-
             {
                 value: "排土场作业",
                 label: "排土场作业"
             },
-
             {
                 value: "manual",
                 label: "手动录入"
             }
-
         ];
-
     }
 
 
-    if (
-        type ===
-        "water"
-    ) {
+    if (type === "water") {
 
         return [
-
             {
                 value: "日常洒水",
                 label: "日常洒水"
             },
-
             {
                 value: "运输道路洒水",
                 label: "运输道路洒水"
             },
-
             {
                 value: "采区洒水",
                 label: "采区洒水"
             },
-
             {
                 value: "排土场洒水",
                 label: "排土场洒水"
             },
-
             {
                 value: "临时调配",
                 label: "临时调配"
             },
-
             {
                 value: "manual",
                 label: "手动录入"
             }
-
         ];
-
     }
 
 
     return [
-
         {
             value: "日常作业",
             label: "日常作业"
         },
-
         {
             value: "manual",
             label: "手动录入"
         }
-
     ];
-
 }
 
 
 
 /*
 ========================================================
-车型
+车型名称
 ========================================================
 */
 
-function getTypeName(
-    type
-) {
+function getTypeName(type) {
 
     const map = {
-
-        excavator:
-            "挖机",
-
-        truck:
-            "卡车",
-
-        loader:
-            "装载机",
-
-        water:
-            "水车",
-
-        fuel:
-            "加油车",
-
-        grader:
-            "平路机",
-
-        dozer:
-            "推土机",
-
-        bus:
-            "大巴"
-
+        excavator: "挖机",
+        truck: "卡车",
+        loader: "装载机",
+        water: "水车",
+        fuel: "加油车",
+        grader: "平路机",
+        dozer: "推土机",
+        bus: "大巴"
     };
 
 
@@ -4225,7 +3489,6 @@ function getTypeName(
         map[type] ||
         "其他车辆"
     );
-
 }
 
 
@@ -4236,27 +3499,14 @@ function getTypeName(
 ========================================================
 */
 
-function getTaskStatusText(
-    status
-) {
+function getTaskStatusText(status) {
 
     const map = {
-
-        pending:
-            "待执行",
-
-        active:
-            "执行中",
-
-        completed:
-            "已完成",
-
-        withdrawn:
-            "已撤回",
-
-        configuring:
-            "配置中"
-
+        pending: "待执行",
+        active: "执行中",
+        completed: "已完成",
+        withdrawn: "已撤回",
+        configuring: "配置中"
     };
 
 
@@ -4264,57 +3514,36 @@ function getTaskStatusText(
         map[status] ||
         "未知"
     );
-
 }
 
 
+function getTaskCardClass(status) {
 
-function getTaskCardClass(
-    status
-) {
-
-    if (
-        status ===
-        "pending"
-    ) {
+    if (status === "pending") {
 
         return "task-pending-card";
-
     }
 
 
-    if (
-        status ===
-        "active"
-    ) {
+    if (status === "active") {
 
         return "task-active-card";
-
     }
 
 
-    if (
-        status ===
-        "completed"
-    ) {
+    if (status === "completed") {
 
         return "task-completed-card";
-
     }
 
 
-    if (
-        status ===
-        "withdrawn"
-    ) {
+    if (status === "withdrawn") {
 
         return "task-withdrawn-card";
-
     }
 
 
     return "";
-
 }
 
 
@@ -4325,82 +3554,51 @@ function getTaskCardClass(
 ========================================================
 */
 
-function getStatusClass(
-    status
-) {
+function getStatusClass(status) {
 
-    if (
-        status ===
-        "available"
-    ) {
+    if (status === "available") {
 
         return "device-available";
-
     }
 
 
-    if (
-        status ===
-        "maintenance"
-    ) {
+    if (status === "maintenance") {
 
         return "device-maintenance";
-
     }
 
 
-    if (
-        status ===
-        "assigned"
-    ) {
+    if (status === "assigned") {
 
         return "device-assigned";
-
     }
 
 
     return "";
-
 }
 
 
+function getStatusText(status) {
 
-function getStatusText(
-    status
-) {
-
-    if (
-        status ===
-        "available"
-    ) {
+    if (status === "available") {
 
         return "可调配";
-
     }
 
 
-    if (
-        status ===
-        "maintenance"
-    ) {
+    if (status === "maintenance") {
 
         return "维修中";
-
     }
 
 
-    if (
-        status ===
-        "assigned"
-    ) {
+    if (status === "assigned") {
 
         return "已分配";
-
     }
 
 
     return "未知";
-
 }
 
 
@@ -4414,8 +3612,7 @@ function getStatusText(
 function getDefaultShift() {
 
     const hour =
-        new Date()
-            .getHours();
+        new Date().getHours();
 
 
     if (
@@ -4424,30 +3621,25 @@ function getDefaultShift() {
     ) {
 
         return "白班";
-
     }
 
 
     return "夜班";
-
 }
 
 
 
 /*
 ========================================================
-时间
+时间格式
 ========================================================
 */
 
-function formatDateTime(
-    value
-) {
+function formatDateTime(value) {
 
     if (!value) {
 
         return "-";
-
     }
 
 
@@ -4462,7 +3654,6 @@ function formatDateTime(
     ) {
 
         return "-";
-
     }
 
 
@@ -4475,31 +3666,25 @@ function formatDateTime(
             minute: "2-digit"
         }
     );
-
 }
 
 
 
 /*
 ========================================================
-通用
+通用函数
 ========================================================
 */
 
-function getValue(
-    id
-) {
+function getValue(id) {
 
     const element =
-        document.getElementById(
-            id
-        );
+        document.getElementById(id);
 
 
     if (!element) {
 
         return "";
-
     }
 
 
@@ -4507,9 +3692,7 @@ function getValue(
         element.value ||
         ""
     ).trim();
-
 }
-
 
 
 function setValue(
@@ -4518,9 +3701,7 @@ function setValue(
 ) {
 
     const element =
-        document.getElementById(
-            id
-        );
+        document.getElementById(id);
 
 
     if (element) {
@@ -4528,11 +3709,8 @@ function setValue(
         element.value =
             value ||
             "";
-
     }
-
 }
-
 
 
 function setText(
@@ -4541,30 +3719,21 @@ function setText(
 ) {
 
     const element =
-        document.getElementById(
-            id
-        );
+        document.getElementById(id);
 
 
     if (element) {
 
         element.textContent =
             value;
-
     }
-
 }
 
 
-
-function showSection(
-    id
-) {
+function showSection(id) {
 
     const element =
-        document.getElementById(
-            id
-        );
+        document.getElementById(id);
 
 
     if (element) {
@@ -4574,21 +3743,14 @@ function showSection(
             .remove(
                 "hidden"
             );
-
     }
-
 }
 
 
-
-function hideSection(
-    id
-) {
+function hideSection(id) {
 
     const element =
-        document.getElementById(
-            id
-        );
+        document.getElementById(id);
 
 
     if (element) {
@@ -4598,27 +3760,19 @@ function hideSection(
             .add(
                 "hidden"
             );
-
     }
-
 }
 
 
-
-function scrollToId(
-    id
-) {
+function scrollToId(id) {
 
     const element =
-        document.getElementById(
-            id
-        );
+        document.getElementById(id);
 
 
     if (!element) {
 
         return;
-
     }
 
 
@@ -4626,31 +3780,19 @@ function scrollToId(
         function () {
 
             element.scrollIntoView({
-
-                behavior:
-                    "smooth",
-
-                block:
-                    "start"
-
+                behavior: "smooth",
+                block: "start"
             });
-
         },
         50
     );
-
 }
 
 
-
-function escapeHtml(
-    value
-) {
+function escapeHtml(value) {
 
     const div =
-        document.createElement(
-            "div"
-        );
+        document.createElement("div");
 
 
     div.textContent =
@@ -4661,5 +3803,4 @@ function escapeHtml(
 
 
     return div.innerHTML;
-
 }
