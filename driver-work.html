@@ -1,251 +1,272 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
-
 <head>
     <meta charset="UTF-8">
-
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0"
-    >
-
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>司机工作台</title>
 
     <link rel="stylesheet" href="css/style.css">
-    <link rel="stylesheet" href="css/driver-work.css?v=2.7.0">
+    <link rel="stylesheet" href="css/driver-work.css?v=2.8.0">
 </head>
 
 <body class="driver-work-body">
 
 <header class="driver-header">
-
     <div>
         <h1>🚚 司机工作台</h1>
         <p>Driver Workbench</p>
     </div>
 
     <span id="driverStatusBadge" class="driver-status-badge">
-        已审核
+        待命
     </span>
-
 </header>
-
 
 <main class="driver-work-main">
 
-    <!-- 个人 -->
+    <!-- 司机 -->
     <section class="driver-card">
-
         <div class="driver-card-title">
-
             <div>
-                <h2 id="driverName">
-                    司机
-                </h2>
-
-                <p id="driverTeam">
-                    -
+                <h2 id="driverName">-</h2>
+                <p>
+                    <span id="driverTeam">-</span>
+                    ·
+                    <span id="driverPosition">卡车司机</span>
                 </p>
             </div>
+        </div>
+    </section>
 
-            <strong id="currentShift">
-                -
-            </strong>
+
+    <!-- GPS -->
+    <section class="driver-card gps-card">
+
+        <div class="driver-card-title">
+            <div>
+                <h2>📍 定位状态</h2>
+                <p>用于运输趟次GPS校验</p>
+            </div>
+
+            <span id="gpsStatusBadge" class="gps-badge gps-waiting">
+                未定位
+            </span>
+        </div>
+
+        <div class="gps-grid">
+
+            <div>
+                <span>定位状态</span>
+                <strong id="gpsStatusText">等待定位</strong>
+            </div>
+
+            <div>
+                <span>定位精度</span>
+                <strong id="gpsAccuracy">-</strong>
+            </div>
+
+            <div>
+                <span>最后定位</span>
+                <strong id="gpsUpdateTime">-</strong>
+            </div>
 
         </div>
+
+        <div id="gpsCoordinateBox" class="gps-coordinate">
+            <span>当前位置</span>
+            <strong id="gpsCoordinate">尚未取得位置</strong>
+        </div>
+
+        <button
+            id="startGpsButton"
+            type="button"
+            class="gps-button"
+        >
+            📍 开启定位
+        </button>
+
+        <p class="gps-tip">
+            请允许浏览器使用手机定位。完成运输趟次时，
+            系统会重新取得当前位置并保存GPS证据。
+        </p>
 
     </section>
 
 
-    <!-- 当前调度任务 -->
+    <!-- 调度任务 -->
     <section class="driver-card">
 
         <div class="driver-card-title">
-
             <div>
                 <h2>📋 当前调度任务</h2>
-
-                <p>
-                    只能领取调度分配给你的车辆
-                </p>
+                <p>车辆必须按调度安排领取</p>
             </div>
 
+            <span id="taskStatusBadge" class="work-status-badge">
+                待调度
+            </span>
         </div>
 
+        <div id="noTaskArea" class="empty-box">
+            暂无调度任务，请等待调度分配。
+        </div>
 
-        <div
-            id="assignmentArea"
-            class="assignment-area"
-        >
+        <div id="taskArea" class="hidden">
 
-            <div class="empty-placeholder">
-                调度暂未给你分配车辆
+            <div class="work-grid">
+
+                <div>
+                    <span>车辆</span>
+                    <strong id="vehicleNumber">-</strong>
+                </div>
+
+                <div>
+                    <span>跟随挖机</span>
+                    <strong id="excavatorNumber">-</strong>
+                </div>
+
+                <div>
+                    <span>作业区域</span>
+                    <strong id="workArea">-</strong>
+                </div>
+
+                <div>
+                    <span>班次</span>
+                    <strong id="shiftName">-</strong>
+                </div>
+
             </div>
+
+            <div class="route-box">
+                <div>
+                    <span>装载点</span>
+                    <strong id="loadingPoint">-</strong>
+                </div>
+
+                <div class="route-arrow">→</div>
+
+                <div>
+                    <span>卸载点</span>
+                    <strong id="unloadingPoint">-</strong>
+                </div>
+            </div>
+
+            <div id="taskRemark" class="task-remark"></div>
 
         </div>
 
     </section>
 
 
-    <!-- 当前作业 -->
-    <section
-        id="activeWorkSection"
-        class="driver-card hidden"
-    >
+    <!-- 领取车辆 -->
+    <section id="claimSection" class="driver-card">
 
         <div class="driver-card-title">
-
             <div>
-                <h2>🚛 当前作业</h2>
-
-                <p id="activeTaskStatusText">
-                    -
-                </p>
+                <h2>🚛 车辆领取</h2>
+                <p>领取调度分配给本人的车辆</p>
             </div>
-
-            <span
-                id="workStatusBadge"
-                class="work-status-badge"
-            >
-                作业中
-            </span>
-
         </div>
 
-
-        <div class="work-grid">
-
-            <div>
-                <span>作业区域</span>
-                <strong id="workArea">-</strong>
+        <div id="claimContent">
+            <div class="empty-box">
+                暂无可领取车辆
             </div>
-
-            <div>
-                <span>车辆编号</span>
-                <strong id="workVehicle">-</strong>
-            </div>
-
-            <div>
-                <span>跟随挖机</span>
-                <strong id="workExcavator">-</strong>
-            </div>
-
-            <div>
-                <span>班次</span>
-                <strong id="workShift">-</strong>
-            </div>
-
         </div>
-
-
-        <div
-            id="changePendingWarning"
-            class="change-pending-warning hidden"
-        >
-            🚨 换车申请正在等待调度审批。审批完成前禁止继续记录运输趟数。
-        </div>
-
-
-        <button
-            id="completeTripButton"
-            type="button"
-            class="trip-button"
-        >
-            ✅ 完成一趟
-        </button>
-
-
-        <button
-            id="applyVehicleChangeButton"
-            type="button"
-            class="fault-button"
-        >
-            🔧 车辆故障 / 申请换车
-        </button>
 
     </section>
 
 
-    <!-- 今日统计 -->
+    <!-- 作业 -->
     <section class="driver-card">
 
         <div class="driver-card-title">
-
             <div>
-                <h2>📊 我的运输记录</h2>
-                <p>当前任务运输统计</p>
+                <h2>⛏️ 本班作业</h2>
+                <p>运输趟次与当前车辆绑定</p>
             </div>
-
         </div>
-
 
         <div class="stats-grid">
 
             <div>
-                <span>当前任务趟数</span>
-                <strong id="currentTaskTripCount">0</strong>
-            </div>
-
-            <div>
-                <span>本人本任务趟数</span>
-                <strong id="myTaskTripCount">0</strong>
-            </div>
-
-            <div>
-                <span>今日本人趟数</span>
+                <span>今日趟数</span>
                 <strong id="todayTripCount">0</strong>
             </div>
 
+            <div>
+                <span>当前车辆</span>
+                <strong id="currentVehicle">-</strong>
+            </div>
+
+            <div>
+                <span>GPS</span>
+                <strong id="workGpsStatus">未定位</strong>
+            </div>
+
         </div>
+
+        <button
+            id="startWorkButton"
+            type="button"
+            class="start-work-button"
+        >
+            ▶ 开始作业
+        </button>
+
+        <button
+            id="addTripButton"
+            type="button"
+            class="trip-button"
+            disabled
+        >
+            🚚 完成一趟
+        </button>
+
+        <p id="tripMessage" class="trip-message">
+            请先领取调度车辆并开始作业。
+        </p>
 
     </section>
 
 
-    <!-- 换车申请状态 -->
+    <!-- 故障换车 -->
     <section class="driver-card">
 
         <div class="driver-card-title">
             <div>
-                <h2>🔄 换车申请</h2>
-                <p>调度审批状态</p>
+                <h2>🔧 故障 / 换车</h2>
+                <p>中途换车必须经过调度批准</p>
             </div>
         </div>
 
-
-        <div
-            id="vehicleChangeStatusArea"
-            class="vehicle-change-status-area"
+        <button
+            id="faultButton"
+            type="button"
+            class="fault-button"
         >
+            🔧 当前车辆发生故障
+        </button>
 
-            <div class="empty-placeholder">
-                暂无换车申请
-            </div>
-
-        </div>
+        <div id="changeRequestStatus"></div>
 
     </section>
 
 
-    <!-- 最近趟数 -->
+    <!-- 今日记录 -->
     <section class="driver-card">
 
         <div class="driver-card-title">
             <div>
-                <h2>🧾 最近运输记录</h2>
-                <p>最近 10 趟</p>
+                <h2>📊 今日运输记录</h2>
+                <p>每一趟保存车辆、任务及GPS信息</p>
             </div>
         </div>
 
-
-        <div
-            id="tripHistoryList"
-            class="trip-history-list"
-        >
-
-            <div class="empty-placeholder">
-                暂无运输记录
+        <div id="tripHistory">
+            <div class="empty-box">
+                今日暂无运输记录
             </div>
-
         </div>
 
     </section>
@@ -262,63 +283,45 @@
 </main>
 
 
-<!-- 故障换车申请 -->
-<div
-    id="vehicleChangeModal"
-    class="driver-modal hidden"
->
+<!-- 故障申请 -->
+<div id="faultModal" class="driver-modal hidden">
 
     <div class="driver-modal-card">
 
-        <h3>车辆故障 / 申请换车</h3>
+        <h3>🔧 车辆故障换车申请</h3>
 
-
-        <p class="modal-warning">
-            提交后，当前车辆立即暂停运输计趟。
-            必须等待调度批准新车辆后才能继续。
-        </p>
-
-
-        <div class="current-vehicle-box">
-
-            当前车辆：
-
-            <strong id="faultCurrentVehicle">
-                -
-            </strong>
-
+        <div class="modal-warning">
+            提交申请后，当前车辆可以停止作业。
+            在调度批准新车辆之前，司机不能使用其他车辆记录运输趟数。
         </div>
 
+        <label>当前车辆</label>
+        <strong id="faultVehicleNumber">-</strong>
 
-        <label for="faultReason">
-            故障原因 *
+        <label for="faultDescription">
+            故障情况
         </label>
 
         <textarea
-            id="faultReason"
-            placeholder="例如：车辆发动机故障，无法继续运行"
+            id="faultDescription"
+            placeholder="例如：右后轮故障，车辆无法继续运行。"
         ></textarea>
 
+        <button
+            id="submitFaultButton"
+            type="button"
+            class="fault-submit-button"
+        >
+            提交调度审批
+        </button>
 
-        <div class="double-button-row">
-
-            <button
-                id="cancelVehicleChangeButton"
-                type="button"
-                class="secondary-button"
-            >
-                取消
-            </button>
-
-            <button
-                id="submitVehicleChangeButton"
-                type="button"
-                class="fault-submit-button"
-            >
-                提交调度审批
-            </button>
-
-        </div>
+        <button
+            id="closeFaultModalButton"
+            type="button"
+            class="secondary-button"
+        >
+            取消
+        </button>
 
     </div>
 
@@ -326,12 +329,10 @@
 
 
 <footer>
-    <p>矿山管理系统 · 司机端 V2.7.0</p>
+    <p>矿山管理系统 · 司机端 V2.8.0</p>
 </footer>
 
-
-<script src="js/driver-work.js?v=2.7.0"></script>
+<script src="js/driver-work.js?v=2.8.0"></script>
 
 </body>
-
 </html>
