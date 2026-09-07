@@ -1,7 +1,10 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
+
 <head>
+
     <meta charset="UTF-8">
+
     <meta
         name="viewport"
         content="width=device-width, initial-scale=1.0"
@@ -18,21 +21,32 @@
         rel="stylesheet"
         href="css/dispatch.css"
     >
+
 </head>
 
+
 <body class="dispatch-body">
+
 
 <header class="dispatch-header">
 
     <div class="dispatch-header-inner">
 
         <div>
+
             <h1>生产调度中心</h1>
-            <p>Production Dispatch Center</p>
+
+            <p>
+                Production Dispatch Center
+            </p>
+
         </div>
 
+
         <div class="dispatch-header-badge">
+
             📋 调度端
+
         </div>
 
     </div>
@@ -40,28 +54,35 @@
 </header>
 
 
+
 <main class="dispatch-main">
 
 
-    <!-- =====================================
-         顶部操作区
-    ====================================== -->
+    <!-- =========================
+         生产任务入口
+    ========================== -->
 
     <section class="dispatch-section">
 
         <div class="dispatch-section-title">
 
             <div>
-                <h2>生产任务</h2>
+
+                <h2>
+                    生产任务
+                </h2>
+
                 <p>
-                    创建任务后进行设备分配和绑定
+                    创建任务、绑定设备、下发生产任务
                 </p>
+
             </div>
+
 
             <button
                 id="newTaskButton"
-                class="primary-small-button"
                 type="button"
+                class="primary-small-button"
             >
                 + 下发生产任务
             </button>
@@ -72,9 +93,9 @@
 
 
 
-    <!-- =====================================
-         创建任务区域
-    ====================================== -->
+    <!-- =========================
+         创建任务
+    ========================== -->
 
     <section
         id="taskCreateSection"
@@ -84,24 +105,32 @@
         <div class="dispatch-section-title">
 
             <div>
-                <h2>创建生产任务</h2>
+
+                <h2>
+                    创建生产任务
+                </h2>
+
                 <p>
-                    填写生产任务基础信息
+                    填写本班生产任务基础信息
                 </p>
+
             </div>
 
-            <span
-                id="draftStatus"
-                class="draft-badge"
-            >
+
+            <span class="draft-badge">
+
                 草稿
+
             </span>
 
         </div>
 
 
+
         <label for="taskShift">
+
             班次
+
         </label>
 
         <select id="taskShift">
@@ -117,8 +146,11 @@
         </select>
 
 
+
         <label for="taskArea">
+
             作业区域 *
+
         </label>
 
         <input
@@ -128,30 +160,35 @@
         >
 
 
+
         <label for="taskRemark">
+
             调度说明
+
         </label>
 
         <textarea
             id="taskRemark"
-            placeholder="例如：按规划区域组织生产，注意运输道路安全。"
+            placeholder="例如：按规划区域组织生产，注意道路安全。"
         ></textarea>
+
 
 
         <div class="double-button-row">
 
             <button
                 id="cancelCreateButton"
-                class="secondary-button"
                 type="button"
+                class="secondary-button"
             >
                 取消
             </button>
 
+
             <button
                 id="generateTaskButton"
-                class="success-button"
                 type="button"
+                class="success-button"
             >
                 生成任务
             </button>
@@ -162,9 +199,9 @@
 
 
 
-    <!-- =====================================
+    <!-- =========================
          当前任务摘要
-    ====================================== -->
+    ========================== -->
 
     <section
         id="taskSummarySection"
@@ -174,11 +211,17 @@
         <div class="dispatch-section-title">
 
             <div>
-                <h2>当前任务</h2>
+
+                <h2>
+                    当前生产任务
+                </h2>
+
                 <p>
-                    当前正在配置的生产任务
+                    当前正在进行设备配置
                 </p>
+
             </div>
+
 
             <span
                 id="taskStateBadge"
@@ -190,11 +233,14 @@
         </div>
 
 
+
         <div class="task-summary-grid">
 
             <div class="task-summary-card">
 
-                <span>日期</span>
+                <span>
+                    日期
+                </span>
 
                 <strong id="summaryDate">
                     -
@@ -205,7 +251,9 @@
 
             <div class="task-summary-card">
 
-                <span>班次</span>
+                <span>
+                    班次
+                </span>
 
                 <strong id="summaryShift">
                     -
@@ -216,7 +264,9 @@
 
             <div class="task-summary-card">
 
-                <span>作业区域</span>
+                <span>
+                    作业区域
+                </span>
 
                 <strong id="summaryArea">
                     -
@@ -229,7 +279,9 @@
 
         <div class="remark-box">
 
-            <span>调度说明</span>
+            <span>
+                调度说明
+            </span>
 
             <strong id="summaryRemark">
                 无
@@ -241,9 +293,9 @@
 
 
 
-    <!-- =====================================
-         设备颜色说明
-    ====================================== -->
+    <!-- =========================
+         颜色说明
+    ========================== -->
 
     <section
         id="legendSection"
@@ -253,18 +305,29 @@
         <div class="legend-row">
 
             <div class="legend-item">
+
                 <span class="legend-dot green-dot"></span>
+
                 可调配
+
             </div>
 
-            <div class="legend-item">
-                <span class="legend-dot red-dot"></span>
-                已分配任务
-            </div>
 
             <div class="legend-item">
+
                 <span class="legend-dot yellow-dot"></span>
+
                 维修中
+
+            </div>
+
+
+            <div class="legend-item">
+
+                <span class="legend-dot red-dot"></span>
+
+                已分配任务
+
             </div>
 
         </div>
@@ -273,9 +336,9 @@
 
 
 
-    <!-- =====================================
-         挖机看板
-    ====================================== -->
+    <!-- =========================
+         挖机
+    ========================== -->
 
     <section
         id="excavatorSection"
@@ -285,11 +348,17 @@
         <div class="dispatch-section-title">
 
             <div>
-                <h2>🚜 挖机</h2>
+
+                <h2>
+                    🚜 挖机看板
+                </h2>
+
                 <p>
-                    点击绿色挖机开始绑定车辆
+                    点击绿色挖机后选择跟随卡车
                 </p>
+
             </div>
+
 
             <span
                 id="excavatorCount"
@@ -310,9 +379,9 @@
 
 
 
-    <!-- =====================================
-         卡车看板
-    ====================================== -->
+    <!-- =========================
+         卡车
+    ========================== -->
 
     <section
         id="truckSection"
@@ -322,11 +391,17 @@
         <div class="dispatch-section-title">
 
             <div>
-                <h2>🚚 卡车</h2>
+
+                <h2>
+                    🚚 卡车看板
+                </h2>
+
                 <p>
-                    选择跟随当前挖机的车辆
+                    选择跟随当前挖机的卡车
                 </p>
+
             </div>
+
 
             <span
                 id="truckCount"
@@ -354,8 +429,8 @@
 
         <button
             id="bindTrucksButton"
-            class="success-button hidden"
             type="button"
+            class="success-button hidden"
         >
             绑定所选卡车
         </button>
@@ -364,9 +439,9 @@
 
 
 
-    <!-- =====================================
-         已绑定关系
-    ====================================== -->
+    <!-- =========================
+         绑定关系
+    ========================== -->
 
     <section
         id="bindingSection"
@@ -376,10 +451,15 @@
         <div class="dispatch-section-title">
 
             <div>
-                <h2>设备绑定关系</h2>
+
+                <h2>
+                    挖机与卡车绑定关系
+                </h2>
+
                 <p>
-                    当前任务的挖机与卡车关系
+                    当前生产任务主采设备配置
                 </p>
+
             </div>
 
         </div>
@@ -388,7 +468,9 @@
         <div id="bindingList">
 
             <div class="empty-placeholder">
+
                 暂无绑定关系
+
             </div>
 
         </div>
@@ -397,320 +479,295 @@
 
 
 
-    <!-- =====================================
-         辅助车辆
-    ====================================== -->
+    <!-- =========================
+         装载机
+    ========================== -->
 
     <section
-        id="auxiliarySection"
+        id="loaderSection"
         class="dispatch-section hidden"
     >
 
         <div class="dispatch-section-title">
 
             <div>
-                <h2>辅助车辆配置</h2>
+
+                <h2>
+                    🚧 装载机看板
+                </h2>
+
                 <p>
-                    装载机、水车、加油车及其他辅助车辆
+                    点击绿色车辆下发任务
                 </p>
+
+            </div>
+
+
+            <span
+                id="loaderCount"
+                class="count-badge"
+            >
+                0 台
+            </span>
+
+        </div>
+
+
+        <div
+            id="loaderBoard"
+            class="device-board"
+        ></div>
+
+    </section>
+
+
+
+    <!-- =========================
+         水车
+    ========================== -->
+
+    <section
+        id="waterSection"
+        class="dispatch-section hidden"
+    >
+
+        <div class="dispatch-section-title">
+
+            <div>
+
+                <h2>
+                    💧 水车看板
+                </h2>
+
+                <p>
+                    点击绿色车辆下发任务
+                </p>
+
+            </div>
+
+
+            <span
+                id="waterCount"
+                class="count-badge"
+            >
+                0 台
+            </span>
+
+        </div>
+
+
+        <div
+            id="waterBoard"
+            class="device-board"
+        ></div>
+
+    </section>
+
+
+
+    <!-- =========================
+         加油车
+    ========================== -->
+
+    <section
+        id="fuelSection"
+        class="dispatch-section hidden"
+    >
+
+        <div class="dispatch-section-title">
+
+            <div>
+
+                <h2>
+                    ⛽ 加油车看板
+                </h2>
+
+                <p>
+                    点击绿色车辆下发任务
+                </p>
+
+            </div>
+
+
+            <span
+                id="fuelCount"
+                class="count-badge"
+            >
+                0 台
+            </span>
+
+        </div>
+
+
+        <div
+            id="fuelBoard"
+            class="device-board"
+        ></div>
+
+    </section>
+
+
+
+    <!-- =========================
+         平路机
+    ========================== -->
+
+    <section
+        id="graderSection"
+        class="dispatch-section hidden"
+    >
+
+        <div class="dispatch-section-title">
+
+            <div>
+
+                <h2>
+                    🛣 平路机看板
+                </h2>
+
+                <p>
+                    点击绿色车辆下发任务
+                </p>
+
+            </div>
+
+
+            <span
+                id="graderCount"
+                class="count-badge"
+            >
+                0 台
+            </span>
+
+        </div>
+
+
+        <div
+            id="graderBoard"
+            class="device-board"
+        ></div>
+
+    </section>
+
+
+
+    <!-- =========================
+         推土机
+    ========================== -->
+
+    <section
+        id="dozerSection"
+        class="dispatch-section hidden"
+    >
+
+        <div class="dispatch-section-title">
+
+            <div>
+
+                <h2>
+                    🚜 推土机看板
+                </h2>
+
+                <p>
+                    点击绿色车辆下发任务
+                </p>
+
+            </div>
+
+
+            <span
+                id="dozerCount"
+                class="count-badge"
+            >
+                0 台
+            </span>
+
+        </div>
+
+
+        <div
+            id="dozerBoard"
+            class="device-board"
+        ></div>
+
+    </section>
+
+
+
+    <!-- =========================
+         大巴
+    ========================== -->
+
+    <section
+        id="busSection"
+        class="dispatch-section hidden"
+    >
+
+        <div class="dispatch-section-title">
+
+            <div>
+
+                <h2>
+                    🚌 大巴看板
+                </h2>
+
+                <p>
+                    点击绿色车辆下发任务
+                </p>
+
+            </div>
+
+
+            <span
+                id="busCount"
+                class="count-badge"
+            >
+                0 台
+            </span>
+
+        </div>
+
+
+        <div
+            id="busBoard"
+            class="device-board"
+        ></div>
+
+    </section>
+
+
+
+    <!-- =========================
+         已配置辅助车辆
+    ========================== -->
+
+    <section
+        id="auxiliarySummarySection"
+        class="dispatch-section hidden"
+    >
+
+        <div class="dispatch-section-title">
+
+            <div>
+
+                <h2>
+                    辅助车辆任务
+                </h2>
+
+                <p>
+                    当前生产任务已下发辅助设备
+                </p>
+
             </div>
 
         </div>
 
 
+        <div id="auxiliaryAssignmentList">
 
-        <!-- 装载机 -->
+            <div class="empty-placeholder">
 
-        <div class="auxiliary-card">
-
-            <h3>🚧 装载机</h3>
-
-            <label for="loaderSelect">
-                车辆
-            </label>
-
-            <select id="loaderSelect">
-
-                <option value="">
-                    请选择装载机
-                </option>
-
-            </select>
-
-
-            <label for="loaderWorkType">
-                工作内容
-            </label>
-
-            <select id="loaderWorkType">
-
-                <option value="日常作业">
-                    日常作业
-                </option>
-
-                <option value="清理挖机附近散料">
-                    清理挖机附近散料
-                </option>
-
-                <option value="修整运输道路">
-                    修整运输道路
-                </option>
-
-                <option value="装煤">
-                    装煤
-                </option>
-
-                <option value="排土场作业">
-                    排土场作业
-                </option>
-
-                <option value="manual">
-                    手动录入
-                </option>
-
-            </select>
-
-
-            <input
-                id="loaderManualInput"
-                class="hidden"
-                type="text"
-                placeholder="请输入装载机具体工作内容"
-            >
-
-
-            <button
-                id="confirmLoaderButton"
-                type="button"
-                class="aux-confirm-button"
-            >
-                确认装载机
-            </button>
-
-        </div>
-
-
-
-        <!-- 水车 -->
-
-        <div class="auxiliary-card">
-
-            <h3>💧 水车</h3>
-
-            <label for="waterTruckSelect">
-                车辆
-            </label>
-
-            <select id="waterTruckSelect">
-
-                <option value="">
-                    请选择水车
-                </option>
-
-            </select>
-
-
-            <label for="waterTruckWorkType">
-                工作内容
-            </label>
-
-            <select id="waterTruckWorkType">
-
-                <option value="日常洒水">
-                    日常洒水
-                </option>
-
-                <option value="运输道路洒水">
-                    运输道路洒水
-                </option>
-
-                <option value="采区洒水">
-                    采区洒水
-                </option>
-
-                <option value="排土场洒水">
-                    排土场洒水
-                </option>
-
-                <option value="临时调配">
-                    临时调配
-                </option>
-
-                <option value="manual">
-                    手动录入
-                </option>
-
-            </select>
-
-
-            <input
-                id="waterTruckManualInput"
-                class="hidden"
-                type="text"
-                placeholder="请输入水车具体工作内容"
-            >
-
-
-            <button
-                id="confirmWaterTruckButton"
-                type="button"
-                class="aux-confirm-button"
-            >
-                确认水车
-            </button>
-
-        </div>
-
-
-
-        <!-- 加油车 -->
-
-        <div class="auxiliary-card">
-
-            <h3>⛽ 加油车</h3>
-
-            <label for="fuelTruckSelect">
-                车辆
-            </label>
-
-            <select id="fuelTruckSelect">
-
-                <option value="">
-                    请选择加油车
-                </option>
-
-            </select>
-
-
-            <label for="fuelTruckWorkType">
-                工作内容
-            </label>
-
-            <select id="fuelTruckWorkType">
-
-                <option value="日常作业">
-                    日常作业
-                </option>
-
-                <option value="manual">
-                    手动录入
-                </option>
-
-            </select>
-
-
-            <input
-                id="fuelTruckManualInput"
-                class="hidden"
-                type="text"
-                placeholder="请输入加油车具体工作内容"
-            >
-
-
-            <button
-                id="confirmFuelTruckButton"
-                type="button"
-                class="aux-confirm-button"
-            >
-                确认加油车
-            </button>
-
-        </div>
-
-
-
-        <!-- 其他辅助车辆 -->
-
-        <div class="auxiliary-card">
-
-            <h3>🚧 其他辅助车辆</h3>
-
-            <label for="otherVehicleType">
-                车型
-            </label>
-
-            <select id="otherVehicleType">
-
-                <option value="">
-                    请选择车型
-                </option>
-
-                <option value="平路机">
-                    平路机
-                </option>
-
-                <option value="推土机">
-                    推土机
-                </option>
-
-                <option value="大巴">
-                    大巴
-                </option>
-
-                <option value="其他">
-                    其他
-                </option>
-
-            </select>
-
-
-            <label for="otherVehicleNumber">
-                车辆编号
-            </label>
-
-            <input
-                id="otherVehicleNumber"
-                type="text"
-                placeholder="请输入车辆编号"
-            >
-
-
-            <label for="otherVehicleWorkType">
-                工作内容
-            </label>
-
-            <select id="otherVehicleWorkType">
-
-                <option value="日常作业">
-                    日常作业
-                </option>
-
-                <option value="manual">
-                    手动录入
-                </option>
-
-            </select>
-
-
-            <input
-                id="otherVehicleManualInput"
-                class="hidden"
-                type="text"
-                placeholder="请输入具体工作内容"
-            >
-
-
-            <button
-                id="confirmOtherVehicleButton"
-                type="button"
-                class="aux-confirm-button"
-            >
-                确认其他车辆
-            </button>
-
-        </div>
-
-
-
-        <div class="auxiliary-selected-box">
-
-            <h3>已选择辅助车辆</h3>
-
-            <div id="auxiliarySelectedList">
-
-                <div class="empty-placeholder">
-                    暂未选择辅助车辆
-                </div>
+                暂未配置辅助车辆
 
             </div>
 
@@ -720,9 +777,9 @@
 
 
 
-    <!-- =====================================
-         发布任务
-    ====================================== -->
+    <!-- =========================
+         发布
+    ========================== -->
 
     <section
         id="publishSection"
@@ -731,8 +788,8 @@
 
         <button
             id="previewTaskButton"
-            class="primary-button"
             type="button"
+            class="primary-button"
         >
             查看任务并发布
         </button>
@@ -741,9 +798,9 @@
 
 
 
-    <!-- =====================================
-         发布确认
-    ====================================== -->
+    <!-- =========================
+         预览
+    ========================== -->
 
     <section
         id="previewSection"
@@ -753,10 +810,15 @@
         <div class="dispatch-section-title">
 
             <div>
-                <h2>生产任务确认</h2>
+
+                <h2>
+                    生产任务确认
+                </h2>
+
                 <p>
-                    发布前请核对全部设备配置
+                    请核对全部设备配置
                 </p>
+
             </div>
 
         </div>
@@ -772,16 +834,17 @@
 
             <button
                 id="backEditButton"
-                class="secondary-button"
                 type="button"
+                class="secondary-button"
             >
                 返回修改
             </button>
 
+
             <button
                 id="publishTaskButton"
-                class="publish-button"
                 type="button"
+                class="publish-button"
             >
                 确认发布任务
             </button>
@@ -803,9 +866,10 @@
 </main>
 
 
-<!-- =====================================
-     设备详情弹窗
-====================================== -->
+
+<!-- =========================
+     设备信息弹窗
+========================== -->
 
 <div
     id="deviceModal"
@@ -818,10 +882,12 @@
             设备详情
         </h3>
 
+
         <div
             id="modalContent"
             class="device-modal-content"
         ></div>
+
 
         <button
             id="closeModalButton"
@@ -836,14 +902,123 @@
 </div>
 
 
+
+<!-- =========================
+     辅助车辆任务下发弹窗
+========================== -->
+
+<div
+    id="auxTaskModal"
+    class="device-modal hidden"
+>
+
+    <div class="device-modal-card">
+
+
+        <h3 id="auxTaskModalTitle">
+
+            下发辅助车辆任务
+
+        </h3>
+
+
+        <div class="selected-aux-device">
+
+            当前车辆：
+
+            <strong id="auxSelectedVehicle">
+
+                -
+
+            </strong>
+
+        </div>
+
+
+
+        <label for="auxWorkType">
+
+            工作内容
+
+        </label>
+
+        <select id="auxWorkType"></select>
+
+
+
+        <div
+            id="auxManualWorkBox"
+            class="hidden"
+        >
+
+            <label for="auxManualWork">
+
+                手动录入工作内容
+
+            </label>
+
+            <input
+                id="auxManualWork"
+                type="text"
+                placeholder="请输入具体工作内容"
+            >
+
+        </div>
+
+
+
+        <label for="auxTaskRemark">
+
+            调度说明
+
+        </label>
+
+        <textarea
+            id="auxTaskRemark"
+            placeholder="可填写该车辆具体作业要求"
+        ></textarea>
+
+
+
+        <div class="double-button-row">
+
+            <button
+                id="cancelAuxTaskButton"
+                type="button"
+                class="secondary-button"
+            >
+                取消
+            </button>
+
+
+            <button
+                id="confirmAuxTaskButton"
+                type="button"
+                class="success-button"
+            >
+                确认下发
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+
 <footer>
+
     <p>
-        矿山管理系统 · 调度端 V2.0
+        矿山管理系统 · 调度端 V2.2
     </p>
+
 </footer>
 
 
 <script src="js/dispatch.js"></script>
 
+
 </body>
+
 </html>
