@@ -13,9 +13,14 @@
 }
 
 .driver-header {
-    padding: 20px 16px;
+    padding: 18px 16px;
     color: white;
-    background: linear-gradient(135deg,#0f172a,#1e293b);
+    background: linear-gradient(
+        135deg,
+        #0f172a,
+        #1e293b
+    );
+
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -24,7 +29,7 @@
 
 .driver-header h1 {
     margin: 0;
-    font-size: 23px;
+    font-size: 22px;
 }
 
 .driver-header p {
@@ -36,12 +41,17 @@
 .driver-status-badge {
     padding: 7px 11px;
     border-radius: 999px;
-    background: rgba(255,255,255,.12);
+    background: rgba(255,255,255,.15);
     font-size: 11px;
+    white-space: nowrap;
 }
 
 .driver-work-main {
-    width: min(760px,calc(100% - 20px));
+    width: min(
+        760px,
+        calc(100% - 20px)
+    );
+
     margin: 15px auto 35px;
 }
 
@@ -50,11 +60,14 @@
     padding: 15px;
     border-radius: 13px;
     background: white;
-    box-shadow: 0 3px 15px rgba(15,23,42,.06);
+    box-shadow:
+        0 3px 15px
+        rgba(15,23,42,.06);
 }
 
 .driver-card-title {
     margin-bottom: 12px;
+
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -72,57 +85,114 @@
     font-size: 11px;
 }
 
-.assignment-area {
-    margin-top: 8px;
+
+/*
+GPS
+*/
+
+.gps-card {
+    border:
+        1px solid
+        #bfdbfe;
 }
 
-.assigned-vehicle-card {
-    padding: 13px;
-    border-radius: 11px;
-    border: 1px solid #bfdbfe;
-    background: #eff6ff;
+.gps-badge {
+    padding: 6px 10px;
+    border-radius: 999px;
+    font-size: 10px;
+    font-weight: 700;
+}
+
+.gps-waiting {
+    color: #92400e;
+    background: #fef3c7;
+}
+
+.gps-normal {
+    color: #166534;
+    background: #dcfce7;
+}
+
+.gps-weak {
+    color: #9a3412;
+    background: #ffedd5;
+}
+
+.gps-error {
+    color: #991b1b;
+    background: #fee2e2;
+}
+
+.gps-grid {
     display: grid;
-    grid-template-columns: repeat(3,1fr) auto;
-    gap: 10px;
-    align-items: center;
+    grid-template-columns:
+        repeat(3,1fr);
+    gap: 8px;
 }
 
-.assigned-vehicle-card div {
+.gps-grid div {
+    padding: 10px;
+    text-align: center;
+    border-radius: 9px;
+    background: #f8fafc;
+}
+
+.gps-grid span {
+    display: block;
+    color: #64748b;
+    font-size: 10px;
+}
+
+.gps-grid strong {
+    display: block;
+    margin-top: 4px;
+    font-size: 13px;
+}
+
+.gps-coordinate {
+    margin-top: 9px;
+    padding: 10px;
+    border-radius: 9px;
+    background: #eff6ff;
+
     display: flex;
     flex-direction: column;
     gap: 4px;
 }
 
-.assigned-vehicle-card span {
+.gps-coordinate span {
     color: #64748b;
     font-size: 10px;
 }
 
-.assigned-vehicle-card strong {
-    font-size: 14px;
+.gps-coordinate strong {
+    font-size: 12px;
+    word-break: break-all;
 }
 
-.claim-button {
+.gps-button {
+    width: 100%;
+    min-height: 44px;
+    margin-top: 10px;
+    border: 0;
+    border-radius: 9px;
     color: white;
     background: #2563eb;
+    font-weight: 700;
+    cursor: pointer;
 }
 
-.claimed-summary {
-    display: flex;
-    justify-content: space-between;
-    gap: 10px;
-    align-items: center;
-    padding: 12px;
-    border-radius: 10px;
-    background: #f0fdf4;
-    border: 1px solid #86efac;
-}
-
-.claimed-summary span,
-.claimed-summary small {
+.gps-tip {
+    margin: 9px 0 0;
     color: #64748b;
-    font-size: 11px;
+    font-size: 10px;
+    line-height: 1.6;
 }
+
+
+/*
+任务
+*/
 
 .work-grid,
 .stats-grid {
@@ -131,11 +201,13 @@
 }
 
 .work-grid {
-    grid-template-columns: repeat(4,1fr);
+    grid-template-columns:
+        repeat(4,1fr);
 }
 
 .stats-grid {
-    grid-template-columns: repeat(3,1fr);
+    grid-template-columns:
+        repeat(3,1fr);
 }
 
 .work-grid div,
@@ -157,7 +229,7 @@
 .stats-grid strong {
     display: block;
     margin-top: 4px;
-    font-size: 15px;
+    font-size: 14px;
 }
 
 .work-status-badge {
@@ -168,6 +240,133 @@
     font-size: 10px;
 }
 
+.route-box {
+    margin-top: 10px;
+    padding: 11px;
+    border-radius: 9px;
+    background: #f8fafc;
+
+    display: grid;
+    grid-template-columns:
+        1fr auto 1fr;
+
+    align-items: center;
+    gap: 8px;
+}
+
+.route-box div:not(
+    .route-arrow
+) {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.route-box span {
+    color: #64748b;
+    font-size: 10px;
+}
+
+.route-arrow {
+    color: #2563eb;
+    font-size: 20px;
+    font-weight: 700;
+}
+
+.task-remark {
+    margin-top: 9px;
+    padding: 9px;
+    border-radius: 8px;
+    color: #475569;
+    background: #f1f5f9;
+    font-size: 11px;
+    line-height: 1.6;
+}
+
+.empty-box {
+    padding: 16px 10px;
+    text-align: center;
+    color: #64748b;
+    border-radius: 9px;
+    background: #f8fafc;
+    font-size: 12px;
+}
+
+
+/*
+领取车辆
+*/
+
+.assigned-vehicle-card {
+    padding: 13px;
+    border-radius: 11px;
+    border: 1px solid #bfdbfe;
+    background: #eff6ff;
+
+    display: grid;
+    grid-template-columns:
+        repeat(3,1fr) auto;
+
+    gap: 10px;
+    align-items: center;
+}
+
+.assigned-vehicle-card div {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.assigned-vehicle-card span {
+    color: #64748b;
+    font-size: 10px;
+}
+
+.assigned-vehicle-card strong {
+    font-size: 14px;
+}
+
+.claim-button {
+    min-height: 40px;
+    padding: 0 15px;
+    border: 0;
+    border-radius: 8px;
+    color: white;
+    background: #2563eb;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.claimed-summary {
+    padding: 12px;
+    border-radius: 10px;
+    border: 1px solid #86efac;
+    background: #f0fdf4;
+
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    align-items: center;
+}
+
+.claimed-summary div {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.claimed-summary span,
+.claimed-summary small {
+    color: #64748b;
+    font-size: 11px;
+}
+
+
+/*
+按钮
+*/
+
+.start-work-button,
 .trip-button,
 .fault-button,
 .back-home-button,
@@ -182,12 +381,18 @@
     cursor: pointer;
 }
 
+.start-work-button {
+    color: white;
+    background: #2563eb;
+}
+
 .trip-button {
     color: white;
     background: #16a34a;
 }
 
-.trip-button:disabled {
+.trip-button:disabled,
+.start-work-button:disabled {
     cursor: not-allowed;
     background: #94a3b8;
 }
@@ -196,11 +401,6 @@
 .fault-submit-button {
     color: white;
     background: #dc2626;
-}
-
-.fault-button:disabled {
-    cursor: not-allowed;
-    background: #cbd5e1;
 }
 
 .back-home-button {
@@ -213,40 +413,35 @@
     background: #e2e8f0;
 }
 
-.change-pending-warning {
-    margin-top: 11px;
-    padding: 11px;
-    color: #991b1b;
-    border: 1px solid #fecaca;
-    border-radius: 9px;
-    background: #fef2f2;
-    font-size: 12px;
+.trip-message {
+    margin: 8px 0 0;
+    color: #64748b;
+    text-align: center;
+    font-size: 10px;
     line-height: 1.6;
 }
 
-.change-status-card,
-.trip-history-row {
-    margin-bottom: 7px;
-    padding: 10px;
+
+/*
+换车状态
+*/
+
+.change-status-card {
+    margin-top: 10px;
+    padding: 11px;
     border-radius: 9px;
     border: 1px solid #e2e8f0;
-    display: flex;
-    justify-content: space-between;
-    gap: 10px;
 }
 
-.change-status-card div,
-.trip-history-row div {
+.change-status-card div {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 5px;
 }
 
 .change-status-card span,
-.change-status-card small,
-.trip-history-row span {
-    color: #64748b;
-    font-size: 10px;
+.change-status-card small {
+    font-size: 11px;
 }
 
 .change-status-card.pending {
@@ -267,15 +462,63 @@
     background: #fef2f2;
 }
 
+
+/*
+趟次
+*/
+
+.trip-history-row {
+    margin-bottom: 7px;
+    padding: 10px;
+    border-radius: 9px;
+    border: 1px solid #e2e8f0;
+
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+}
+
+.trip-history-row div {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.trip-history-row span {
+    color: #64748b;
+    font-size: 10px;
+}
+
+.trip-history-row small {
+    font-size: 10px;
+}
+
+.gps-record-normal {
+    color: #15803d;
+}
+
+.gps-record-warning {
+    color: #b45309;
+}
+
+
+/*
+弹窗
+*/
+
 .driver-modal {
     position: fixed;
     inset: 0;
     z-index: 1000;
     padding: 15px;
+
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(15,23,42,.65);
+
+    background:
+        rgba(15,23,42,.65);
 }
 
 .driver-modal-card {
@@ -316,76 +559,76 @@
     line-height: 1.6;
 }
 
-.current-vehicle-box {
-    padding: 10px;
-    border-radius: 8px;
-    background: #f8fafc;
-}
 
-.double-button-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
-    margin-top: 12px;
-}
+/*
+手机
+*/
 
-.empty-placeholder {
-    padding: 20px 12px;
-    text-align: center;
-    color: #94a3b8;
-    border: 1px dashed #cbd5e1;
-    border-radius: 9px;
-    background: #f8fafc;
-    font-size: 11px;
-}
+@media (
+    max-width: 600px
+) {
 
-footer {
-    padding: 18px;
-    color: #64748b;
-    text-align: center;
-    font-size: 11px;
-}
+    .driver-header {
+        padding: 15px 12px;
+    }
 
-@media (max-width:640px) {
+    .driver-header h1 {
+        font-size: 19px;
+    }
 
     .driver-work-main {
-        width: calc(100% - 14px);
+        width:
+            calc(100% - 14px);
+
         margin-top: 8px;
     }
 
     .driver-card {
-        padding: 13px;
-    }
-
-    .assigned-vehicle-card {
-        grid-template-columns: 1fr 1fr;
-    }
-
-    .claim-button {
-        grid-column: 1 / -1;
+        padding: 12px;
+        margin-bottom: 8px;
+        border-radius: 11px;
     }
 
     .work-grid {
-        grid-template-columns: repeat(2,1fr);
+        grid-template-columns:
+            repeat(2,1fr);
+    }
+
+    .gps-grid,
+    .stats-grid {
+        grid-template-columns:
+            repeat(3,1fr);
+    }
+
+    .assigned-vehicle-card {
+        grid-template-columns:
+            repeat(2,1fr);
+    }
+
+    .assigned-vehicle-card
+    .claim-button {
+        grid-column:
+            1 / -1;
     }
 }
 
-@media (max-width:430px) {
 
-    .driver-header h1 {
-        font-size: 20px;
+@media (
+    max-width: 390px
+) {
+
+    .gps-grid {
+        grid-template-columns:
+            1fr;
     }
 
     .stats-grid {
-        grid-template-columns: 1fr;
+        grid-template-columns:
+            1fr 1fr;
     }
 
-    .double-button-row {
-        grid-template-columns: 1fr;
-    }
-
-    .change-status-card,
-    .trip-history-row {
-        flex-direction: column;
+    .stats-grid div:first-child {
+        grid-column:
+            1 / -1;
     }
 }
