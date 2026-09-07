@@ -1,8 +1,8 @@
 /*
 ==================================================
 矿山管理系统
-调度端 V2.2
-辅助车辆看板版
+调度端 V2.3
+生产任务看板版
 ==================================================
 */
 
@@ -20,14 +20,12 @@
 .dispatch-main {
     width: 100%;
     max-width: 1100px;
+
     margin: 0 auto;
+
     padding: 18px 12px;
 }
 
-
-/* =========================
-   顶部
-========================= */
 
 .dispatch-header {
     padding: 22px 16px;
@@ -37,9 +35,11 @@
 .dispatch-header-inner {
     width: 100%;
     max-width: 1100px;
+
     margin: 0 auto;
 
     display: flex;
+
     justify-content: space-between;
     align-items: center;
 
@@ -49,13 +49,16 @@
 
 .dispatch-header-inner h1 {
     margin: 0;
+
     text-align: left;
+
     font-size: 26px;
 }
 
 
 .dispatch-header-inner p {
     margin: 5px 0 0;
+
     text-align: left;
 }
 
@@ -67,16 +70,14 @@
 
     border-radius: 20px;
 
-    background: rgba(255, 255, 255, .14);
+    background:
+        rgba(255, 255, 255, .14);
 
     font-size: 13px;
+
     font-weight: 700;
 }
 
-
-/* =========================
-   通用区域
-========================= */
 
 .dispatch-section {
     margin-bottom: 14px;
@@ -85,6 +86,7 @@
 
 .dispatch-section-title {
     display: flex;
+
     justify-content: space-between;
     align-items: center;
 
@@ -96,6 +98,7 @@
 
 .dispatch-section-title h2 {
     margin: 0;
+
     text-align: left;
 }
 
@@ -109,6 +112,7 @@
 
 .primary-small-button {
     width: auto;
+
     min-height: 42px;
 
     margin: 0;
@@ -135,13 +139,192 @@
     color: #374151;
 
     font-size: 12px;
+
     font-weight: 700;
 }
 
 
-/* =========================
+/* =========================================
+   生产任务看板
+========================================= */
+
+.production-task-board {
+    display: grid;
+
+    grid-template-columns:
+        repeat(3, minmax(0, 1fr));
+
+    gap: 12px;
+}
+
+
+.production-task-card {
+    width: 100%;
+
+    margin: 0;
+
+    padding: 15px;
+
+    border: 2px solid transparent;
+
+    border-radius: 13px;
+
+    text-align: left;
+
+    color: #111827;
+
+    box-shadow:
+        0 3px 10px rgba(0, 0, 0, .08);
+}
+
+
+.task-active-card {
+    background: #ecfdf5;
+
+    border-color: #86efac;
+}
+
+
+.task-completed-card {
+    background: #f3f4f6;
+
+    border-color: #d1d5db;
+
+    opacity: .76;
+}
+
+
+.production-task-card-header {
+    display: flex;
+
+    justify-content: space-between;
+
+    gap: 12px;
+
+    align-items: flex-start;
+}
+
+
+.production-task-area {
+    display: block;
+
+    font-size: 18px;
+
+    color: #111827;
+}
+
+
+.production-task-shift {
+    display: inline-block;
+
+    margin-top: 5px;
+
+    padding: 4px 8px;
+
+    border-radius: 12px;
+
+    background: #dbeafe;
+
+    color: #1d4ed8;
+
+    font-size: 11px;
+
+    font-weight: 700;
+}
+
+
+.production-task-status {
+    flex-shrink: 0;
+
+    padding: 5px 8px;
+
+    border-radius: 13px;
+
+    background: #16a34a;
+
+    color: #ffffff;
+
+    font-size: 11px;
+
+    font-weight: 700;
+}
+
+
+.task-completed-card
+.production-task-status {
+    background: #6b7280;
+}
+
+
+.production-task-date {
+    margin-top: 12px;
+
+    color: #6b7280;
+
+    font-size: 13px;
+}
+
+
+.production-task-stat-grid {
+    display: grid;
+
+    grid-template-columns:
+        repeat(3, 1fr);
+
+    gap: 8px;
+
+    margin-top: 12px;
+}
+
+
+.production-task-stat-grid div {
+    padding: 9px 4px;
+
+    border-radius: 8px;
+
+    background:
+        rgba(255, 255, 255, .75);
+
+    text-align: center;
+}
+
+
+.production-task-stat-grid span {
+    display: block;
+
+    color: #6b7280;
+
+    font-size: 11px;
+}
+
+
+.production-task-stat-grid strong {
+    display: block;
+
+    margin-top: 3px;
+
+    color: #111827;
+
+    font-size: 19px;
+}
+
+
+.production-task-time {
+    margin-top: 12px;
+
+    padding-top: 10px;
+
+    border-top: 1px solid #d1fae5;
+
+    color: #6b7280;
+
+    font-size: 11px;
+}
+
+
+/* =========================================
    任务摘要
-========================= */
+========================================= */
 
 .task-summary-grid {
     display: grid;
@@ -190,12 +373,13 @@
 }
 
 
-/* =========================
-   颜色图例
-========================= */
+/* =========================================
+   三色说明
+========================================= */
 
 .legend-row {
     display: flex;
+
     flex-wrap: wrap;
 
     gap: 20px;
@@ -204,11 +388,13 @@
 
 .legend-item {
     display: flex;
+
     align-items: center;
 
     gap: 7px;
 
     font-size: 14px;
+
     font-weight: 600;
 }
 
@@ -236,9 +422,9 @@
 }
 
 
-/* =========================
+/* =========================================
    设备看板
-========================= */
+========================================= */
 
 .device-board {
     display: grid;
@@ -252,6 +438,7 @@
 
 .device-card {
     width: 100%;
+
     min-height: 76px;
 
     margin: 0;
@@ -263,6 +450,7 @@
     border-radius: 11px;
 
     display: flex;
+
     flex-direction: column;
 
     justify-content: center;
@@ -282,64 +470,42 @@
 
 .device-status {
     font-size: 11px;
+
     font-weight: 600;
 }
 
 
-/* 绿色 */
-
 .device-available {
     background: #16a34a;
+
     color: #ffffff;
 }
 
-
-.device-available:hover {
-    background: #15803d;
-}
-
-
-/* 红色 */
 
 .device-assigned {
     background: #dc2626;
+
     color: #ffffff;
 }
 
 
-.device-assigned:hover {
-    background: #b91c1c;
-}
-
-
-/* 黄色 */
-
 .device-maintenance {
     background: #facc15;
+
     color: #292524;
 }
 
-
-.device-maintenance:hover {
-    background: #eab308;
-}
-
-
-/* 当前选择 */
 
 .selected-device {
     border-color: #111827;
 
     box-shadow:
-        0 0 0 3px rgba(17, 24, 39, .18);
+        0 0 0 3px
+        rgba(17, 24, 39, .18);
 
     transform: scale(.96);
 }
 
-
-/* =========================
-   卡车选择状态
-========================= */
 
 .selected-equipment-info {
     margin-bottom: 12px;
@@ -353,13 +519,14 @@
     color: #1d4ed8;
 
     font-size: 14px;
+
     font-weight: 600;
 }
 
 
-/* =========================
-   绑定关系
-========================= */
+/* =========================================
+   绑定
+========================================= */
 
 .binding-card {
     margin-bottom: 10px;
@@ -383,6 +550,7 @@
 
 .binding-truck-list {
     display: flex;
+
     flex-wrap: wrap;
 
     gap: 7px;
@@ -399,13 +567,14 @@
     color: #991b1b;
 
     font-size: 13px;
+
     font-weight: 700;
 }
 
 
-/* =========================
-   辅助车辆任务汇总
-========================= */
+/* =========================================
+   辅助车辆
+========================================= */
 
 .aux-assignment-card {
     margin-bottom: 9px;
@@ -419,7 +588,9 @@
     background: #ecfdf5;
 
     display: flex;
+
     justify-content: space-between;
+
     align-items: center;
 
     gap: 15px;
@@ -447,13 +618,14 @@
     color: #166534;
 
     font-size: 12px;
+
     font-weight: 700;
 }
 
 
-/* =========================
-   空状态
-========================= */
+/* =========================================
+   空数据
+========================================= */
 
 .empty-placeholder {
     padding: 20px;
@@ -468,9 +640,9 @@
 }
 
 
-/* =========================
+/* =========================================
    按钮
-========================= */
+========================================= */
 
 .double-button-row {
     display: grid;
@@ -494,18 +666,8 @@
 }
 
 
-.secondary-button:hover {
-    background: #4b5563;
-}
-
-
 .success-button {
     background: #16a34a;
-}
-
-
-.success-button:hover {
-    background: #15803d;
 }
 
 
@@ -524,9 +686,9 @@
 }
 
 
-/* =========================
-   任务预览
-========================= */
+/* =========================================
+   预览
+========================================= */
 
 .preview-header {
     padding: 14px;
@@ -595,24 +757,107 @@
 }
 
 
-.preview-auxiliary strong,
-.preview-auxiliary span {
+/* =========================================
+   发布任务详情
+========================================= */
+
+.task-detail-status-row {
+    margin-bottom: 12px;
+
+    padding: 12px;
+
+    border-radius: 9px;
+
+    background: #ecfdf5;
+
+    display: flex;
+
+    justify-content: space-between;
+}
+
+
+.published-detail-block {
+    margin-top: 15px;
+
+    padding: 13px;
+
+    border: 1px solid #e5e7eb;
+
+    border-radius: 10px;
+}
+
+
+.published-detail-block h4 {
+    margin: 0 0 10px;
+}
+
+
+.published-binding {
+    margin-bottom: 12px;
+
+    padding: 10px;
+
+    border-radius: 8px;
+
+    background: #f8fafc;
+}
+
+
+.published-binding strong {
+    display: block;
+
+    margin-bottom: 7px;
+}
+
+
+.published-binding span {
+    display: inline-block;
+
+    margin: 3px;
+
+    padding: 6px 8px;
+
+    border-radius: 7px;
+
+    background: #fee2e2;
+
+    color: #991b1b;
+
+    font-size: 12px;
+
+    font-weight: 700;
+}
+
+
+.published-aux-row {
+    margin-bottom: 8px;
+
+    padding: 9px;
+
+    border-radius: 8px;
+
+    background: #f8fafc;
+}
+
+
+.published-aux-row strong,
+.published-aux-row span {
     display: block;
 }
 
 
-.preview-auxiliary span {
-    margin-top: 3px;
+.published-aux-row span {
+    margin-top: 4px;
 
     color: #6b7280;
 
-    font-size: 13px;
+    font-size: 12px;
 }
 
 
-/* =========================
+/* =========================================
    弹窗
-========================= */
+========================================= */
 
 .device-modal {
     position: fixed;
@@ -624,6 +869,7 @@
     display: flex;
 
     align-items: center;
+
     justify-content: center;
 
     padding: 18px;
@@ -635,6 +881,7 @@
 
 .device-modal-card {
     width: 100%;
+
     max-width: 440px;
 
     max-height: 90vh;
@@ -648,7 +895,13 @@
     background: #ffffff;
 
     box-shadow:
-        0 20px 45px rgba(0, 0, 0, .28);
+        0 20px 45px
+        rgba(0, 0, 0, .28);
+}
+
+
+.task-detail-modal {
+    max-width: 520px;
 }
 
 
@@ -666,7 +919,8 @@
 
     padding: 11px 0;
 
-    border-bottom: 1px solid #e5e7eb;
+    border-bottom:
+        1px solid #e5e7eb;
 }
 
 
@@ -693,20 +947,15 @@
 }
 
 
-/* =========================
-   手机
-========================= */
+/* =========================================
+   平板
+========================================= */
 
-@media (max-width: 760px) {
+@media (max-width: 800px) {
 
-    .dispatch-main {
-        padding-left: 9px;
-        padding-right: 9px;
-    }
-
-
-    .task-summary-grid {
-        grid-template-columns: 1fr;
+    .production-task-board {
+        grid-template-columns:
+            repeat(2, minmax(0, 1fr));
     }
 
 
@@ -715,11 +964,30 @@
             repeat(4, minmax(0, 1fr));
     }
 
+
+    .task-summary-grid {
+        grid-template-columns: 1fr;
+    }
+
 }
 
 
+/* =========================================
+   手机
+========================================= */
 
 @media (max-width: 540px) {
+
+    .production-task-board {
+        grid-template-columns: 1fr;
+    }
+
+
+    .device-board {
+        grid-template-columns:
+            repeat(3, minmax(0, 1fr));
+    }
+
 
     .dispatch-header-inner {
         align-items: flex-start;
@@ -728,12 +996,6 @@
 
     .dispatch-header-inner h1 {
         font-size: 22px;
-    }
-
-
-    .device-board {
-        grid-template-columns:
-            repeat(3, minmax(0, 1fr));
     }
 
 
@@ -758,13 +1020,7 @@
         flex-direction: column;
     }
 
-
-    .aux-assignment-area {
-        flex-shrink: 1;
-    }
-
 }
-
 
 
 @media (max-width: 380px) {
