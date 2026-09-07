@@ -1,81 +1,46 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
-
 <head>
-
     <meta charset="UTF-8">
-
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0"
-    >
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <title>生产调度中心</title>
 
-    <link
-        rel="stylesheet"
-        href="css/style.css"
-    >
-
-    <link
-        rel="stylesheet"
-        href="css/dispatch.css"
-    >
-
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/dispatch.css">
 </head>
-
 
 <body class="dispatch-body">
 
-
 <header class="dispatch-header">
-
     <div class="dispatch-header-inner">
 
         <div>
-
             <h1>生产调度中心</h1>
-
-            <p>
-                Production Dispatch Center
-            </p>
-
+            <p>Production Dispatch Center</p>
         </div>
-
 
         <div class="dispatch-header-badge">
             📋 调度端
         </div>
 
     </div>
-
 </header>
-
 
 
 <main class="dispatch-main">
 
 
-    <!-- =========================
-         顶部
-    ========================== -->
+    <!-- 顶部操作 -->
 
     <section class="dispatch-section">
 
         <div class="dispatch-section-title">
 
             <div>
-
-                <h2>
-                    生产调度
-                </h2>
-
-                <p>
-                    创建、下发和查看生产任务
-                </p>
-
+                <h2>生产调度</h2>
+                <p>创建、发布、撤回和跟踪生产任务</p>
             </div>
-
 
             <button
                 id="newTaskButton"
@@ -91,9 +56,7 @@
 
 
 
-    <!-- =========================
-         生产任务看板
-    ========================== -->
+    <!-- 生产任务看板 -->
 
     <section
         id="productionTaskBoardSection"
@@ -103,17 +66,9 @@
         <div class="dispatch-section-title">
 
             <div>
-
-                <h2>
-                    📊 生产任务看板
-                </h2>
-
-                <p>
-                    查看当前已发布生产任务
-                </p>
-
+                <h2>📊 生产任务看板</h2>
+                <p>运输发生后任务自动进入执行中</p>
             </div>
-
 
             <span
                 id="productionTaskCount"
@@ -125,15 +80,34 @@
         </div>
 
 
+        <div class="task-status-legend">
+
+            <span class="status-legend pending">
+                待执行
+            </span>
+
+            <span class="status-legend active">
+                执行中
+            </span>
+
+            <span class="status-legend completed">
+                已完成
+            </span>
+
+            <span class="status-legend withdrawn">
+                已撤回
+            </span>
+
+        </div>
+
+
         <div
             id="productionTaskBoard"
             class="production-task-board"
         >
 
             <div class="empty-placeholder">
-
-                当前没有已发布生产任务
-
+                当前没有生产任务
             </div>
 
         </div>
@@ -142,9 +116,7 @@
 
 
 
-    <!-- =========================
-         创建任务
-    ========================== -->
+    <!-- 创建任务 -->
 
     <section
         id="taskCreateSection"
@@ -154,17 +126,9 @@
         <div class="dispatch-section-title">
 
             <div>
-
-                <h2>
-                    创建生产任务
-                </h2>
-
-                <p>
-                    填写本班生产任务基础信息
-                </p>
-
+                <h2>创建生产任务</h2>
+                <p>填写本班生产任务基础信息</p>
             </div>
-
 
             <span class="draft-badge">
                 草稿
@@ -178,15 +142,8 @@
         </label>
 
         <select id="taskShift">
-
-            <option value="白班">
-                白班
-            </option>
-
-            <option value="夜班">
-                夜班
-            </option>
-
+            <option value="白班">白班</option>
+            <option value="夜班">夜班</option>
         </select>
 
 
@@ -207,7 +164,7 @@
 
         <textarea
             id="taskRemark"
-            placeholder="例如：按规划区域组织生产，注意运输道路安全。"
+            placeholder="例如：按规划区域组织生产。"
         ></textarea>
 
 
@@ -220,7 +177,6 @@
             >
                 取消
             </button>
-
 
             <button
                 id="generateTaskButton"
@@ -236,9 +192,7 @@
 
 
 
-    <!-- =========================
-         当前任务摘要
-    ========================== -->
+    <!-- 当前任务摘要 -->
 
     <section
         id="taskSummarySection"
@@ -248,17 +202,9 @@
         <div class="dispatch-section-title">
 
             <div>
-
-                <h2>
-                    当前生产任务
-                </h2>
-
-                <p>
-                    当前正在进行设备配置
-                </p>
-
+                <h2>当前生产任务</h2>
+                <p>正在配置设备</p>
             </div>
-
 
             <span
                 id="taskStateBadge"
@@ -273,65 +219,33 @@
         <div class="task-summary-grid">
 
             <div class="task-summary-card">
-
-                <span>
-                    日期
-                </span>
-
-                <strong id="summaryDate">
-                    -
-                </strong>
-
+                <span>日期</span>
+                <strong id="summaryDate">-</strong>
             </div>
 
-
             <div class="task-summary-card">
-
-                <span>
-                    班次
-                </span>
-
-                <strong id="summaryShift">
-                    -
-                </strong>
-
+                <span>班次</span>
+                <strong id="summaryShift">-</strong>
             </div>
 
-
             <div class="task-summary-card">
-
-                <span>
-                    作业区域
-                </span>
-
-                <strong id="summaryArea">
-                    -
-                </strong>
-
+                <span>作业区域</span>
+                <strong id="summaryArea">-</strong>
             </div>
 
         </div>
 
 
         <div class="remark-box">
-
-            <span>
-                调度说明
-            </span>
-
-            <strong id="summaryRemark">
-                无
-            </strong>
-
+            <span>调度说明</span>
+            <strong id="summaryRemark">无</strong>
         </div>
 
     </section>
 
 
 
-    <!-- =========================
-         颜色说明
-    ========================== -->
+    <!-- 三色状态 -->
 
     <section
         id="legendSection"
@@ -341,26 +255,18 @@
         <div class="legend-row">
 
             <div class="legend-item">
-
                 <span class="legend-dot green-dot"></span>
                 可调配
-
             </div>
 
-
             <div class="legend-item">
-
                 <span class="legend-dot yellow-dot"></span>
                 维修中
-
             </div>
 
-
             <div class="legend-item">
-
                 <span class="legend-dot red-dot"></span>
                 已分配任务
-
             </div>
 
         </div>
@@ -369,9 +275,7 @@
 
 
 
-    <!-- =========================
-         挖机看板
-    ========================== -->
+    <!-- 挖机 -->
 
     <section
         id="excavatorSection"
@@ -381,17 +285,9 @@
         <div class="dispatch-section-title">
 
             <div>
-
-                <h2>
-                    🚜 挖机看板
-                </h2>
-
-                <p>
-                    点击绿色挖机后选择跟随车辆
-                </p>
-
+                <h2>🚜 挖机看板</h2>
+                <p>点击绿色挖机，再选择跟随卡车</p>
             </div>
-
 
             <span
                 id="excavatorCount"
@@ -412,9 +308,7 @@
 
 
 
-    <!-- =========================
-         卡车看板
-    ========================== -->
+    <!-- 卡车 -->
 
     <section
         id="truckSection"
@@ -424,17 +318,9 @@
         <div class="dispatch-section-title">
 
             <div>
-
-                <h2>
-                    🚚 卡车看板
-                </h2>
-
-                <p>
-                    选择跟随当前挖机的卡车
-                </p>
-
+                <h2>🚚 卡车看板</h2>
+                <p>选择跟随当前挖机的运输车辆</p>
             </div>
-
 
             <span
                 id="truckCount"
@@ -472,9 +358,7 @@
 
 
 
-    <!-- =========================
-         绑定关系
-    ========================== -->
+    <!-- 绑定关系 -->
 
     <section
         id="bindingSection"
@@ -484,15 +368,8 @@
         <div class="dispatch-section-title">
 
             <div>
-
-                <h2>
-                    挖机与卡车绑定关系
-                </h2>
-
-                <p>
-                    当前任务主采设备配置
-                </p>
-
+                <h2>挖机与卡车绑定关系</h2>
+                <p>当前任务主采设备配置</p>
             </div>
 
         </div>
@@ -510,9 +387,7 @@
 
 
 
-    <!-- =========================
-         辅助车辆
-    ========================== -->
+    <!-- 装载机 -->
 
     <section
         id="loaderSection"
@@ -544,6 +419,8 @@
 
 
 
+    <!-- 水车 -->
+
     <section
         id="waterSection"
         class="dispatch-section hidden"
@@ -573,6 +450,8 @@
     </section>
 
 
+
+    <!-- 加油车 -->
 
     <section
         id="fuelSection"
@@ -604,6 +483,8 @@
 
 
 
+    <!-- 平路机 -->
+
     <section
         id="graderSection"
         class="dispatch-section hidden"
@@ -633,6 +514,8 @@
     </section>
 
 
+
+    <!-- 推土机 -->
 
     <section
         id="dozerSection"
@@ -664,6 +547,8 @@
 
 
 
+    <!-- 大巴 -->
+
     <section
         id="busSection"
         class="dispatch-section hidden"
@@ -694,9 +579,7 @@
 
 
 
-    <!-- =========================
-         辅助任务汇总
-    ========================== -->
+    <!-- 辅助任务 -->
 
     <section
         id="auxiliarySummarySection"
@@ -706,15 +589,8 @@
         <div class="dispatch-section-title">
 
             <div>
-
-                <h2>
-                    辅助车辆任务
-                </h2>
-
-                <p>
-                    当前任务已配置辅助车辆
-                </p>
-
+                <h2>辅助车辆任务</h2>
+                <p>当前任务已经配置的辅助设备</p>
             </div>
 
         </div>
@@ -732,9 +608,7 @@
 
 
 
-    <!-- =========================
-         发布
-    ========================== -->
+    <!-- 发布 -->
 
     <section
         id="publishSection"
@@ -753,9 +627,7 @@
 
 
 
-    <!-- =========================
-         发布预览
-    ========================== -->
+    <!-- 发布预览 -->
 
     <section
         id="previewSection"
@@ -765,15 +637,8 @@
         <div class="dispatch-section-title">
 
             <div>
-
-                <h2>
-                    生产任务确认
-                </h2>
-
-                <p>
-                    请核对全部设备配置
-                </p>
-
+                <h2>生产任务确认</h2>
+                <p>发布后进入待执行状态</p>
             </div>
 
         </div>
@@ -794,7 +659,6 @@
             >
                 返回修改
             </button>
-
 
             <button
                 id="publishTaskButton"
@@ -822,9 +686,7 @@
 
 
 
-<!-- =========================
-     设备详情
-========================== -->
+<!-- 普通设备详情 -->
 
 <div
     id="deviceModal"
@@ -837,12 +699,10 @@
             设备详情
         </h3>
 
-
         <div
             id="modalContent"
             class="device-modal-content"
         ></div>
-
 
         <button
             id="closeModalButton"
@@ -858,9 +718,7 @@
 
 
 
-<!-- =========================
-     辅助任务
-========================== -->
+<!-- 辅助车辆任务下发 -->
 
 <div
     id="auxTaskModal"
@@ -916,7 +774,7 @@
 
         <textarea
             id="auxTaskRemark"
-            placeholder="可填写该车辆具体作业要求"
+            placeholder="填写具体作业要求"
         ></textarea>
 
 
@@ -929,7 +787,6 @@
             >
                 取消
             </button>
-
 
             <button
                 id="confirmAuxTaskButton"
@@ -947,9 +804,7 @@
 
 
 
-<!-- =========================
-     已发布任务详情
-========================== -->
+<!-- 发布任务详情 -->
 
 <div
     id="publishedTaskModal"
@@ -969,12 +824,24 @@
         ></div>
 
 
-        <div class="double-button-row">
+        <div
+            id="publishedTaskActionArea"
+            class="published-task-action-area"
+        >
+
+            <button
+                id="withdrawPublishedTaskButton"
+                type="button"
+                class="withdraw-button hidden"
+            >
+                撤回任务
+            </button>
+
 
             <button
                 id="completePublishedTaskButton"
                 type="button"
-                class="success-button"
+                class="success-button hidden"
             >
                 完成本任务
             </button>
@@ -997,17 +864,11 @@
 
 
 <footer>
-
-    <p>
-        矿山管理系统 · 调度端 V2.3
-    </p>
-
+    <p>矿山管理系统 · 调度端 V2.4</p>
 </footer>
 
 
 <script src="js/dispatch.js"></script>
 
-
 </body>
-
 </html>
