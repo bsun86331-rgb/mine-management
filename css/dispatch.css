@@ -1,10 +1,14 @@
 /*
 =========================================
 矿山管理系统
-调度端样式
-dispatch.css V1.0
+调度端 V2.0
 =========================================
 */
+
+
+.hidden {
+    display: none !important;
+}
 
 
 .dispatch-body {
@@ -13,31 +17,33 @@ dispatch.css V1.0
 
 
 .dispatch-main {
-    max-width: 900px;
+    max-width: 1000px;
 }
 
 
 .dispatch-header {
-    padding: 23px 18px;
+    padding: 22px 16px;
 }
 
 
 .dispatch-header-inner {
-    width: 100%;
-    max-width: 900px;
+    max-width: 1000px;
 
     margin: 0 auto;
 
     display: flex;
 
-    align-items: center;
     justify-content: space-between;
+
+    align-items: center;
 
     gap: 15px;
 }
 
 
 .dispatch-header-inner h1 {
+    margin: 0;
+
     text-align: left;
 
     font-size: 25px;
@@ -45,21 +51,303 @@ dispatch.css V1.0
 
 
 .dispatch-header-inner p {
+    margin-top: 5px;
+
     text-align: left;
 }
 
 
 .dispatch-header-badge {
-    padding: 8px 13px;
+    padding: 8px 12px;
 
     border-radius: 20px;
 
-    background: rgba(
-        255,
-        255,
-        255,
-        0.12
-    );
+    background: rgba(255,255,255,.12);
+
+    font-weight: 700;
+
+    font-size: 13px;
+}
+
+
+
+.dispatch-section {
+    margin-bottom: 14px;
+}
+
+
+.dispatch-section-title {
+    display: flex;
+
+    align-items: center;
+
+    justify-content: space-between;
+
+    gap: 15px;
+
+    margin-bottom: 15px;
+}
+
+
+.dispatch-section-title h2 {
+    margin: 0;
+
+    text-align: left;
+}
+
+
+.dispatch-section-title p {
+    margin: 5px 0 0;
+}
+
+
+
+.primary-small-button {
+    width: auto;
+
+    min-height: 42px;
+
+    margin: 0;
+
+    padding: 0 16px;
+
+    background: #2563eb;
+
+    font-size: 14px;
+}
+
+
+
+.draft-badge,
+.task-state-badge,
+.count-badge {
+    padding: 6px 10px;
+
+    border-radius: 15px;
+
+    background: #e5e7eb;
+
+    font-size: 12px;
+
+    font-weight: 700;
+}
+
+
+
+.task-summary-grid {
+    display: grid;
+
+    grid-template-columns:
+        repeat(3,1fr);
+
+    gap: 10px;
+}
+
+
+.task-summary-card,
+.remark-box {
+    padding: 13px;
+
+    border: 1px solid #e5e7eb;
+
+    border-radius: 10px;
+
+    background: #f8fafc;
+}
+
+
+.task-summary-card span,
+.remark-box span {
+    display: block;
+
+    color: #6b7280;
+
+    font-size: 12px;
+}
+
+
+.task-summary-card strong,
+.remark-box strong {
+    display: block;
+
+    margin-top: 5px;
+}
+
+
+.remark-box {
+    margin-top: 10px;
+}
+
+
+
+.legend-row {
+    display: flex;
+
+    flex-wrap: wrap;
+
+    gap: 18px;
+}
+
+
+.legend-item {
+    display: flex;
+
+    align-items: center;
+
+    gap: 7px;
+
+    font-size: 14px;
+}
+
+
+.legend-dot {
+    width: 13px;
+
+    height: 13px;
+
+    border-radius: 50%;
+}
+
+
+.green-dot {
+    background: #16a34a;
+}
+
+
+.red-dot {
+    background: #dc2626;
+}
+
+
+.yellow-dot {
+    background: #facc15;
+}
+
+
+
+.device-board {
+    display: grid;
+
+    grid-template-columns:
+        repeat(5,minmax(0,1fr));
+
+    gap: 10px;
+}
+
+
+.device-card {
+    min-height: 74px;
+
+    margin: 0;
+
+    padding: 10px;
+
+    border: 2px solid transparent;
+
+    border-radius: 10px;
+
+    display: flex;
+
+    flex-direction: column;
+
+    justify-content: center;
+
+    align-items: center;
+
+    gap: 5px;
+
+    color: #fff;
+}
+
+
+.device-card strong {
+    font-size: 16px;
+}
+
+
+.device-card span {
+    font-size: 11px;
+}
+
+
+.device-available {
+    background: #16a34a;
+}
+
+
+.device-assigned {
+    background: #dc2626;
+}
+
+
+.device-maintenance {
+    background: #eab308;
+
+    color: #1f2937;
+}
+
+
+.selected-device {
+    border: 3px solid #111827;
+
+    transform: scale(.96);
+}
+
+
+
+.selected-equipment-info {
+    margin-bottom: 12px;
+
+    padding: 11px;
+
+    border-radius: 8px;
+
+    background: #eff6ff;
+
+    color: #1d4ed8;
+
+    font-weight: 700;
+}
+
+
+
+.binding-card {
+    margin-bottom: 10px;
+
+    padding: 13px;
+
+    border-radius: 10px;
+
+    background: #f8fafc;
+
+    border: 1px solid #e5e7eb;
+}
+
+
+.binding-excavator {
+    margin-bottom: 10px;
+
+    font-size: 17px;
+}
+
+
+.binding-truck-list {
+    display: flex;
+
+    flex-wrap: wrap;
+
+    gap: 7px;
+}
+
+
+.binding-truck-item {
+    padding: 7px 10px;
+
+    border-radius: 8px;
+
+    background: #fee2e2;
+
+    color: #991b1b;
 
     font-size: 13px;
 
@@ -67,309 +355,79 @@ dispatch.css V1.0
 }
 
 
-/* =========================================
-   板块
-========================================= */
 
-.dispatch-section h2 {
-    text-align: left;
-
-    font-size: 20px;
-}
-
-
-.dispatch-description {
-    margin-top: -7px;
-}
-
-
-.dispatch-title-row {
-    display: flex;
-
-    align-items: center;
-    justify-content: space-between;
-
-    gap: 15px;
-}
-
-
-.dispatch-title-row h2 {
-    margin-bottom: 18px;
-}
-
-
-/* =========================================
-   概况
-========================================= */
-
-.dispatch-stat-grid {
-    display: grid;
-
-    grid-template-columns:
-        repeat(
-            4,
-            minmax(0, 1fr)
-        );
-
-    gap: 10px;
-}
-
-
-.dispatch-stat-card {
-    padding: 16px 8px;
-
-    border: 1px solid #e5e7eb;
-
-    border-radius: 12px;
-
-    background: #f8fafc;
-
-    text-align: center;
-}
-
-
-.dispatch-stat-card span {
-    display: block;
-
-    font-size: 24px;
-}
-
-
-.dispatch-stat-card strong {
-    display: block;
-
-    margin-top: 6px;
-
-    color: #111827;
-
-    font-size: 26px;
-}
-
-
-.dispatch-stat-card small {
-    display: block;
-
-    margin-top: 4px;
-
-    color: #6b7280;
-}
-
-
-/* =========================================
-   状态
-========================================= */
-
-.dispatch-status,
-.dispatch-small-badge {
-    padding: 6px 11px;
-
-    border-radius: 16px;
-
-    background: #e5e7eb;
-
-    color: #374151;
-
-    font-size: 12px;
-
-    font-weight: 700;
-}
-
-
-.status-assigned {
-    background: #dbeafe;
-
-    color: #1d4ed8;
-}
-
-
-.status-working {
-    background: #dcfce7;
-
-    color: #15803d;
-}
-
-
-.status-paused {
-    background: #fef3c7;
-
-    color: #b45309;
-}
-
-
-.status-completed {
-    background: #ede9fe;
-
-    color: #6d28d9;
-}
-
-
-.status-none {
-    background: #e5e7eb;
-
-    color: #4b5563;
-}
-
-
-.abnormal-badge {
-    background: #fee2e2;
-
-    color: #b91c1c;
-}
-
-
-/* =========================================
-   无任务
-========================================= */
-
-.dispatch-empty {
-    padding: 30px 15px;
-
-    border: 1px dashed #cbd5e1;
-
-    border-radius: 12px;
-
-    background: #f8fafc;
-
-    text-align: center;
-}
-
-
-.dispatch-empty-icon {
-    margin-bottom: 10px;
-
-    font-size: 38px;
-}
-
-
-.dispatch-empty strong {
-    display: block;
-
-    color: #374151;
-}
-
-
-.dispatch-empty p {
-    margin: 7px 0 0;
-}
-
-
-/* =========================================
-   当前任务
-========================================= */
-
-.current-task-card {
-    border-radius: 12px;
-
-    background: #f8fafc;
-
-    border: 1px solid #e5e7eb;
+.auxiliary-card {
+    margin-bottom: 15px;
 
     padding: 15px;
-}
-
-
-.current-task-grid {
-    display: grid;
-
-    grid-template-columns:
-        repeat(
-            3,
-            minmax(0, 1fr)
-        );
-
-    gap: 9px;
-}
-
-
-.current-task-grid > div {
-    padding: 12px;
-
-    border-radius: 8px;
-
-    background: #ffffff;
-
-    border: 1px solid #e5e7eb;
-}
-
-
-.current-task-grid span,
-.current-route span,
-.current-task-line span {
-    display: block;
-
-    color: #6b7280;
-
-    font-size: 12px;
-}
-
-
-.current-task-grid strong,
-.current-route strong,
-.current-task-line strong {
-    display: block;
-
-    margin-top: 5px;
-
-    color: #111827;
-
-    font-size: 15px;
-}
-
-
-.current-route {
-    margin-top: 10px;
-
-    padding: 14px;
 
     border-radius: 10px;
 
-    background: #ffffff;
-
     border: 1px solid #e5e7eb;
+
+    background: #f8fafc;
 }
 
 
-.route-arrow {
-    margin: 4px 0;
-
-    color: #9ca3af;
+.auxiliary-card h3 {
+    margin: 0 0 12px;
 }
 
 
-.current-task-line {
-    margin-top: 9px;
+.aux-confirm-button {
+    background: #2563eb;
+}
 
-    padding: 12px;
+
+.auxiliary-selected-box {
+    margin-top: 18px;
+}
+
+
+.aux-selected-item {
+    margin-bottom: 8px;
+
+    padding: 11px;
 
     border-radius: 8px;
 
-    background: #ffffff;
+    background: #ecfdf5;
 
-    border: 1px solid #e5e7eb;
+    border: 1px solid #bbf7d0;
 }
 
 
-/* =========================================
-   调度按钮
-========================================= */
-
-.assign-task-button {
-    margin-top: 24px;
-
-    min-height: 58px;
-
-    background: #16a34a;
-
-    font-size: 17px;
+.aux-selected-item strong,
+.aux-selected-item span {
+    display: block;
 }
 
 
-.assign-task-button:hover {
-    background: #15803d;
+.aux-selected-item span {
+    margin-top: 4px;
+
+    color: #4b5563;
+
+    font-size: 13px;
 }
 
 
-.dispatch-action-grid {
+
+.empty-placeholder {
+    padding: 20px;
+
+    border: 1px dashed #cbd5e1;
+
+    border-radius: 9px;
+
+    color: #9ca3af;
+
+    text-align: center;
+}
+
+
+
+.double-button-row {
     display: grid;
 
     grid-template-columns:
@@ -377,181 +435,177 @@ dispatch.css V1.0
 
     gap: 10px;
 
-    margin-top: 14px;
+    margin-top: 18px;
 }
 
 
-.dispatch-action-grid button {
+.double-button-row button {
     margin: 0;
 }
 
 
-.edit-task-button {
+.secondary-button {
+    background: #6b7280;
+}
+
+
+.success-button {
+    background: #16a34a;
+}
+
+
+.primary-button {
     background: #2563eb;
 }
 
 
-.cancel-task-button {
-    background: #dc2626;
+.publish-button {
+    background: #16a34a;
 }
 
 
-.cancel-task-button:hover {
-    background: #b91c1c;
+
+.preview-header {
+    padding: 14px;
+
+    border-radius: 10px;
+
+    background: #111827;
+
+    color: #fff;
 }
 
 
-/* =========================================
-   记录
-========================================= */
-
-.dispatch-record-list {
-    display: flex;
-
-    flex-direction: column;
-
-    gap: 8px;
-}
-
-
-.dispatch-empty-record {
-    padding: 22px;
-
-    border: 1px dashed #d1d5db;
-
-    border-radius: 9px;
-
-    color: #9ca3af;
-
-    text-align: center;
-}
-
-
-.dispatch-record-item {
-    display: grid;
-
-    grid-template-columns:
-        1fr 1.5fr auto;
-
-    align-items: center;
-
-    gap: 12px;
-
-    padding: 12px;
-
-    border-radius: 9px;
-
-    background: #f8fafc;
-
-    border: 1px solid #e5e7eb;
-}
-
-
-.dispatch-record-left strong,
-.dispatch-record-left span {
+.preview-header strong,
+.preview-header span {
     display: block;
 }
 
 
-.dispatch-record-left span {
-    margin-top: 4px;
+.preview-header span {
+    margin-top: 5px;
 
-    color: #6b7280;
-
-    font-size: 12px;
-}
-
-
-.dispatch-record-middle {
-    color: #4b5563;
+    opacity: .8;
 
     font-size: 13px;
 }
 
 
-.dispatch-record-middle b {
-    margin: 0 5px;
+.preview-block {
+    margin-top: 12px;
 
-    color: #9ca3af;
-}
-
-
-.dispatch-record-time {
-    color: #6b7280;
-
-    font-size: 12px;
-}
-
-
-/* =========================================
-   异常
-========================================= */
-
-.dispatch-abnormal-item {
     padding: 13px;
 
-    border-left: 4px solid #dc2626;
+    border: 1px solid #e5e7eb;
 
-    border-radius: 8px;
-
-    background: #fef2f2;
+    border-radius: 10px;
 }
 
 
-.dispatch-abnormal-title {
+.preview-block h3 {
+    margin-top: 0;
+}
+
+
+.preview-binding {
+    margin-bottom: 12px;
+}
+
+
+.preview-binding strong,
+.preview-binding span {
+    display: block;
+}
+
+
+.preview-binding span {
+    margin-top: 5px;
+
+    padding-left: 16px;
+}
+
+
+.preview-auxiliary {
+    margin-bottom: 8px;
+}
+
+
+.preview-auxiliary strong,
+.preview-auxiliary span {
+    display: block;
+}
+
+
+.preview-auxiliary span {
+    margin-top: 3px;
+
+    color: #6b7280;
+}
+
+
+
+.device-modal {
+    position: fixed;
+
+    inset: 0;
+
+    z-index: 999;
+
     display: flex;
 
     align-items: center;
+
+    justify-content: center;
+
+    padding: 20px;
+
+    background: rgba(0,0,0,.55);
+}
+
+
+.device-modal-card {
+    width: 100%;
+
+    max-width: 420px;
+
+    padding: 20px;
+
+    border-radius: 14px;
+
+    background: #fff;
+}
+
+
+.device-modal-card h3 {
+    margin-top: 0;
+}
+
+
+.modal-detail-row {
+    display: flex;
+
     justify-content: space-between;
 
-    gap: 10px;
+    gap: 15px;
+
+    padding: 11px 0;
+
+    border-bottom: 1px solid #e5e7eb;
 }
 
 
-.dispatch-abnormal-title span {
-    color: #9ca3af;
-
-    font-size: 12px;
-}
-
-
-.dispatch-abnormal-meta {
-    margin-top: 6px;
-
+.modal-detail-row span {
     color: #6b7280;
-
-    font-size: 12px;
 }
 
 
-.dispatch-abnormal-item p {
-    margin: 8px 0 0;
-
-    color: #4b5563;
-}
-
-
-/* =========================================
-   首页
-========================================= */
-
-.dispatch-home-button {
+.home-button {
     background: #6b7280;
 }
 
 
-.dispatch-home-button:hover {
-    background: #4b5563;
-}
 
-
-/* =========================================
-   手机
-========================================= */
-
-@media (
-    max-width: 700px
-) {
+@media (max-width: 760px) {
 
     .dispatch-main {
         padding-left: 9px;
@@ -560,49 +614,50 @@ dispatch.css V1.0
     }
 
 
-    .dispatch-stat-grid {
+    .device-board {
         grid-template-columns:
-            1fr 1fr;
+            repeat(4,minmax(0,1fr));
     }
 
 
-    .current-task-grid {
+    .task-summary-grid {
         grid-template-columns:
-            1fr 1fr;
-    }
-
-
-    .dispatch-record-item {
-        grid-template-columns:
-            1fr auto;
-    }
-
-
-    .dispatch-record-middle {
-        grid-column:
-            1 / -1;
+            1fr;
     }
 
 }
 
 
-@media (
-    max-width: 430px
-) {
+@media (max-width: 520px) {
 
-    .dispatch-header-inner h1 {
-        font-size: 21px;
-    }
-
-
-    .dispatch-header-badge {
-        font-size: 11px;
-    }
-
-
-    .current-task-grid {
+    .device-board {
         grid-template-columns:
-            1fr;
+            repeat(3,minmax(0,1fr));
+    }
+
+
+    .device-card {
+        min-height: 68px;
+    }
+
+
+    .dispatch-section-title {
+        align-items: flex-start;
+    }
+
+
+    .primary-small-button {
+        font-size: 12px;
+    }
+
+}
+
+
+@media (max-width: 380px) {
+
+    .device-board {
+        grid-template-columns:
+            repeat(2,minmax(0,1fr));
     }
 
 }
