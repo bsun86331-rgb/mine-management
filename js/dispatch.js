@@ -2,8 +2,23 @@
 ========================================================
 矿山管理系统
 生产调度端
-dispatch.js V2.4.2
-已撤回任务看板隐藏版
+dispatch.js V2.4.3
+
+规则：
+1. 生产任务看板只显示：
+   - 待执行 pending
+   - 执行中 active
+
+2. 已完成 completed：
+   - 不显示在生产任务看板
+   - 保留在 dispatchPublishedTasks
+   - 以后历史任务只读取 completed
+
+3. 已撤回：
+   - 相当于删除
+   - 直接从 dispatchPublishedTasks 删除
+   - 不保留 withdrawn 历史
+   - 同时释放设备
 ========================================================
 */
 
@@ -16,6 +31,14 @@ document.addEventListener("DOMContentLoaded", function () {
     let auxiliaryAssignments = [];
     let selectedAuxDeviceId = null;
     let selectedPublishedTaskId = null;
+
+
+    /*
+    ========================================================
+    设备模拟资料
+    后期由管理员端设备资料替代
+    ========================================================
+    */
 
     let equipment = [
 
@@ -174,6 +197,12 @@ document.addEventListener("DOMContentLoaded", function () {
     ];
 
 
+    /*
+    ========================================================
+    DOM
+    ========================================================
+    */
+
     const newTaskButton =
         document.getElementById("newTaskButton");
 
@@ -217,8 +246,16 @@ document.addEventListener("DOMContentLoaded", function () {
         document.getElementById("withdrawPublishedTaskButton");
 
 
+    /*
+    ========================================================
+    初始化
+    ========================================================
+    */
+
     document.getElementById("taskShift").value =
         getDefaultShift();
+
+    migrateLegacyWithdrawnTasks();
 
     migrateOldTaskStatuses();
 
@@ -228,6 +265,12 @@ document.addEventListener("DOMContentLoaded", function () {
 
     renderProductionTaskBoard();
 
+
+    /*
+    ========================================================
+    创建任务
+    ========================================================
+    */
 
     newTaskButton.addEventListener("click", function () {
 
@@ -338,9 +381,14 @@ document.addEventListener("DOMContentLoaded", function () {
         scrollToId(
             "excavatorSection"
         );
-
     });
 
+
+    /*
+    ========================================================
+    挖机 + 卡车绑定
+    ========================================================
+    */
 
     bindTrucksButton.addEventListener("click", function () {
 
@@ -379,7 +427,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
         const excavator =
-            findDevice(excavatorId);
+            findDevice(
+                excavatorId
+            );
 
 
         if (excavator) {
@@ -457,6 +507,12 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 
 
+    /*
+    ========================================================
+    辅助车辆
+    ========================================================
+    */
+
     auxWorkType.addEventListener("change", function () {
 
         if (this.value === "manual") {
@@ -485,7 +541,8 @@ document.addEventListener("DOMContentLoaded", function () {
 
     cancelAuxTaskButton.addEventListener("click", function () {
 
-        selectedAuxDeviceId = null;
+        selectedAuxDeviceId =
+            null;
 
         hideSection(
             "auxTaskModal"
@@ -607,7 +664,8 @@ document.addEventListener("DOMContentLoaded", function () {
         };
 
 
-        selectedAuxDeviceId = null;
+        selectedAuxDeviceId =
+            null;
 
 
         hideSection(
@@ -625,6 +683,12 @@ document.addEventListener("DOMContentLoaded", function () {
 
     });
 
+
+    /*
+    ========================================================
+    发布预览
+    ========================================================
+    */
 
     previewTaskButton.addEventListener("click", function () {
 
@@ -656,6 +720,12 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 
 
+    /*
+    ========================================================
+    发布任务
+    ========================================================
+    */
+
     publishTaskButton.addEventListener("click", function () {
 
         if (!currentTask) {
@@ -666,7 +736,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
         const confirmed =
             confirm(
-                "确认发布当前生产任务吗？发布后状态为“待执行”，产生运输前可以撤回。"
+                "确认发布当前生产任务吗？发布后为“待执行”，未产生运输前可以撤回。"
             );
 
 
@@ -727,7 +797,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
         alert(
-            "生产任务发布成功，当前状态为“待执行”。"
+            "任务发布成功，当前状态为“待执行”。"
         );
 
 
@@ -737,6 +807,12 @@ document.addEventListener("DOMContentLoaded", function () {
 
     });
 
+
+    /*
+    ========================================================
+    普通弹窗关闭
+    ========================================================
+    */
 
     closeModalButton.addEventListener("click", function () {
 
@@ -749,7 +825,8 @@ document.addEventListener("DOMContentLoaded", function () {
 
     closePublishedTaskButton.addEventListener("click", function () {
 
-        selectedPublishedTaskId = null;
+        selectedPublishedTaskId =
+            null;
 
         hideSection(
             "publishedTaskModal"
@@ -757,6 +834,13 @@ document.addEventListener("DOMContentLoaded", function () {
 
     });
 
+
+    /*
+    ========================================================
+    撤回任务
+    撤回 = 删除
+    ========================================================
+    */
 
     withdrawPublishedTaskButton.addEventListener("click", function () {
 
@@ -772,6 +856,10 @@ document.addEventListener("DOMContentLoaded", function () {
             );
 
 
+        /*
+        只要有运输记录，就绝对不能撤回
+        */
+
         if (tripStats.count > 0) {
 
             syncPublishedTaskExecutionStatus();
@@ -784,7 +872,8 @@ document.addEventListener("DOMContentLoaded", function () {
             );
 
 
-            selectedPublishedTaskId = null;
+            selectedPublishedTaskId =
+                null;
 
 
             alert(
@@ -828,6 +917,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
             task.status =
                 "pending";
+
         }
 
 
@@ -846,7 +936,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
         const confirmed =
             confirm(
-                "确认撤回该生产任务吗？撤回后相关设备将恢复为可调配状态。"
+                "确认撤回该生产任务吗？撤回相当于删除，该任务将不再保留。"
             );
 
 
@@ -856,21 +946,43 @@ document.addEventListener("DOMContentLoaded", function () {
         }
 
 
-        task.status =
-            "withdrawn";
-
-        task.withdrawnAt =
-            new Date()
-                .toISOString();
-
-
-        saveTaskArray(
-            tasks
-        );
-
+        /*
+        先释放设备
+        */
 
         releaseTaskEquipment(
             task
+        );
+
+
+        /*
+        再彻底删除任务
+        */
+
+        const remainingTasks =
+            tasks.filter(
+                function (item) {
+
+                    return (
+                        item.taskId !==
+                        selectedPublishedTaskId
+                    );
+
+                }
+            );
+
+
+        saveTaskArray(
+            remainingTasks
+        );
+
+
+        /*
+        如果旧的单任务缓存正好是这个任务，也清除
+        */
+
+        clearLegacyLatestTaskIfMatch(
+            selectedPublishedTaskId
         );
 
 
@@ -879,18 +991,25 @@ document.addEventListener("DOMContentLoaded", function () {
         );
 
 
-        selectedPublishedTaskId = null;
+        selectedPublishedTaskId =
+            null;
 
 
         renderProductionTaskBoard();
 
 
         alert(
-            "任务已撤回，已从生产任务看板移除，相关设备已释放。"
+            "任务已撤回并删除，相关设备已恢复为可调配状态。"
         );
 
     });
 
+
+    /*
+    ========================================================
+    完成任务
+    ========================================================
+    */
 
     completePublishedTaskButton.addEventListener("click", function () {
 
@@ -932,10 +1051,13 @@ document.addEventListener("DOMContentLoaded", function () {
             );
 
 
-        if (stats.count === 0) {
+        if (
+            stats.count ===
+            0
+        ) {
 
             alert(
-                "该任务尚未产生运输记录，不能按执行中任务完成。"
+                "该任务尚未产生运输记录，不能完成。"
             );
 
             return;
@@ -957,7 +1079,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
         const confirmed =
             confirm(
-                "确认完成该生产任务吗？"
+                "确认完成该生产任务吗？完成后将从生产任务看板移除，并进入历史任务。"
             );
 
 
@@ -975,6 +1097,10 @@ document.addEventListener("DOMContentLoaded", function () {
                 .toISOString();
 
 
+        task.transportTripCount =
+            stats.count;
+
+
         saveTaskArray(
             tasks
         );
@@ -990,18 +1116,25 @@ document.addEventListener("DOMContentLoaded", function () {
         );
 
 
-        selectedPublishedTaskId = null;
+        selectedPublishedTaskId =
+            null;
 
 
         renderProductionTaskBoard();
 
 
         alert(
-            "任务已完成，相关设备已释放。"
+            "任务已完成，已从生产任务看板移除，并保留在历史任务中。"
         );
 
     });
 
+
+    /*
+    ========================================================
+    配置区域显示
+    ========================================================
+    */
 
     function showTaskBoards() {
 
@@ -1054,12 +1187,22 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
 
+    /*
+    ========================================================
+    总渲染
+    ========================================================
+    */
+
     function renderAll() {
 
         renderExcavators();
+
         renderTrucks();
+
         renderBindings();
+
         renderAuxiliaryBoards();
+
         renderAuxiliaryAssignments();
 
     }
@@ -1068,12 +1211,13 @@ document.addEventListener("DOMContentLoaded", function () {
     /*
     ========================================================
     生产任务看板
-    关键修改：
-    withdrawn 已撤回任务直接过滤，不再显示
+    只显示 pending / active
     ========================================================
     */
 
     function renderProductionTaskBoard() {
+
+        migrateLegacyWithdrawnTasks();
 
         migrateOldTaskStatuses();
 
@@ -1091,8 +1235,10 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
         /*
-        已撤回任务保留在 localStorage，
-        但不进入生产任务看板。
+        核心：
+        只显示待执行 + 执行中
+        completed 不显示
+        withdrawn 理论上已被删除
         */
 
         const tasks =
@@ -1100,30 +1246,19 @@ document.addEventListener("DOMContentLoaded", function () {
                 function (task) {
 
                     return (
-                        task.status !==
-                        "withdrawn"
+                        task.status ===
+                        "pending" ||
+                        task.status ===
+                        "active"
                     );
 
                 }
             );
 
 
-        const runningCount =
-            tasks.filter(
-                function (task) {
-
-                    return (
-                        task.status === "pending" ||
-                        task.status === "active"
-                    );
-
-                }
-            ).length;
-
-
         setText(
             "productionTaskCount",
-            runningCount +
+            tasks.length +
             " 个进行中任务"
         );
 
@@ -1137,7 +1272,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
                 <div class="empty-placeholder">
 
-                    当前没有生产任务
+                    当前没有进行中的生产任务
 
                 </div>
 
@@ -1354,7 +1489,15 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
 
+    /*
+    ========================================================
+    任务详情
+    ========================================================
+    */
+
     function openPublishedTask(taskId) {
+
+        migrateLegacyWithdrawnTasks();
 
         migrateOldTaskStatuses();
 
@@ -1384,9 +1527,14 @@ document.addEventListener("DOMContentLoaded", function () {
         }
 
 
+        /*
+        生产任务看板只允许打开
+        pending / active
+        */
+
         if (
-            task.status ===
-            "withdrawn"
+            task.status !== "pending" &&
+            task.status !== "active"
         ) {
 
             return;
@@ -1497,7 +1645,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
             <div class="modal-detail-row">
 
-                <span>日期</span>
+                <span>
+                    日期
+                </span>
 
                 <strong>
                     ${escapeHtml(
@@ -1510,7 +1660,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
             <div class="modal-detail-row">
 
-                <span>作业区域</span>
+                <span>
+                    作业区域
+                </span>
 
                 <strong>
                     ${escapeHtml(
@@ -1523,7 +1675,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
             <div class="modal-detail-row">
 
-                <span>班次</span>
+                <span>
+                    班次
+                </span>
 
                 <strong>
                     ${escapeHtml(
@@ -1552,7 +1706,11 @@ document.addEventListener("DOMContentLoaded", function () {
         ) {
 
             html += `
-                <p>未配置主采设备</p>
+
+                <p>
+                    未配置主采设备
+                </p>
+
             `;
 
         }
@@ -1618,7 +1776,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
                     html += `
+
                         </div>
+
                     `;
 
                 }
@@ -1650,7 +1810,11 @@ document.addEventListener("DOMContentLoaded", function () {
         ) {
 
             html += `
-                <p>未配置辅助车辆</p>
+
+                <p>
+                    未配置辅助车辆
+                </p>
+
             `;
 
         }
@@ -1743,6 +1907,11 @@ document.addEventListener("DOMContentLoaded", function () {
             );
 
 
+        /*
+        待执行 + 0趟：
+        可撤回
+        */
+
         if (
             task.status ===
             "pending" &&
@@ -1758,6 +1927,11 @@ document.addEventListener("DOMContentLoaded", function () {
 
         }
 
+
+        /*
+        执行中 + 有运输：
+        可完成
+        */
 
         if (
             task.status ===
@@ -1781,6 +1955,12 @@ document.addEventListener("DOMContentLoaded", function () {
 
     }
 
+
+    /*
+    ========================================================
+    挖机
+    ========================================================
+    */
 
     function renderExcavators() {
 
@@ -1871,7 +2051,9 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
 
-    function handleExcavatorClick(device) {
+    function handleExcavatorClick(
+        device
+    ) {
 
         if (
             device.status ===
@@ -1909,6 +2091,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
         renderExcavators();
+
         renderTrucks();
 
 
@@ -1918,6 +2101,12 @@ document.addEventListener("DOMContentLoaded", function () {
 
     }
 
+
+    /*
+    ========================================================
+    卡车
+    ========================================================
+    */
 
     function renderTrucks() {
 
@@ -2012,7 +2201,9 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
 
-    function handleTruckClick(device) {
+    function handleTruckClick(
+        device
+    ) {
 
         if (
             device.status ===
@@ -2137,6 +2328,12 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
 
+    /*
+    ========================================================
+    绑定列表
+    ========================================================
+    */
+
     function renderBindings() {
 
         const container =
@@ -2165,7 +2362,8 @@ document.addEventListener("DOMContentLoaded", function () {
         }
 
 
-        let html = "";
+        let html =
+            "";
 
 
         bindings.forEach(
@@ -2230,6 +2428,12 @@ document.addEventListener("DOMContentLoaded", function () {
 
     }
 
+
+    /*
+    ========================================================
+    辅助车辆看板
+    ========================================================
+    */
 
     function renderAuxiliaryBoards() {
 
@@ -2487,7 +2691,8 @@ document.addEventListener("DOMContentLoaded", function () {
         }
 
 
-        let html = "";
+        let html =
+            "";
 
 
         auxiliaryAssignments.forEach(
@@ -2546,6 +2751,12 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
 
+    /*
+    ========================================================
+    设备卡
+    ========================================================
+    */
+
     function createDeviceCard(
         device
     ) {
@@ -2595,6 +2806,12 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
 
+    /*
+    ========================================================
+    设备详情
+    ========================================================
+    */
+
     function showMaintenanceModal(
         device
     ) {
@@ -2618,55 +2835,85 @@ document.addEventListener("DOMContentLoaded", function () {
             .innerHTML = `
 
             <div class="modal-detail-row">
+
                 <span>车型</span>
+
                 <strong>
+
                     ${escapeHtml(
                         getTypeName(
                             device.type
                         )
                     )}
+
                 </strong>
+
             </div>
 
+
             <div class="modal-detail-row">
+
                 <span>故障</span>
+
                 <strong>
+
                     ${escapeHtml(
                         maintenance.fault ||
                         "未填写"
                     )}
+
                 </strong>
+
             </div>
 
+
             <div class="modal-detail-row">
+
                 <span>开始时间</span>
+
                 <strong>
+
                     ${escapeHtml(
                         maintenance.startedAt ||
                         "-"
                     )}
+
                 </strong>
+
             </div>
 
+
             <div class="modal-detail-row">
+
                 <span>预计完成</span>
+
                 <strong>
+
                     ${escapeHtml(
                         maintenance.expectedEnd ||
                         "-"
                     )}
+
                 </strong>
+
             </div>
 
+
             <div class="modal-detail-row">
+
                 <span>维修负责人</span>
+
                 <strong>
+
                     ${escapeHtml(
                         maintenance.responsible ||
                         "-"
                     )}
+
                 </strong>
+
             </div>
+
         `;
 
 
@@ -2700,45 +2947,69 @@ document.addEventListener("DOMContentLoaded", function () {
             .innerHTML = `
 
             <div class="modal-detail-row">
+
                 <span>车型</span>
+
                 <strong>
+
                     ${escapeHtml(
                         getTypeName(
                             device.type
                         )
                     )}
+
                 </strong>
+
             </div>
 
+
             <div class="modal-detail-row">
+
                 <span>作业区域</span>
+
                 <strong>
+
                     ${escapeHtml(
                         task.area ||
                         "-"
                     )}
+
                 </strong>
+
             </div>
 
+
             <div class="modal-detail-row">
+
                 <span>班次</span>
+
                 <strong>
+
                     ${escapeHtml(
                         task.shift ||
                         "-"
                     )}
+
                 </strong>
+
             </div>
 
+
             <div class="modal-detail-row">
+
                 <span>工作内容</span>
+
                 <strong>
+
                     ${escapeHtml(
                         task.work ||
                         "-"
                     )}
+
                 </strong>
+
             </div>
+
         `;
 
 
@@ -2748,6 +3019,12 @@ document.addEventListener("DOMContentLoaded", function () {
 
     }
 
+
+    /*
+    ========================================================
+    预览
+    ========================================================
+    */
 
     function renderTaskPreview() {
 
@@ -2801,7 +3078,11 @@ document.addEventListener("DOMContentLoaded", function () {
         ) {
 
             html += `
-                <p>未配置挖机和卡车</p>
+
+                <p>
+                    未配置挖机和卡车
+                </p>
+
             `;
 
         }
@@ -2847,7 +3128,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
                 html += `
+
                     </div>
+
                 `;
 
             }
@@ -2874,7 +3157,11 @@ document.addEventListener("DOMContentLoaded", function () {
         ) {
 
             html += `
-                <p>未配置辅助车辆</p>
+
+                <p>
+                    未配置辅助车辆
+                </p>
+
             `;
 
         }
@@ -2948,6 +3235,12 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
 
+    /*
+    ========================================================
+    查找设备
+    ========================================================
+    */
+
     function findDevice(
         id
     ) {
@@ -2965,6 +3258,12 @@ document.addEventListener("DOMContentLoaded", function () {
 
     }
 
+
+    /*
+    ========================================================
+    释放任务设备
+    ========================================================
+    */
 
     function releaseTaskEquipment(
         task
@@ -3077,6 +3376,13 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
 
+    /*
+    ========================================================
+    恢复进行中任务的设备占用状态
+    只处理 pending / active
+    ========================================================
+    */
+
     function restoreEquipmentStatusFromPublishedTasks() {
 
         const tasks =
@@ -3088,8 +3394,10 @@ document.addEventListener("DOMContentLoaded", function () {
                 function (task) {
 
                     return (
-                        task.status === "pending" ||
-                        task.status === "active"
+                        task.status ===
+                        "pending" ||
+                        task.status ===
+                        "active"
                     );
 
                 }
@@ -3255,6 +3563,54 @@ document.addEventListener("DOMContentLoaded", function () {
 });
 
 
+/*
+========================================================
+旧的 withdrawn 任务迁移
+V2.4.2 以前已经撤回的任务：
+现在按“撤回 = 删除”处理
+========================================================
+*/
+
+function migrateLegacyWithdrawnTasks() {
+
+    const tasks =
+        getPublishedTasks();
+
+
+    const remainingTasks =
+        tasks.filter(
+            function (task) {
+
+                return (
+                    task.status !==
+                    "withdrawn"
+                );
+
+            }
+        );
+
+
+    if (
+        remainingTasks.length !==
+        tasks.length
+    ) {
+
+        saveTaskArray(
+            remainingTasks
+        );
+
+    }
+
+}
+
+
+/*
+========================================================
+旧任务状态兼容
+active + 0趟 => pending
+========================================================
+*/
+
 function migrateOldTaskStatuses() {
 
     const tasks =
@@ -3316,6 +3672,13 @@ function migrateOldTaskStatuses() {
 
 }
 
+
+/*
+========================================================
+产生运输后：
+pending => active
+========================================================
+*/
 
 function syncPublishedTaskExecutionStatus() {
 
@@ -3381,6 +3744,12 @@ function syncPublishedTaskExecutionStatus() {
 
 }
 
+
+/*
+========================================================
+运输记录
+========================================================
+*/
 
 function getTaskTripRecords(
     taskId
@@ -3461,6 +3830,12 @@ function getTaskTripRecords(
 
 }
 
+
+/*
+========================================================
+运输统计
+========================================================
+*/
 
 function getTaskTripStats(
     taskId
@@ -3556,6 +3931,12 @@ function getTaskTripStats(
 }
 
 
+/*
+========================================================
+某卡车任务趟数
+========================================================
+*/
+
 function getTruckTaskTripCount(
     taskId,
     truckId
@@ -3593,6 +3974,12 @@ function getTruckTaskTripCount(
 
 }
 
+
+/*
+========================================================
+卡车资料
+========================================================
+*/
 
 function createTruckData() {
 
@@ -3673,6 +4060,12 @@ function createTruckData() {
 }
 
 
+/*
+========================================================
+保存任务
+========================================================
+*/
+
 function savePublishedTask(
     task
 ) {
@@ -3714,6 +4107,17 @@ function saveTaskArray(
 
 }
 
+
+/*
+========================================================
+读取全部任务
+包含：
+pending
+active
+completed
+撤回任务已经删除
+========================================================
+*/
 
 function getPublishedTasks() {
 
@@ -3761,6 +4165,111 @@ function getPublishedTasks() {
 }
 
 
+/*
+========================================================
+历史任务数据
+以后历史任务页面直接调用这个逻辑：
+只返回 completed
+========================================================
+*/
+
+function getCompletedHistoryTasks() {
+
+    return getPublishedTasks()
+        .filter(
+            function (task) {
+
+                return (
+                    task.status ===
+                    "completed"
+                );
+
+            }
+        )
+        .sort(
+            function (a, b) {
+
+                return (
+                    new Date(
+                        b.completedAt ||
+                        b.publishedAt ||
+                        b.createdAt
+                    ) -
+                    new Date(
+                        a.completedAt ||
+                        a.publishedAt ||
+                        a.createdAt
+                    )
+                );
+
+            }
+        );
+
+}
+
+
+/*
+========================================================
+清理旧版 latest task 缓存
+========================================================
+*/
+
+function clearLegacyLatestTaskIfMatch(
+    taskId
+) {
+
+    let latest =
+        null;
+
+
+    try {
+
+        latest =
+            JSON.parse(
+
+                localStorage.getItem(
+                    "publishedDispatchTask"
+                )
+                ||
+                "null"
+
+            );
+
+    }
+
+    catch (error) {
+
+        latest =
+            null;
+
+    }
+
+
+    if (
+        latest &&
+        String(
+            latest.taskId
+        ) ===
+        String(
+            taskId
+        )
+    ) {
+
+        localStorage.removeItem(
+            "publishedDispatchTask"
+        );
+
+    }
+
+}
+
+
+/*
+========================================================
+辅助车辆任务选项
+========================================================
+*/
+
 function getWorkOptions(
     type
 ) {
@@ -3773,33 +4282,51 @@ function getWorkOptions(
         return [
 
             {
-                value: "日常作业",
-                label: "日常作业"
+                value:
+                    "日常作业",
+
+                label:
+                    "日常作业"
             },
 
             {
-                value: "清理挖机附近散料",
-                label: "清理挖机附近散料"
+                value:
+                    "清理挖机附近散料",
+
+                label:
+                    "清理挖机附近散料"
             },
 
             {
-                value: "修整运输道路",
-                label: "修整运输道路"
+                value:
+                    "修整运输道路",
+
+                label:
+                    "修整运输道路"
             },
 
             {
-                value: "装煤",
-                label: "装煤"
+                value:
+                    "装煤",
+
+                label:
+                    "装煤"
             },
 
             {
-                value: "排土场作业",
-                label: "排土场作业"
+                value:
+                    "排土场作业",
+
+                label:
+                    "排土场作业"
             },
 
             {
-                value: "manual",
-                label: "手动录入"
+                value:
+                    "manual",
+
+                label:
+                    "手动录入"
             }
 
         ];
@@ -3815,33 +4342,51 @@ function getWorkOptions(
         return [
 
             {
-                value: "日常洒水",
-                label: "日常洒水"
+                value:
+                    "日常洒水",
+
+                label:
+                    "日常洒水"
             },
 
             {
-                value: "运输道路洒水",
-                label: "运输道路洒水"
+                value:
+                    "运输道路洒水",
+
+                label:
+                    "运输道路洒水"
             },
 
             {
-                value: "采区洒水",
-                label: "采区洒水"
+                value:
+                    "采区洒水",
+
+                label:
+                    "采区洒水"
             },
 
             {
-                value: "排土场洒水",
-                label: "排土场洒水"
+                value:
+                    "排土场洒水",
+
+                label:
+                    "排土场洒水"
             },
 
             {
-                value: "临时调配",
-                label: "临时调配"
+                value:
+                    "临时调配",
+
+                label:
+                    "临时调配"
             },
 
             {
-                value: "manual",
-                label: "手动录入"
+                value:
+                    "manual",
+
+                label:
+                    "手动录入"
             }
 
         ];
@@ -3852,13 +4397,19 @@ function getWorkOptions(
     return [
 
         {
-            value: "日常作业",
-            label: "日常作业"
+            value:
+                "日常作业",
+
+            label:
+                "日常作业"
         },
 
         {
-            value: "manual",
-            label: "手动录入"
+            value:
+                "manual",
+
+            label:
+                "手动录入"
         }
 
     ];
@@ -3866,20 +4417,41 @@ function getWorkOptions(
 }
 
 
+/*
+========================================================
+车型
+========================================================
+*/
+
 function getTypeName(
     type
 ) {
 
     const map = {
 
-        excavator: "挖机",
-        truck: "卡车",
-        loader: "装载机",
-        water: "水车",
-        fuel: "加油车",
-        grader: "平路机",
-        dozer: "推土机",
-        bus: "大巴"
+        excavator:
+            "挖机",
+
+        truck:
+            "卡车",
+
+        loader:
+            "装载机",
+
+        water:
+            "水车",
+
+        fuel:
+            "加油车",
+
+        grader:
+            "平路机",
+
+        dozer:
+            "推土机",
+
+        bus:
+            "大巴"
 
     };
 
@@ -3892,17 +4464,29 @@ function getTypeName(
 }
 
 
+/*
+========================================================
+任务状态
+========================================================
+*/
+
 function getTaskStatusText(
     status
 ) {
 
     const map = {
 
-        pending: "待执行",
-        active: "执行中",
-        completed: "已完成",
-        withdrawn: "已撤回",
-        configuring: "配置中"
+        pending:
+            "待执行",
+
+        active:
+            "执行中",
+
+        completed:
+            "已完成",
+
+        configuring:
+            "配置中"
 
     };
 
@@ -3939,30 +4523,16 @@ function getTaskCardClass(
     }
 
 
-    if (
-        status ===
-        "completed"
-    ) {
-
-        return "task-completed-card";
-
-    }
-
-
-    if (
-        status ===
-        "withdrawn"
-    ) {
-
-        return "task-withdrawn-card";
-
-    }
-
-
     return "";
 
 }
 
+
+/*
+========================================================
+设备状态
+========================================================
+*/
 
 function getStatusClass(
     status
@@ -4042,6 +4612,12 @@ function getStatusText(
 }
 
 
+/*
+========================================================
+班次
+========================================================
+*/
+
 function getDefaultShift() {
 
     const hour =
@@ -4063,6 +4639,12 @@ function getDefaultShift() {
 
 }
 
+
+/*
+========================================================
+时间
+========================================================
+*/
 
 function formatDateTime(
     value
@@ -4095,15 +4677,28 @@ function formatDateTime(
     return date.toLocaleString(
         "zh-CN",
         {
-            month: "2-digit",
-            day: "2-digit",
-            hour: "2-digit",
-            minute: "2-digit"
+            month:
+                "2-digit",
+
+            day:
+                "2-digit",
+
+            hour:
+                "2-digit",
+
+            minute:
+                "2-digit"
         }
     );
 
 }
 
+
+/*
+========================================================
+通用
+========================================================
+*/
 
 function getValue(
     id
