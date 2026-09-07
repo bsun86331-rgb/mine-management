@@ -1,16 +1,13 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
-
 <head>
-
     <meta charset="UTF-8">
-
     <meta
         name="viewport"
         content="width=device-width, initial-scale=1.0"
     >
 
-    <title>生产调度</title>
+    <title>生产调度中心</title>
 
     <link
         rel="stylesheet"
@@ -21,611 +18,832 @@
         rel="stylesheet"
         href="css/dispatch.css"
     >
-
 </head>
-
 
 <body class="dispatch-body">
 
-    <header class="dispatch-header">
+<header class="dispatch-header">
 
-        <div class="dispatch-header-inner">
+    <div class="dispatch-header-inner">
+
+        <div>
+            <h1>生产调度中心</h1>
+            <p>Production Dispatch Center</p>
+        </div>
+
+        <div class="dispatch-header-badge">
+            📋 调度端
+        </div>
+
+    </div>
+
+</header>
+
+
+<main class="dispatch-main">
+
+
+    <!-- =====================================
+         顶部操作区
+    ====================================== -->
+
+    <section class="dispatch-section">
+
+        <div class="dispatch-section-title">
 
             <div>
-
-                <h1>
-                    生产调度
-                </h1>
-
+                <h2>生产任务</h2>
                 <p>
-                    Dispatch Management
+                    创建任务后进行设备分配和绑定
                 </p>
+            </div>
+
+            <button
+                id="newTaskButton"
+                class="primary-small-button"
+                type="button"
+            >
+                + 下发生产任务
+            </button>
+
+        </div>
+
+    </section>
+
+
+
+    <!-- =====================================
+         创建任务区域
+    ====================================== -->
+
+    <section
+        id="taskCreateSection"
+        class="dispatch-section hidden"
+    >
+
+        <div class="dispatch-section-title">
+
+            <div>
+                <h2>创建生产任务</h2>
+                <p>
+                    填写生产任务基础信息
+                </p>
+            </div>
+
+            <span
+                id="draftStatus"
+                class="draft-badge"
+            >
+                草稿
+            </span>
+
+        </div>
+
+
+        <label for="taskShift">
+            班次
+        </label>
+
+        <select id="taskShift">
+
+            <option value="白班">
+                白班
+            </option>
+
+            <option value="夜班">
+                夜班
+            </option>
+
+        </select>
+
+
+        <label for="taskArea">
+            作业区域 *
+        </label>
+
+        <input
+            id="taskArea"
+            type="text"
+            placeholder="例如：马西四采区"
+        >
+
+
+        <label for="taskRemark">
+            调度说明
+        </label>
+
+        <textarea
+            id="taskRemark"
+            placeholder="例如：按规划区域组织生产，注意运输道路安全。"
+        ></textarea>
+
+
+        <div class="double-button-row">
+
+            <button
+                id="cancelCreateButton"
+                class="secondary-button"
+                type="button"
+            >
+                取消
+            </button>
+
+            <button
+                id="generateTaskButton"
+                class="success-button"
+                type="button"
+            >
+                生成任务
+            </button>
+
+        </div>
+
+    </section>
+
+
+
+    <!-- =====================================
+         当前任务摘要
+    ====================================== -->
+
+    <section
+        id="taskSummarySection"
+        class="dispatch-section hidden"
+    >
+
+        <div class="dispatch-section-title">
+
+            <div>
+                <h2>当前任务</h2>
+                <p>
+                    当前正在配置的生产任务
+                </p>
+            </div>
+
+            <span
+                id="taskStateBadge"
+                class="task-state-badge"
+            >
+                配置中
+            </span>
+
+        </div>
+
+
+        <div class="task-summary-grid">
+
+            <div class="task-summary-card">
+
+                <span>日期</span>
+
+                <strong id="summaryDate">
+                    -
+                </strong>
 
             </div>
 
 
-            <div class="dispatch-header-badge">
-                📋 调度端
+            <div class="task-summary-card">
+
+                <span>班次</span>
+
+                <strong id="summaryShift">
+                    -
+                </strong>
+
+            </div>
+
+
+            <div class="task-summary-card">
+
+                <span>作业区域</span>
+
+                <strong id="summaryArea">
+                    -
+                </strong>
+
             </div>
 
         </div>
 
-    </header>
+
+        <div class="remark-box">
+
+            <span>调度说明</span>
+
+            <strong id="summaryRemark">
+                无
+            </strong>
+
+        </div>
+
+    </section>
 
 
-    <main class="dispatch-main">
 
+    <!-- =====================================
+         设备颜色说明
+    ====================================== -->
 
-        <!-- =====================================
-             调度概况
-        ====================================== -->
+    <section
+        id="legendSection"
+        class="dispatch-section hidden"
+    >
 
-        <section class="dispatch-section">
+        <div class="legend-row">
 
-            <h2>
-                调度概况
-            </h2>
-
-
-            <div class="dispatch-stat-grid">
-
-
-                <div class="dispatch-stat-card">
-
-                    <span>
-                        👷
-                    </span>
-
-                    <strong id="approvedDriverCount">
-                        0
-                    </strong>
-
-                    <small>
-                        可调度司机
-                    </small>
-
-                </div>
-
-
-                <div class="dispatch-stat-card">
-
-                    <span>
-                        📋
-                    </span>
-
-                    <strong id="activeTaskCount">
-                        0
-                    </strong>
-
-                    <small>
-                        当前任务
-                    </small>
-
-                </div>
-
-
-                <div class="dispatch-stat-card">
-
-                    <span>
-                        🚚
-                    </span>
-
-                    <strong id="todayTripCount">
-                        0
-                    </strong>
-
-                    <small>
-                        今日运输趟数
-                    </small>
-
-                </div>
-
-
-                <div class="dispatch-stat-card">
-
-                    <span>
-                        ⚠️
-                    </span>
-
-                    <strong id="abnormalCount">
-                        0
-                    </strong>
-
-                    <small>
-                        今日异常
-                    </small>
-
-                </div>
-
+            <div class="legend-item">
+                <span class="legend-dot green-dot"></span>
+                可调配
             </div>
 
-        </section>
-
-
-
-        <!-- =====================================
-             当前任务
-        ====================================== -->
-
-        <section
-            id="currentTaskSection"
-            class="dispatch-section"
-        >
-
-            <div class="dispatch-title-row">
-
-                <h2>
-                    当前任务
-                </h2>
-
-
-                <span
-                    id="currentTaskStatus"
-                    class="dispatch-status status-none"
-                >
-                    无任务
-                </span>
-
+            <div class="legend-item">
+                <span class="legend-dot red-dot"></span>
+                已分配任务
             </div>
 
+            <div class="legend-item">
+                <span class="legend-dot yellow-dot"></span>
+                维修中
+            </div>
 
-            <div
-                id="noCurrentTask"
-                class="dispatch-empty"
-            >
+        </div>
 
-                <div class="dispatch-empty-icon">
-                    📋
-                </div>
+    </section>
 
-                <strong>
-                    当前没有正在执行的任务
-                </strong>
 
+
+    <!-- =====================================
+         挖机看板
+    ====================================== -->
+
+    <section
+        id="excavatorSection"
+        class="dispatch-section hidden"
+    >
+
+        <div class="dispatch-section-title">
+
+            <div>
+                <h2>🚜 挖机</h2>
                 <p>
-                    请在下方为司机创建生产任务。
+                    点击绿色挖机开始绑定车辆
                 </p>
-
             </div>
 
-
-            <div
-                id="currentTaskCard"
-                class="current-task-card"
-                style="display:none;"
+            <span
+                id="excavatorCount"
+                class="count-badge"
             >
+                0 台
+            </span>
 
+        </div>
 
-                <div class="current-task-grid">
 
+        <div
+            id="excavatorBoard"
+            class="device-board"
+        ></div>
 
-                    <div>
+    </section>
 
-                        <span>
-                            司机
-                        </span>
 
-                        <strong id="currentDriver">
-                            -
-                        </strong>
 
-                    </div>
+    <!-- =====================================
+         卡车看板
+    ====================================== -->
 
+    <section
+        id="truckSection"
+        class="dispatch-section hidden"
+    >
 
-                    <div>
+        <div class="dispatch-section-title">
 
-                        <span>
-                            车辆编号
-                        </span>
-
-                        <strong id="currentVehicle">
-                            -
-                        </strong>
-
-                    </div>
-
-
-                    <div>
-
-                        <span>
-                            跟随挖机
-                        </span>
-
-                        <strong id="currentExcavator">
-                            -
-                        </strong>
-
-                    </div>
-
-
-                    <div>
-
-                        <span>
-                            班次
-                        </span>
-
-                        <strong id="currentShift">
-                            -
-                        </strong>
-
-                    </div>
-
-
-                    <div>
-
-                        <span>
-                            作业区域
-                        </span>
-
-                        <strong id="currentArea">
-                            -
-                        </strong>
-
-                    </div>
-
-
-                    <div>
-
-                        <span>
-                            任务状态
-                        </span>
-
-                        <strong id="currentStatusText">
-                            -
-                        </strong>
-
-                    </div>
-
-                </div>
-
-
-                <div class="current-route">
-
-                    <div>
-
-                        <span>
-                            🟢 装载点
-                        </span>
-
-                        <strong id="currentLoadingPoint">
-                            -
-                        </strong>
-
-                    </div>
-
-
-                    <div class="route-arrow">
-                        ↓
-                    </div>
-
-
-                    <div>
-
-                        <span>
-                            🔴 卸载点
-                        </span>
-
-                        <strong id="currentUnloadingPoint">
-                            -
-                        </strong>
-
-                    </div>
-
-                </div>
-
-
-                <div class="current-task-line">
-
-                    <span>
-                        🛣️ 运输路线
-                    </span>
-
-                    <strong id="currentRoute">
-                        -
-                    </strong>
-
-                </div>
-
-
-                <div class="current-task-line">
-
-                    <span>
-                        📝 调度说明
-                    </span>
-
-                    <strong id="currentRemark">
-                        无
-                    </strong>
-
-                </div>
-
-
-                <div class="dispatch-action-grid">
-
-                    <button
-                        id="editTaskButton"
-                        type="button"
-                        class="edit-task-button"
-                    >
-                        ✏️ 修改任务
-                    </button>
-
-
-                    <button
-                        id="cancelTaskButton"
-                        type="button"
-                        class="cancel-task-button"
-                    >
-                        ✕ 取消任务
-                    </button>
-
-                </div>
-
+            <div>
+                <h2>🚚 卡车</h2>
+                <p>
+                    选择跟随当前挖机的车辆
+                </p>
             </div>
 
-        </section>
+            <span
+                id="truckCount"
+                class="count-badge"
+            >
+                0 台
+            </span>
+
+        </div>
 
 
-
-        <!-- =====================================
-             创建任务
-        ====================================== -->
-
-        <section
-            id="assignTaskSection"
-            class="dispatch-section"
+        <div
+            id="selectedExcavatorInfo"
+            class="selected-equipment-info"
         >
+            当前未选择挖机
+        </div>
 
-            <h2>
-                下发生产任务
-            </h2>
 
-
-            <p class="dispatch-description">
-                调度负责把司机、车辆、挖机和生产区域组合成当班任务。
-            </p>
-
-
-            <label for="dispatchDriver">
-                司机 *
-            </label>
-
-
-            <select id="dispatchDriver">
-
-                <option value="">
-                    请选择司机
-                </option>
-
-            </select>
-
-
-
-            <label for="vehicleNumber">
-                车辆编号 *
-            </label>
-
-
-            <input
-                id="vehicleNumber"
-                type="text"
-                placeholder="例如：TRUCK-026"
-            >
-
-
-
-            <label for="excavatorNumber">
-                跟随挖机 *
-            </label>
-
-
-            <input
-                id="excavatorNumber"
-                type="text"
-                placeholder="例如：EX-08"
-            >
-
-
-
-            <label for="shift">
-                班次 *
-            </label>
-
-
-            <select id="shift">
-
-                <option value="">
-                    请选择班次
-                </option>
-
-                <option value="白班">
-                    白班
-                </option>
-
-                <option value="夜班">
-                    夜班
-                </option>
-
-            </select>
-
-
-
-            <label for="workArea">
-                作业区域 *
-            </label>
-
-
-            <input
-                id="workArea"
-                type="text"
-                placeholder="例如：马西四采区"
-            >
-
-
-
-            <label for="loadingPoint">
-                装载点 *
-            </label>
-
-
-            <input
-                id="loadingPoint"
-                type="text"
-                placeholder="例如：1150平台"
-            >
-
-
-
-            <label for="unloadingPoint">
-                卸载点 *
-            </label>
-
-
-            <input
-                id="unloadingPoint"
-                type="text"
-                placeholder="例如：2号排土场"
-            >
-
-
-
-            <label for="route">
-                运输路线
-            </label>
-
-
-            <input
-                id="route"
-                type="text"
-                placeholder="例如：1150平台 → 西运输道路 → 2号排土场"
-            >
-
-
-
-            <label for="dispatchRemark">
-                调度说明
-            </label>
-
-
-            <textarea
-                id="dispatchRemark"
-                placeholder="例如：注意西侧道路会车，禁止超速。"
-            ></textarea>
-
-
-
-            <button
-                id="assignTaskButton"
-                type="button"
-                class="assign-task-button"
-            >
-                📤 下发生产任务
-            </button>
-
-        </section>
-
-
-
-        <!-- =====================================
-             今日运输
-        ====================================== -->
-
-        <section class="dispatch-section">
-
-            <div class="dispatch-title-row">
-
-                <h2>
-                    今日运输记录
-                </h2>
-
-
-                <span
-                    id="tripSummary"
-                    class="dispatch-small-badge"
-                >
-                    0 趟
-                </span>
-
-            </div>
-
-
-            <div
-                id="dispatchTripList"
-                class="dispatch-record-list"
-            >
-
-                <div class="dispatch-empty-record">
-                    暂无运输记录
-                </div>
-
-            </div>
-
-        </section>
-
-
-
-        <!-- =====================================
-             异常信息
-        ====================================== -->
-
-        <section class="dispatch-section">
-
-            <div class="dispatch-title-row">
-
-                <h2>
-                    司机异常上报
-                </h2>
-
-
-                <span
-                    id="abnormalSummary"
-                    class="dispatch-small-badge abnormal-badge"
-                >
-                    0 条
-                </span>
-
-            </div>
-
-
-            <div
-                id="dispatchAbnormalList"
-                class="dispatch-record-list"
-            >
-
-                <div class="dispatch-empty-record">
-                    今日暂无异常
-                </div>
-
-            </div>
-
-        </section>
-
+        <div
+            id="truckBoard"
+            class="device-board"
+        ></div>
 
 
         <button
+            id="bindTrucksButton"
+            class="success-button hidden"
             type="button"
-            class="dispatch-home-button"
-            onclick="location.href='index.html'"
         >
-            返回系统首页
+            绑定所选卡车
         </button>
 
-    </main>
+    </section>
 
 
-    <footer>
 
-        <p>
-            矿山管理系统 · 调度端 V1.0
-        </p>
+    <!-- =====================================
+         已绑定关系
+    ====================================== -->
 
-    </footer>
+    <section
+        id="bindingSection"
+        class="dispatch-section hidden"
+    >
+
+        <div class="dispatch-section-title">
+
+            <div>
+                <h2>设备绑定关系</h2>
+                <p>
+                    当前任务的挖机与卡车关系
+                </p>
+            </div>
+
+        </div>
 
 
-    <script
-        src="js/dispatch.js"
-    ></script>
+        <div id="bindingList">
+
+            <div class="empty-placeholder">
+                暂无绑定关系
+            </div>
+
+        </div>
+
+    </section>
+
+
+
+    <!-- =====================================
+         辅助车辆
+    ====================================== -->
+
+    <section
+        id="auxiliarySection"
+        class="dispatch-section hidden"
+    >
+
+        <div class="dispatch-section-title">
+
+            <div>
+                <h2>辅助车辆配置</h2>
+                <p>
+                    装载机、水车、加油车及其他辅助车辆
+                </p>
+            </div>
+
+        </div>
+
+
+
+        <!-- 装载机 -->
+
+        <div class="auxiliary-card">
+
+            <h3>🚧 装载机</h3>
+
+            <label for="loaderSelect">
+                车辆
+            </label>
+
+            <select id="loaderSelect">
+
+                <option value="">
+                    请选择装载机
+                </option>
+
+            </select>
+
+
+            <label for="loaderWorkType">
+                工作内容
+            </label>
+
+            <select id="loaderWorkType">
+
+                <option value="日常作业">
+                    日常作业
+                </option>
+
+                <option value="清理挖机附近散料">
+                    清理挖机附近散料
+                </option>
+
+                <option value="修整运输道路">
+                    修整运输道路
+                </option>
+
+                <option value="装煤">
+                    装煤
+                </option>
+
+                <option value="排土场作业">
+                    排土场作业
+                </option>
+
+                <option value="manual">
+                    手动录入
+                </option>
+
+            </select>
+
+
+            <input
+                id="loaderManualInput"
+                class="hidden"
+                type="text"
+                placeholder="请输入装载机具体工作内容"
+            >
+
+
+            <button
+                id="confirmLoaderButton"
+                type="button"
+                class="aux-confirm-button"
+            >
+                确认装载机
+            </button>
+
+        </div>
+
+
+
+        <!-- 水车 -->
+
+        <div class="auxiliary-card">
+
+            <h3>💧 水车</h3>
+
+            <label for="waterTruckSelect">
+                车辆
+            </label>
+
+            <select id="waterTruckSelect">
+
+                <option value="">
+                    请选择水车
+                </option>
+
+            </select>
+
+
+            <label for="waterTruckWorkType">
+                工作内容
+            </label>
+
+            <select id="waterTruckWorkType">
+
+                <option value="日常洒水">
+                    日常洒水
+                </option>
+
+                <option value="运输道路洒水">
+                    运输道路洒水
+                </option>
+
+                <option value="采区洒水">
+                    采区洒水
+                </option>
+
+                <option value="排土场洒水">
+                    排土场洒水
+                </option>
+
+                <option value="临时调配">
+                    临时调配
+                </option>
+
+                <option value="manual">
+                    手动录入
+                </option>
+
+            </select>
+
+
+            <input
+                id="waterTruckManualInput"
+                class="hidden"
+                type="text"
+                placeholder="请输入水车具体工作内容"
+            >
+
+
+            <button
+                id="confirmWaterTruckButton"
+                type="button"
+                class="aux-confirm-button"
+            >
+                确认水车
+            </button>
+
+        </div>
+
+
+
+        <!-- 加油车 -->
+
+        <div class="auxiliary-card">
+
+            <h3>⛽ 加油车</h3>
+
+            <label for="fuelTruckSelect">
+                车辆
+            </label>
+
+            <select id="fuelTruckSelect">
+
+                <option value="">
+                    请选择加油车
+                </option>
+
+            </select>
+
+
+            <label for="fuelTruckWorkType">
+                工作内容
+            </label>
+
+            <select id="fuelTruckWorkType">
+
+                <option value="日常作业">
+                    日常作业
+                </option>
+
+                <option value="manual">
+                    手动录入
+                </option>
+
+            </select>
+
+
+            <input
+                id="fuelTruckManualInput"
+                class="hidden"
+                type="text"
+                placeholder="请输入加油车具体工作内容"
+            >
+
+
+            <button
+                id="confirmFuelTruckButton"
+                type="button"
+                class="aux-confirm-button"
+            >
+                确认加油车
+            </button>
+
+        </div>
+
+
+
+        <!-- 其他辅助车辆 -->
+
+        <div class="auxiliary-card">
+
+            <h3>🚧 其他辅助车辆</h3>
+
+            <label for="otherVehicleType">
+                车型
+            </label>
+
+            <select id="otherVehicleType">
+
+                <option value="">
+                    请选择车型
+                </option>
+
+                <option value="平路机">
+                    平路机
+                </option>
+
+                <option value="推土机">
+                    推土机
+                </option>
+
+                <option value="大巴">
+                    大巴
+                </option>
+
+                <option value="其他">
+                    其他
+                </option>
+
+            </select>
+
+
+            <label for="otherVehicleNumber">
+                车辆编号
+            </label>
+
+            <input
+                id="otherVehicleNumber"
+                type="text"
+                placeholder="请输入车辆编号"
+            >
+
+
+            <label for="otherVehicleWorkType">
+                工作内容
+            </label>
+
+            <select id="otherVehicleWorkType">
+
+                <option value="日常作业">
+                    日常作业
+                </option>
+
+                <option value="manual">
+                    手动录入
+                </option>
+
+            </select>
+
+
+            <input
+                id="otherVehicleManualInput"
+                class="hidden"
+                type="text"
+                placeholder="请输入具体工作内容"
+            >
+
+
+            <button
+                id="confirmOtherVehicleButton"
+                type="button"
+                class="aux-confirm-button"
+            >
+                确认其他车辆
+            </button>
+
+        </div>
+
+
+
+        <div class="auxiliary-selected-box">
+
+            <h3>已选择辅助车辆</h3>
+
+            <div id="auxiliarySelectedList">
+
+                <div class="empty-placeholder">
+                    暂未选择辅助车辆
+                </div>
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+
+    <!-- =====================================
+         发布任务
+    ====================================== -->
+
+    <section
+        id="publishSection"
+        class="dispatch-section hidden"
+    >
+
+        <button
+            id="previewTaskButton"
+            class="primary-button"
+            type="button"
+        >
+            查看任务并发布
+        </button>
+
+    </section>
+
+
+
+    <!-- =====================================
+         发布确认
+    ====================================== -->
+
+    <section
+        id="previewSection"
+        class="dispatch-section hidden"
+    >
+
+        <div class="dispatch-section-title">
+
+            <div>
+                <h2>生产任务确认</h2>
+                <p>
+                    发布前请核对全部设备配置
+                </p>
+            </div>
+
+        </div>
+
+
+        <div
+            id="taskPreviewContent"
+            class="task-preview-content"
+        ></div>
+
+
+        <div class="double-button-row">
+
+            <button
+                id="backEditButton"
+                class="secondary-button"
+                type="button"
+            >
+                返回修改
+            </button>
+
+            <button
+                id="publishTaskButton"
+                class="publish-button"
+                type="button"
+            >
+                确认发布任务
+            </button>
+
+        </div>
+
+    </section>
+
+
+
+    <button
+        type="button"
+        class="home-button"
+        onclick="location.href='index.html'"
+    >
+        返回系统首页
+    </button>
+
+</main>
+
+
+<!-- =====================================
+     设备详情弹窗
+====================================== -->
+
+<div
+    id="deviceModal"
+    class="device-modal hidden"
+>
+
+    <div class="device-modal-card">
+
+        <h3 id="modalTitle">
+            设备详情
+        </h3>
+
+        <div
+            id="modalContent"
+            class="device-modal-content"
+        ></div>
+
+        <button
+            id="closeModalButton"
+            type="button"
+            class="secondary-button"
+        >
+            关闭
+        </button>
+
+    </div>
+
+</div>
+
+
+<footer>
+    <p>
+        矿山管理系统 · 调度端 V2.0
+    </p>
+</footer>
+
+
+<script src="js/dispatch.js"></script>
 
 </body>
-
 </html>
