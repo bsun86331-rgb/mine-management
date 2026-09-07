@@ -2,7 +2,6 @@
 <html lang="zh-CN">
 
 <head>
-
     <meta charset="UTF-8">
 
     <meta
@@ -12,737 +11,326 @@
 
     <title>司机工作台</title>
 
-    <link
-        rel="stylesheet"
-        href="css/style.css"
-    >
-
-    <link
-        rel="stylesheet"
-        href="css/driver-work.css"
-    >
-
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/driver-work.css?v=2.7.0">
 </head>
-
 
 <body class="driver-work-body">
 
-    <!-- =========================
-         顶部
-    ========================== -->
+<header class="driver-header">
 
-    <header class="driver-header">
+    <div>
+        <h1>🚚 司机工作台</h1>
+        <p>Driver Workbench</p>
+    </div>
 
-        <div class="driver-header-main">
+    <span id="driverStatusBadge" class="driver-status-badge">
+        已审核
+    </span>
+
+</header>
+
+
+<main class="driver-work-main">
+
+    <!-- 个人 -->
+    <section class="driver-card">
+
+        <div class="driver-card-title">
 
             <div>
+                <h2 id="driverName">
+                    司机
+                </h2>
 
-                <h1>
-                    司机工作台
-                </h1>
-
-                <p>
-                    Driver Workbench
+                <p id="driverTeam">
+                    -
                 </p>
-
             </div>
 
+            <strong id="currentShift">
+                -
+            </strong>
 
-            <div
-                id="driverStatusBadge"
-                class="status-badge status-standby"
-            >
-                待命
+        </div>
+
+    </section>
+
+
+    <!-- 当前调度任务 -->
+    <section class="driver-card">
+
+        <div class="driver-card-title">
+
+            <div>
+                <h2>📋 当前调度任务</h2>
+
+                <p>
+                    只能领取调度分配给你的车辆
+                </p>
             </div>
 
         </div>
 
-    </header>
 
-
-    <main class="driver-main">
-
-
-        <!-- =========================
-             司机信息
-        ========================== -->
-
-        <section class="driver-summary-card">
-
-            <div class="driver-avatar">
-                🚚
-            </div>
-
-
-            <div class="driver-summary-info">
-
-                <div class="driver-name">
-
-                    <span id="driverName">
-                        -
-                    </span>
-
-                </div>
-
-
-                <div class="driver-meta">
-
-                    <span>
-                        👷
-                        <span id="driverPosition">
-                            卡车司机
-                        </span>
-                    </span>
-
-
-                    <span>
-                        👥
-                        <span id="driverTeam">
-                            -
-                        </span>
-                    </span>
-
-                </div>
-
-            </div>
-
-        </section>
-
-
-
-        <!-- =========================
-             今日数据
-        ========================== -->
-
-        <section class="dashboard-section">
-
-            <h2>
-                今日作业
-            </h2>
-
-
-            <div class="stat-grid">
-
-                <div class="stat-card">
-
-                    <div class="stat-icon">
-                        🚛
-                    </div>
-
-                    <div
-                        id="todayTrips"
-                        class="stat-number"
-                    >
-                        0
-                    </div>
-
-                    <div class="stat-label">
-                        今日趟数
-                    </div>
-
-                </div>
-
-
-                <div class="stat-card">
-
-                    <div class="stat-icon">
-                        ⏱️
-                    </div>
-
-                    <div
-                        id="workingTime"
-                        class="stat-number stat-time"
-                    >
-                        00:00
-                    </div>
-
-                    <div class="stat-label">
-                        本班作业
-                    </div>
-
-                </div>
-
-
-                <div class="stat-card">
-
-                    <div class="stat-icon">
-                        ⚠️
-                    </div>
-
-                    <div
-                        id="todayAbnormal"
-                        class="stat-number"
-                    >
-                        0
-                    </div>
-
-                    <div class="stat-label">
-                        今日异常
-                    </div>
-
-                </div>
-
-            </div>
-
-        </section>
-
-
-
-        <!-- =========================
-             当前任务
-        ========================== -->
-
-        <section
-            id="taskSection"
-            class="dashboard-section task-section"
+        <div
+            id="assignmentArea"
+            class="assignment-area"
         >
 
-            <div class="section-title-row">
-
-                <h2>
-                    当前任务
-                </h2>
-
-
-                <span
-                    id="taskStatus"
-                    class="mini-status"
-                >
-                    待调度
-                </span>
-
+            <div class="empty-placeholder">
+                调度暂未给你分配车辆
             </div>
 
+        </div>
 
-            <!-- 没有任务 -->
+    </section>
 
-            <div
-                id="noTaskMessage"
-                class="no-task"
-            >
 
-                <div class="no-task-icon">
-                    📋
-                </div>
+    <!-- 当前作业 -->
+    <section
+        id="activeWorkSection"
+        class="driver-card hidden"
+    >
 
-                <h3>
-                    暂无生产任务
-                </h3>
+        <div class="driver-card-title">
 
-                <p>
-                    请等待调度分配车辆和作业任务。
+            <div>
+                <h2>🚛 当前作业</h2>
+
+                <p id="activeTaskStatusText">
+                    -
                 </p>
-
             </div>
 
-
-            <!-- 有任务 -->
-
-            <div
-                id="taskContent"
-                style="display:none;"
+            <span
+                id="workStatusBadge"
+                class="work-status-badge"
             >
+                作业中
+            </span>
 
-                <div class="task-main-grid">
+        </div>
 
 
-                    <div class="task-info-item">
+        <div class="work-grid">
 
-                        <span class="task-label">
-                            🚛 当前车辆
-                        </span>
-
-                        <strong id="taskVehicle">
-                            -
-                        </strong>
-
-                    </div>
-
-
-                    <div class="task-info-item">
-
-                        <span class="task-label">
-                            🚜 跟随挖机
-                        </span>
-
-                        <strong id="taskExcavator">
-                            -
-                        </strong>
-
-                    </div>
-
-
-                    <div class="task-info-item">
-
-                        <span class="task-label">
-                            📍 作业区域
-                        </span>
-
-                        <strong id="taskArea">
-                            -
-                        </strong>
-
-                    </div>
-
-
-                    <div class="task-info-item">
-
-                        <span class="task-label">
-                            🕐 班次
-                        </span>
-
-                        <strong id="taskShift">
-                            -
-                        </strong>
-
-                    </div>
-
-                </div>
-
-
-                <div class="route-card">
-
-                    <div class="route-point">
-
-                        <div class="route-dot load-dot">
-                        </div>
-
-                        <div>
-
-                            <span>
-                                装载点
-                            </span>
-
-                            <strong id="taskLoadingPoint">
-                                -
-                            </strong>
-
-                        </div>
-
-                    </div>
-
-
-                    <div class="route-line">
-                    </div>
-
-
-                    <div class="route-point">
-
-                        <div class="route-dot unload-dot">
-                        </div>
-
-                        <div>
-
-                            <span>
-                                卸载点
-                            </span>
-
-                            <strong id="taskUnloadingPoint">
-                                -
-                            </strong>
-
-                        </div>
-
-                    </div>
-
-                </div>
-
-
-                <div class="task-route-text">
-
-                    <span>
-                        🛣️ 运输路线
-                    </span>
-
-                    <strong id="taskRoute">
-                        -
-                    </strong>
-
-                </div>
-
-
-                <div
-                    id="taskRemarkBox"
-                    class="task-remark"
-                >
-
-                    <span>
-                        调度说明：
-                    </span>
-
-                    <span id="taskRemark">
-                        无
-                    </span>
-
-                </div>
-
-
-                <!-- 作业按钮 -->
-
-                <div class="work-action-grid">
-
-                    <button
-                        id="startWorkButton"
-                        type="button"
-                        class="work-button start-button"
-                    >
-                        ▶ 开始作业
-                    </button>
-
-
-                    <button
-                        id="pauseWorkButton"
-                        type="button"
-                        class="work-button pause-button"
-                        style="display:none;"
-                    >
-                        ⏸ 暂停作业
-                    </button>
-
-
-                    <button
-                        id="resumeWorkButton"
-                        type="button"
-                        class="work-button resume-button"
-                        style="display:none;"
-                    >
-                        ▶ 恢复作业
-                    </button>
-
-                </div>
-
-
-                <!-- 测试阶段人工记趟 -->
-
-                <button
-                    id="addTripButton"
-                    type="button"
-                    class="trip-button"
-                    style="display:none;"
-                >
-                    🚚 完成一趟
-                </button>
-
-
-                <p class="trip-tip">
-                    当前为测试版，“完成一趟”暂时由司机点击。
-                    后期接入 GPS 后自动判断运输趟数。
-                </p>
-
-
-                <button
-                    id="finishShiftButton"
-                    type="button"
-                    class="finish-button"
-                    style="display:none;"
-                >
-                    ✓ 完成本班
-                </button>
-
+            <div>
+                <span>作业区域</span>
+                <strong id="workArea">-</strong>
             </div>
 
-        </section>
-
-
-
-        <!-- =========================
-             快捷功能
-        ========================== -->
-
-        <section class="dashboard-section">
-
-            <h2>
-                常用功能
-            </h2>
-
-
-            <div class="function-grid">
-
-
-                <button
-                    id="taskShortcut"
-                    type="button"
-                    class="function-card"
-                >
-
-                    <span class="function-icon">
-                        📋
-                    </span>
-
-                    <span>
-                        当前任务
-                    </span>
-
-                </button>
-
-
-                <button
-                    id="recordShortcut"
-                    type="button"
-                    class="function-card"
-                >
-
-                    <span class="function-icon">
-                        📊
-                    </span>
-
-                    <span>
-                        今日记录
-                    </span>
-
-                </button>
-
-
-                <button
-                    id="abnormalShortcut"
-                    type="button"
-                    class="function-card"
-                >
-
-                    <span class="function-icon">
-                        ⚠️
-                    </span>
-
-                    <span>
-                        异常上报
-                    </span>
-
-                </button>
-
-
-                <button
-                    id="profileShortcut"
-                    type="button"
-                    class="function-card"
-                >
-
-                    <span class="function-icon">
-                        👤
-                    </span>
-
-                    <span>
-                        我的信息
-                    </span>
-
-                </button>
-
+            <div>
+                <span>车辆编号</span>
+                <strong id="workVehicle">-</strong>
             </div>
 
-        </section>
+            <div>
+                <span>跟随挖机</span>
+                <strong id="workExcavator">-</strong>
+            </div>
+
+            <div>
+                <span>班次</span>
+                <strong id="workShift">-</strong>
+            </div>
+
+        </div>
 
 
-
-        <!-- =========================
-             今日记录
-        ========================== -->
-
-        <section
-            id="recordSection"
-            class="dashboard-section"
+        <div
+            id="changePendingWarning"
+            class="change-pending-warning hidden"
         >
+            🚨 换车申请正在等待调度审批。审批完成前禁止继续记录运输趟数。
+        </div>
 
-            <div class="section-title-row">
-
-                <h2>
-                    今日记录
-                </h2>
-
-                <span
-                    id="recordCount"
-                    class="mini-status"
-                >
-                    0 趟
-                </span>
-
-            </div>
-
-
-            <div
-                id="tripRecordList"
-                class="record-list"
-            >
-
-                <div class="empty-record">
-
-                    暂无运输记录
-
-                </div>
-
-            </div>
-
-        </section>
-
-
-
-        <!-- =========================
-             异常上报
-        ========================== -->
-
-        <section
-            id="abnormalSection"
-            class="dashboard-section"
-        >
-
-            <h2>
-                异常上报
-            </h2>
-
-
-            <p class="section-description">
-                出现车辆故障、道路异常或其他影响生产的问题时及时上报。
-            </p>
-
-
-            <label for="abnormalType">
-                异常类型
-            </label>
-
-
-            <select id="abnormalType">
-
-                <option value="">
-                    请选择异常类型
-                </option>
-
-                <option value="车辆故障">
-                    车辆故障
-                </option>
-
-                <option value="路线异常">
-                    路线异常
-                </option>
-
-                <option value="装载点异常">
-                    装载点异常
-                </option>
-
-                <option value="卸载点异常">
-                    卸载点异常
-                </option>
-
-                <option value="其他">
-                    其他
-                </option>
-
-            </select>
-
-
-            <label for="abnormalDescription">
-                情况说明
-            </label>
-
-
-            <textarea
-                id="abnormalDescription"
-                placeholder="请输入异常情况，例如：车辆右后轮故障，暂时无法继续作业。"
-            ></textarea>
-
-
-            <button
-                id="submitAbnormalButton"
-                type="button"
-                class="abnormal-button"
-            >
-                ⚠️ 提交异常
-            </button>
-
-
-            <div
-                id="abnormalRecordList"
-                class="abnormal-record-list"
-            >
-            </div>
-
-        </section>
-
-
-
-        <!-- =========================
-             我的信息
-        ========================== -->
-
-        <section
-            id="profileSection"
-            class="dashboard-section"
-        >
-
-            <h2>
-                我的信息
-            </h2>
-
-
-            <div class="profile-info-list">
-
-
-                <div>
-                    <span>姓名</span>
-                    <strong id="profileName">-</strong>
-                </div>
-
-
-                <div>
-                    <span>手机号</span>
-                    <strong id="profilePhone">-</strong>
-                </div>
-
-
-                <div>
-                    <span>岗位</span>
-                    <strong id="profilePosition">-</strong>
-                </div>
-
-
-                <div>
-                    <span>所属车队</span>
-                    <strong id="profileTeam">-</strong>
-                </div>
-
-
-                <div>
-                    <span>入职日期</span>
-                    <strong id="profileEntryDate">-</strong>
-                </div>
-
-
-                <div>
-                    <span>审核状态</span>
-                    <strong id="profileStatus">-</strong>
-                </div>
-
-            </div>
-
-        </section>
-
-
-
-        <!-- =========================
-             底部按钮
-        ========================== -->
 
         <button
+            id="completeTripButton"
             type="button"
-            class="home-button"
-            onclick="location.href='index.html'"
+            class="trip-button"
         >
-            返回系统首页
+            ✅ 完成一趟
         </button>
 
 
-    </main>
+        <button
+            id="applyVehicleChangeButton"
+            type="button"
+            class="fault-button"
+        >
+            🔧 车辆故障 / 申请换车
+        </button>
+
+    </section>
 
 
-    <footer>
+    <!-- 今日统计 -->
+    <section class="driver-card">
 
-        <p>
-            矿山管理系统 · 司机端 V2.0
+        <div class="driver-card-title">
+
+            <div>
+                <h2>📊 我的运输记录</h2>
+                <p>当前任务运输统计</p>
+            </div>
+
+        </div>
+
+
+        <div class="stats-grid">
+
+            <div>
+                <span>当前任务趟数</span>
+                <strong id="currentTaskTripCount">0</strong>
+            </div>
+
+            <div>
+                <span>本人本任务趟数</span>
+                <strong id="myTaskTripCount">0</strong>
+            </div>
+
+            <div>
+                <span>今日本人趟数</span>
+                <strong id="todayTripCount">0</strong>
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <!-- 换车申请状态 -->
+    <section class="driver-card">
+
+        <div class="driver-card-title">
+            <div>
+                <h2>🔄 换车申请</h2>
+                <p>调度审批状态</p>
+            </div>
+        </div>
+
+
+        <div
+            id="vehicleChangeStatusArea"
+            class="vehicle-change-status-area"
+        >
+
+            <div class="empty-placeholder">
+                暂无换车申请
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <!-- 最近趟数 -->
+    <section class="driver-card">
+
+        <div class="driver-card-title">
+            <div>
+                <h2>🧾 最近运输记录</h2>
+                <p>最近 10 趟</p>
+            </div>
+        </div>
+
+
+        <div
+            id="tripHistoryList"
+            class="trip-history-list"
+        >
+
+            <div class="empty-placeholder">
+                暂无运输记录
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <button
+        type="button"
+        class="back-home-button"
+        onclick="location.href='index.html'"
+    >
+        返回系统首页
+    </button>
+
+</main>
+
+
+<!-- 故障换车申请 -->
+<div
+    id="vehicleChangeModal"
+    class="driver-modal hidden"
+>
+
+    <div class="driver-modal-card">
+
+        <h3>车辆故障 / 申请换车</h3>
+
+
+        <p class="modal-warning">
+            提交后，当前车辆立即暂停运输计趟。
+            必须等待调度批准新车辆后才能继续。
         </p>
 
-    </footer>
+
+        <div class="current-vehicle-box">
+
+            当前车辆：
+
+            <strong id="faultCurrentVehicle">
+                -
+            </strong>
+
+        </div>
 
 
-    <script
-        src="js/driver-work.js"
-    ></script>
+        <label for="faultReason">
+            故障原因 *
+        </label>
+
+        <textarea
+            id="faultReason"
+            placeholder="例如：车辆发动机故障，无法继续运行"
+        ></textarea>
+
+
+        <div class="double-button-row">
+
+            <button
+                id="cancelVehicleChangeButton"
+                type="button"
+                class="secondary-button"
+            >
+                取消
+            </button>
+
+            <button
+                id="submitVehicleChangeButton"
+                type="button"
+                class="fault-submit-button"
+            >
+                提交调度审批
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<footer>
+    <p>矿山管理系统 · 司机端 V2.7.0</p>
+</footer>
+
+
+<script src="js/driver-work.js?v=2.7.0"></script>
 
 </body>
 
