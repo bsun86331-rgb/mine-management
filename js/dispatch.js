@@ -2,8 +2,8 @@
 ========================================================
 矿山管理系统
 生产调度端
-dispatch.js V2.4.1
-任务撤回 + 运输执行判定 + 旧任务状态兼容修正版
+dispatch.js V2.4.2
+已撤回任务看板隐藏版
 ========================================================
 */
 
@@ -295,17 +295,10 @@ document.addEventListener("DOMContentLoaded", function () {
         };
 
 
-        selectedExcavatorId =
-            null;
-
-        selectedTruckIds =
-            [];
-
-        bindings =
-            [];
-
-        auxiliaryAssignments =
-            [];
+        selectedExcavatorId = null;
+        selectedTruckIds = [];
+        bindings = [];
+        auxiliaryAssignments = [];
 
 
         setText(
@@ -386,9 +379,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
         const excavator =
-            findDevice(
-                excavatorId
-            );
+            findDevice(excavatorId);
 
 
         if (excavator) {
@@ -417,9 +408,7 @@ document.addEventListener("DOMContentLoaded", function () {
         trucks.forEach(function (truckId) {
 
             const truck =
-                findDevice(
-                    truckId
-                );
+                findDevice(truckId);
 
 
             if (truck) {
@@ -451,11 +440,8 @@ document.addEventListener("DOMContentLoaded", function () {
         });
 
 
-        selectedExcavatorId =
-            null;
-
-        selectedTruckIds =
-            [];
+        selectedExcavatorId = null;
+        selectedTruckIds = [];
 
 
         renderAll();
@@ -499,8 +485,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     cancelAuxTaskButton.addEventListener("click", function () {
 
-        selectedAuxDeviceId =
-            null;
+        selectedAuxDeviceId = null;
 
         hideSection(
             "auxTaskModal"
@@ -622,8 +607,7 @@ document.addEventListener("DOMContentLoaded", function () {
         };
 
 
-        selectedAuxDeviceId =
-            null;
+        selectedAuxDeviceId = null;
 
 
         hideSection(
@@ -732,20 +716,11 @@ document.addEventListener("DOMContentLoaded", function () {
         hideCurrentConfigurationSections();
 
 
-        currentTask =
-            null;
-
-        selectedExcavatorId =
-            null;
-
-        selectedTruckIds =
-            [];
-
-        bindings =
-            [];
-
-        auxiliaryAssignments =
-            [];
+        currentTask = null;
+        selectedExcavatorId = null;
+        selectedTruckIds = [];
+        bindings = [];
+        auxiliaryAssignments = [];
 
 
         renderProductionTaskBoard();
@@ -774,8 +749,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     closePublishedTaskButton.addEventListener("click", function () {
 
-        selectedPublishedTaskId =
-            null;
+        selectedPublishedTaskId = null;
 
         hideSection(
             "publishedTaskModal"
@@ -810,8 +784,7 @@ document.addEventListener("DOMContentLoaded", function () {
             );
 
 
-            selectedPublishedTaskId =
-                null;
+            selectedPublishedTaskId = null;
 
 
             alert(
@@ -906,15 +879,14 @@ document.addEventListener("DOMContentLoaded", function () {
         );
 
 
-        selectedPublishedTaskId =
-            null;
+        selectedPublishedTaskId = null;
 
 
         renderProductionTaskBoard();
 
 
         alert(
-            "任务已撤回，相关设备已释放。"
+            "任务已撤回，已从生产任务看板移除，相关设备已释放。"
         );
 
     });
@@ -1018,8 +990,7 @@ document.addEventListener("DOMContentLoaded", function () {
         );
 
 
-        selectedPublishedTaskId =
-            null;
+        selectedPublishedTaskId = null;
 
 
         renderProductionTaskBoard();
@@ -1086,17 +1057,21 @@ document.addEventListener("DOMContentLoaded", function () {
     function renderAll() {
 
         renderExcavators();
-
         renderTrucks();
-
         renderBindings();
-
         renderAuxiliaryBoards();
-
         renderAuxiliaryAssignments();
 
     }
 
+
+    /*
+    ========================================================
+    生产任务看板
+    关键修改：
+    withdrawn 已撤回任务直接过滤，不再显示
+    ========================================================
+    */
 
     function renderProductionTaskBoard() {
 
@@ -1111,8 +1086,26 @@ document.addEventListener("DOMContentLoaded", function () {
             );
 
 
-        const tasks =
+        const allTasks =
             getPublishedTasks();
+
+
+        /*
+        已撤回任务保留在 localStorage，
+        但不进入生产任务看板。
+        */
+
+        const tasks =
+            allTasks.filter(
+                function (task) {
+
+                    return (
+                        task.status !==
+                        "withdrawn"
+                    );
+
+                }
+            );
 
 
         const runningCount =
@@ -1391,6 +1384,15 @@ document.addEventListener("DOMContentLoaded", function () {
         }
 
 
+        if (
+            task.status ===
+            "withdrawn"
+        ) {
+
+            return;
+        }
+
+
         selectedPublishedTaskId =
             task.taskId;
 
@@ -1495,9 +1497,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
             <div class="modal-detail-row">
 
-                <span>
-                    日期
-                </span>
+                <span>日期</span>
 
                 <strong>
                     ${escapeHtml(
@@ -1510,9 +1510,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
             <div class="modal-detail-row">
 
-                <span>
-                    作业区域
-                </span>
+                <span>作业区域</span>
 
                 <strong>
                     ${escapeHtml(
@@ -1525,9 +1523,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
             <div class="modal-detail-row">
 
-                <span>
-                    班次
-                </span>
+                <span>班次</span>
 
                 <strong>
                     ${escapeHtml(
@@ -1556,11 +1552,7 @@ document.addEventListener("DOMContentLoaded", function () {
         ) {
 
             html += `
-
-                <p>
-                    未配置主采设备
-                </p>
-
+                <p>未配置主采设备</p>
             `;
 
         }
@@ -1626,9 +1618,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
                     html += `
-
                         </div>
-
                     `;
 
                 }
@@ -1660,11 +1650,7 @@ document.addEventListener("DOMContentLoaded", function () {
         ) {
 
             html += `
-
-                <p>
-                    未配置辅助车辆
-                </p>
-
+                <p>未配置辅助车辆</p>
             `;
 
         }
@@ -1918,13 +1904,11 @@ document.addEventListener("DOMContentLoaded", function () {
         selectedExcavatorId =
             device.id;
 
-
         selectedTruckIds =
             [];
 
 
         renderExcavators();
-
         renderTrucks();
 
 
@@ -2181,8 +2165,7 @@ document.addEventListener("DOMContentLoaded", function () {
         }
 
 
-        let html =
-            "";
+        let html = "";
 
 
         bindings.forEach(
@@ -2429,8 +2412,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
         getWorkOptions(
             device.type
-        )
-        .forEach(
+        ).forEach(
             function (item) {
 
                 const option =
@@ -2505,8 +2487,7 @@ document.addEventListener("DOMContentLoaded", function () {
         }
 
 
-        let html =
-            "";
+        let html = "";
 
 
         auxiliaryAssignments.forEach(
@@ -2820,11 +2801,7 @@ document.addEventListener("DOMContentLoaded", function () {
         ) {
 
             html += `
-
-                <p>
-                    未配置挖机和卡车
-                </p>
-
+                <p>未配置挖机和卡车</p>
             `;
 
         }
@@ -2870,9 +2847,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
                 html += `
-
                     </div>
-
                 `;
 
             }
@@ -2899,11 +2874,7 @@ document.addEventListener("DOMContentLoaded", function () {
         ) {
 
             html += `
-
-                <p>
-                    未配置辅助车辆
-                </p>
-
+                <p>未配置辅助车辆</p>
             `;
 
         }
@@ -3802,51 +3773,33 @@ function getWorkOptions(
         return [
 
             {
-                value:
-                    "日常作业",
-
-                label:
-                    "日常作业"
+                value: "日常作业",
+                label: "日常作业"
             },
 
             {
-                value:
-                    "清理挖机附近散料",
-
-                label:
-                    "清理挖机附近散料"
+                value: "清理挖机附近散料",
+                label: "清理挖机附近散料"
             },
 
             {
-                value:
-                    "修整运输道路",
-
-                label:
-                    "修整运输道路"
+                value: "修整运输道路",
+                label: "修整运输道路"
             },
 
             {
-                value:
-                    "装煤",
-
-                label:
-                    "装煤"
+                value: "装煤",
+                label: "装煤"
             },
 
             {
-                value:
-                    "排土场作业",
-
-                label:
-                    "排土场作业"
+                value: "排土场作业",
+                label: "排土场作业"
             },
 
             {
-                value:
-                    "manual",
-
-                label:
-                    "手动录入"
+                value: "manual",
+                label: "手动录入"
             }
 
         ];
@@ -3862,51 +3815,33 @@ function getWorkOptions(
         return [
 
             {
-                value:
-                    "日常洒水",
-
-                label:
-                    "日常洒水"
+                value: "日常洒水",
+                label: "日常洒水"
             },
 
             {
-                value:
-                    "运输道路洒水",
-
-                label:
-                    "运输道路洒水"
+                value: "运输道路洒水",
+                label: "运输道路洒水"
             },
 
             {
-                value:
-                    "采区洒水",
-
-                label:
-                    "采区洒水"
+                value: "采区洒水",
+                label: "采区洒水"
             },
 
             {
-                value:
-                    "排土场洒水",
-
-                label:
-                    "排土场洒水"
+                value: "排土场洒水",
+                label: "排土场洒水"
             },
 
             {
-                value:
-                    "临时调配",
-
-                label:
-                    "临时调配"
+                value: "临时调配",
+                label: "临时调配"
             },
 
             {
-                value:
-                    "manual",
-
-                label:
-                    "手动录入"
+                value: "manual",
+                label: "手动录入"
             }
 
         ];
@@ -3917,19 +3852,13 @@ function getWorkOptions(
     return [
 
         {
-            value:
-                "日常作业",
-
-            label:
-                "日常作业"
+            value: "日常作业",
+            label: "日常作业"
         },
 
         {
-            value:
-                "manual",
-
-            label:
-                "手动录入"
+            value: "manual",
+            label: "手动录入"
         }
 
     ];
@@ -3943,29 +3872,14 @@ function getTypeName(
 
     const map = {
 
-        excavator:
-            "挖机",
-
-        truck:
-            "卡车",
-
-        loader:
-            "装载机",
-
-        water:
-            "水车",
-
-        fuel:
-            "加油车",
-
-        grader:
-            "平路机",
-
-        dozer:
-            "推土机",
-
-        bus:
-            "大巴"
+        excavator: "挖机",
+        truck: "卡车",
+        loader: "装载机",
+        water: "水车",
+        fuel: "加油车",
+        grader: "平路机",
+        dozer: "推土机",
+        bus: "大巴"
 
     };
 
@@ -3984,20 +3898,11 @@ function getTaskStatusText(
 
     const map = {
 
-        pending:
-            "待执行",
-
-        active:
-            "执行中",
-
-        completed:
-            "已完成",
-
-        withdrawn:
-            "已撤回",
-
-        configuring:
-            "配置中"
+        pending: "待执行",
+        active: "执行中",
+        completed: "已完成",
+        withdrawn: "已撤回",
+        configuring: "配置中"
 
     };
 
@@ -4190,17 +4095,10 @@ function formatDateTime(
     return date.toLocaleString(
         "zh-CN",
         {
-            month:
-                "2-digit",
-
-            day:
-                "2-digit",
-
-            hour:
-                "2-digit",
-
-            minute:
-                "2-digit"
+            month: "2-digit",
+            day: "2-digit",
+            hour: "2-digit",
+            minute: "2-digit"
         }
     );
 
