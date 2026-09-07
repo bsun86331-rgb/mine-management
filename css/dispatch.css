@@ -1,8 +1,9 @@
 /*
-=========================================
+==================================================
 矿山管理系统
-调度端 V2.0
-=========================================
+调度端 V2.2
+辅助车辆看板版
+==================================================
 */
 
 
@@ -17,9 +18,16 @@
 
 
 .dispatch-main {
-    max-width: 1000px;
+    width: 100%;
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 18px 12px;
 }
 
+
+/* =========================
+   顶部
+========================= */
 
 .dispatch-header {
     padding: 22px 16px;
@@ -27,14 +35,12 @@
 
 
 .dispatch-header-inner {
-    max-width: 1000px;
-
+    width: 100%;
+    max-width: 1100px;
     margin: 0 auto;
 
     display: flex;
-
     justify-content: space-between;
-
     align-items: center;
 
     gap: 15px;
@@ -43,33 +49,34 @@
 
 .dispatch-header-inner h1 {
     margin: 0;
-
     text-align: left;
-
-    font-size: 25px;
+    font-size: 26px;
 }
 
 
 .dispatch-header-inner p {
-    margin-top: 5px;
-
+    margin: 5px 0 0;
     text-align: left;
 }
 
 
 .dispatch-header-badge {
-    padding: 8px 12px;
+    flex-shrink: 0;
+
+    padding: 8px 13px;
 
     border-radius: 20px;
 
-    background: rgba(255,255,255,.12);
-
-    font-weight: 700;
+    background: rgba(255, 255, 255, .14);
 
     font-size: 13px;
+    font-weight: 700;
 }
 
 
+/* =========================
+   通用区域
+========================= */
 
 .dispatch-section {
     margin-bottom: 14px;
@@ -78,10 +85,8 @@
 
 .dispatch-section-title {
     display: flex;
-
-    align-items: center;
-
     justify-content: space-between;
+    align-items: center;
 
     gap: 15px;
 
@@ -91,20 +96,19 @@
 
 .dispatch-section-title h2 {
     margin: 0;
-
     text-align: left;
 }
 
 
 .dispatch-section-title p {
     margin: 5px 0 0;
-}
 
+    color: #6b7280;
+}
 
 
 .primary-small-button {
     width: auto;
-
     min-height: 42px;
 
     margin: 0;
@@ -117,28 +121,33 @@
 }
 
 
-
 .draft-badge,
 .task-state-badge,
 .count-badge {
+    flex-shrink: 0;
+
     padding: 6px 10px;
 
-    border-radius: 15px;
+    border-radius: 18px;
 
     background: #e5e7eb;
 
-    font-size: 12px;
+    color: #374151;
 
+    font-size: 12px;
     font-weight: 700;
 }
 
 
+/* =========================
+   任务摘要
+========================= */
 
 .task-summary-grid {
     display: grid;
 
     grid-template-columns:
-        repeat(3,1fr);
+        repeat(3, 1fr);
 
     gap: 10px;
 }
@@ -171,6 +180,8 @@
     display: block;
 
     margin-top: 5px;
+
+    color: #111827;
 }
 
 
@@ -179,31 +190,32 @@
 }
 
 
+/* =========================
+   颜色图例
+========================= */
 
 .legend-row {
     display: flex;
-
     flex-wrap: wrap;
 
-    gap: 18px;
+    gap: 20px;
 }
 
 
 .legend-item {
     display: flex;
-
     align-items: center;
 
     gap: 7px;
 
     font-size: 14px;
+    font-weight: 600;
 }
 
 
 .legend-dot {
-    width: 13px;
-
-    height: 13px;
+    width: 14px;
+    height: 14px;
 
     border-radius: 50%;
 }
@@ -214,126 +226,163 @@
 }
 
 
+.yellow-dot {
+    background: #eab308;
+}
+
+
 .red-dot {
     background: #dc2626;
 }
 
 
-.yellow-dot {
-    background: #facc15;
-}
-
-
+/* =========================
+   设备看板
+========================= */
 
 .device-board {
     display: grid;
 
     grid-template-columns:
-        repeat(5,minmax(0,1fr));
+        repeat(5, minmax(0, 1fr));
 
     gap: 10px;
 }
 
 
 .device-card {
-    min-height: 74px;
+    width: 100%;
+    min-height: 76px;
 
     margin: 0;
 
-    padding: 10px;
+    padding: 10px 6px;
 
-    border: 2px solid transparent;
+    border: 3px solid transparent;
 
-    border-radius: 10px;
+    border-radius: 11px;
 
     display: flex;
-
     flex-direction: column;
 
     justify-content: center;
-
     align-items: center;
 
     gap: 5px;
 
-    color: #fff;
+    box-shadow:
+        0 2px 6px rgba(0, 0, 0, .08);
 }
 
 
-.device-card strong {
-    font-size: 16px;
+.device-number {
+    font-size: 17px;
 }
 
 
-.device-card span {
+.device-status {
     font-size: 11px;
+    font-weight: 600;
 }
 
+
+/* 绿色 */
 
 .device-available {
     background: #16a34a;
+    color: #ffffff;
 }
 
+
+.device-available:hover {
+    background: #15803d;
+}
+
+
+/* 红色 */
 
 .device-assigned {
     background: #dc2626;
+    color: #ffffff;
 }
 
+
+.device-assigned:hover {
+    background: #b91c1c;
+}
+
+
+/* 黄色 */
 
 .device-maintenance {
-    background: #eab308;
-
-    color: #1f2937;
+    background: #facc15;
+    color: #292524;
 }
 
 
+.device-maintenance:hover {
+    background: #eab308;
+}
+
+
+/* 当前选择 */
+
 .selected-device {
-    border: 3px solid #111827;
+    border-color: #111827;
+
+    box-shadow:
+        0 0 0 3px rgba(17, 24, 39, .18);
 
     transform: scale(.96);
 }
 
 
+/* =========================
+   卡车选择状态
+========================= */
 
 .selected-equipment-info {
     margin-bottom: 12px;
 
-    padding: 11px;
+    padding: 12px;
 
-    border-radius: 8px;
+    border-radius: 9px;
 
     background: #eff6ff;
 
     color: #1d4ed8;
 
-    font-weight: 700;
+    font-size: 14px;
+    font-weight: 600;
 }
 
 
+/* =========================
+   绑定关系
+========================= */
 
 .binding-card {
     margin-bottom: 10px;
 
-    padding: 13px;
+    padding: 14px;
+
+    border: 1px solid #e5e7eb;
 
     border-radius: 10px;
 
     background: #f8fafc;
-
-    border: 1px solid #e5e7eb;
 }
 
 
 .binding-excavator {
     margin-bottom: 10px;
 
-    font-size: 17px;
+    font-size: 18px;
 }
 
 
 .binding-truck-list {
     display: flex;
-
     flex-wrap: wrap;
 
     gap: 7px;
@@ -350,60 +399,40 @@
     color: #991b1b;
 
     font-size: 13px;
-
     font-weight: 700;
 }
 
 
+/* =========================
+   辅助车辆任务汇总
+========================= */
 
-.auxiliary-card {
-    margin-bottom: 15px;
+.aux-assignment-card {
+    margin-bottom: 9px;
 
-    padding: 15px;
+    padding: 12px;
 
-    border-radius: 10px;
+    border: 1px solid #bbf7d0;
 
-    border: 1px solid #e5e7eb;
-
-    background: #f8fafc;
-}
-
-
-.auxiliary-card h3 {
-    margin: 0 0 12px;
-}
-
-
-.aux-confirm-button {
-    background: #2563eb;
-}
-
-
-.auxiliary-selected-box {
-    margin-top: 18px;
-}
-
-
-.aux-selected-item {
-    margin-bottom: 8px;
-
-    padding: 11px;
-
-    border-radius: 8px;
+    border-radius: 9px;
 
     background: #ecfdf5;
 
-    border: 1px solid #bbf7d0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    gap: 15px;
 }
 
 
-.aux-selected-item strong,
-.aux-selected-item span {
+.aux-assignment-card strong,
+.aux-assignment-card span {
     display: block;
 }
 
 
-.aux-selected-item span {
+.aux-assignment-card span {
     margin-top: 4px;
 
     color: #4b5563;
@@ -412,6 +441,19 @@
 }
 
 
+.aux-assignment-area {
+    flex-shrink: 0;
+
+    color: #166534;
+
+    font-size: 12px;
+    font-weight: 700;
+}
+
+
+/* =========================
+   空状态
+========================= */
 
 .empty-placeholder {
     padding: 20px;
@@ -426,6 +468,9 @@
 }
 
 
+/* =========================
+   按钮
+========================= */
 
 .double-button-row {
     display: grid;
@@ -449,8 +494,18 @@
 }
 
 
+.secondary-button:hover {
+    background: #4b5563;
+}
+
+
 .success-button {
     background: #16a34a;
+}
+
+
+.success-button:hover {
+    background: #15803d;
 }
 
 
@@ -464,6 +519,14 @@
 }
 
 
+.home-button {
+    background: #6b7280;
+}
+
+
+/* =========================
+   任务预览
+========================= */
 
 .preview-header {
     padding: 14px;
@@ -472,7 +535,7 @@
 
     background: #111827;
 
-    color: #fff;
+    color: #ffffff;
 }
 
 
@@ -494,11 +557,13 @@
 .preview-block {
     margin-top: 12px;
 
-    padding: 13px;
+    padding: 14px;
 
     border: 1px solid #e5e7eb;
 
     border-radius: 10px;
+
+    background: #ffffff;
 }
 
 
@@ -508,7 +573,7 @@
 
 
 .preview-binding {
-    margin-bottom: 12px;
+    margin-bottom: 13px;
 }
 
 
@@ -526,7 +591,7 @@
 
 
 .preview-auxiliary {
-    margin-bottom: 8px;
+    margin-bottom: 9px;
 }
 
 
@@ -540,9 +605,14 @@
     margin-top: 3px;
 
     color: #6b7280;
+
+    font-size: 13px;
 }
 
 
+/* =========================
+   弹窗
+========================= */
 
 .device-modal {
     position: fixed;
@@ -554,25 +624,31 @@
     display: flex;
 
     align-items: center;
-
     justify-content: center;
 
-    padding: 20px;
+    padding: 18px;
 
-    background: rgba(0,0,0,.55);
+    background:
+        rgba(0, 0, 0, .58);
 }
 
 
 .device-modal-card {
     width: 100%;
+    max-width: 440px;
 
-    max-width: 420px;
+    max-height: 90vh;
+
+    overflow-y: auto;
 
     padding: 20px;
 
     border-radius: 14px;
 
-    background: #fff;
+    background: #ffffff;
+
+    box-shadow:
+        0 20px 45px rgba(0, 0, 0, .28);
 }
 
 
@@ -586,7 +662,7 @@
 
     justify-content: space-between;
 
-    gap: 15px;
+    gap: 16px;
 
     padding: 11px 0;
 
@@ -599,45 +675,75 @@
 }
 
 
-.home-button {
-    background: #6b7280;
+.modal-detail-row strong {
+    text-align: right;
 }
 
 
+.selected-aux-device {
+    margin-bottom: 15px;
+
+    padding: 11px;
+
+    border-radius: 9px;
+
+    background: #eff6ff;
+
+    color: #1d4ed8;
+}
+
+
+/* =========================
+   手机
+========================= */
 
 @media (max-width: 760px) {
 
     .dispatch-main {
         padding-left: 9px;
-
         padding-right: 9px;
+    }
+
+
+    .task-summary-grid {
+        grid-template-columns: 1fr;
     }
 
 
     .device-board {
         grid-template-columns:
-            repeat(4,minmax(0,1fr));
-    }
-
-
-    .task-summary-grid {
-        grid-template-columns:
-            1fr;
+            repeat(4, minmax(0, 1fr));
     }
 
 }
 
 
-@media (max-width: 520px) {
+
+@media (max-width: 540px) {
+
+    .dispatch-header-inner {
+        align-items: flex-start;
+    }
+
+
+    .dispatch-header-inner h1 {
+        font-size: 22px;
+    }
+
 
     .device-board {
         grid-template-columns:
-            repeat(3,minmax(0,1fr));
+            repeat(3, minmax(0, 1fr));
     }
 
 
     .device-card {
-        min-height: 68px;
+        min-height: 70px;
+    }
+
+
+    .device-number {
+        font-size: 15px;
     }
 
 
@@ -646,18 +752,31 @@
     }
 
 
-    .primary-small-button {
-        font-size: 12px;
+    .aux-assignment-card {
+        align-items: flex-start;
+
+        flex-direction: column;
+    }
+
+
+    .aux-assignment-area {
+        flex-shrink: 1;
     }
 
 }
+
 
 
 @media (max-width: 380px) {
 
     .device-board {
         grid-template-columns:
-            repeat(2,minmax(0,1fr));
+            repeat(2, minmax(0, 1fr));
+    }
+
+
+    .double-button-row {
+        grid-template-columns: 1fr;
     }
 
 }
