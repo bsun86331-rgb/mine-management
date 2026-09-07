@@ -3,9 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
     <title>生产调度中心</title>
+
     <link rel="stylesheet" href="css/style.css">
-    <link rel="stylesheet" href="css/dispatch.css?v=2.7.0">
+    <link rel="stylesheet" href="css/dispatch.css?v=2.9.1">
 </head>
 
 <body class="dispatch-body">
@@ -16,93 +18,241 @@
             <h1>生产调度中心</h1>
             <p>Production Dispatch Center</p>
         </div>
-        <div class="dispatch-header-badge">📋 调度端</div>
+
+        <div class="dispatch-header-badge">
+            📋 调度端 V2.9.1
+        </div>
     </div>
 </header>
 
+
 <main class="dispatch-main">
 
-    <section class="dispatch-section">
+    <!-- ============================= -->
+    <!-- 调度待办中心 -->
+    <!-- ============================= -->
+
+    <section class="dispatch-section todo-section">
+
         <div class="dispatch-section-title">
             <div>
+                <h2>🔔 调度待办中心</h2>
+                <p>集中处理现场需要调度确认的事项</p>
+            </div>
+        </div>
+
+        <div class="todo-grid">
+
+            <button
+                id="openVehicleChangeButton"
+                class="todo-card"
+                type="button"
+            >
+                <span class="todo-icon">🔧</span>
+
+                <div>
+                    <strong id="vehicleChangeTodoCount">0</strong>
+                    <span>换车待审批</span>
+                </div>
+            </button>
+
+
+            <button
+                id="openGpsReviewButton"
+                class="todo-card"
+                type="button"
+            >
+                <span class="todo-icon">📍</span>
+
+                <div>
+                    <strong id="gpsTodoCount">0</strong>
+                    <span>GPS异常</span>
+                </div>
+            </button>
+
+
+            <button
+                id="openLeaveReviewButton"
+                class="todo-card"
+                type="button"
+            >
+                <span class="todo-icon">🗓</span>
+
+                <div>
+                    <strong id="leaveTodoCount">0</strong>
+                    <span>请假待审批</span>
+                </div>
+            </button>
+
+
+            <button
+                id="openPenaltyManagerButton"
+                class="todo-card"
+                type="button"
+            >
+                <span class="todo-icon">⚠️</span>
+
+                <div>
+                    <strong id="penaltyTodoCount">0</strong>
+                    <span>罚单待确认</span>
+                </div>
+            </button>
+
+        </div>
+
+    </section>
+
+
+    <!-- ============================= -->
+    <!-- 顶部操作 -->
+    <!-- ============================= -->
+
+    <section class="dispatch-section">
+
+        <div class="dispatch-section-title">
+
+            <div>
                 <h2>生产调度</h2>
-                <p>任务、车辆、司机、换车审批统一管理</p>
+                <p>任务、人员、车辆及现场事项统一管理</p>
             </div>
 
             <div class="top-action-buttons">
-                <button id="historyTaskButton" type="button" class="history-button">
+
+                <button
+                    id="myLeaveButton"
+                    type="button"
+                    class="management-button"
+                >
+                    🗓 我的请假
+                </button>
+
+                <button
+                    id="issuePenaltyButton"
+                    type="button"
+                    class="warning-button"
+                >
+                    ⚠️ 下达罚单
+                </button>
+
+                <button
+                    id="historyTaskButton"
+                    type="button"
+                    class="history-button"
+                >
                     📚 历史任务
                 </button>
 
-                <button id="newTaskButton" type="button" class="primary-small-button">
+                <button
+                    id="newTaskButton"
+                    type="button"
+                    class="primary-small-button"
+                >
                     + 下发生产任务
                 </button>
-            </div>
-        </div>
-    </section>
 
-    <!-- 换车审批 -->
-    <section class="dispatch-section">
-        <div class="dispatch-section-title">
-            <div>
-                <h2>🚨 司机换车审批</h2>
-                <p>司机车辆故障后，必须经调度批准才能使用新车辆继续计趟</p>
             </div>
 
-            <span id="changeRequestCount" class="count-badge">
-                0 个待审批
-            </span>
         </div>
 
-        <div id="changeRequestBoard" class="change-request-board">
-            <div class="empty-placeholder">当前没有待审批的换车申请</div>
-        </div>
     </section>
 
-    <!-- 生产任务 -->
-    <section id="productionTaskBoardSection" class="dispatch-section">
+
+    <!-- ============================= -->
+    <!-- 生产任务看板 -->
+    <!-- ============================= -->
+
+    <section
+        id="productionTaskBoardSection"
+        class="dispatch-section"
+    >
+
         <div class="dispatch-section-title">
+
             <div>
                 <h2>📊 生产任务看板</h2>
                 <p>只显示待执行和执行中的任务</p>
             </div>
 
-            <span id="productionTaskCount" class="count-badge">
+            <span
+                id="productionTaskCount"
+                class="count-badge"
+            >
                 0 个进行中任务
             </span>
+
         </div>
+
 
         <div class="task-status-legend">
-            <span class="status-legend pending">待执行</span>
-            <span class="status-legend active">执行中</span>
+
+            <span class="status-legend pending">
+                待执行
+            </span>
+
+            <span class="status-legend active">
+                执行中
+            </span>
+
         </div>
 
-        <div id="productionTaskBoard" class="production-task-board">
-            <div class="empty-placeholder">当前没有进行中的生产任务</div>
+
+        <div
+            id="productionTaskBoard"
+            class="production-task-board"
+        >
+            <div class="empty-placeholder">
+                当前没有进行中的生产任务
+            </div>
         </div>
+
     </section>
 
+
+    <!-- ============================= -->
     <!-- 历史任务 -->
-    <section id="historyTaskSection" class="dispatch-section hidden">
+    <!-- ============================= -->
+
+    <section
+        id="historyTaskSection"
+        class="dispatch-section hidden"
+    >
+
         <div class="dispatch-section-title">
+
             <div>
                 <h2>📚 历史任务</h2>
-                <p>只保留已经完成的任务</p>
+                <p>这里只保留已经完成的生产任务</p>
             </div>
 
-            <span id="historyTaskCount" class="count-badge">
+            <span
+                id="historyTaskCount"
+                class="count-badge"
+            >
                 0 个已完成任务
             </span>
+
         </div>
 
+
         <div class="history-filter-grid">
-            <div>
-                <label for="historyDateFilter">日期</label>
-                <input id="historyDateFilter" type="date">
-            </div>
 
             <div>
-                <label for="historyShiftFilter">班次</label>
+                <label for="historyDateFilter">
+                    日期
+                </label>
+
+                <input
+                    id="historyDateFilter"
+                    type="date"
+                >
+            </div>
+
+
+            <div>
+                <label for="historyShiftFilter">
+                    班次
+                </label>
+
                 <select id="historyShiftFilter">
                     <option value="">全部班次</option>
                     <option value="白班">白班</option>
@@ -110,62 +260,150 @@
                 </select>
             </div>
 
+
             <div>
-                <label for="historyAreaFilter">作业区域</label>
-                <input id="historyAreaFilter" type="text" placeholder="输入区域名称">
+                <label for="historyAreaFilter">
+                    作业区域
+                </label>
+
+                <input
+                    id="historyAreaFilter"
+                    type="text"
+                    placeholder="输入区域名称"
+                >
             </div>
+
 
             <div class="history-filter-action">
-                <button id="resetHistoryFilterButton" type="button" class="secondary-button">
+
+                <button
+                    id="resetHistoryFilterButton"
+                    type="button"
+                    class="secondary-button"
+                >
                     清除筛选
                 </button>
+
+            </div>
+
+        </div>
+
+
+        <div
+            id="historyTaskBoard"
+            class="production-task-board"
+        >
+            <div class="empty-placeholder">
+                暂无已完成任务
             </div>
         </div>
 
-        <div id="historyTaskBoard" class="production-task-board">
-            <div class="empty-placeholder">暂无已完成任务</div>
-        </div>
     </section>
 
-    <!-- 创建任务 -->
-    <section id="taskCreateSection" class="dispatch-section hidden">
+
+    <!-- ============================= -->
+    <!-- 创建生产任务 -->
+    <!-- ============================= -->
+
+    <section
+        id="taskCreateSection"
+        class="dispatch-section hidden"
+    >
+
         <div class="dispatch-section-title">
             <div>
                 <h2>创建生产任务</h2>
-                <p>填写生产任务基础信息</p>
+                <p>填写本班任务基础信息</p>
             </div>
-            <span class="draft-badge">草稿</span>
+
+            <span class="draft-badge">
+                草稿
+            </span>
         </div>
 
-        <label for="taskShift">班次</label>
+
+        <label for="taskShift">
+            班次
+        </label>
+
         <select id="taskShift">
             <option value="白班">白班</option>
             <option value="夜班">夜班</option>
         </select>
 
-        <label for="taskArea">作业区域 *</label>
-        <input id="taskArea" type="text" placeholder="例如：马西四采区">
 
-        <label for="taskRemark">调度说明</label>
-        <textarea id="taskRemark" placeholder="请输入生产要求"></textarea>
+        <label for="taskArea">
+            作业区域 *
+        </label>
+
+        <input
+            id="taskArea"
+            type="text"
+            placeholder="例如：马西四采区"
+        >
+
+
+        <label for="taskRemark">
+            调度说明
+        </label>
+
+        <textarea
+            id="taskRemark"
+            placeholder="例如：按规划区域组织生产。"
+        ></textarea>
+
 
         <div class="double-button-row">
-            <button id="cancelCreateButton" type="button" class="secondary-button">取消</button>
-            <button id="generateTaskButton" type="button" class="success-button">生成任务</button>
+
+            <button
+                id="cancelCreateButton"
+                type="button"
+                class="secondary-button"
+            >
+                取消
+            </button>
+
+            <button
+                id="generateTaskButton"
+                type="button"
+                class="success-button"
+            >
+                生成任务
+            </button>
+
         </div>
+
     </section>
 
+
+    <!-- ============================= -->
     <!-- 当前任务 -->
-    <section id="taskSummarySection" class="dispatch-section hidden">
+    <!-- ============================= -->
+
+    <section
+        id="taskSummarySection"
+        class="dispatch-section hidden"
+    >
+
         <div class="dispatch-section-title">
+
             <div>
                 <h2>当前生产任务</h2>
                 <p>正在配置生产设备</p>
             </div>
-            <span class="task-state-badge">配置中</span>
+
+            <span
+                id="taskStateBadge"
+                class="task-state-badge"
+            >
+                配置中
+            </span>
+
         </div>
 
+
         <div class="task-summary-grid">
+
             <div class="task-summary-card">
                 <span>日期</span>
                 <strong id="summaryDate">-</strong>
@@ -180,336 +418,759 @@
                 <span>作业区域</span>
                 <strong id="summaryArea">-</strong>
             </div>
+
         </div>
+
 
         <div class="remark-box">
             <span>调度说明</span>
             <strong id="summaryRemark">无</strong>
         </div>
+
     </section>
 
-    <!-- 状态说明 -->
-    <section id="legendSection" class="dispatch-section hidden">
+
+    <!-- ============================= -->
+    <!-- 设备颜色 -->
+    <!-- ============================= -->
+
+    <section
+        id="legendSection"
+        class="dispatch-section hidden"
+    >
+
         <div class="legend-row">
-            <div class="legend-item"><span class="legend-dot green-dot"></span>可调配</div>
-            <div class="legend-item"><span class="legend-dot yellow-dot"></span>维修中</div>
-            <div class="legend-item"><span class="legend-dot red-dot"></span>已分配</div>
-            <div class="legend-item"><span class="legend-dot blue-dot"></span>本任务已选</div>
+
+            <div class="legend-item">
+                <span class="legend-dot green-dot"></span>
+                可调配
+            </div>
+
+            <div class="legend-item">
+                <span class="legend-dot yellow-dot"></span>
+                维修中
+            </div>
+
+            <div class="legend-item">
+                <span class="legend-dot red-dot"></span>
+                已分配
+            </div>
+
+            <div class="legend-item">
+                <span class="legend-dot blue-dot"></span>
+                本任务已选
+            </div>
+
         </div>
+
     </section>
 
+
+    <!-- ============================= -->
     <!-- 挖机 -->
-    <section id="excavatorSection" class="dispatch-section hidden">
+    <!-- ============================= -->
+
+    <section
+        id="excavatorSection"
+        class="dispatch-section hidden"
+    >
+
         <div class="dispatch-section-title">
+
             <div>
                 <h2>🚜 挖机看板</h2>
-                <p>先选挖机，再选择跟随卡车</p>
+                <p>先选择挖机，再选择跟随卡车</p>
             </div>
-            <span id="excavatorCount" class="count-badge">0 台</span>
+
+            <span
+                id="excavatorCount"
+                class="count-badge"
+            >
+                0 台
+            </span>
+
         </div>
 
-        <div id="excavatorBoard" class="device-board"></div>
+        <div
+            id="excavatorBoard"
+            class="device-board"
+        ></div>
+
     </section>
 
+
+    <!-- ============================= -->
     <!-- 卡车 -->
-    <section id="truckSection" class="dispatch-section hidden">
+    <!-- ============================= -->
+
+    <section
+        id="truckSection"
+        class="dispatch-section hidden"
+    >
+
         <div class="dispatch-section-title">
+
             <div>
                 <h2>🚚 卡车看板</h2>
-                <p>可选择多台跟随卡车</p>
+                <p>可同时选择多台跟随卡车</p>
             </div>
-            <span id="truckCount" class="count-badge">0 台</span>
+
+            <span
+                id="truckCount"
+                class="count-badge"
+            >
+                0 台
+            </span>
+
         </div>
 
-        <div id="selectedExcavatorInfo" class="selected-equipment-info">
+
+        <div
+            id="selectedExcavatorInfo"
+            class="selected-equipment-info"
+        >
             当前未选择挖机
         </div>
 
-        <div id="truckBoard" class="device-board"></div>
 
-        <button id="bindTrucksButton" type="button" class="success-button hidden">
+        <div
+            id="truckBoard"
+            class="device-board"
+        ></div>
+
+
+        <button
+            id="bindTrucksButton"
+            type="button"
+            class="success-button hidden"
+        >
             绑定所选卡车
         </button>
+
     </section>
 
-    <!-- 主采绑定 -->
-    <section id="bindingSection" class="dispatch-section hidden">
+
+    <!-- ============================= -->
+    <!-- 绑定 -->
+    <!-- ============================= -->
+
+    <section
+        id="bindingSection"
+        class="dispatch-section hidden"
+    >
+
         <div class="dispatch-section-title">
             <div>
                 <h2>挖机与卡车绑定关系</h2>
-                <p>发布前确认主采设备配置</p>
+                <p>当前任务主采设备配置</p>
             </div>
         </div>
+
 
         <div id="bindingList">
-            <div class="empty-placeholder">暂无绑定关系</div>
-        </div>
-    </section>
-
-    <!-- 辅助设备 -->
-    <section id="loaderSection" class="dispatch-section hidden">
-        <div class="dispatch-section-title">
-            <div><h2>🚧 装载机</h2><p>点击绿色设备配置任务</p></div>
-            <span id="loaderCount" class="count-badge">0 台</span>
-        </div>
-        <div id="loaderBoard" class="device-board"></div>
-    </section>
-
-    <section id="waterSection" class="dispatch-section hidden">
-        <div class="dispatch-section-title">
-            <div><h2>💧 水车</h2><p>点击绿色设备配置任务</p></div>
-            <span id="waterCount" class="count-badge">0 台</span>
-        </div>
-        <div id="waterBoard" class="device-board"></div>
-    </section>
-
-    <section id="fuelSection" class="dispatch-section hidden">
-        <div class="dispatch-section-title">
-            <div><h2>⛽ 加油车</h2><p>点击绿色设备配置任务</p></div>
-            <span id="fuelCount" class="count-badge">0 台</span>
-        </div>
-        <div id="fuelBoard" class="device-board"></div>
-    </section>
-
-    <section id="graderSection" class="dispatch-section hidden">
-        <div class="dispatch-section-title">
-            <div><h2>🛣 平路机</h2><p>点击绿色设备配置任务</p></div>
-            <span id="graderCount" class="count-badge">0 台</span>
-        </div>
-        <div id="graderBoard" class="device-board"></div>
-    </section>
-
-    <section id="dozerSection" class="dispatch-section hidden">
-        <div class="dispatch-section-title">
-            <div><h2>🚜 推土机</h2><p>点击绿色设备配置任务</p></div>
-            <span id="dozerCount" class="count-badge">0 台</span>
-        </div>
-        <div id="dozerBoard" class="device-board"></div>
-    </section>
-
-    <section id="busSection" class="dispatch-section hidden">
-        <div class="dispatch-section-title">
-            <div><h2>🚌 大巴</h2><p>点击绿色设备配置任务</p></div>
-            <span id="busCount" class="count-badge">0 台</span>
-        </div>
-        <div id="busBoard" class="device-board"></div>
-    </section>
-
-    <section id="auxiliarySummarySection" class="dispatch-section hidden">
-        <div class="dispatch-section-title">
-            <div>
-                <h2>辅助车辆任务</h2>
-                <p>当前已配置辅助设备</p>
+            <div class="empty-placeholder">
+                暂无绑定关系
             </div>
         </div>
 
-        <div id="auxiliaryAssignmentList">
-            <div class="empty-placeholder">暂未配置辅助车辆</div>
-        </div>
     </section>
 
-    <section id="publishSection" class="dispatch-section hidden">
-        <button id="previewTaskButton" type="button" class="primary-button">
-            查看任务并发布
+
+    <!-- ============================= -->
+    <!-- 辅助车辆 -->
+    <!-- ============================= -->
+
+    <section
+        id="auxiliarySection"
+        class="dispatch-section hidden"
+    >
+
+        <div class="dispatch-section-title">
+            <div>
+                <h2>🚧 辅助车辆配置</h2>
+                <p>装载机、洒水车、加油车等辅助设备</p>
+            </div>
+        </div>
+
+
+        <div class="auxiliary-config-grid">
+
+            <select id="auxiliaryTypeSelect">
+                <option value="">选择车辆类型</option>
+                <option value="loader">装载机</option>
+                <option value="water">洒水车</option>
+                <option value="fuel">加油车</option>
+                <option value="grader">平路机</option>
+                <option value="dozer">推土机</option>
+                <option value="bus">大巴</option>
+            </select>
+
+
+            <select id="auxiliaryVehicleSelect">
+                <option value="">选择车辆</option>
+            </select>
+
+
+            <select id="auxiliaryWorkSelect">
+                <option value="">选择作业内容</option>
+            </select>
+
+
+            <input
+                id="auxiliaryCustomWork"
+                type="text"
+                class="hidden"
+                placeholder="请输入作业内容"
+            >
+
+        </div>
+
+
+        <button
+            id="addAuxiliaryButton"
+            type="button"
+            class="success-button"
+        >
+            添加辅助车辆
         </button>
-    </section>
 
-    <section id="previewSection" class="dispatch-section hidden">
-        <div class="dispatch-section-title">
-            <div>
-                <h2>生产任务确认</h2>
-                <p>发布后可继续给每台卡车分配司机</p>
+
+        <div
+            id="auxiliaryAssignmentList"
+            class="auxiliary-assignment-list"
+        >
+            <div class="empty-placeholder">
+                暂未配置辅助车辆
             </div>
         </div>
 
-        <div id="taskPreviewContent"></div>
-
-        <div class="double-button-row">
-            <button id="backEditButton" type="button" class="secondary-button">返回修改</button>
-            <button id="publishTaskButton" type="button" class="publish-button">确认发布任务</button>
-        </div>
     </section>
 
-    <button type="button" class="home-button" onclick="location.href='index.html'">
+
+    <!-- ============================= -->
+    <!-- 发布 -->
+    <!-- ============================= -->
+
+    <section
+        id="publishSection"
+        class="dispatch-section hidden"
+    >
+
+        <button
+            id="publishTaskButton"
+            type="button"
+            class="publish-button"
+        >
+            ✅ 确认并发布生产任务
+        </button>
+
+    </section>
+
+
+    <button
+        type="button"
+        class="back-home-button"
+        onclick="location.href='index.html'"
+    >
         返回系统首页
     </button>
 
 </main>
 
-<!-- 设备详情 -->
-<div id="deviceModal" class="device-modal hidden">
-    <div class="device-modal-card">
-        <h3 id="modalTitle">设备详情</h3>
-        <div id="modalContent"></div>
-        <button id="closeModalButton" type="button" class="secondary-button">关闭</button>
-    </div>
-</div>
 
-<!-- 辅助车辆 -->
-<div id="auxTaskModal" class="device-modal hidden">
-    <div class="device-modal-card">
-        <h3 id="auxTaskModalTitle">配置辅助车辆</h3>
+<!-- ===================================================== -->
+<!-- 任务详情 -->
+<!-- ===================================================== -->
 
-        <div class="selected-aux-device">
-            当前车辆：<strong id="auxSelectedVehicle">-</strong>
-        </div>
+<div
+    id="publishedTaskModal"
+    class="dispatch-modal hidden"
+>
 
-        <label for="auxWorkType">工作内容</label>
-        <select id="auxWorkType"></select>
+    <div class="dispatch-modal-card large-modal">
 
-        <div id="auxManualWorkBox" class="hidden">
-            <label for="auxManualWork">手动录入</label>
-            <input id="auxManualWork" type="text">
-        </div>
-
-        <label for="auxTaskRemark">调度说明</label>
-        <textarea id="auxTaskRemark"></textarea>
-
-        <div class="double-button-row">
-            <button id="cancelAuxTaskButton" type="button" class="secondary-button">取消</button>
-            <button id="confirmAuxTaskButton" type="button" class="success-button">确认配置</button>
-        </div>
-    </div>
-</div>
-
-<!-- 当前任务详情 -->
-<div id="publishedTaskModal" class="device-modal hidden">
-    <div class="device-modal-card task-detail-modal">
-        <h3 id="publishedTaskModalTitle">生产任务详情</h3>
+        <h3 id="publishedTaskModalTitle">
+            生产任务详情
+        </h3>
 
         <div id="publishedTaskModalContent"></div>
 
-        <div class="published-task-action-area">
-            <button id="assignDriversButton" type="button" class="driver-button hidden">
-                👤 分配司机
+
+        <div
+            id="publishedTaskActionArea"
+            class="modal-action-row"
+        >
+
+            <button
+                id="adjustTaskButton"
+                type="button"
+                class="management-button hidden"
+            >
+                🚜 调整设备
             </button>
 
-            <button id="adjustTaskButton" type="button" class="adjust-button hidden">
-                🔄 调整设备
-            </button>
-
-            <button id="withdrawPublishedTaskButton" type="button" class="withdraw-button hidden">
+            <button
+                id="withdrawPublishedTaskButton"
+                type="button"
+                class="withdraw-button hidden"
+            >
                 撤回任务
             </button>
 
-            <button id="completePublishedTaskButton" type="button" class="success-button hidden">
+            <button
+                id="completePublishedTaskButton"
+                type="button"
+                class="success-button hidden"
+            >
                 完成本任务
             </button>
 
-            <button id="closePublishedTaskButton" type="button" class="secondary-button">
+            <button
+                id="closePublishedTaskModalButton"
+                type="button"
+                class="secondary-button"
+            >
                 关闭
             </button>
+
         </div>
+
     </div>
+
 </div>
 
-<!-- 分配司机 -->
-<div id="driverAssignModal" class="device-modal hidden">
-    <div class="device-modal-card task-detail-modal">
-        <h3 id="driverAssignModalTitle">给卡车分配司机</h3>
 
-        <p class="modal-help-text">
-            司机只能领取调度分配给自己的车辆。
-        </p>
+<!-- ===================================================== -->
+<!-- 调整设备 -->
+<!-- ===================================================== -->
 
-        <div id="driverAssignContent"></div>
+<div
+    id="adjustTaskModal"
+    class="dispatch-modal hidden"
+>
 
-        <div class="double-button-row">
-            <button id="cancelDriverAssignButton" type="button" class="secondary-button">取消</button>
-            <button id="saveDriverAssignButton" type="button" class="success-button">保存分车结果</button>
-        </div>
-    </div>
-</div>
+    <div class="dispatch-modal-card large-modal">
 
-<!-- 设备调整 -->
-<div id="adjustTaskModal" class="device-modal hidden">
-    <div class="device-modal-card adjust-modal-card">
-        <h3 id="adjustTaskModalTitle">调整任务设备</h3>
+        <h3>🚜 调整生产设备</h3>
 
-        <p class="modal-help-text">
-            可中途增加或减少挖机，并调整每台挖机跟随卡车。
-        </p>
+        <div id="adjustCurrentBindings"></div>
 
-        <div class="adjust-block">
-            <h4>当前配置</h4>
-            <div id="adjustCurrentBindings"></div>
-        </div>
+        <hr>
 
-        <div class="adjust-block">
-            <h4>选择挖机</h4>
-            <div id="adjustSelectionInfo" class="selected-equipment-info">
-                请选择一台挖机
-            </div>
-            <div id="adjustExcavatorBoard" class="adjust-device-board"></div>
-        </div>
+        <h4>增加挖机 / 调整卡车</h4>
 
-        <div class="adjust-block">
-            <h4>选择跟随卡车</h4>
-            <div id="adjustTruckSelectionCount" class="adjust-count-text">
-                已选择 0 台卡车
-            </div>
-            <div id="adjustTruckBoard" class="adjust-device-board"></div>
+        <div
+            id="adjustExcavatorBoard"
+            class="device-board"
+        ></div>
 
-            <button id="addAdjustmentBindingButton" type="button" class="success-button">
-                加入本任务
+        <div
+            id="adjustTruckBoard"
+            class="device-board"
+        ></div>
+
+        <div class="modal-action-row">
+
+            <button
+                id="saveAdjustmentButton"
+                type="button"
+                class="success-button"
+            >
+                保存调整
             </button>
+
+            <button
+                id="closeAdjustmentButton"
+                type="button"
+                class="secondary-button"
+            >
+                取消
+            </button>
+
         </div>
 
-        <div class="double-button-row">
-            <button id="closeAdjustTaskButton" type="button" class="secondary-button">取消</button>
-            <button id="saveAdjustTaskButton" type="button" class="publish-button" disabled>
-                暂无修改
-            </button>
-        </div>
     </div>
+
 </div>
 
+
+<!-- ===================================================== -->
 <!-- 换车审批 -->
-<div id="changeApprovalModal" class="device-modal hidden">
-    <div class="device-modal-card">
-        <h3>司机换车审批</h3>
+<!-- ===================================================== -->
 
-        <div id="changeApprovalContent"></div>
+<div
+    id="vehicleChangeModal"
+    class="dispatch-modal hidden"
+>
 
-        <div id="newVehicleSelectBox">
-            <label for="newVehicleSelect">批准的新车辆</label>
-            <select id="newVehicleSelect">
-                <option value="">请选择新车辆</option>
-            </select>
-        </div>
+    <div class="dispatch-modal-card large-modal">
 
-        <div class="triple-button-row">
-            <button id="rejectChangeButton" type="button" class="withdraw-button">
-                拒绝申请
-            </button>
+        <h3>🔧 车辆故障 / 换车审批</h3>
 
-            <button id="approveChangeButton" type="button" class="success-button">
-                批准换车
-            </button>
+        <p class="modal-description">
+            司机申请换车后，调度批准前禁止使用新车辆记录趟数。
+        </p>
 
-            <button id="closeChangeApprovalButton" type="button" class="secondary-button">
-                关闭
-            </button>
-        </div>
-    </div>
-</div>
+        <div id="vehicleChangeRequestList"></div>
 
-<!-- 历史详情 -->
-<div id="historyTaskModal" class="device-modal hidden">
-    <div class="device-modal-card task-detail-modal">
-        <h3 id="historyTaskModalTitle">历史任务详情</h3>
-        <div id="historyTaskModalContent"></div>
-        <button id="closeHistoryTaskButton" type="button" class="secondary-button">
+        <button
+            id="closeVehicleChangeModal"
+            type="button"
+            class="secondary-button"
+        >
             关闭
         </button>
+
     </div>
+
 </div>
 
+
+<!-- ===================================================== -->
+<!-- GPS审核 -->
+<!-- ===================================================== -->
+
+<div
+    id="gpsReviewModal"
+    class="dispatch-modal hidden"
+>
+
+    <div class="dispatch-modal-card large-modal">
+
+        <h3>📍 GPS异常趟次审核</h3>
+
+        <p class="modal-description">
+            GPS异常趟次必须由调度确认后再进入正式统计。
+        </p>
+
+        <div id="gpsReviewList"></div>
+
+        <button
+            id="closeGpsReviewModal"
+            type="button"
+            class="secondary-button"
+        >
+            关闭
+        </button>
+
+    </div>
+
+</div>
+
+
+<!-- ===================================================== -->
+<!-- 请假审批 -->
+<!-- ===================================================== -->
+
+<div
+    id="leaveReviewModal"
+    class="dispatch-modal hidden"
+>
+
+    <div class="dispatch-modal-card large-modal">
+
+        <h3>🗓 一线人员请假审批</h3>
+
+        <p class="modal-description">
+            司机及一线人员向调度提交请假申请。
+        </p>
+
+        <div id="leaveReviewList"></div>
+
+        <button
+            id="closeLeaveReviewModal"
+            type="button"
+            class="secondary-button"
+        >
+            关闭
+        </button>
+
+    </div>
+
+</div>
+
+
+<!-- ===================================================== -->
+<!-- 我的请假 -->
+<!-- ===================================================== -->
+
+<div
+    id="myLeaveModal"
+    class="dispatch-modal hidden"
+>
+
+    <div class="dispatch-modal-card">
+
+        <h3>🗓 调度 / 管理人员请假申请</h3>
+
+        <div class="approval-notice">
+            调度及中层管理人员请假，自动提交给总经理审批。
+        </div>
+
+
+        <label for="leaveApplicantName">
+            姓名 *
+        </label>
+
+        <input
+            id="leaveApplicantName"
+            type="text"
+            placeholder="请输入姓名"
+        >
+
+
+        <label for="leaveApplicantPosition">
+            岗位 *
+        </label>
+
+        <input
+            id="leaveApplicantPosition"
+            type="text"
+            value="调度员"
+        >
+
+
+        <label for="leaveType">
+            请假类型 *
+        </label>
+
+        <select id="leaveType">
+            <option value="事假">事假</option>
+            <option value="病假">病假</option>
+            <option value="年假">年假</option>
+            <option value="调休">调休</option>
+            <option value="婚假">婚假</option>
+            <option value="丧假">丧假</option>
+            <option value="其他">其他</option>
+        </select>
+
+
+        <label for="leaveStart">
+            开始时间 *
+        </label>
+
+        <input
+            id="leaveStart"
+            type="datetime-local"
+        >
+
+
+        <label for="leaveEnd">
+            结束时间 *
+        </label>
+
+        <input
+            id="leaveEnd"
+            type="datetime-local"
+        >
+
+
+        <label for="leaveReason">
+            请假原因 *
+        </label>
+
+        <textarea
+            id="leaveReason"
+            placeholder="请输入请假原因"
+        ></textarea>
+
+
+        <button
+            id="submitMyLeaveButton"
+            type="button"
+            class="success-button"
+        >
+            提交总经理审批
+        </button>
+
+
+        <button
+            id="closeMyLeaveModal"
+            type="button"
+            class="secondary-button"
+        >
+            取消
+        </button>
+
+    </div>
+
+</div>
+
+
+<!-- ===================================================== -->
+<!-- 下达罚单 -->
+<!-- ===================================================== -->
+
+<div
+    id="penaltyModal"
+    class="dispatch-modal hidden"
+>
+
+    <div class="dispatch-modal-card">
+
+        <h3>⚠️ 下达罚单</h3>
+
+
+        <label for="penaltyPerson">
+            被处罚人员 *
+        </label>
+
+        <select id="penaltyPerson">
+            <option value="">选择人员</option>
+        </select>
+
+
+        <label for="penaltyVehicle">
+            关联车辆
+        </label>
+
+        <input
+            id="penaltyVehicle"
+            type="text"
+            placeholder="例如：T-003"
+        >
+
+
+        <label for="penaltyType">
+            违规类型 *
+        </label>
+
+        <select id="penaltyType">
+
+            <option value="超速">
+                超速
+            </option>
+
+            <option value="违规停车">
+                违规停车
+            </option>
+
+            <option value="不服从调度">
+                不服从调度
+            </option>
+
+            <option value="未按指定路线">
+                未按指定路线行驶
+            </option>
+
+            <option value="私自换车">
+                私自换车
+            </option>
+
+            <option value="虚报趟数">
+                虚报 / 误报趟数
+            </option>
+
+            <option value="车辆卫生">
+                车辆卫生
+            </option>
+
+            <option value="安全违规">
+                安全违规
+            </option>
+
+            <option value="迟到早退">
+                迟到早退
+            </option>
+
+            <option value="其他">
+                其他
+            </option>
+
+        </select>
+
+
+        <label for="penaltyAmount">
+            处罚金额
+        </label>
+
+        <input
+            id="penaltyAmount"
+            type="number"
+            min="0"
+            step="1"
+            placeholder="例如：100"
+        >
+
+
+        <label for="penaltyPoints">
+            扣分
+        </label>
+
+        <input
+            id="penaltyPoints"
+            type="number"
+            min="0"
+            step="1"
+            placeholder="例如：5"
+        >
+
+
+        <label for="penaltyDescription">
+            违规说明 *
+        </label>
+
+        <textarea
+            id="penaltyDescription"
+            placeholder="请输入违规经过、地点及处理要求"
+        ></textarea>
+
+
+        <button
+            id="submitPenaltyButton"
+            type="button"
+            class="warning-button full-button"
+        >
+            确认下达罚单
+        </button>
+
+
+        <button
+            id="closePenaltyModal"
+            type="button"
+            class="secondary-button"
+        >
+            取消
+        </button>
+
+    </div>
+
+</div>
+
+
+<!-- ===================================================== -->
+<!-- 罚单管理 -->
+<!-- ===================================================== -->
+
+<div
+    id="penaltyManagerModal"
+    class="dispatch-modal hidden"
+>
+
+    <div class="dispatch-modal-card large-modal">
+
+        <h3>⚠️ 罚单管理</h3>
+
+        <div id="penaltyManagerList"></div>
+
+        <button
+            id="closePenaltyManagerModal"
+            type="button"
+            class="secondary-button"
+        >
+            关闭
+        </button>
+
+    </div>
+
+</div>
+
+
 <footer>
-    <p>矿山管理系统 · 调度端 V2.7.0</p>
+    <p>矿山管理系统 · 调度端 V2.9.1</p>
 </footer>
 
-<script src="js/dispatch.js?v=2.7.0"></script>
+<script src="js/dispatch.js?v=2.9.1"></script>
 
 </body>
 </html>
