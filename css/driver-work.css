@@ -1,883 +1,391 @@
-/* =========================================
-   矿山管理系统
-   司机工作台
-   driver-work.css V2.0
-========================================= */
+* {
+    box-sizing: border-box;
+}
 
-
-/* 页面 */
+.hidden {
+    display: none !important;
+}
 
 .driver-work-body {
+    margin: 0;
+    color: #1f2937;
     background: #eef2f6;
 }
 
-
-.driver-main {
-    max-width: 760px;
-}
-
-
-/* =========================================
-   顶部
-========================================= */
-
 .driver-header {
-    padding: 22px 18px;
-}
-
-
-.driver-header-main {
-    width: 100%;
-    max-width: 760px;
-
-    margin: 0 auto;
-
+    padding: 20px 16px;
+    color: white;
+    background: linear-gradient(135deg,#0f172a,#1e293b);
     display: flex;
-
     align-items: center;
     justify-content: space-between;
-
-    gap: 15px;
-}
-
-
-.driver-header-main h1 {
-    text-align: left;
-
-    font-size: 24px;
-}
-
-
-.driver-header-main p {
-    text-align: left;
-}
-
-
-.status-badge {
-    flex-shrink: 0;
-
-    padding: 8px 13px;
-
-    border-radius: 20px;
-
-    font-size: 13px;
-
-    font-weight: 700;
-}
-
-
-.status-standby {
-    background: #e5e7eb;
-    color: #374151;
-}
-
-
-.status-assigned {
-    background: #dbeafe;
-    color: #1d4ed8;
-}
-
-
-.status-working {
-    background: #dcfce7;
-    color: #15803d;
-}
-
-
-.status-paused {
-    background: #fef3c7;
-    color: #b45309;
-}
-
-
-.status-completed {
-    background: #ede9fe;
-    color: #6d28d9;
-}
-
-
-/* =========================================
-   司机简要信息
-========================================= */
-
-.driver-summary-card {
-    display: flex;
-
-    align-items: center;
-
-    gap: 16px;
-
-    padding: 18px;
-}
-
-
-.driver-avatar {
-    width: 60px;
-    height: 60px;
-
-    flex-shrink: 0;
-
-    display: flex;
-
-    align-items: center;
-    justify-content: center;
-
-    border-radius: 15px;
-
-    background: #eff6ff;
-
-    font-size: 30px;
-}
-
-
-.driver-summary-info {
-    min-width: 0;
-}
-
-
-.driver-name {
-    font-size: 21px;
-
-    font-weight: 700;
-
-    color: #111827;
-}
-
-
-.driver-meta {
-    display: flex;
-
-    flex-wrap: wrap;
-
     gap: 12px;
+}
 
-    margin-top: 7px;
+.driver-header h1 {
+    margin: 0;
+    font-size: 23px;
+}
 
-    color: #6b7280;
+.driver-header p {
+    margin: 5px 0 0;
+    opacity: .7;
+    font-size: 12px;
+}
 
+.driver-status-badge {
+    padding: 7px 11px;
+    border-radius: 999px;
+    background: rgba(255,255,255,.12);
+    font-size: 11px;
+}
+
+.driver-work-main {
+    width: min(760px,calc(100% - 20px));
+    margin: 15px auto 35px;
+}
+
+.driver-card {
+    margin-bottom: 13px;
+    padding: 15px;
+    border-radius: 13px;
+    background: white;
+    box-shadow: 0 3px 15px rgba(15,23,42,.06);
+}
+
+.driver-card-title {
+    margin-bottom: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+}
+
+.driver-card-title h2 {
+    margin: 0;
+    font-size: 17px;
+}
+
+.driver-card-title p {
+    margin: 4px 0 0;
+    color: #64748b;
+    font-size: 11px;
+}
+
+.assignment-area {
+    margin-top: 8px;
+}
+
+.assigned-vehicle-card {
+    padding: 13px;
+    border-radius: 11px;
+    border: 1px solid #bfdbfe;
+    background: #eff6ff;
+    display: grid;
+    grid-template-columns: repeat(3,1fr) auto;
+    gap: 10px;
+    align-items: center;
+}
+
+.assigned-vehicle-card div {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.assigned-vehicle-card span {
+    color: #64748b;
+    font-size: 10px;
+}
+
+.assigned-vehicle-card strong {
     font-size: 14px;
 }
 
-
-/* =========================================
-   通用板块
-========================================= */
-
-.dashboard-section h2 {
-    text-align: left;
-
-    margin-bottom: 16px;
-
-    font-size: 19px;
-}
-
-
-.section-title-row {
-    display: flex;
-
-    align-items: center;
-    justify-content: space-between;
-
-    gap: 15px;
-}
-
-
-.section-title-row h2 {
-    margin-bottom: 16px;
-}
-
-
-.mini-status {
-    padding: 6px 10px;
-
-    border-radius: 15px;
-
-    background: #eff6ff;
-
-    color: #2563eb;
-
-    font-size: 13px;
-
-    font-weight: 700;
-}
-
-
-/* =========================================
-   今日统计
-========================================= */
-
-.stat-grid {
-    display: grid;
-
-    grid-template-columns:
-        repeat(
-            3,
-            minmax(0, 1fr)
-        );
-
-    gap: 10px;
-}
-
-
-.stat-card {
-    padding: 15px 8px;
-
-    border: 1px solid #e5e7eb;
-
-    border-radius: 12px;
-
-    background: #f9fafb;
-
-    text-align: center;
-}
-
-
-.stat-icon {
-    font-size: 22px;
-}
-
-
-.stat-number {
-    margin-top: 7px;
-
-    color: #111827;
-
-    font-size: 25px;
-
-    font-weight: 700;
-}
-
-
-.stat-time {
-    font-size: 22px;
-}
-
-
-.stat-label {
-    margin-top: 4px;
-
-    color: #6b7280;
-
-    font-size: 12px;
-}
-
-
-/* =========================================
-   无任务
-========================================= */
-
-.no-task {
-    padding: 30px 15px;
-
-    border: 1px dashed #cbd5e1;
-
-    border-radius: 12px;
-
-    background: #f8fafc;
-
-    text-align: center;
-}
-
-
-.no-task-icon {
-    font-size: 40px;
-}
-
-
-.no-task h3 {
-    margin: 12px 0 6px;
-}
-
-
-.no-task p {
-    margin: 0;
-}
-
-
-/* =========================================
-   当前任务
-========================================= */
-
-.task-main-grid {
-    display: grid;
-
-    grid-template-columns:
-        repeat(
-            2,
-            minmax(0, 1fr)
-        );
-
-    gap: 10px;
-}
-
-
-.task-info-item {
-    padding: 14px;
-
-    border-radius: 10px;
-
-    background: #f8fafc;
-
-    border: 1px solid #e5e7eb;
-}
-
-
-.task-info-item span {
-    display: block;
-
-    margin-bottom: 6px;
-
-    color: #6b7280;
-
-    font-size: 13px;
-}
-
-
-.task-info-item strong {
-    display: block;
-
-    color: #111827;
-
-    font-size: 16px;
-}
-
-
-.route-card {
-    margin-top: 14px;
-
-    padding: 16px;
-
-    border-radius: 12px;
-
-    background: #f9fafb;
-
-    border: 1px solid #e5e7eb;
-}
-
-
-.route-point {
-    display: flex;
-
-    align-items: center;
-
-    gap: 12px;
-}
-
-
-.route-point span {
-    display: block;
-
-    color: #6b7280;
-
-    font-size: 12px;
-}
-
-
-.route-point strong {
-    display: block;
-
-    margin-top: 3px;
-
-    color: #111827;
-}
-
-
-.route-dot {
-    width: 13px;
-    height: 13px;
-
-    flex-shrink: 0;
-
-    border-radius: 50%;
-}
-
-
-.load-dot {
-    background: #16a34a;
-}
-
-
-.unload-dot {
-    background: #dc2626;
-}
-
-
-.route-line {
-    width: 2px;
-    height: 24px;
-
-    margin: 3px 0 3px 5px;
-
-    background: #cbd5e1;
-}
-
-
-.task-route-text,
-.task-remark {
-    margin-top: 12px;
-
-    padding: 12px;
-
-    border-radius: 9px;
-
-    background: #f8fafc;
-
-    color: #6b7280;
-
-    font-size: 13px;
-}
-
-
-.task-route-text strong {
-    display: block;
-
-    margin-top: 5px;
-
-    color: #111827;
-
-    font-size: 15px;
-}
-
-
-.task-remark span:last-child {
-    color: #374151;
-}
-
-
-/* =========================================
-   作业按钮
-========================================= */
-
-.work-action-grid {
-    margin-top: 18px;
-}
-
-
-.start-button,
-.resume-button {
-    background: #16a34a;
-}
-
-
-.start-button:hover,
-.resume-button:hover {
-    background: #15803d;
-}
-
-
-.pause-button {
-    background: #d97706;
-}
-
-
-.pause-button:hover {
-    background: #b45309;
-}
-
-
-.trip-button {
+.claim-button {
+    color: white;
     background: #2563eb;
-
-    min-height: 64px;
-
-    font-size: 18px;
 }
 
-
-.finish-button {
-    background: #374151;
-}
-
-
-.finish-button:hover {
-    background: #1f2937;
-}
-
-
-.trip-tip {
-    margin: 8px 4px;
-
-    text-align: center;
-
-    color: #9ca3af;
-
-    font-size: 12px;
-}
-
-
-/* =========================================
-   常用功能
-========================================= */
-
-.function-grid {
-    display: grid;
-
-    grid-template-columns:
-        repeat(
-            4,
-            minmax(0, 1fr)
-        );
-
+.claimed-summary {
+    display: flex;
+    justify-content: space-between;
     gap: 10px;
-}
-
-
-.function-card {
-    min-height: 88px;
-
-    margin: 0;
-
-    padding: 10px 5px;
-
-    display: flex;
-
-    flex-direction: column;
-
     align-items: center;
-    justify-content: center;
-
-    gap: 6px;
-
-    background: #f8fafc;
-
-    border: 1px solid #e5e7eb;
-
-    color: #374151;
-
-    font-size: 13px;
+    padding: 12px;
+    border-radius: 10px;
+    background: #f0fdf4;
+    border: 1px solid #86efac;
 }
 
-
-.function-card:hover {
-    background: #eff6ff;
-
-    color: #1d4ed8;
+.claimed-summary span,
+.claimed-summary small {
+    color: #64748b;
+    font-size: 11px;
 }
 
-
-.function-icon {
-    font-size: 26px;
-}
-
-
-/* =========================================
-   今日记录
-========================================= */
-
-.record-list {
-    display: flex;
-
-    flex-direction: column;
-
+.work-grid,
+.stats-grid {
+    display: grid;
     gap: 8px;
 }
 
+.work-grid {
+    grid-template-columns: repeat(4,1fr);
+}
 
-.empty-record {
-    padding: 24px;
+.stats-grid {
+    grid-template-columns: repeat(3,1fr);
+}
 
-    border: 1px dashed #d1d5db;
-
-    border-radius: 10px;
-
-    color: #9ca3af;
-
+.work-grid div,
+.stats-grid div {
+    padding: 10px;
     text-align: center;
-}
-
-
-.record-item {
-    display: flex;
-
-    align-items: center;
-
-    gap: 12px;
-
-    padding: 12px;
-
-    border-radius: 10px;
-
+    border-radius: 9px;
     background: #f8fafc;
-
-    border: 1px solid #e5e7eb;
 }
 
-
-.record-number {
-    min-width: 54px;
-
-    color: #2563eb;
-
-    font-size: 13px;
-
-    font-weight: 700;
-}
-
-
-.record-detail {
-    min-width: 0;
-
-    flex: 1;
-}
-
-
-.record-detail strong,
-.record-detail span {
+.work-grid span,
+.stats-grid span {
     display: block;
+    color: #64748b;
+    font-size: 10px;
 }
 
-
-.record-detail span {
+.work-grid strong,
+.stats-grid strong {
+    display: block;
     margin-top: 4px;
-
-    overflow: hidden;
-
-    color: #6b7280;
-
-    font-size: 12px;
-
-    text-overflow: ellipsis;
-
-    white-space: nowrap;
+    font-size: 15px;
 }
 
-
-.record-time {
-    flex-shrink: 0;
-
-    color: #6b7280;
-
-    font-size: 12px;
+.work-status-badge {
+    padding: 5px 9px;
+    border-radius: 999px;
+    color: #166534;
+    background: #dcfce7;
+    font-size: 10px;
 }
 
-
-/* =========================================
-   异常
-========================================= */
-
-.section-description {
-    margin-top: -8px;
+.trip-button,
+.fault-button,
+.back-home-button,
+.secondary-button,
+.fault-submit-button {
+    width: 100%;
+    min-height: 44px;
+    margin-top: 10px;
+    border: 0;
+    border-radius: 9px;
+    font-weight: 700;
+    cursor: pointer;
 }
 
+.trip-button {
+    color: white;
+    background: #16a34a;
+}
 
-.abnormal-button {
+.trip-button:disabled {
+    cursor: not-allowed;
+    background: #94a3b8;
+}
+
+.fault-button,
+.fault-submit-button {
+    color: white;
     background: #dc2626;
 }
 
-
-.abnormal-button:hover {
-    background: #b91c1c;
+.fault-button:disabled {
+    cursor: not-allowed;
+    background: #cbd5e1;
 }
 
-
-.abnormal-record-list h3 {
-    margin-top: 24px;
+.back-home-button {
+    color: white;
+    background: #334155;
 }
 
+.secondary-button {
+    color: #334155;
+    background: #e2e8f0;
+}
 
-.abnormal-record-item {
-    margin-top: 8px;
-
-    padding: 12px;
-
-    border-left: 4px solid #dc2626;
-
-    border-radius: 8px;
-
+.change-pending-warning {
+    margin-top: 11px;
+    padding: 11px;
+    color: #991b1b;
+    border: 1px solid #fecaca;
+    border-radius: 9px;
     background: #fef2f2;
+    font-size: 12px;
+    line-height: 1.6;
 }
 
-
-.abnormal-record-item > div {
+.change-status-card,
+.trip-history-row {
+    margin-bottom: 7px;
+    padding: 10px;
+    border-radius: 9px;
+    border: 1px solid #e2e8f0;
     display: flex;
-
     justify-content: space-between;
-
     gap: 10px;
 }
 
-
-.abnormal-record-item span {
-    color: #9ca3af;
-
-    font-size: 12px;
-}
-
-
-.abnormal-record-item p {
-    margin: 7px 0 0;
-
-    color: #4b5563;
-}
-
-
-/* =========================================
-   我的信息
-========================================= */
-
-.profile-info-list {
-    border-top: 1px solid #e5e7eb;
-}
-
-
-.profile-info-list > div {
+.change-status-card div,
+.trip-history-row div {
     display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
 
+.change-status-card span,
+.change-status-card small,
+.trip-history-row span {
+    color: #64748b;
+    font-size: 10px;
+}
+
+.change-status-card.pending {
+    color: #92400e;
+    border-color: #fde68a;
+    background: #fffbeb;
+}
+
+.change-status-card.approved {
+    color: #166534;
+    border-color: #86efac;
+    background: #f0fdf4;
+}
+
+.change-status-card.rejected {
+    color: #991b1b;
+    border-color: #fecaca;
+    background: #fef2f2;
+}
+
+.driver-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    padding: 15px;
+    display: flex;
     align-items: center;
-    justify-content: space-between;
-
-    gap: 15px;
-
-    padding: 13px 2px;
-
-    border-bottom: 1px solid #e5e7eb;
+    justify-content: center;
+    background: rgba(15,23,42,.65);
 }
 
-
-.profile-info-list span {
-    color: #6b7280;
-
-    font-size: 14px;
+.driver-modal-card {
+    width: min(500px,100%);
+    max-height: 90vh;
+    overflow: auto;
+    padding: 17px;
+    border-radius: 13px;
+    background: white;
 }
 
-
-.profile-info-list strong {
-    text-align: right;
-
-    color: #111827;
-
-    font-size: 14px;
+.driver-modal-card h3 {
+    margin: 0 0 12px;
 }
 
-
-/* =========================================
-   首页按钮
-========================================= */
-
-.home-button {
-    background: #6b7280;
+.driver-modal-card label {
+    display: block;
+    margin: 11px 0 6px;
+    font-size: 12px;
+    font-weight: 700;
 }
 
-
-.home-button:hover {
-    background: #4b5563;
+.driver-modal-card textarea {
+    width: 100%;
+    min-height: 100px;
+    padding: 10px;
+    border: 1px solid #cbd5e1;
+    border-radius: 9px;
+    resize: vertical;
 }
 
-
-/* =========================================
-   手机适配
-========================================= */
-
-@media (
-    max-width: 600px
-) {
-
-    .driver-main {
-        padding-left: 9px;
-        padding-right: 9px;
-    }
-
-
-    .driver-header-main h1 {
-        font-size: 21px;
-    }
-
-
-    .status-badge {
-        padding: 7px 10px;
-
-        font-size: 12px;
-    }
-
-
-    .driver-summary-card {
-        padding: 15px;
-    }
-
-
-    .driver-avatar {
-        width: 52px;
-        height: 52px;
-
-        font-size: 26px;
-    }
-
-
-    .driver-name {
-        font-size: 19px;
-    }
-
-
-    .stat-card {
-        padding: 13px 5px;
-    }
-
-
-    .stat-number {
-        font-size: 22px;
-    }
-
-
-    .stat-time {
-        font-size: 18px;
-    }
-
-
-    .task-main-grid {
-        grid-template-columns:
-            1fr 1fr;
-    }
-
-
-    .function-grid {
-        grid-template-columns:
-            repeat(
-                4,
-                minmax(0, 1fr)
-            );
-
-        gap: 6px;
-    }
-
-
-    .function-card {
-        min-height: 80px;
-
-        padding-left: 2px;
-        padding-right: 2px;
-
-        font-size: 12px;
-    }
-
-
-    .function-icon {
-        font-size: 23px;
-    }
-
+.modal-warning {
+    padding: 10px;
+    color: #991b1b;
+    border-radius: 8px;
+    background: #fef2f2;
+    font-size: 11px;
+    line-height: 1.6;
 }
 
+.current-vehicle-box {
+    padding: 10px;
+    border-radius: 8px;
+    background: #f8fafc;
+}
 
-/* 超小屏 */
+.double-button-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-top: 12px;
+}
 
-@media (
-    max-width: 390px
-) {
+.empty-placeholder {
+    padding: 20px 12px;
+    text-align: center;
+    color: #94a3b8;
+    border: 1px dashed #cbd5e1;
+    border-radius: 9px;
+    background: #f8fafc;
+    font-size: 11px;
+}
 
-    .driver-meta {
-        gap: 7px;
+footer {
+    padding: 18px;
+    color: #64748b;
+    text-align: center;
+    font-size: 11px;
+}
 
-        font-size: 12px;
+@media (max-width:640px) {
+
+    .driver-work-main {
+        width: calc(100% - 14px);
+        margin-top: 8px;
     }
 
-
-    .task-main-grid {
-        grid-template-columns:
-            1fr;
+    .driver-card {
+        padding: 13px;
     }
 
-
-    .function-card {
-        font-size: 11px;
+    .assigned-vehicle-card {
+        grid-template-columns: 1fr 1fr;
     }
 
+    .claim-button {
+        grid-column: 1 / -1;
+    }
+
+    .work-grid {
+        grid-template-columns: repeat(2,1fr);
+    }
+}
+
+@media (max-width:430px) {
+
+    .driver-header h1 {
+        font-size: 20px;
+    }
+
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .double-button-row {
+        grid-template-columns: 1fr;
+    }
+
+    .change-status-card,
+    .trip-history-row {
+        flex-direction: column;
+    }
 }
