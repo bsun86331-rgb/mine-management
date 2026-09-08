@@ -14,16 +14,110 @@
 
     <title>管理员审核中心 - 矿山管理系统</title>
 
+
+    <!-- ==================================================
+         管理员页面入口保护
+
+         必须：
+         1. 已完成密码验证
+         2. 岗位必须是管理员
+         3. 验证会话没有过期
+
+         注意：
+         当前仍属于 GitHub Pages 本地测试保护。
+         V3.0 接 Supabase 后改为服务端认证。
+    =================================================== -->
+
+    <script>
+
+        (function () {
+
+            "use strict";
+
+
+            let session = null;
+
+
+            try {
+
+                session =
+                    JSON.parse(
+                        sessionStorage.getItem(
+                            "managementSession"
+                        )
+                    );
+
+            } catch (error) {
+
+                session = null;
+
+            }
+
+
+            const now =
+                Date.now();
+
+
+            const valid =
+
+                session &&
+
+                session.verified === true &&
+
+                session.position ===
+                    "管理员" &&
+
+                session.personId &&
+
+                Number(
+                    session.expiresAt
+                ) > now;
+
+
+            /*
+               没有有效管理员会话
+               → 不允许进入审核中心
+            */
+
+            if (!valid) {
+
+                sessionStorage.removeItem(
+                    "managementSession"
+                );
+
+
+                localStorage.setItem(
+                    "pendingProtectedPosition",
+                    "管理员"
+                );
+
+
+                location.replace(
+                    "management-login.html?position=" +
+                    encodeURIComponent(
+                        "管理员"
+                    )
+                );
+
+            }
+
+        })();
+
+    </script>
+
+
     <link
         rel="stylesheet"
         href="css/style.css?v=2.9.5"
     >
+
 
     <style>
 
         * {
             box-sizing: border-box;
         }
+
 
         .review-summary {
             display: grid;
@@ -33,6 +127,7 @@
             margin-bottom: 18px;
         }
 
+
         .summary-card {
             background: #f8fafc;
             border: 1px solid #e2e8f0;
@@ -41,12 +136,14 @@
             text-align: center;
         }
 
+
         .summary-number {
             display: block;
             font-size: 24px;
             font-weight: 700;
             color: #0f172a;
         }
+
 
         .summary-label {
             display: block;
@@ -55,6 +152,7 @@
             font-size: 12px;
         }
 
+
         .filter-area {
             display: grid;
             grid-template-columns:
@@ -62,6 +160,7 @@
             gap: 10px;
             margin-bottom: 18px;
         }
+
 
         .filter-area input,
         .filter-area select {
@@ -74,15 +173,18 @@
             font-size: 14px;
         }
 
+
         .table-wrapper {
             overflow-x: auto;
         }
+
 
         table {
             width: 100%;
             min-width: 950px;
             border-collapse: collapse;
         }
+
 
         th,
         td {
@@ -93,10 +195,12 @@
             vertical-align: middle;
         }
 
+
         th {
             background: #f8fafc;
             white-space: nowrap;
         }
+
 
         .status-badge {
             display: inline-block;
@@ -107,25 +211,30 @@
             white-space: nowrap;
         }
 
+
         .status-pending {
             background: #fef3c7;
             color: #92400e;
         }
+
 
         .status-approved {
             background: #dcfce7;
             color: #166534;
         }
 
+
         .status-rejected {
             background: #fee2e2;
             color: #991b1b;
         }
 
+
         .status-disabled {
             background: #e2e8f0;
             color: #475569;
         }
+
 
         .detail-grid {
             display: grid;
@@ -134,15 +243,18 @@
             gap: 10px 20px;
         }
 
+
         .detail-item {
             padding: 10px 0;
             border-bottom: 1px solid #e2e8f0;
             word-break: break-word;
         }
 
+
         .detail-item strong {
             color: #475569;
         }
+
 
         .photo-grid {
             display: grid;
@@ -152,6 +264,7 @@
             margin-bottom: 20px;
         }
 
+
         .photo-card {
             border: 1px solid #e2e8f0;
             border-radius: 12px;
@@ -159,10 +272,12 @@
             background: #f8fafc;
         }
 
+
         .photo-card h3 {
             margin: 0 0 10px;
             font-size: 15px;
         }
+
 
         .photo-card img {
             width: 100%;
@@ -172,13 +287,16 @@
             border-radius: 8px;
         }
 
+
         .review-action-area {
             margin-top: 20px;
         }
 
+
         .review-action-area button {
             margin-bottom: 8px;
         }
+
 
         .reject-area {
             display: none;
@@ -189,12 +307,14 @@
             border-radius: 12px;
         }
 
+
         .reject-area label {
             display: block;
             margin-bottom: 8px;
             font-weight: 700;
             color: #991b1b;
         }
+
 
         .reject-area textarea {
             width: 100%;
@@ -205,6 +325,7 @@
             resize: vertical;
             font-size: 14px;
         }
+
 
         .security-notice {
             margin-top: 15px;
@@ -217,13 +338,26 @@
             line-height: 1.6;
         }
 
+
+        .login-info {
+            margin-bottom: 18px;
+            padding: 11px 13px;
+            background: #ecfdf5;
+            border: 1px solid #bbf7d0;
+            border-radius: 10px;
+            color: #166534;
+            font-size: 13px;
+        }
+
+
         .top-actions {
             display: grid;
             grid-template-columns:
-                repeat(2, minmax(0, 1fr));
+                repeat(3, minmax(0, 1fr));
             gap: 10px;
             margin-top: 15px;
         }
+
 
         @media (max-width: 700px) {
 
@@ -232,17 +366,21 @@
                     repeat(2, minmax(0, 1fr));
             }
 
+
             .filter-area {
                 grid-template-columns: 1fr;
             }
+
 
             .detail-grid {
                 grid-template-columns: 1fr;
             }
 
+
             .photo-grid {
                 grid-template-columns: 1fr;
             }
+
 
             .top-actions {
                 grid-template-columns: 1fr;
@@ -257,9 +395,12 @@
 
 <body>
 
+
 <header>
 
-    <h1>⚙️ 管理员审核中心</h1>
+    <h1>
+        ⚙️ 管理员审核中心
+    </h1>
 
     <p>
         Personnel Review Center
@@ -270,11 +411,19 @@
 
 <main>
 
-    <!-- ==================================================
-         所有人员统一审核
-    =================================================== -->
 
     <section>
+
+
+        <div class="login-info">
+
+            🔐 当前已通过管理员身份验证。
+
+            <span id="sessionTimeText">
+            </span>
+
+        </div>
+
 
         <h2>
             所有人员入职审核
@@ -286,15 +435,18 @@
             line-height:1.6;
             margin-bottom:18px;
         ">
-            挖机司机、汽车司机、辅助车辆司机、车队长、
-            维修人员、中层管理、总经理及管理员，
-            所有人员入职资料统一由管理员审核。
+            所有岗位人员统一在这里进行入职审核。
+            审核通过后，普通岗位可以进入自己的工作端；
+            总经理和管理员仍需要完成管理密码验证。
         </p>
 
 
-        <!-- 统计 -->
+        <!-- ==================================================
+             审核统计
+        =================================================== -->
 
         <div class="review-summary">
+
 
             <div class="summary-card">
 
@@ -359,12 +511,16 @@
 
             </div>
 
+
         </div>
 
 
-        <!-- 筛选 -->
+        <!-- ==================================================
+             搜索筛选
+        =================================================== -->
 
         <div class="filter-area">
+
 
             <input
                 id="searchInput"
@@ -478,10 +634,13 @@
 
             </select>
 
+
         </div>
 
 
-        <!-- 无数据 -->
+        <!-- ==================================================
+             空数据
+        =================================================== -->
 
         <div id="emptyMessage">
 
@@ -492,7 +651,9 @@
         </div>
 
 
-        <!-- 人员表 -->
+        <!-- ==================================================
+             人员表格
+        =================================================== -->
 
         <div
             id="personnelTableArea"
@@ -553,7 +714,12 @@
         </div>
 
 
+        <!-- ==================================================
+             页面操作
+        =================================================== -->
+
         <div class="top-actions">
+
 
             <button
                 type="button"
@@ -565,12 +731,22 @@
 
             <button
                 type="button"
+                onclick="logoutAdmin()"
+            >
+                🔒 退出管理员
+            </button>
+
+
+            <button
+                type="button"
                 onclick="location.href='index.html'"
             >
                 返回系统首页
             </button>
 
+
         </div>
+
 
     </section>
 
@@ -587,12 +763,14 @@
         "
     >
 
+
         <h2>
             人员详细档案
         </h2>
 
 
         <div class="detail-grid">
+
 
             <div class="detail-item">
 
@@ -737,6 +915,7 @@
 
             </div>
 
+
         </div>
 
 
@@ -755,7 +934,9 @@
         </div>
 
 
-        <!-- 驳回原因 -->
+        <!-- ==================================================
+             驳回原因
+        =================================================== -->
 
         <div
             class="reject-area"
@@ -766,10 +947,12 @@
                 审核不通过原因
             </label>
 
+
             <textarea
                 id="rejectReasonInput"
                 placeholder="请填写需要员工修改的内容，例如：身份证照片不清楚、手机号填写错误等"
             ></textarea>
+
 
             <button
                 id="confirmRejectButton"
@@ -781,17 +964,22 @@
         </div>
 
 
-        <!-- 总经理 / 管理员安全说明 -->
+        <!-- ==================================================
+             高权限岗位说明
+        =================================================== -->
 
         <div
             class="security-notice"
             id="securityNotice"
             style="display:none;"
         >
+
             🔐 此岗位属于高权限岗位。
+
             管理员审核通过后，
             仍需要通过密码验证，
             才能进入对应管理页面。
+
         </div>
 
 
@@ -808,6 +996,7 @@
             id="photoArea"
             class="photo-grid"
         >
+
 
             <div class="photo-card">
 
@@ -884,6 +1073,7 @@
 
             </div>
 
+
         </div>
 
 
@@ -892,6 +1082,7 @@
         =================================================== -->
 
         <div class="review-action-area">
+
 
             <button
                 id="approveButton"
@@ -932,9 +1123,12 @@
                 关闭人员详情
             </button>
 
+
         </div>
 
+
     </section>
+
 
 </main>
 
@@ -942,7 +1136,7 @@
 <footer>
 
     <p>
-        矿山管理系统 · 管理员统一审核 V2.9.5
+        矿山管理系统 · 管理员统一审核 V2.9.6
     </p>
 
 </footer>
@@ -951,6 +1145,113 @@
 <script
     src="js/admin-review.js?v=2.9.5"
 ></script>
+
+
+<script>
+
+    /* ==================================================
+       管理员会话显示
+    =================================================== */
+
+    (function () {
+
+        let session = null;
+
+
+        try {
+
+            session =
+                JSON.parse(
+                    sessionStorage.getItem(
+                        "managementSession"
+                    )
+                );
+
+        } catch (error) {
+
+            return;
+
+        }
+
+
+        if (!session) {
+            return;
+        }
+
+
+        const remaining =
+            Number(
+                session.expiresAt
+            ) -
+            Date.now();
+
+
+        const minutes =
+            Math.max(
+                0,
+                Math.ceil(
+                    remaining /
+                    60000
+                )
+            );
+
+
+        const text =
+            document.getElementById(
+                "sessionTimeText"
+            );
+
+
+        if (text) {
+
+            text.textContent =
+                " 本次验证约 " +
+                minutes +
+                " 分钟后失效。";
+
+        }
+
+    })();
+
+
+    /* ==================================================
+       退出管理员
+    =================================================== */
+
+    function logoutAdmin() {
+
+        const confirmed =
+            confirm(
+                "确定退出管理员端吗？"
+            );
+
+
+        if (!confirmed) {
+            return;
+        }
+
+
+        sessionStorage.removeItem(
+            "managementSession"
+        );
+
+
+        localStorage.removeItem(
+            "pendingProtectedPersonId"
+        );
+
+
+        localStorage.removeItem(
+            "pendingProtectedPosition"
+        );
+
+
+        location.href =
+            "index.html";
+
+    }
+
+</script>
 
 
 </body>
