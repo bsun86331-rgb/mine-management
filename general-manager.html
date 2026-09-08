@@ -1,1 +1,157 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
 
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>总经理审批中心</title>
+
+    <link
+        rel="stylesheet"
+        href="css/style.css"
+    >
+
+    <link
+        rel="stylesheet"
+        href="css/general-manager.css?v=2.9.3"
+    >
+</head>
+
+
+<body>
+
+<header class="gm-header">
+
+    <div>
+        <h1>👔 总经理审批中心</h1>
+        <p>General Manager Approval Center</p>
+    </div>
+
+    <span>V2.9.3</span>
+
+</header>
+
+
+<main class="gm-main">
+
+    <section class="gm-card">
+
+        <div class="section-title">
+
+            <div>
+                <h2>管理人员请假审批</h2>
+
+                <p>
+                    调度及中层管理人员请假由总经理审批
+                </p>
+            </div>
+
+            <span
+                id="pendingCount"
+                class="count-badge"
+            >
+                0条待审批
+            </span>
+
+        </div>
+
+
+        <div class="summary-grid">
+
+            <div class="summary-card warning">
+                <span>待审批</span>
+                <strong id="summaryPending">0</strong>
+            </div>
+
+            <div class="summary-card success">
+                <span>已批准</span>
+                <strong id="summaryApproved">0</strong>
+            </div>
+
+            <div class="summary-card danger">
+                <span>已驳回</span>
+                <strong id="summaryRejected">0</strong>
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <section class="gm-card">
+
+        <div class="section-title">
+
+            <div>
+                <h2>🟡 待审批</h2>
+
+                <p>
+                    仅显示需要总经理审批的申请
+                </p>
+            </div>
+
+        </div>
+
+        <div id="pendingList">
+
+            <div class="empty-box">
+                当前没有待审批申请
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <section class="gm-card">
+
+        <div class="section-title">
+
+            <div>
+                <h2>📚 已审批记录</h2>
+
+                <p>
+                    保留批准、驳回时间及审批备注
+                </p>
+            </div>
+
+        </div>
+
+        <div id="historyList">
+
+            <div class="empty-box">
+                暂无审批历史
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <button
+        type="button"
+        class="back-button"
+        onclick="location.href='dispatch.html'"
+    >
+        返回调度中心
+    </button>
+
+</main>
+
+
+<footer>
+    矿山管理系统 · 总经理审批端 V2.9.3
+</footer>
+
+
+<script
+    src="js/general-manager.js?v=2.9.3"
+></script>
+
+</body>
+</html>
