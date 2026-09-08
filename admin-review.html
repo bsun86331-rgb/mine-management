@@ -10,269 +10,894 @@
         content="width=device-width, initial-scale=1.0"
     >
 
-    <title>人员信息管理</title>
+    <meta name="theme-color" content="#0f172a">
+
+    <title>管理员审核中心 - 矿山管理系统</title>
 
     <link
         rel="stylesheet"
-        href="css/style.css"
+        href="css/style.css?v=2.9.5"
     >
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+        }
+
+        .review-summary {
+            display: grid;
+            grid-template-columns:
+                repeat(4, minmax(0, 1fr));
+            gap: 10px;
+            margin-bottom: 18px;
+        }
+
+        .summary-card {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 14px 10px;
+            text-align: center;
+        }
+
+        .summary-number {
+            display: block;
+            font-size: 24px;
+            font-weight: 700;
+            color: #0f172a;
+        }
+
+        .summary-label {
+            display: block;
+            margin-top: 5px;
+            color: #64748b;
+            font-size: 12px;
+        }
+
+        .filter-area {
+            display: grid;
+            grid-template-columns:
+                repeat(3, minmax(0, 1fr));
+            gap: 10px;
+            margin-bottom: 18px;
+        }
+
+        .filter-area input,
+        .filter-area select {
+            width: 100%;
+            min-height: 44px;
+            padding: 9px 10px;
+            border: 1px solid #cbd5e1;
+            border-radius: 9px;
+            background: #ffffff;
+            font-size: 14px;
+        }
+
+        .table-wrapper {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            min-width: 950px;
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            padding: 11px 8px;
+            border-bottom: 1px solid #e2e8f0;
+            text-align: left;
+            font-size: 13px;
+            vertical-align: middle;
+        }
+
+        th {
+            background: #f8fafc;
+            white-space: nowrap;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 5px 9px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+
+        .status-pending {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .status-approved {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .status-rejected {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .status-disabled {
+            background: #e2e8f0;
+            color: #475569;
+        }
+
+        .detail-grid {
+            display: grid;
+            grid-template-columns:
+                repeat(2, minmax(0, 1fr));
+            gap: 10px 20px;
+        }
+
+        .detail-item {
+            padding: 10px 0;
+            border-bottom: 1px solid #e2e8f0;
+            word-break: break-word;
+        }
+
+        .detail-item strong {
+            color: #475569;
+        }
+
+        .photo-grid {
+            display: grid;
+            grid-template-columns:
+                repeat(2, minmax(0, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .photo-card {
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 12px;
+            background: #f8fafc;
+        }
+
+        .photo-card h3 {
+            margin: 0 0 10px;
+            font-size: 15px;
+        }
+
+        .photo-card img {
+            width: 100%;
+            max-height: 260px;
+            object-fit: contain;
+            background: #ffffff;
+            border-radius: 8px;
+        }
+
+        .review-action-area {
+            margin-top: 20px;
+        }
+
+        .review-action-area button {
+            margin-bottom: 8px;
+        }
+
+        .reject-area {
+            display: none;
+            margin: 18px 0;
+            padding: 14px;
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            border-radius: 12px;
+        }
+
+        .reject-area label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 700;
+            color: #991b1b;
+        }
+
+        .reject-area textarea {
+            width: 100%;
+            min-height: 90px;
+            padding: 10px;
+            border: 1px solid #fca5a5;
+            border-radius: 8px;
+            resize: vertical;
+            font-size: 14px;
+        }
+
+        .security-notice {
+            margin-top: 15px;
+            padding: 12px;
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
+            border-radius: 10px;
+            color: #1e40af;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        .top-actions {
+            display: grid;
+            grid-template-columns:
+                repeat(2, minmax(0, 1fr));
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        @media (max-width: 700px) {
+
+            .review-summary {
+                grid-template-columns:
+                    repeat(2, minmax(0, 1fr));
+            }
+
+            .filter-area {
+                grid-template-columns: 1fr;
+            }
+
+            .detail-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .photo-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .top-actions {
+                grid-template-columns: 1fr;
+            }
+
+        }
+
+    </style>
 
 </head>
 
 
 <body>
 
-    <header>
+<header>
 
-        <h1>人员信息管理</h1>
+    <h1>⚙️ 管理员审核中心</h1>
 
-        <p>Personnel Management</p>
+    <p>
+        Personnel Review Center
+    </p>
 
-    </header>
-
-
-    <main>
-
-        <section>
-
-            <h2>人员信息汇总表</h2>
+</header>
 
 
-            <div id="emptyMessage">
+<main>
 
-                <p>
-                    当前没有人员登记信息。
-                </p>
+    <!-- ==================================================
+         所有人员统一审核
+    =================================================== -->
+
+    <section>
+
+        <h2>
+            所有人员入职审核
+        </h2>
+
+
+        <p style="
+            color:#64748b;
+            line-height:1.6;
+            margin-bottom:18px;
+        ">
+            挖机司机、汽车司机、辅助车辆司机、车队长、
+            维修人员、中层管理、总经理及管理员，
+            所有人员入职资料统一由管理员审核。
+        </p>
+
+
+        <!-- 统计 -->
+
+        <div class="review-summary">
+
+            <div class="summary-card">
+
+                <span
+                    class="summary-number"
+                    id="totalCount"
+                >
+                    0
+                </span>
+
+                <span class="summary-label">
+                    全部人员
+                </span>
 
             </div>
 
 
-            <div
-                id="personnelTableArea"
-                style="
-                    display:none;
-                    overflow-x:auto;
-                "
+            <div class="summary-card">
+
+                <span
+                    class="summary-number"
+                    id="pendingCount"
+                >
+                    0
+                </span>
+
+                <span class="summary-label">
+                    待审核
+                </span>
+
+            </div>
+
+
+            <div class="summary-card">
+
+                <span
+                    class="summary-number"
+                    id="approvedCount"
+                >
+                    0
+                </span>
+
+                <span class="summary-label">
+                    已通过
+                </span>
+
+            </div>
+
+
+            <div class="summary-card">
+
+                <span
+                    class="summary-number"
+                    id="rejectedCount"
+                >
+                    0
+                </span>
+
+                <span class="summary-label">
+                    已驳回
+                </span>
+
+            </div>
+
+        </div>
+
+
+        <!-- 筛选 -->
+
+        <div class="filter-area">
+
+            <input
+                id="searchInput"
+                type="search"
+                placeholder="搜索姓名 / 手机号 / 部门"
             >
 
-                <table>
 
-                    <thead>
+            <select id="positionFilter">
 
-                        <tr>
+                <option value="">
+                    全部岗位
+                </option>
 
-                            <th>姓名</th>
+                <option value="挖机司机">
+                    挖机司机
+                </option>
 
-                            <th>手机号</th>
+                <option value="汽车司机">
+                    汽车司机
+                </option>
 
-                            <th>紧急联系人</th>
+                <option value="铲车司机">
+                    铲车司机
+                </option>
 
-                            <th>紧急联系电话</th>
+                <option value="加油车司机">
+                    加油车司机
+                </option>
 
-                            <th>岗位</th>
+                <option value="大巴司机">
+                    大巴司机
+                </option>
 
-                            <th>车队</th>
+                <option value="平路机司机">
+                    平路机司机
+                </option>
 
-                            <th>入职日期</th>
+                <option value="洒水车司机">
+                    洒水车司机
+                </option>
 
-                            <th>审核状态</th>
+                <option value="推土机司机">
+                    推土机司机
+                </option>
 
-                            <th>操作</th>
+                <option value="车队长">
+                    车队长 / 调度
+                </option>
 
-                        </tr>
+                <option value="维修管理员">
+                    维修管理员
+                </option>
 
-                    </thead>
+                <option value="修理工">
+                    修理工
+                </option>
+
+                <option value="测量员">
+                    测量员
+                </option>
+
+                <option value="安全员">
+                    安全员
+                </option>
+
+                <option value="统计">
+                    统计
+                </option>
+
+                <option value="会计">
+                    会计
+                </option>
+
+                <option value="后勤">
+                    后勤
+                </option>
+
+                <option value="库房管理">
+                    库房管理
+                </option>
+
+                <option value="总经理">
+                    总经理
+                </option>
+
+                <option value="管理员">
+                    管理员
+                </option>
+
+            </select>
 
 
-                    <tbody
-                        id="personnelTableBody"
-                    >
-                    </tbody>
+            <select id="statusFilter">
 
-                </table>
+                <option value="">
+                    全部审核状态
+                </option>
 
-            </div>
+                <option value="pending">
+                    待审核
+                </option>
+
+                <option value="approved">
+                    已通过
+                </option>
+
+                <option value="rejected">
+                    已驳回
+                </option>
+
+            </select>
+
+        </div>
+
+
+        <!-- 无数据 -->
+
+        <div id="emptyMessage">
+
+            <p>
+                当前没有人员登记信息。
+            </p>
+
+        </div>
+
+
+        <!-- 人员表 -->
+
+        <div
+            id="personnelTableArea"
+            class="table-wrapper"
+            style="display:none;"
+        >
+
+            <table>
+
+                <thead>
+
+                    <tr>
+
+                        <th>
+                            姓名
+                        </th>
+
+                        <th>
+                            手机号
+                        </th>
+
+                        <th>
+                            岗位
+                        </th>
+
+                        <th>
+                            部门 / 车队
+                        </th>
+
+                        <th>
+                            入职日期
+                        </th>
+
+                        <th>
+                            提交时间
+                        </th>
+
+                        <th>
+                            审核状态
+                        </th>
+
+                        <th>
+                            操作
+                        </th>
+
+                    </tr>
+
+                </thead>
+
+
+                <tbody
+                    id="personnelTableBody"
+                >
+                </tbody>
+
+            </table>
+
+        </div>
+
+
+        <div class="top-actions">
+
+            <button
+                type="button"
+                onclick="location.href='admin-master.html'"
+            >
+                🗂️ 基础资料中心
+            </button>
 
 
             <button
                 type="button"
                 onclick="location.href='index.html'"
             >
-                返回登录端口
+                返回系统首页
             </button>
 
-        </section>
+        </div>
+
+    </section>
 
 
-        <section
-            id="detailSection"
-            style="
-                display:none;
-                margin-top:20px;
-            "
-        >
+    <!-- ==================================================
+         人员详细档案
+    =================================================== -->
 
-            <h2>
-                人员详细档案
-            </h2>
+    <section
+        id="detailSection"
+        style="
+            display:none;
+            margin-top:20px;
+        "
+    >
 
-
-            <p>
-                <strong>姓名：</strong>
-                <span id="detailName"></span>
-            </p>
+        <h2>
+            人员详细档案
+        </h2>
 
 
-            <p>
-                <strong>手机号：</strong>
-                <span id="detailPhone"></span>
-            </p>
+        <div class="detail-grid">
 
+            <div class="detail-item">
 
-            <p>
-                <strong>紧急联系人：</strong>
-                <span id="detailEmergencyContact"></span>
-            </p>
+                <strong>
+                    姓名：
+                </strong>
 
-
-            <p>
-                <strong>紧急联系人电话：</strong>
-                <span id="detailEmergencyPhone"></span>
-            </p>
-
-
-            <p>
-                <strong>身份证号：</strong>
-                <span id="detailIdCardNumber"></span>
-            </p>
-
-
-            <p>
-                <strong>护照号：</strong>
-                <span id="detailPassportNumber"></span>
-            </p>
-
-
-            <p>
-                <strong>银行卡号：</strong>
-                <span id="detailBankCardNumber"></span>
-            </p>
-
-
-            <p>
-                <strong>岗位：</strong>
-                <span id="detailPosition"></span>
-            </p>
-
-
-            <p>
-                <strong>所属车队：</strong>
-                <span id="detailTeam"></span>
-            </p>
-
-
-            <p>
-                <strong>入职日期：</strong>
-                <span id="detailEntryDate"></span>
-            </p>
-
-
-            <p>
-                <strong>备注：</strong>
-                <span id="detailRemark"></span>
-            </p>
-
-
-            <p>
-                <strong>审核状态：</strong>
-                <span id="detailStatus"></span>
-            </p>
-
-
-            <h2
-                style="margin-top:30px;"
-            >
-                证件照片
-            </h2>
-
-
-            <div id="photoArea">
-
-                <div>
-
-                    <h3>身份证照片</h3>
-
-                    <img
-                        id="detailIdCardPhoto"
-                        alt="身份证照片"
-                        style="display:none;"
-                    >
-
-                    <p id="idCardNoPhoto">
-                        未上传
-                    </p>
-
-                </div>
-
-
-                <div>
-
-                    <h3>护照照片</h3>
-
-                    <img
-                        id="detailPassportPhoto"
-                        alt="护照照片"
-                        style="display:none;"
-                    >
-
-                    <p id="passportNoPhoto">
-                        未上传
-                    </p>
-
-                </div>
-
-
-                <div>
-
-                    <h3>驾驶证照片</h3>
-
-                    <img
-                        id="detailDriverLicensePhoto"
-                        alt="驾驶证照片"
-                        style="display:none;"
-                    >
-
-                    <p id="driverLicenseNoPhoto">
-                        未上传
-                    </p>
-
-                </div>
-
-
-                <div>
-
-                    <h3>银行卡照片</h3>
-
-                    <img
-                        id="detailBankCardPhoto"
-                        alt="银行卡照片"
-                        style="display:none;"
-                    >
-
-                    <p id="bankCardNoPhoto">
-                        未上传
-                    </p>
-
-                </div>
+                <span id="detailName">
+                </span>
 
             </div>
 
+
+            <div class="detail-item">
+
+                <strong>
+                    手机号：
+                </strong>
+
+                <span id="detailPhone">
+                </span>
+
+            </div>
+
+
+            <div class="detail-item">
+
+                <strong>
+                    岗位：
+                </strong>
+
+                <span id="detailPosition">
+                </span>
+
+            </div>
+
+
+            <div class="detail-item">
+
+                <strong>
+                    人员类别：
+                </strong>
+
+                <span id="detailCategory">
+                </span>
+
+            </div>
+
+
+            <div class="detail-item">
+
+                <strong>
+                    部门 / 车队：
+                </strong>
+
+                <span id="detailTeam">
+                </span>
+
+            </div>
+
+
+            <div class="detail-item">
+
+                <strong>
+                    入职日期：
+                </strong>
+
+                <span id="detailEntryDate">
+                </span>
+
+            </div>
+
+
+            <div class="detail-item">
+
+                <strong>
+                    紧急联系人：
+                </strong>
+
+                <span id="detailEmergencyContact">
+                </span>
+
+            </div>
+
+
+            <div class="detail-item">
+
+                <strong>
+                    紧急联系电话：
+                </strong>
+
+                <span id="detailEmergencyPhone">
+                </span>
+
+            </div>
+
+
+            <div class="detail-item">
+
+                <strong>
+                    身份证号：
+                </strong>
+
+                <span id="detailIdCardNumber">
+                </span>
+
+            </div>
+
+
+            <div class="detail-item">
+
+                <strong>
+                    护照号：
+                </strong>
+
+                <span id="detailPassportNumber">
+                </span>
+
+            </div>
+
+
+            <div class="detail-item">
+
+                <strong>
+                    银行卡号：
+                </strong>
+
+                <span id="detailBankCardNumber">
+                </span>
+
+            </div>
+
+
+            <div class="detail-item">
+
+                <strong>
+                    审核状态：
+                </strong>
+
+                <span id="detailStatus">
+                </span>
+
+            </div>
+
+        </div>
+
+
+        <div
+            class="detail-item"
+            style="margin-top:10px;"
+        >
+
+            <strong>
+                备注：
+            </strong>
+
+            <span id="detailRemark">
+            </span>
+
+        </div>
+
+
+        <!-- 驳回原因 -->
+
+        <div
+            class="reject-area"
+            id="rejectArea"
+        >
+
+            <label for="rejectReasonInput">
+                审核不通过原因
+            </label>
+
+            <textarea
+                id="rejectReasonInput"
+                placeholder="请填写需要员工修改的内容，例如：身份证照片不清楚、手机号填写错误等"
+            ></textarea>
+
+            <button
+                id="confirmRejectButton"
+                type="button"
+            >
+                确认驳回
+            </button>
+
+        </div>
+
+
+        <!-- 总经理 / 管理员安全说明 -->
+
+        <div
+            class="security-notice"
+            id="securityNotice"
+            style="display:none;"
+        >
+            🔐 此岗位属于高权限岗位。
+            管理员审核通过后，
+            仍需要通过密码验证，
+            才能进入对应管理页面。
+        </div>
+
+
+        <!-- ==================================================
+             证件照片
+        =================================================== -->
+
+        <h2 style="margin-top:30px;">
+            证件照片
+        </h2>
+
+
+        <div
+            id="photoArea"
+            class="photo-grid"
+        >
+
+            <div class="photo-card">
+
+                <h3>
+                    身份证照片
+                </h3>
+
+                <img
+                    id="detailIdCardPhoto"
+                    alt="身份证照片"
+                    style="display:none;"
+                >
+
+                <p id="idCardNoPhoto">
+                    未上传
+                </p>
+
+            </div>
+
+
+            <div class="photo-card">
+
+                <h3>
+                    护照照片
+                </h3>
+
+                <img
+                    id="detailPassportPhoto"
+                    alt="护照照片"
+                    style="display:none;"
+                >
+
+                <p id="passportNoPhoto">
+                    未上传
+                </p>
+
+            </div>
+
+
+            <div class="photo-card">
+
+                <h3>
+                    驾驶证 / 操作证照片
+                </h3>
+
+                <img
+                    id="detailDriverLicensePhoto"
+                    alt="驾驶证或操作证照片"
+                    style="display:none;"
+                >
+
+                <p id="driverLicenseNoPhoto">
+                    未上传
+                </p>
+
+            </div>
+
+
+            <div class="photo-card">
+
+                <h3>
+                    银行卡照片
+                </h3>
+
+                <img
+                    id="detailBankCardPhoto"
+                    alt="银行卡照片"
+                    style="display:none;"
+                >
+
+                <p id="bankCardNoPhoto">
+                    未上传
+                </p>
+
+            </div>
+
+        </div>
+
+
+        <!-- ==================================================
+             审核操作
+        =================================================== -->
+
+        <div class="review-action-area">
 
             <button
                 id="approveButton"
                 type="button"
             >
-                审核通过
+                ✅ 审核通过
             </button>
 
 
@@ -280,7 +905,7 @@
                 id="rejectButton"
                 type="button"
             >
-                审核不通过
+                ❌ 审核不通过
             </button>
 
 
@@ -288,7 +913,7 @@
                 id="printProfileButton"
                 type="button"
             >
-                打印人员档案
+                🖨️ 打印人员档案
             </button>
 
 
@@ -296,7 +921,7 @@
                 id="printPhotosButton"
                 type="button"
             >
-                打印证件照片
+                🖨️ 打印证件照片
             </button>
 
 
@@ -307,23 +932,25 @@
                 关闭人员详情
             </button>
 
-        </section>
+        </div>
 
-    </main>
+    </section>
 
-
-    <footer>
-
-        <p>
-            矿山管理系统 · 管理员端 V2.1
-        </p>
-
-    </footer>
+</main>
 
 
-    <script
-        src="js/admin-review.js"
-    ></script>
+<footer>
+
+    <p>
+        矿山管理系统 · 管理员统一审核 V2.9.5
+    </p>
+
+</footer>
+
+
+<script
+    src="js/admin-review.js?v=2.9.5"
+></script>
 
 
 </body>
