@@ -140,10 +140,6 @@
         }
 
 
-        /* =====================================================
-           岗位选择弹窗
-        ===================================================== */
-
         .modal {
             display: none;
             position: fixed;
@@ -272,8 +268,6 @@
     <section class="portal-grid">
 
 
-        <!-- 1 挖机司机 -->
-
         <button
             type="button"
             class="portal-card"
@@ -294,8 +288,6 @@
 
         </button>
 
-
-        <!-- 2 汽车司机 -->
 
         <button
             type="button"
@@ -318,8 +310,6 @@
         </button>
 
 
-        <!-- 3 辅助车辆 -->
-
         <button
             type="button"
             class="portal-card"
@@ -340,8 +330,6 @@
 
         </button>
 
-
-        <!-- 4 车队长 / 调度 -->
 
         <button
             type="button"
@@ -364,8 +352,6 @@
         </button>
 
 
-        <!-- 5 维修端 -->
-
         <button
             type="button"
             class="portal-card"
@@ -386,8 +372,6 @@
 
         </button>
 
-
-        <!-- 6 中层管理 -->
 
         <button
             type="button"
@@ -410,8 +394,6 @@
         </button>
 
 
-        <!-- 7 总经理 -->
-
         <button
             type="button"
             class="portal-card"
@@ -432,8 +414,6 @@
 
         </button>
 
-
-        <!-- 8 管理员 -->
 
         <button
             type="button"
@@ -463,13 +443,9 @@
 
 
 <footer>
-    矿山管理系统 · 首页 V2.9.6
+    矿山管理系统 · 首页 V2.9.7
 </footer>
 
-
-<!-- =========================================================
-     岗位选择弹窗
-========================================================= -->
 
 <div
     class="modal"
@@ -514,10 +490,6 @@
 
 "use strict";
 
-
-/* =========================================================
-   对应工作页面
-========================================================= */
 
 const POSITION_PAGES = {
 
@@ -581,19 +553,11 @@ const POSITION_PAGES = {
 };
 
 
-/* =========================================================
-   只有以下岗位需要二次密码验证
-========================================================= */
-
 const PASSWORD_PROTECTED_POSITIONS = [
     "总经理",
     "管理员"
 ];
 
-
-/* =========================================================
-   弹窗岗位
-========================================================= */
 
 const ROLE_GROUPS = {
 
@@ -646,10 +610,6 @@ const ROLE_GROUPS = {
 };
 
 
-/* =========================================================
-   岗位兼容
-========================================================= */
-
 function normalizePosition(position) {
 
     const map = {
@@ -690,10 +650,6 @@ function normalizePosition(position) {
 }
 
 
-/* =========================================================
-   人员库
-========================================================= */
-
 function getPersonnelRecords() {
 
     try {
@@ -726,10 +682,6 @@ function getPersonnelRecords() {
 }
 
 
-/* =========================================================
-   人员ID
-========================================================= */
-
 function getPersonId(person) {
 
     return (
@@ -746,99 +698,6 @@ function getPersonId(person) {
 
 }
 
-
-/* =========================================================
-   找当前人员档案
-
-   优先：
-   1. currentPersonId
-   2. 同岗位唯一人员
-========================================================= */
-
-function findCurrentProfile(position) {
-
-    const normalizedPosition =
-        normalizePosition(
-            position
-        );
-
-
-    const records =
-        getPersonnelRecords();
-
-
-    const currentPersonId =
-        localStorage.getItem(
-            "currentPersonId"
-        );
-
-
-    /*
-       第一优先：
-       当前人员ID
-    */
-
-    if (currentPersonId) {
-
-        const person =
-            records.find(
-                item =>
-
-                    getPersonId(item) ===
-                        currentPersonId &&
-
-                    normalizePosition(
-                        item.position
-                    ) ===
-                        normalizedPosition
-            );
-
-
-        if (person) {
-
-            return person;
-
-        }
-
-    }
-
-
-    /*
-       第二优先：
-
-       V2.9 本地测试兼容。
-       该岗位只有一个档案时自动识别。
-
-       Supabase 正式版删除。
-    */
-
-    const samePosition =
-        records.filter(
-            item =>
-                normalizePosition(
-                    item.position
-                ) ===
-                    normalizedPosition
-        );
-
-
-    if (
-        samePosition.length === 1
-    ) {
-
-        return samePosition[0];
-
-    }
-
-
-    return null;
-
-}
-
-
-/* =========================================================
-   审核状态
-========================================================= */
 
 function getApprovalState(person) {
 
@@ -913,6 +772,99 @@ function getApprovalState(person) {
 
 
 /* =========================================================
+   是否已经存在已审核管理员
+========================================================= */
+
+function hasApprovedAdministrator() {
+
+    return getPersonnelRecords()
+        .some(
+            person =>
+
+                normalizePosition(
+                    person.position
+                ) === "管理员" &&
+
+                getApprovalState(
+                    person
+                ) === "approved"
+        );
+
+}
+
+
+/* =========================================================
+   查找当前岗位人员
+========================================================= */
+
+function findCurrentProfile(position) {
+
+    const normalizedPosition =
+        normalizePosition(
+            position
+        );
+
+
+    const records =
+        getPersonnelRecords();
+
+
+    const currentPersonId =
+        localStorage.getItem(
+            "currentPersonId"
+        );
+
+
+    if (currentPersonId) {
+
+        const person =
+            records.find(
+                item =>
+
+                    getPersonId(item) ===
+                        currentPersonId &&
+
+                    normalizePosition(
+                        item.position
+                    ) ===
+                        normalizedPosition
+            );
+
+
+        if (person) {
+
+            return person;
+
+        }
+
+    }
+
+
+    const samePosition =
+        records.filter(
+            item =>
+                normalizePosition(
+                    item.position
+                ) ===
+                    normalizedPosition
+        );
+
+
+    if (
+        samePosition.length === 1
+    ) {
+
+        return samePosition[0];
+
+    }
+
+
+    return null;
+
+}
+
+
+/* =========================================================
    点击岗位
 ========================================================= */
 
@@ -940,6 +892,54 @@ function selectPosition(position) {
     );
 
 
+    /* =====================================================
+       首个管理员特殊入口
+
+       如果系统当前没有任何已审核管理员：
+
+       点击“管理员”
+       不进入注册页
+       直接进入管理员密码验证页。
+
+       management-login.html
+       会负责建立首个管理员。
+    ====================================================== */
+
+    if (
+        normalizedPosition ===
+            "管理员" &&
+
+        !hasApprovedAdministrator()
+    ) {
+
+        clearManagementSession();
+
+
+        localStorage.setItem(
+            "pendingProtectedPosition",
+            "管理员"
+        );
+
+
+        localStorage.removeItem(
+            "pendingProtectedPersonId"
+        );
+
+
+        location.href =
+
+            "management-login.html?position=" +
+
+            encodeURIComponent(
+                "管理员"
+            );
+
+
+        return;
+
+    }
+
+
     const person =
         findCurrentProfile(
             normalizedPosition
@@ -954,7 +954,9 @@ function selectPosition(position) {
 
     /*
        没有档案：
-       进入统一入职登记。
+
+       普通人员和后续管理员
+       都进入统一人员登记页。
     */
 
     if (
@@ -978,10 +980,6 @@ function selectPosition(position) {
     }
 
 
-    /*
-       找到人员后固定当前人员ID。
-    */
-
     const personId =
         getPersonId(
             person
@@ -997,11 +995,6 @@ function selectPosition(position) {
 
     }
 
-
-    /*
-       审核驳回：
-       返回登记页修改资料。
-    */
 
     if (
         state === "rejected"
@@ -1026,10 +1019,6 @@ function selectPosition(position) {
     }
 
 
-    /*
-       停用 / 离职
-    */
-
     if (
         state === "disabled"
     ) {
@@ -1046,10 +1035,6 @@ function selectPosition(position) {
 
     }
 
-
-    /*
-       待审核
-    */
 
     if (
         state === "pending"
@@ -1071,10 +1056,6 @@ function selectPosition(position) {
 
     }
 
-
-    /*
-       审核通过
-    */
 
     if (
         state === "approved"
@@ -1129,21 +1110,11 @@ function enterApprovedPosition(
     );
 
 
-    /*
-       总经理 / 管理员：
-       必须进入二次密码验证。
-    */
-
     if (
         PASSWORD_PROTECTED_POSITIONS.includes(
             position
         )
     ) {
-
-        /*
-           如果已经存在有效的同岗位会话，
-           可以直接进入。
-        */
 
         if (
             hasValidManagementSession(
@@ -1195,10 +1166,6 @@ function enterApprovedPosition(
     }
 
 
-    /*
-       普通岗位不使用管理会话。
-    */
-
     clearManagementSession();
 
 
@@ -1225,7 +1192,7 @@ function enterApprovedPosition(
 
 
 /* =========================================================
-   检查总经理 / 管理员会话
+   检查管理会话
 ========================================================= */
 
 function hasValidManagementSession(
@@ -1310,7 +1277,7 @@ function clearManagementSession() {
 
 
 /* =========================================================
-   打开岗位弹窗
+   打开岗位选择弹窗
 ========================================================= */
 
 function openRoleModal(groupName) {
