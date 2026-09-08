@@ -14,7 +14,7 @@
 
     <link
         rel="stylesheet"
-        href="css/style.css?v=2.9.4b"
+        href="css/style.css?v=2.9.4c"
     >
 </head>
 
@@ -30,7 +30,7 @@
 
     <section>
 
-        <h2>请选择您的职业</h2>
+        <h2>请选择登录端口</h2>
 
         <p style="
             text-align:center;
@@ -41,17 +41,7 @@
         </p>
 
 
-        <!-- =========================
-             生产司机
-        ========================== -->
-
-        <button
-            type="button"
-            onclick="selectPosition('卡车司机')"
-        >
-            🚚 卡车司机
-        </button>
-
+        <!-- 1 挖机司机 -->
 
         <button
             type="button"
@@ -61,137 +51,57 @@
         </button>
 
 
-        <button
-            type="button"
-            onclick="selectPosition('装载机司机')"
-        >
-            🚧 装载机司机
-        </button>
-
+        <!-- 2 汽车司机 -->
 
         <button
             type="button"
-            onclick="selectPosition('洒水车司机')"
+            onclick="selectPosition('汽车司机')"
         >
-            💧 洒水车司机
+            🚚 汽车司机
         </button>
 
+
+        <!-- 3 辅助车辆司机 -->
 
         <button
             type="button"
-            onclick="selectPosition('加油车司机')"
+            onclick="openRoleModal('auxiliary')"
         >
-            ⛽ 加油车司机
+            🚧 辅助车辆司机
         </button>
 
 
-        <button
-            type="button"
-            onclick="selectPosition('平路机司机')"
-        >
-            🛣️ 平路机司机
-        </button>
-
-
-        <button
-            type="button"
-            onclick="selectPosition('推土机司机')"
-        >
-            🚜 推土机司机
-        </button>
-
-
-        <button
-            type="button"
-            onclick="selectPosition('大巴司机')"
-        >
-            🚌 大巴司机
-        </button>
-
-
-        <!-- =========================
-             专业人员
-        ========================== -->
-
-        <button
-            type="button"
-            onclick="selectPosition('维修人员')"
-        >
-            🔧 维修人员
-        </button>
-
-
-        <button
-            type="button"
-            onclick="selectPosition('测量人员')"
-        >
-            📐 测量人员
-        </button>
-
-
-        <button
-            type="button"
-            onclick="selectPosition('安全员')"
-        >
-            🦺 安全员
-        </button>
-
-
-        <button
-            type="button"
-            onclick="selectPosition('后勤人员')"
-        >
-            📦 后勤人员
-        </button>
-
-
-        <!-- =========================
-             管理岗位
-        ========================== -->
-
-        <button
-            type="button"
-            onclick="selectPosition('库房管理员')"
-        >
-            🏪 库房管理员
-        </button>
-
-
-        <button
-            type="button"
-            onclick="selectPosition('调度员')"
-        >
-            📋 调度员
-        </button>
-
+        <!-- 4 车队长 / 调度 -->
 
         <button
             type="button"
             onclick="selectPosition('车队长')"
         >
-            🚛 车队长
+            📋 车队长 / 调度
         </button>
 
 
+        <!-- 5 维修端 -->
+
         <button
             type="button"
-            onclick="selectPosition('中层管理')"
+            onclick="openRoleModal('maintenance')"
+        >
+            🔧 维修端
+        </button>
+
+
+        <!-- 6 中层管理 -->
+
+        <button
+            type="button"
+            onclick="openRoleModal('management')"
         >
             👔 中层管理
         </button>
 
 
-        <!-- =========================
-             高权限入口
-        ========================== -->
-
-        <button
-            type="button"
-            onclick="selectPosition('管理员')"
-        >
-            ⚙️ 管理员
-        </button>
-
+        <!-- 7 总经理 -->
 
         <button
             type="button"
@@ -200,127 +110,319 @@
             👑 总经理
         </button>
 
+
+        <!-- 8 管理员 -->
+
+        <button
+            type="button"
+            onclick="selectPosition('管理员')"
+        >
+            ⚙️ 管理员
+        </button>
+
     </section>
 
 </main>
 
 
 <footer>
-    <p>矿山管理系统 V2.9.4B</p>
+    <p>矿山管理系统 V2.9.4C</p>
 </footer>
+
+
+<!-- =========================================================
+     二级岗位选择弹窗
+========================================================= -->
+
+<div
+    id="roleModal"
+    style="
+        display:none;
+        position:fixed;
+        inset:0;
+        z-index:9999;
+        background:rgba(15,23,42,.65);
+        align-items:center;
+        justify-content:center;
+        padding:20px;
+    "
+>
+
+    <div
+        style="
+            width:min(420px,100%);
+            max-height:85vh;
+            overflow:auto;
+            background:#fff;
+            border-radius:16px;
+            padding:20px;
+            box-shadow:0 20px 60px rgba(0,0,0,.25);
+        "
+    >
+
+        <div
+            style="
+                display:flex;
+                justify-content:space-between;
+                align-items:center;
+                gap:15px;
+                margin-bottom:16px;
+            "
+        >
+
+            <h3
+                id="roleModalTitle"
+                style="margin:0;"
+            >
+                请选择岗位
+            </h3>
+
+            <button
+                type="button"
+                onclick="closeRoleModal()"
+                style="
+                    width:36px;
+                    height:36px;
+                    border:0;
+                    border-radius:50%;
+                    font-size:22px;
+                    cursor:pointer;
+                "
+            >
+                ×
+            </button>
+
+        </div>
+
+
+        <div
+            id="roleModalList"
+            style="
+                display:grid;
+                gap:10px;
+            "
+        >
+        </div>
+
+    </div>
+
+</div>
 
 
 <script>
 
 /* =========================================================
    矿山管理系统
-   统一人员入口 V2.9.4B
+   首页统一岗位入口 V2.9.4C
 ========================================================= */
 
 "use strict";
 
 
 /* =========================================================
-   岗位 → 工作页面
+   二级岗位
+========================================================= */
+
+const ROLE_GROUPS = {
+
+    auxiliary: {
+        title: "🚧 请选择辅助车辆岗位",
+        roles: [
+            "铲车司机",
+            "加油车司机",
+            "大巴司机",
+            "平路机司机",
+            "洒水车司机",
+            "推土机司机"
+        ]
+    },
+
+    maintenance: {
+        title: "🔧 请选择维修岗位",
+        roles: [
+            "维修管理员",
+            "修理工"
+        ]
+    },
+
+    management: {
+        title: "👔 请选择中层管理岗位",
+        roles: [
+            "测量员",
+            "安全员",
+            "统计",
+            "会计",
+            "后勤",
+            "库房管理"
+        ]
+    }
+
+};
+
+
+/* =========================================================
+   岗位对应工作页面
+
+   目前已有页面直接使用。
+   尚未建立的页面后续逐个创建。
 ========================================================= */
 
 const POSITION_PAGES = {
 
-    "卡车司机":
-        "driver-work.html",
-
     "挖机司机":
         "excavator.html",
 
-    "装载机司机":
-        "auxiliary.html",
+    "汽车司机":
+        "driver-work.html",
 
-    "洒水车司机":
+    "铲车司机":
         "auxiliary.html",
 
     "加油车司机":
         "fuel.html",
 
+    "大巴司机":
+        "auxiliary.html",
+
     "平路机司机":
+        "auxiliary.html",
+
+    "洒水车司机":
         "auxiliary.html",
 
     "推土机司机":
         "auxiliary.html",
 
-    "大巴司机":
-        "auxiliary.html",
-
-    "维修人员":
-        "maintenance.html",
-
-    "库房管理员":
-        "warehouse.html",
-
-    "调度员":
-        "dispatch.html",
-
     "车队长":
         "dispatch.html",
 
-    "测量人员":
-        "staff-work.html",
+    "维修管理员":
+        "maintenance.html",
 
-    "安全员":
-        "staff-work.html",
+    "修理工":
+        "maintenance.html",
 
-    "后勤人员":
-        "staff-work.html",
-
-    "中层管理":
+    "测量员":
         "management.html",
 
-    "管理员":
-        "admin-review.html",
+    "安全员":
+        "management.html",
+
+    "统计":
+        "management.html",
+
+    "会计":
+        "management.html",
+
+    "后勤":
+        "management.html",
+
+    "库房管理":
+        "warehouse.html",
 
     "总经理":
-        "general-manager.html"
+        "general-manager.html",
+
+    "管理员":
+        "admin-review.html"
 };
 
 
 /* =========================================================
-   需要密码保护的岗位
-
-   注意：
-   当前只是定义权限规则。
-
-   真正密码验证将在后续文件中建立。
-   密码不会直接写在这个文件中。
+   只有这两个岗位需要二次密码验证
 ========================================================= */
 
-const PROTECTED_POSITIONS = [
-
-    "库房管理员",
-    "调度员",
-    "车队长",
-    "中层管理",
-    "管理员",
-    "总经理"
-
+const PASSWORD_PROTECTED_POSITIONS = [
+    "总经理",
+    "管理员"
 ];
 
 
 /* =========================================================
-   选择职业
+   打开二级岗位
 ========================================================= */
 
-function selectPosition(position) {
+function openRoleModal(groupName) {
 
-    if (!position) {
+    const group =
+        ROLE_GROUPS[groupName];
+
+    if (!group) {
         return;
     }
 
 
-    /*
-       保存本次选择的岗位。
+    const modal =
+        document.getElementById(
+            "roleModal"
+        );
 
-       下一步统一注册页面会读取：
-       selectedPosition
-    */
+    const title =
+        document.getElementById(
+            "roleModalTitle"
+        );
+
+    const list =
+        document.getElementById(
+            "roleModalList"
+        );
+
+
+    title.textContent =
+        group.title;
+
+
+    list.innerHTML =
+        group.roles.map(role => `
+            <button
+                type="button"
+                onclick="selectPosition('${role}')"
+                style="
+                    width:100%;
+                    min-height:48px;
+                    padding:12px 15px;
+                    border:1px solid #cbd5e1;
+                    border-radius:10px;
+                    background:#f8fafc;
+                    color:#0f172a;
+                    font-weight:700;
+                    cursor:pointer;
+                "
+            >
+                ${role}
+            </button>
+        `).join("");
+
+
+    modal.style.display =
+        "flex";
+}
+
+
+/* =========================================================
+   关闭弹窗
+========================================================= */
+
+function closeRoleModal() {
+
+    const modal =
+        document.getElementById(
+            "roleModal"
+        );
+
+    modal.style.display =
+        "none";
+}
+
+
+/* =========================================================
+   选择岗位
+========================================================= */
+
+function selectPosition(position) {
+
+    closeRoleModal();
+
 
     localStorage.setItem(
         "selectedPosition",
@@ -328,47 +430,38 @@ function selectPosition(position) {
     );
 
 
-    /*
-       先检查本机是否已有
-       与该岗位对应的人员资料。
-    */
-
     const profile =
         findLocalProfile(position);
 
 
-    /*
-       没有人员资料
-       → 进入统一人员资料填写页面
-    */
+    /* 没资料 → 填写资料 */
 
     if (!profile) {
 
-        goToRegistration(position);
+        goToRegistration(
+            position
+        );
 
         return;
     }
 
 
-    /*
-       待审核
-    */
+    /* 待审核 */
 
     if (
         profile.status === "pending" ||
         profile.approvalStatus === "pending"
     ) {
 
-        goToWaiting(position);
+        goToWaiting(
+            position
+        );
 
         return;
     }
 
 
-    /*
-       审核驳回
-       → 返回资料页面修改
-    */
+    /* 审核驳回 */
 
     if (
         profile.status === "rejected" ||
@@ -384,26 +477,22 @@ function selectPosition(position) {
     }
 
 
-    /*
-       已离职或停用
-    */
+    /* 停用 / 离职 */
 
     if (
-        profile.status === "resigned" ||
-        profile.status === "disabled"
+        profile.status === "disabled" ||
+        profile.status === "resigned"
     ) {
 
         alert(
-            "当前账号已停用或已离职，不能进入系统。"
+            "当前人员状态为停用或已离职，不能进入系统。"
         );
 
         return;
     }
 
 
-    /*
-       审核通过
-    */
+    /* 是否审核通过 */
 
     const approved =
         profile.status === "approved" ||
@@ -415,27 +504,29 @@ function selectPosition(position) {
 
     if (!approved) {
 
-        goToRegistration(position);
+        goToRegistration(
+            position
+        );
 
         return;
     }
 
 
     /*
-       管理岗位
-       → 必须先经过密码验证
+       只有：
+       总经理
+       管理员
 
-       下一版本会建立：
-       management-login.html
+       需要二次密码验证
     */
 
     if (
-        PROTECTED_POSITIONS.includes(
+        PASSWORD_PROTECTED_POSITIONS.includes(
             position
         )
     ) {
 
-        enterProtectedPosition(
+        goToPasswordVerification(
             position,
             profile
         );
@@ -445,8 +536,9 @@ function selectPosition(position) {
 
 
     /*
-       普通岗位
-       → 审核通过后进入工作页面
+       其他所有人员
+       管理员审核通过后
+       直接进入工作页面
     */
 
     enterWorkPage(
@@ -463,6 +555,7 @@ function findLocalProfile(position) {
 
     let personnel = [];
 
+
     try {
 
         personnel =
@@ -475,18 +568,13 @@ function findLocalProfile(position) {
     } catch (error) {
 
         console.error(
-            "读取人员资料失败：",
+            "人员资料读取失败：",
             error
         );
 
         personnel = [];
     }
 
-
-    /*
-       当前阶段没有正式账号系统，
-       优先查找本机最近使用的人员ID。
-    */
 
     const currentPersonId =
         localStorage.getItem(
@@ -497,17 +585,23 @@ function findLocalProfile(position) {
     if (currentPersonId) {
 
         const current =
-            personnel.find(
-                person =>
-                    (
-                        person.personId ===
-                        currentPersonId
-                    ) &&
-                    (
-                        person.position ===
-                        position
-                    )
-            );
+            personnel.find(person => {
+
+                const id =
+                    person.personId ||
+                    person.driverId ||
+                    person.id ||
+                    "";
+
+                return (
+                    id === currentPersonId &&
+                    normalizePosition(
+                        person.position
+                    ) === position
+                );
+
+            });
+
 
         if (current) {
             return current;
@@ -517,11 +611,11 @@ function findLocalProfile(position) {
 
 
     /*
-       兼容原卡车司机 driverProfile
+       兼容原汽车司机资料
     */
 
     if (
-        position === "卡车司机"
+        position === "汽车司机"
     ) {
 
         try {
@@ -533,22 +627,17 @@ function findLocalProfile(position) {
                     )
                 );
 
-            if (
-                driverProfile &&
-                (
-                    !driverProfile.position ||
-                    driverProfile.position ===
-                    "卡车司机"
-                )
-            ) {
+
+            if (driverProfile) {
 
                 return driverProfile;
+
             }
 
         } catch (error) {
 
             console.error(
-                "读取原司机资料失败：",
+                "原司机资料读取失败：",
                 error
             );
 
@@ -558,18 +647,19 @@ function findLocalProfile(position) {
 
 
     /*
-       如果本机只有一名该岗位人员，
-       临时认为是当前人员。
+       当前本地版临时规则：
+       如果同岗位只有一个人，
+       认为是当前登录人员。
 
-       V3.0 接入账号系统以后，
-       会改成真正的用户ID识别。
+       后续 Supabase 后改成正式账号。
     */
 
     const samePosition =
         personnel.filter(
             person =>
-                person.position ===
-                position
+                normalizePosition(
+                    person.position
+                ) === position
         );
 
 
@@ -587,7 +677,52 @@ function findLocalProfile(position) {
 
 
 /* =========================================================
-   进入统一人员注册
+   兼容旧岗位名称
+========================================================= */
+
+function normalizePosition(position) {
+
+    const map = {
+
+        "卡车司机":
+            "汽车司机",
+
+        "装载机司机":
+            "铲车司机",
+
+        "大巴":
+            "大巴司机",
+
+        "测量人员":
+            "测量员",
+
+        "后勤人员":
+            "后勤",
+
+        "库房管理员":
+            "库房管理",
+
+        "维修人员":
+            "修理工",
+
+        "调度员":
+            "车队长",
+
+        "中层管理":
+            "中层管理"
+    };
+
+
+    return (
+        map[position] ||
+        position ||
+        ""
+    );
+}
+
+
+/* =========================================================
+   进入资料填写
 ========================================================= */
 
 function goToRegistration(
@@ -596,15 +731,14 @@ function goToRegistration(
 ) {
 
     /*
-       卡车司机暂时继续兼容
-       已经做好的注册页面。
+       旧汽车司机页面暂时兼容。
 
-       其他岗位下一步统一进入：
+       其他岗位统一走
        person-register.html
     */
 
     if (
-        position === "卡车司机"
+        position === "汽车司机"
     ) {
 
         location.href =
@@ -614,15 +748,9 @@ function goToRegistration(
     }
 
 
-    /*
-       下一步将创建
-       person-register.html
-
-       创建完成后这里无需再次修改。
-    */
-
     const params =
         new URLSearchParams();
+
 
     params.set(
         "position",
@@ -647,18 +775,13 @@ function goToRegistration(
 
 
 /* =========================================================
-   等待管理员审核
+   等待审核
 ========================================================= */
 
 function goToWaiting(position) {
 
-    /*
-       原卡车司机继续使用
-       driver-waiting.html
-    */
-
     if (
-        position === "卡车司机"
+        position === "汽车司机"
     ) {
 
         location.href =
@@ -668,12 +791,9 @@ function goToWaiting(position) {
     }
 
 
-    /*
-       后续统一等待页面
-    */
-
     const params =
         new URLSearchParams();
+
 
     params.set(
         "position",
@@ -688,21 +808,13 @@ function goToWaiting(position) {
 
 
 /* =========================================================
-   管理岗位安全验证
+   总经理 / 管理员密码验证
 ========================================================= */
 
-function enterProtectedPosition(
+function goToPasswordVerification(
     position,
     profile
 ) {
-
-    /*
-       保存准备登录的人员信息。
-
-       注意：
-       这里只保存人员ID和岗位，
-       不保存密码。
-    */
 
     const personId =
         profile.personId ||
@@ -723,16 +835,9 @@ function enterProtectedPosition(
     );
 
 
-    /*
-       下一步后续创建：
-       management-login.html
-
-       密码验证成功以后，
-       才允许进入对应管理页面。
-    */
-
     const params =
         new URLSearchParams();
+
 
     params.set(
         "position",
@@ -747,7 +852,7 @@ function enterProtectedPosition(
 
 
 /* =========================================================
-   进入工作页面
+   进入对应工作页面
 ========================================================= */
 
 function enterWorkPage(position) {
@@ -766,8 +871,35 @@ function enterWorkPage(position) {
     }
 
 
-    location.href = page;
+    location.href =
+        page;
 }
+
+
+/* =========================================================
+   点击遮罩关闭
+========================================================= */
+
+document.addEventListener(
+    "click",
+    function(event) {
+
+        const modal =
+            document.getElementById(
+                "roleModal"
+            );
+
+
+        if (
+            event.target === modal
+        ) {
+
+            closeRoleModal();
+
+        }
+
+    }
+);
 
 </script>
 
