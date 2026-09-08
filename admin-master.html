@@ -1,1 +1,1262 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0f172a">
 
+  <title>管理员基础资料中心 V2.9.4A</title>
+
+  <link rel="stylesheet" href="css/admin-master.css?v=2.9.4a">
+</head>
+
+<body>
+
+<header class="top-header">
+  <div>
+    <h1>⚙️ 管理员基础资料中心</h1>
+    <p>V2.9.4A · 人员 + 设备 + 后勤物资</p>
+  </div>
+
+  <button class="btn btn-light" onclick="goHome()">
+    ← 返回首页
+  </button>
+</header>
+
+
+<main class="container">
+
+  <!-- ==================== 统计 ==================== -->
+
+  <section class="summary-grid">
+
+    <div class="summary-card">
+      <div class="summary-icon">👷</div>
+      <div>
+        <span>在职人员</span>
+        <strong id="activePersonnelCount">0</strong>
+      </div>
+    </div>
+
+    <div class="summary-card">
+      <div class="summary-icon">🚜</div>
+      <div>
+        <span>设备总数</span>
+        <strong id="equipmentCount">0</strong>
+      </div>
+    </div>
+
+    <div class="summary-card">
+      <div class="summary-icon">📦</div>
+      <div>
+        <span>物资种类</span>
+        <strong id="materialCount">0</strong>
+      </div>
+    </div>
+
+    <div class="summary-card warning-card">
+      <div class="summary-icon">⚠️</div>
+      <div>
+        <span>未归还物资</span>
+        <strong id="unreturnedCount">0</strong>
+      </div>
+    </div>
+
+  </section>
+
+
+  <!-- ==================== 主导航 ==================== -->
+
+  <nav class="module-tabs">
+
+    <button
+      id="personnelTab"
+      class="tab-btn active"
+      onclick="switchModule('personnel')">
+      👷 人员管理
+    </button>
+
+    <button
+      id="equipmentTab"
+      class="tab-btn"
+      onclick="switchModule('equipment')">
+      🚜 设备管理
+    </button>
+
+    <button
+      id="materialTab"
+      class="tab-btn"
+      onclick="switchModule('material')">
+      📦 后勤物资
+    </button>
+
+  </nav>
+
+
+  <!-- ===================================================== -->
+  <!-- 人员管理 -->
+  <!-- ===================================================== -->
+
+  <section id="personnelModule" class="module-section active">
+
+    <div class="section-header">
+
+      <div>
+        <h2>👷 人员管理</h2>
+        <p>统一维护矿山全部人员基础资料</p>
+      </div>
+
+      <button
+        class="btn btn-primary"
+        onclick="openPersonnelModal()">
+        + 新增人员
+      </button>
+
+    </div>
+
+
+    <div class="toolbar">
+
+      <input
+        id="personnelSearch"
+        type="search"
+        placeholder="搜索姓名、手机号、岗位、车队..."
+        oninput="renderPersonnel()">
+
+      <select
+        id="personnelPositionFilter"
+        onchange="renderPersonnel()">
+
+        <option value="">全部岗位</option>
+
+        <option>卡车司机</option>
+        <option>挖机司机</option>
+        <option>装载机司机</option>
+        <option>洒水车司机</option>
+        <option>加油车司机</option>
+        <option>平路机司机</option>
+        <option>推土机司机</option>
+        <option>大巴司机</option>
+        <option>维修人员</option>
+        <option>库房管理员</option>
+        <option>调度员</option>
+        <option>车队长</option>
+        <option>测量人员</option>
+        <option>安全员</option>
+        <option>后勤人员</option>
+        <option>中层管理</option>
+        <option>总经理</option>
+        <option>其他</option>
+
+      </select>
+
+
+      <select
+        id="personnelStatusFilter"
+        onchange="renderPersonnel()">
+
+        <option value="">全部状态</option>
+        <option value="active">在职可用</option>
+        <option value="working">作业中</option>
+        <option value="leave">请假</option>
+        <option value="pending">待审核</option>
+        <option value="disabled">停用</option>
+        <option value="resigned">已离职</option>
+
+      </select>
+
+    </div>
+
+
+    <div id="personnelList" class="record-list"></div>
+
+  </section>
+
+
+  <!-- ===================================================== -->
+  <!-- 设备管理 -->
+  <!-- ===================================================== -->
+
+  <section id="equipmentModule" class="module-section">
+
+    <div class="section-header">
+
+      <div>
+        <h2>🚜 设备管理</h2>
+        <p>建立统一设备档案，为生产调度提供设备数据</p>
+      </div>
+
+      <button
+        class="btn btn-primary"
+        onclick="openEquipmentModal()">
+        + 新增设备
+      </button>
+
+    </div>
+
+
+    <div class="toolbar">
+
+      <input
+        id="equipmentSearch"
+        type="search"
+        placeholder="搜索设备编号、名称、型号、车牌..."
+        oninput="renderEquipment()">
+
+
+      <select
+        id="equipmentTypeFilter"
+        onchange="renderEquipment()">
+
+        <option value="">全部设备</option>
+        <option>卡车</option>
+        <option>挖掘机</option>
+        <option>装载机</option>
+        <option>洒水车</option>
+        <option>加油车</option>
+        <option>平路机</option>
+        <option>推土机</option>
+        <option>大巴</option>
+        <option>维修车辆</option>
+        <option>其他设备</option>
+
+      </select>
+
+
+      <select
+        id="equipmentStatusFilter"
+        onchange="renderEquipment()">
+
+        <option value="">全部状态</option>
+        <option value="available">可用</option>
+        <option value="working">作业中</option>
+        <option value="maintenance">维修中</option>
+        <option value="service">保养中</option>
+        <option value="standby">备用</option>
+        <option value="disabled">停用</option>
+
+      </select>
+
+    </div>
+
+
+    <div id="equipmentList" class="record-list"></div>
+
+  </section>
+
+
+  <!-- ===================================================== -->
+  <!-- 后勤物资 -->
+  <!-- ===================================================== -->
+
+  <section id="materialModule" class="module-section">
+
+    <div class="section-header">
+
+      <div>
+        <h2>📦 后勤物资管理</h2>
+        <p>库存、领用、退还及离职物资结算</p>
+      </div>
+
+      <button
+        class="btn btn-primary"
+        onclick="openMaterialModal()">
+        + 新增物资
+      </button>
+
+    </div>
+
+
+    <!-- 物资子菜单 -->
+
+    <div class="sub-tabs">
+
+      <button
+        id="materialStockTab"
+        class="sub-tab active"
+        onclick="switchMaterialView('stock')">
+        📦 库存
+      </button>
+
+      <button
+        id="materialIssueTab"
+        class="sub-tab"
+        onclick="switchMaterialView('issue')">
+        📤 员工领用
+      </button>
+
+      <button
+        id="materialReturnTab"
+        class="sub-tab"
+        onclick="switchMaterialView('return')">
+        📥 员工退还
+      </button>
+
+      <button
+        id="materialEmployeeTab"
+        class="sub-tab"
+        onclick="switchMaterialView('employee')">
+        👤 员工名下物资
+      </button>
+
+      <button
+        id="materialHistoryTab"
+        class="sub-tab"
+        onclick="switchMaterialView('history')">
+        📚 领退记录
+      </button>
+
+      <button
+        id="resignationSettlementTab"
+        class="sub-tab"
+        onclick="switchMaterialView('settlement')">
+        💰 离职结算
+      </button>
+
+    </div>
+
+
+    <!-- 库存 -->
+
+    <div id="materialStockView" class="material-view active">
+
+      <div class="toolbar">
+
+        <input
+          id="materialSearch"
+          type="search"
+          placeholder="搜索物资名称..."
+          oninput="renderMaterials()">
+
+        <select
+          id="materialTypeFilter"
+          onchange="renderMaterials()">
+
+          <option value="">全部类型</option>
+          <option value="consumable">消耗品</option>
+          <option value="returnable">可回收物资</option>
+
+        </select>
+
+      </div>
+
+      <div id="materialList" class="record-list"></div>
+
+    </div>
+
+
+    <!-- 员工领用 -->
+
+    <div id="materialIssueView" class="material-view">
+
+      <div class="form-panel">
+
+        <h3>📤 员工领用物资</h3>
+
+        <div class="form-grid">
+
+          <label>
+            领用员工 *
+            <select id="issuePerson"></select>
+          </label>
+
+          <label>
+            领用物资 *
+            <select
+              id="issueMaterial"
+              onchange="updateIssueMaterialInfo()">
+            </select>
+          </label>
+
+          <label>
+            当前库存
+            <input
+              id="issueCurrentStock"
+              type="text"
+              readonly>
+          </label>
+
+          <label>
+            领用数量 *
+            <input
+              id="issueQuantity"
+              type="number"
+              min="1"
+              value="1">
+          </label>
+
+          <label>
+            领用日期
+            <input
+              id="issueDate"
+              type="date">
+          </label>
+
+          <label class="full-width">
+            备注
+            <textarea
+              id="issueRemark"
+              rows="3"
+              placeholder="可填写用途、班组等信息"></textarea>
+          </label>
+
+        </div>
+
+        <button
+          class="btn btn-primary"
+          onclick="issueMaterial()">
+          确认领用
+        </button>
+
+      </div>
+
+    </div>
+
+
+    <!-- 员工退还 -->
+
+    <div id="materialReturnView" class="material-view">
+
+      <div class="form-panel">
+
+        <h3>📥 员工退还物资</h3>
+
+        <div class="form-grid">
+
+          <label>
+            员工 *
+            <select
+              id="returnPerson"
+              onchange="loadPersonReturnableMaterials()">
+            </select>
+          </label>
+
+          <label>
+            待归还物资 *
+            <select
+              id="returnMaterial"
+              onchange="updateReturnMaterialInfo()">
+            </select>
+          </label>
+
+          <label>
+            当前未归还数量
+            <input
+              id="returnOutstanding"
+              type="text"
+              readonly>
+          </label>
+
+          <label>
+            本次归还数量 *
+            <input
+              id="returnQuantity"
+              type="number"
+              min="1"
+              value="1">
+          </label>
+
+          <label>
+            物资状态
+            <select id="returnCondition">
+              <option value="normal">正常</option>
+              <option value="damaged">损坏</option>
+            </select>
+          </label>
+
+          <label>
+            归还日期
+            <input
+              id="returnDate"
+              type="date">
+          </label>
+
+          <label class="full-width">
+            备注
+            <textarea
+              id="returnRemark"
+              rows="3"></textarea>
+          </label>
+
+        </div>
+
+        <button
+          class="btn btn-primary"
+          onclick="returnMaterial()">
+          确认退还
+        </button>
+
+      </div>
+
+    </div>
+
+
+    <!-- 员工名下物资 -->
+
+    <div id="materialEmployeeView" class="material-view">
+
+      <div class="toolbar">
+
+        <select
+          id="employeeMaterialPerson"
+          onchange="renderEmployeeMaterials()">
+        </select>
+
+      </div>
+
+      <div id="employeeMaterialSummary"></div>
+
+    </div>
+
+
+    <!-- 领退历史 -->
+
+    <div id="materialHistoryView" class="material-view">
+
+      <div class="toolbar">
+
+        <input
+          id="materialHistorySearch"
+          type="search"
+          placeholder="搜索员工或物资..."
+          oninput="renderMaterialHistory()">
+
+      </div>
+
+      <div id="materialHistoryList" class="record-list"></div>
+
+    </div>
+
+
+    <!-- 离职结算 -->
+
+    <div id="resignationSettlementView" class="material-view">
+
+      <div class="section-note">
+        员工未归还公司可回收物资时仍可办理离职，
+        系统根据未归还数量及扣款标准生成建议工资扣款。
+      </div>
+
+      <div id="settlementList" class="record-list"></div>
+
+    </div>
+
+  </section>
+
+</main>
+
+
+<!-- ===================================================== -->
+<!-- 人员新增 / 编辑 -->
+<!-- ===================================================== -->
+
+<div id="personnelModal" class="modal">
+
+  <div class="modal-content modal-large">
+
+    <div class="modal-header">
+
+      <h2 id="personnelModalTitle">
+        👷 新增人员
+      </h2>
+
+      <button
+        class="close-btn"
+        onclick="closeModal('personnelModal')">
+        ×
+      </button>
+
+    </div>
+
+
+    <div class="form-grid">
+
+      <input
+        id="personnelId"
+        type="hidden">
+
+
+      <label>
+        姓名 *
+        <input
+          id="personnelName"
+          type="text">
+      </label>
+
+
+      <label>
+        手机号 *
+        <input
+          id="personnelPhone"
+          type="tel">
+      </label>
+
+
+      <label>
+        岗位 *
+        <select id="personnelPosition">
+
+          <option value="">请选择</option>
+
+          <option>卡车司机</option>
+          <option>挖机司机</option>
+          <option>装载机司机</option>
+          <option>洒水车司机</option>
+          <option>加油车司机</option>
+          <option>平路机司机</option>
+          <option>推土机司机</option>
+          <option>大巴司机</option>
+          <option>维修人员</option>
+          <option>库房管理员</option>
+          <option>调度员</option>
+          <option>车队长</option>
+          <option>测量人员</option>
+          <option>安全员</option>
+          <option>后勤人员</option>
+          <option>中层管理</option>
+          <option>总经理</option>
+          <option>其他</option>
+
+        </select>
+      </label>
+
+
+      <label>
+        所属车队 / 部门
+        <input
+          id="personnelTeam"
+          type="text">
+      </label>
+
+
+      <label>
+        身份证号码
+        <input
+          id="personnelIdCard"
+          type="text">
+      </label>
+
+
+      <label>
+        护照号码
+        <input
+          id="personnelPassport"
+          type="text">
+      </label>
+
+
+      <label>
+        紧急联系人
+        <input
+          id="personnelEmergencyContact"
+          type="text">
+      </label>
+
+
+      <label>
+        紧急联系电话
+        <input
+          id="personnelEmergencyPhone"
+          type="tel">
+      </label>
+
+
+      <label>
+        入职日期
+        <input
+          id="personnelEntryDate"
+          type="date">
+      </label>
+
+
+      <label>
+        人员状态
+        <select id="personnelStatus">
+
+          <option value="active">在职可用</option>
+          <option value="working">作业中</option>
+          <option value="leave">请假</option>
+          <option value="pending">待审核</option>
+          <option value="disabled">停用</option>
+
+        </select>
+      </label>
+
+
+      <label class="full-width">
+        备注
+        <textarea
+          id="personnelRemark"
+          rows="3">
+        </textarea>
+      </label>
+
+    </div>
+
+
+    <div class="modal-actions">
+
+      <button
+        class="btn btn-secondary"
+        onclick="closeModal('personnelModal')">
+        取消
+      </button>
+
+      <button
+        class="btn btn-primary"
+        onclick="savePersonnel()">
+        保存人员资料
+      </button>
+
+    </div>
+
+  </div>
+
+</div>
+
+
+<!-- ===================================================== -->
+<!-- 设备新增 / 编辑 -->
+<!-- ===================================================== -->
+
+<div id="equipmentModal" class="modal">
+
+  <div class="modal-content modal-large">
+
+    <div class="modal-header">
+
+      <h2 id="equipmentModalTitle">
+        🚜 新增设备
+      </h2>
+
+      <button
+        class="close-btn"
+        onclick="closeModal('equipmentModal')">
+        ×
+      </button>
+
+    </div>
+
+
+    <div class="form-grid">
+
+      <input
+        id="equipmentId"
+        type="hidden">
+
+
+      <label>
+        设备编号 *
+        <input
+          id="equipmentNumber"
+          type="text"
+          placeholder="例如 T-001">
+      </label>
+
+
+      <label>
+        设备名称
+        <input
+          id="equipmentName"
+          type="text"
+          placeholder="例如 70吨矿卡">
+      </label>
+
+
+      <label>
+        设备类别 *
+        <select id="equipmentType">
+
+          <option value="">请选择</option>
+
+          <option>卡车</option>
+          <option>挖掘机</option>
+          <option>装载机</option>
+          <option>洒水车</option>
+          <option>加油车</option>
+          <option>平路机</option>
+          <option>推土机</option>
+          <option>大巴</option>
+          <option>维修车辆</option>
+          <option>其他设备</option>
+
+        </select>
+      </label>
+
+
+      <label>
+        品牌
+        <input
+          id="equipmentBrand"
+          type="text">
+      </label>
+
+
+      <label>
+        型号
+        <input
+          id="equipmentModel"
+          type="text">
+      </label>
+
+
+      <label>
+        车牌号
+        <input
+          id="equipmentPlate"
+          type="text">
+      </label>
+
+
+      <label>
+        所属公司 / 车队
+        <input
+          id="equipmentTeam"
+          type="text">
+      </label>
+
+
+      <label>
+        载重 / 斗容
+        <input
+          id="equipmentCapacity"
+          type="text"
+          placeholder="例如 70t / 5m³">
+      </label>
+
+
+      <label>
+        燃油类型
+        <select id="equipmentFuel">
+
+          <option value="">未填写</option>
+          <option>柴油</option>
+          <option>汽油</option>
+          <option>电动</option>
+          <option>其他</option>
+
+        </select>
+      </label>
+
+
+      <label>
+        入场日期
+        <input
+          id="equipmentEntryDate"
+          type="date">
+      </label>
+
+
+      <label>
+        设备状态
+        <select id="equipmentStatus">
+
+          <option value="available">可用</option>
+          <option value="working">作业中</option>
+          <option value="maintenance">维修中</option>
+          <option value="service">保养中</option>
+          <option value="standby">备用</option>
+          <option value="disabled">停用</option>
+
+        </select>
+      </label>
+
+
+      <label class="full-width">
+        备注
+        <textarea
+          id="equipmentRemark"
+          rows="3">
+        </textarea>
+      </label>
+
+    </div>
+
+
+    <div class="modal-actions">
+
+      <button
+        class="btn btn-secondary"
+        onclick="closeModal('equipmentModal')">
+        取消
+      </button>
+
+      <button
+        class="btn btn-primary"
+        onclick="saveEquipment()">
+        保存设备
+      </button>
+
+    </div>
+
+  </div>
+
+</div>
+
+
+<!-- ===================================================== -->
+<!-- 新增物资 -->
+<!-- ===================================================== -->
+
+<div id="materialModal" class="modal">
+
+  <div class="modal-content">
+
+    <div class="modal-header">
+
+      <h2 id="materialModalTitle">
+        📦 新增物资
+      </h2>
+
+      <button
+        class="close-btn"
+        onclick="closeModal('materialModal')">
+        ×
+      </button>
+
+    </div>
+
+
+    <div class="form-grid">
+
+      <input
+        id="materialId"
+        type="hidden">
+
+
+      <label>
+        物资名称 *
+        <input
+          id="materialName"
+          type="text"
+          placeholder="例如 对讲机">
+      </label>
+
+
+      <label>
+        物资类别 *
+        <select
+          id="materialType"
+          onchange="toggleMaterialReturnFields()">
+
+          <option value="consumable">
+            消耗品
+          </option>
+
+          <option value="returnable">
+            可回收物资
+          </option>
+
+        </select>
+      </label>
+
+
+      <label>
+        单位 *
+        <input
+          id="materialUnit"
+          type="text"
+          placeholder="个 / 件 / 双 / 套">
+      </label>
+
+
+      <label>
+        当前库存 *
+        <input
+          id="materialStock"
+          type="number"
+          min="0"
+          value="0">
+      </label>
+
+
+      <label
+        id="lostDeductionField"
+        class="returnable-field">
+
+        未归还扣款标准
+
+        <input
+          id="materialLostDeduction"
+          type="number"
+          min="0"
+          step="0.01"
+          value="0">
+
+      </label>
+
+
+      <label
+        id="damageDeductionField"
+        class="returnable-field">
+
+        损坏扣款标准
+
+        <input
+          id="materialDamageDeduction"
+          type="number"
+          min="0"
+          step="0.01"
+          value="0">
+
+      </label>
+
+
+      <label class="full-width">
+        备注
+        <textarea
+          id="materialRemark"
+          rows="3">
+        </textarea>
+      </label>
+
+    </div>
+
+
+    <div class="modal-actions">
+
+      <button
+        class="btn btn-secondary"
+        onclick="closeModal('materialModal')">
+        取消
+      </button>
+
+      <button
+        class="btn btn-primary"
+        onclick="saveMaterial()">
+        保存物资
+      </button>
+
+    </div>
+
+  </div>
+
+</div>
+
+
+<!-- ===================================================== -->
+<!-- 物资入库 -->
+<!-- ===================================================== -->
+
+<div id="stockInModal" class="modal">
+
+  <div class="modal-content">
+
+    <div class="modal-header">
+
+      <h2>📥 物资入库</h2>
+
+      <button
+        class="close-btn"
+        onclick="closeModal('stockInModal')">
+        ×
+      </button>
+
+    </div>
+
+
+    <input
+      id="stockInMaterialId"
+      type="hidden">
+
+
+    <div class="form-grid">
+
+      <label>
+        物资名称
+        <input
+          id="stockInMaterialName"
+          type="text"
+          readonly>
+      </label>
+
+
+      <label>
+        当前库存
+        <input
+          id="stockInCurrentStock"
+          type="text"
+          readonly>
+      </label>
+
+
+      <label>
+        入库数量 *
+        <input
+          id="stockInQuantity"
+          type="number"
+          min="1"
+          value="1">
+      </label>
+
+
+      <label>
+        入库日期
+        <input
+          id="stockInDate"
+          type="date">
+      </label>
+
+
+      <label class="full-width">
+        备注
+        <textarea
+          id="stockInRemark"
+          rows="3">
+        </textarea>
+      </label>
+
+    </div>
+
+
+    <div class="modal-actions">
+
+      <button
+        class="btn btn-secondary"
+        onclick="closeModal('stockInModal')">
+        取消
+      </button>
+
+      <button
+        class="btn btn-primary"
+        onclick="confirmStockIn()">
+        确认入库
+      </button>
+
+    </div>
+
+  </div>
+
+</div>
+
+
+<!-- ===================================================== -->
+<!-- 办理离职 -->
+<!-- ===================================================== -->
+
+<div id="resignationModal" class="modal">
+
+  <div class="modal-content modal-large">
+
+    <div class="modal-header">
+
+      <h2>🚪 办理员工离职</h2>
+
+      <button
+        class="close-btn"
+        onclick="closeModal('resignationModal')">
+        ×
+      </button>
+
+    </div>
+
+
+    <input
+      id="resignationPersonId"
+      type="hidden">
+
+
+    <div id="resignationPersonInfo" class="info-panel"></div>
+
+
+    <h3>📦 名下可回收物资</h3>
+
+    <div id="resignationMaterialList"></div>
+
+
+    <div
+      id="resignationDeductionSummary"
+      class="deduction-summary">
+    </div>
+
+
+    <div class="form-grid">
+
+      <label>
+        离职日期 *
+        <input
+          id="resignationDate"
+          type="date">
+      </label>
+
+
+      <label>
+        工资扣款状态
+        <select id="salaryDeductionStatus">
+
+          <option value="pending">
+            待确认
+          </option>
+
+          <option value="confirmed">
+            已确认
+          </option>
+
+          <option value="waived">
+            已免除
+          </option>
+
+        </select>
+      </label>
+
+
+      <label class="full-width">
+        离职原因
+        <textarea
+          id="resignationReason"
+          rows="3">
+        </textarea>
+      </label>
+
+
+      <label class="full-width">
+        结算备注
+        <textarea
+          id="resignationRemark"
+          rows="3"
+          placeholder="未归还物资费用建议从工资中扣除">
+        </textarea>
+      </label>
+
+    </div>
+
+
+    <div class="warning-box">
+
+      ⚠️ 员工存在未归还物资时仍可以办理离职。
+      系统将按照未归还数量和扣款标准生成建议工资扣款，
+      最终扣款由管理人员或财务确认。
+
+    </div>
+
+
+    <div class="modal-actions">
+
+      <button
+        class="btn btn-secondary"
+        onclick="closeModal('resignationModal')">
+        取消
+      </button>
+
+      <button
+        class="btn btn-danger"
+        onclick="confirmResignation()">
+        确认办理离职
+      </button>
+
+    </div>
+
+  </div>
+
+</div>
+
+
+<!-- ==================== 提示 ==================== -->
+
+<div id="toast" class="toast"></div>
+
+
+<script src="js/admin-master.js?v=2.9.4a"></script>
+
+</body>
+</html>
