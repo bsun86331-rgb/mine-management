@@ -1,1 +1,1397 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
 
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <meta name="theme-color" content="#0f172a">
+
+    <title>等待管理员审核 - 矿山管理系统</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family:
+                Arial,
+                "Microsoft YaHei",
+                sans-serif;
+            background: #f1f5f9;
+            color: #0f172a;
+        }
+
+        header {
+            background: #0f172a;
+            color: #ffffff;
+            padding: 22px 16px;
+            text-align: center;
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 22px;
+        }
+
+        header p {
+            margin: 7px 0 0;
+            font-size: 13px;
+            opacity: .8;
+        }
+
+        main {
+            max-width: 520px;
+            margin: 0 auto;
+            padding: 30px 14px;
+        }
+
+        .card {
+            background: #ffffff;
+            border-radius: 18px;
+            padding: 26px 20px;
+            text-align: center;
+            box-shadow:
+                0 8px 30px
+                rgba(15, 23, 42, .08);
+        }
+
+        .status-icon {
+            font-size: 56px;
+            margin-bottom: 12px;
+        }
+
+        .status-title {
+            margin: 0;
+            font-size: 23px;
+        }
+
+        .status-text {
+            margin: 12px 0 22px;
+            color: #64748b;
+            line-height: 1.7;
+            font-size: 14px;
+        }
+
+        .info-box {
+            text-align: left;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 14px;
+            margin-bottom: 20px;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 15px;
+            padding: 8px 0;
+            border-bottom: 1px solid #e2e8f0;
+            font-size: 14px;
+        }
+
+        .info-row:last-child {
+            border-bottom: 0;
+        }
+
+        .info-label {
+            color: #64748b;
+        }
+
+        .info-value {
+            font-weight: 700;
+            text-align: right;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 999px;
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+        .pending {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .approved {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .rejected {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .reason-box {
+            display: none;
+            text-align: left;
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            border-radius: 12px;
+            padding: 14px;
+            margin-bottom: 18px;
+            color: #991b1b;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        button {
+            width: 100%;
+            border: 0;
+            border-radius: 10px;
+            padding: 14px;
+            margin-top: 10px;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .primary-btn {
+            background: #2563eb;
+            color: white;
+        }
+
+        .success-btn {
+            background: #16a34a;
+            color: white;
+        }
+
+        .danger-btn {
+            background: #dc2626;
+            color: white;
+        }
+
+        .secondary-btn {
+            background: #ffffff;
+            color: #334155;
+            border: 1px solid #cbd5e1;
+        }
+
+        .refresh-tip {
+            margin-top: 16px;
+            color: #94a3b8;
+            font-size: 12px;
+            line-height: 1.6;
+        }
+
+        footer {
+            text-align: center;
+            padding: 18px;
+            color: #94a3b8;
+            font-size: 12px;
+        }
+    </style>
+</head>
+
+<body>
+
+<header>
+    <h1>入职审核</h1>
+    <p>矿山管理系统 · 统一人员审核</p>
+</header>
+
+
+<main>
+
+    <div class="card">
+
+        <div
+            class="status-icon"
+            id="statusIcon"
+        >
+            ⏳
+        </div>
+
+
+        <h2
+            class="status-title"
+            id="statusTitle"
+        >
+            等待管理员审核
+        </h2>
+
+
+        <div
+            class="status-text"
+            id="statusText"
+        >
+            您的入职资料已经提交，请等待管理员审核。
+        </div>
+
+
+        <div class="info-box">
+
+            <div class="info-row">
+
+                <span class="info-label">
+                    姓名
+                </span>
+
+                <span
+                    class="info-value"
+                    id="personName"
+                >
+                    -
+                </span>
+
+            </div>
+
+
+            <div class="info-row">
+
+                <span class="info-label">
+                    申请岗位
+                </span>
+
+                <span
+                    class="info-value"
+                    id="personPosition"
+                >
+                    -
+                </span>
+
+            </div>
+
+
+            <div class="info-row">
+
+                <span class="info-label">
+                    部门 / 车队
+                </span>
+
+                <span
+                    class="info-value"
+                    id="personDepartment"
+                >
+                    -
+                </span>
+
+            </div>
+
+
+            <div class="info-row">
+
+                <span class="info-label">
+                    审核状态
+                </span>
+
+                <span
+                    class="status-badge pending"
+                    id="statusBadge"
+                >
+                    待审核
+                </span>
+
+            </div>
+
+        </div>
+
+
+        <div
+            class="reason-box"
+            id="reasonBox"
+        >
+            <strong>管理员驳回原因：</strong>
+
+            <div
+                id="rejectReason"
+                style="margin-top:6px;"
+            >
+                -
+            </div>
+        </div>
+
+
+        <div id="actionArea">
+
+            <button
+                type="button"
+                class="primary-btn"
+                onclick="refreshStatus()"
+            >
+                🔄 刷新审核状态
+            </button>
+
+        </div>
+
+
+        <button
+            type="button"
+            class="secondary-btn"
+            onclick="goHome()"
+        >
+            返回系统首页
+        </button>
+
+
+        <div
+            class="refresh-tip"
+            id="refreshTip"
+        >
+            管理员审核通过后，点击“刷新审核状态”即可进入对应工作页面。
+        </div>
+
+    </div>
+
+</main>
+
+
+<footer>
+    矿山管理系统 V2.9.5
+</footer>
+
+
+<script>
+
+"use strict";
+
+
+/* =========================================================
+   当前岗位
+========================================================= */
+
+const params =
+    new URLSearchParams(
+        location.search
+    );
+
+
+const selectedPosition =
+    params.get("position") ||
+    localStorage.getItem(
+        "selectedPosition"
+    ) ||
+    "";
+
+
+/* =========================================================
+   工作页面
+========================================================= */
+
+const POSITION_PAGES = {
+
+    "挖机司机":
+        "excavator.html",
+
+    "汽车司机":
+        "driver-work.html",
+
+    "铲车司机":
+        "auxiliary.html",
+
+    "加油车司机":
+        "fuel.html",
+
+    "大巴司机":
+        "auxiliary.html",
+
+    "平路机司机":
+        "auxiliary.html",
+
+    "洒水车司机":
+        "auxiliary.html",
+
+    "推土机司机":
+        "auxiliary.html",
+
+    "车队长":
+        "dispatch.html",
+
+    "维修管理员":
+        "maintenance.html",
+
+    "修理工":
+        "maintenance.html",
+
+    "测量员":
+        "management.html",
+
+    "安全员":
+        "management.html",
+
+    "统计":
+        "management.html",
+
+    "会计":
+        "management.html",
+
+    "后勤":
+        "management.html",
+
+    "库房管理":
+        "warehouse.html",
+
+    "总经理":
+        "general-manager.html",
+
+    "管理员":
+        "admin-review.html"
+
+};
+
+
+/* =========================================================
+   只有这两个岗位需要密码验证
+========================================================= */
+
+const PASSWORD_PROTECTED_POSITIONS = [
+    "总经理",
+    "管理员"
+];
+
+
+/* =========================================================
+   岗位兼容
+========================================================= */
+
+function normalizePosition(position) {
+
+    const map = {
+
+        "卡车司机":
+            "汽车司机",
+
+        "装载机司机":
+            "铲车司机",
+
+        "大巴":
+            "大巴司机",
+
+        "测量人员":
+            "测量员",
+
+        "后勤人员":
+            "后勤",
+
+        "库房管理员":
+            "库房管理",
+
+        "维修人员":
+            "修理工",
+
+        "调度员":
+            "车队长"
+
+    };
+
+
+    return (
+        map[position] ||
+        position ||
+        ""
+    );
+
+}
+
+
+/* =========================================================
+   获取人员库
+========================================================= */
+
+function getPersonnelRecords() {
+
+    try {
+
+        const data =
+            JSON.parse(
+                localStorage.getItem(
+                    "personnelRecords"
+                )
+            );
+
+
+        return Array.isArray(data)
+            ? data
+            : [];
+
+
+    } catch (error) {
+
+        console.error(
+            "人员资料读取失败：",
+            error
+        );
+
+
+        return [];
+
+    }
+
+}
+
+
+/* =========================================================
+   获取当前人员
+========================================================= */
+
+function getCurrentPerson() {
+
+    const records =
+        getPersonnelRecords();
+
+
+    const currentPersonId =
+        localStorage.getItem(
+            "currentPersonId"
+        );
+
+
+    /*
+       优先通过人员ID查找
+    */
+
+    if (currentPersonId) {
+
+        const person =
+            records.find(item => {
+
+                const id =
+                    item.personId ||
+                    item.driverId ||
+                    item.id ||
+                    "";
+
+
+                return (
+                    id === currentPersonId
+                );
+
+            });
+
+
+        if (person) {
+
+            return person;
+
+        }
+
+    }
+
+
+    /*
+       测试阶段兼容：
+       同岗位只有一个人时自动识别
+    */
+
+    if (selectedPosition) {
+
+        const samePosition =
+            records.filter(item =>
+
+                normalizePosition(
+                    item.position
+                ) ===
+                normalizePosition(
+                    selectedPosition
+                )
+
+            );
+
+
+        if (
+            samePosition.length === 1
+        ) {
+
+            return samePosition[0];
+
+        }
+
+    }
+
+
+    return null;
+
+}
+
+
+/* =========================================================
+   判断审核状态
+========================================================= */
+
+function getApprovalState(person) {
+
+    if (!person) {
+
+        return "missing";
+
+    }
+
+
+    if (
+        person.status === "rejected" ||
+        person.approvalStatus === "rejected"
+    ) {
+
+        return "rejected";
+
+    }
+
+
+    if (
+        person.status === "disabled" ||
+        person.status === "resigned" ||
+        person.personnelStatus === "停用" ||
+        person.personnelStatus === "离职"
+    ) {
+
+        return "disabled";
+
+    }
+
+
+    const approved =
+
+        person.approvalStatus === "approved" ||
+
+        person.status === "approved" ||
+
+        person.status === "active" ||
+
+        person.status === "working" ||
+
+        person.status === "leave" ||
+
+        person.personnelStatus === "在职可用" ||
+
+        person.personnelStatus === "作业中" ||
+
+        person.personnelStatus === "请假";
+
+
+    if (approved) {
+
+        return "approved";
+
+    }
+
+
+    return "pending";
+
+}
+
+
+/* =========================================================
+   页面刷新
+========================================================= */
+
+function renderPage() {
+
+    const person =
+        getCurrentPerson();
+
+
+    if (!person) {
+
+        showMissing();
+
+        return;
+
+    }
+
+
+    const personId =
+        person.personId ||
+        person.driverId ||
+        person.id ||
+        "";
+
+
+    if (personId) {
+
+        localStorage.setItem(
+            "currentPersonId",
+            personId
+        );
+
+    }
+
+
+    const position =
+        normalizePosition(
+            person.position ||
+            selectedPosition
+        );
+
+
+    localStorage.setItem(
+        "selectedPosition",
+        position
+    );
+
+
+    document.getElementById(
+        "personName"
+    ).textContent =
+        person.name || "-";
+
+
+    document.getElementById(
+        "personPosition"
+    ).textContent =
+        position || "-";
+
+
+    document.getElementById(
+        "personDepartment"
+    ).textContent =
+        person.department ||
+        person.team ||
+        "-";
+
+
+    const state =
+        getApprovalState(
+            person
+        );
+
+
+    if (
+        state === "pending"
+    ) {
+
+        showPending();
+
+        return;
+
+    }
+
+
+    if (
+        state === "rejected"
+    ) {
+
+        showRejected(
+            person,
+            position
+        );
+
+        return;
+
+    }
+
+
+    if (
+        state === "disabled"
+    ) {
+
+        showDisabled();
+
+        return;
+
+    }
+
+
+    if (
+        state === "approved"
+    ) {
+
+        showApproved(
+            person,
+            position
+        );
+
+    }
+
+}
+
+
+/* =========================================================
+   待审核
+========================================================= */
+
+function showPending() {
+
+    document.getElementById(
+        "statusIcon"
+    ).textContent =
+        "⏳";
+
+
+    document.getElementById(
+        "statusTitle"
+    ).textContent =
+        "等待管理员审核";
+
+
+    document.getElementById(
+        "statusText"
+    ).textContent =
+        "您的入职资料已经提交，请等待管理员审核。";
+
+
+    const badge =
+        document.getElementById(
+            "statusBadge"
+        );
+
+
+    badge.textContent =
+        "待审核";
+
+
+    badge.className =
+        "status-badge pending";
+
+
+    document.getElementById(
+        "reasonBox"
+    ).style.display =
+        "none";
+
+
+    document.getElementById(
+        "actionArea"
+    ).innerHTML = `
+
+        <button
+            type="button"
+            class="primary-btn"
+            onclick="refreshStatus()"
+        >
+            🔄 刷新审核状态
+        </button>
+
+    `;
+
+}
+
+
+/* =========================================================
+   审核通过
+========================================================= */
+
+function showApproved(
+    person,
+    position
+) {
+
+    document.getElementById(
+        "statusIcon"
+    ).textContent =
+        "✅";
+
+
+    document.getElementById(
+        "statusTitle"
+    ).textContent =
+        "管理员审核通过";
+
+
+    const protectedPosition =
+        PASSWORD_PROTECTED_POSITIONS.includes(
+            position
+        );
+
+
+    document.getElementById(
+        "statusText"
+    ).textContent =
+        protectedPosition
+            ? "您的入职资料已经审核通过。进入系统前还需要进行密码验证。"
+            : "您的入职资料已经审核通过，现在可以进入工作页面。";
+
+
+    const badge =
+        document.getElementById(
+            "statusBadge"
+        );
+
+
+    badge.textContent =
+        "审核通过";
+
+
+    badge.className =
+        "status-badge approved";
+
+
+    document.getElementById(
+        "reasonBox"
+    ).style.display =
+        "none";
+
+
+    if (protectedPosition) {
+
+        document.getElementById(
+            "actionArea"
+        ).innerHTML = `
+
+            <button
+                type="button"
+                class="success-btn"
+                onclick="enterProtectedPage()"
+            >
+                🔐 进行密码验证
+            </button>
+
+        `;
+
+    } else {
+
+        document.getElementById(
+            "actionArea"
+        ).innerHTML = `
+
+            <button
+                type="button"
+                class="success-btn"
+                onclick="enterWorkPage()"
+            >
+                进入工作页面
+            </button>
+
+        `;
+
+    }
+
+
+    document.getElementById(
+        "refreshTip"
+    ).textContent =
+        protectedPosition
+            ? "总经理和管理员必须通过密码验证后才能进入管理页面。"
+            : "您的账号已经通过管理员审核。";
+
+}
+
+
+/* =========================================================
+   审核驳回
+========================================================= */
+
+function showRejected(
+    person,
+    position
+) {
+
+    document.getElementById(
+        "statusIcon"
+    ).textContent =
+        "❌";
+
+
+    document.getElementById(
+        "statusTitle"
+    ).textContent =
+        "资料审核未通过";
+
+
+    document.getElementById(
+        "statusText"
+    ).textContent =
+        "请根据管理员意见修改个人资料，然后重新提交审核。";
+
+
+    const badge =
+        document.getElementById(
+            "statusBadge"
+        );
+
+
+    badge.textContent =
+        "审核驳回";
+
+
+    badge.className =
+        "status-badge rejected";
+
+
+    const reason =
+        person.rejectReason ||
+        person.rejectionReason ||
+        person.reviewRemark ||
+        person.approvalRemark ||
+        "管理员暂未填写具体原因。";
+
+
+    document.getElementById(
+        "rejectReason"
+    ).textContent =
+        reason;
+
+
+    document.getElementById(
+        "reasonBox"
+    ).style.display =
+        "block";
+
+
+    document.getElementById(
+        "actionArea"
+    ).innerHTML = `
+
+        <button
+            type="button"
+            class="danger-btn"
+            onclick="editProfile()"
+        >
+            修改个人资料并重新提交
+        </button>
+
+    `;
+
+
+    document.getElementById(
+        "refreshTip"
+    ).textContent =
+        "修改后重新提交，资料会再次进入管理员审核流程。";
+
+}
+
+
+/* =========================================================
+   停用 / 离职
+========================================================= */
+
+function showDisabled() {
+
+    document.getElementById(
+        "statusIcon"
+    ).textContent =
+        "🚫";
+
+
+    document.getElementById(
+        "statusTitle"
+    ).textContent =
+        "账号当前不可使用";
+
+
+    document.getElementById(
+        "statusText"
+    ).textContent =
+        "该人员已被停用或已经办理离职，不能进入工作系统。";
+
+
+    const badge =
+        document.getElementById(
+            "statusBadge"
+        );
+
+
+    badge.textContent =
+        "不可使用";
+
+
+    badge.className =
+        "status-badge rejected";
+
+
+    document.getElementById(
+        "actionArea"
+    ).innerHTML = "";
+
+}
+
+
+/* =========================================================
+   找不到人员资料
+========================================================= */
+
+function showMissing() {
+
+    document.getElementById(
+        "statusIcon"
+    ).textContent =
+        "⚠️";
+
+
+    document.getElementById(
+        "statusTitle"
+    ).textContent =
+        "未找到入职资料";
+
+
+    document.getElementById(
+        "statusText"
+    ).textContent =
+        "没有找到当前人员的入职申请，请返回首页重新选择岗位并填写资料。";
+
+
+    document.getElementById(
+        "personPosition"
+    ).textContent =
+        selectedPosition || "-";
+
+
+    document.getElementById(
+        "actionArea"
+    ).innerHTML = `
+
+        <button
+            type="button"
+            class="primary-btn"
+            onclick="goRegistration()"
+        >
+            填写入职资料
+        </button>
+
+    `;
+
+}
+
+
+/* =========================================================
+   刷新审核状态
+========================================================= */
+
+function refreshStatus() {
+
+    renderPage();
+
+}
+
+
+/* =========================================================
+   修改资料
+========================================================= */
+
+function editProfile() {
+
+    const person =
+        getCurrentPerson();
+
+
+    const position =
+        normalizePosition(
+            person?.position ||
+            selectedPosition
+        );
+
+
+    location.href =
+        "person-register.html?position=" +
+        encodeURIComponent(position) +
+        "&rejected=1";
+
+}
+
+
+/* =========================================================
+   没资料重新注册
+========================================================= */
+
+function goRegistration() {
+
+    location.href =
+        "person-register.html?position=" +
+        encodeURIComponent(
+            selectedPosition
+        );
+
+}
+
+
+/* =========================================================
+   普通岗位进入工作页面
+========================================================= */
+
+function enterWorkPage() {
+
+    const person =
+        getCurrentPerson();
+
+
+    if (!person) {
+
+        alert(
+            "未找到人员资料。"
+        );
+
+        return;
+
+    }
+
+
+    if (
+        getApprovalState(person) !==
+        "approved"
+    ) {
+
+        alert(
+            "您的资料尚未通过管理员审核。"
+        );
+
+        renderPage();
+
+        return;
+
+    }
+
+
+    const position =
+        normalizePosition(
+            person.position ||
+            selectedPosition
+        );
+
+
+    /*
+       防止总经理和管理员绕过密码验证
+    */
+
+    if (
+        PASSWORD_PROTECTED_POSITIONS.includes(
+            position
+        )
+    ) {
+
+        enterProtectedPage();
+
+        return;
+
+    }
+
+
+    const page =
+        POSITION_PAGES[position];
+
+
+    if (!page) {
+
+        alert(
+            "该岗位工作页面正在建设中。"
+        );
+
+        return;
+
+    }
+
+
+    location.href =
+        page;
+
+}
+
+
+/* =========================================================
+   总经理 / 管理员进入密码验证
+========================================================= */
+
+function enterProtectedPage() {
+
+    const person =
+        getCurrentPerson();
+
+
+    if (!person) {
+
+        alert(
+            "未找到人员资料。"
+        );
+
+        return;
+
+    }
+
+
+    if (
+        getApprovalState(person) !==
+        "approved"
+    ) {
+
+        alert(
+            "必须先通过管理员入职审核。"
+        );
+
+        return;
+
+    }
+
+
+    const position =
+        normalizePosition(
+            person.position ||
+            selectedPosition
+        );
+
+
+    if (
+        !PASSWORD_PROTECTED_POSITIONS.includes(
+            position
+        )
+    ) {
+
+        enterWorkPage();
+
+        return;
+
+    }
+
+
+    const personId =
+        person.personId ||
+        person.driverId ||
+        person.id ||
+        "";
+
+
+    localStorage.setItem(
+        "pendingProtectedPersonId",
+        personId
+    );
+
+
+    localStorage.setItem(
+        "pendingProtectedPosition",
+        position
+    );
+
+
+    location.href =
+        "management-login.html?position=" +
+        encodeURIComponent(position);
+
+}
+
+
+/* =========================================================
+   返回首页
+========================================================= */
+
+function goHome() {
+
+    location.href =
+        "index.html";
+
+}
+
+
+/* =========================================================
+   页面启动
+========================================================= */
+
+renderPage();
+
+
+/*
+   当前 localStorage 版本：
+   每 5 秒检查一次审核状态。
+
+   管理员在同一浏览器完成审核后，
+   页面可以自动显示最新状态。
+
+   后续 Supabase 版本改成云端实时同步。
+*/
+
+setInterval(
+    renderPage,
+    5000
+);
+
+</script>
+
+</body>
+</html>
