@@ -14,7 +14,7 @@
 
     <link
         rel="stylesheet"
-        href="css/style.css?v=2.9.4c"
+        href="css/style.css?v=2.9.5"
     >
 </head>
 
@@ -126,13 +126,13 @@
 
 
 <footer>
-    <p>矿山管理系统 V2.9.4C</p>
+    <p>矿山管理系统 V2.9.5</p>
 </footer>
 
 
-<!-- =========================================================
-     二级岗位选择弹窗
-========================================================= -->
+<!-- =====================================================
+     二级岗位选择
+===================================================== -->
 
 <div
     id="roleModal"
@@ -153,7 +153,7 @@
             width:min(420px,100%);
             max-height:85vh;
             overflow:auto;
-            background:#fff;
+            background:#ffffff;
             border-radius:16px;
             padding:20px;
             box-shadow:0 20px 60px rgba(0,0,0,.25);
@@ -201,8 +201,7 @@
                 display:grid;
                 gap:10px;
             "
-        >
-        </div>
+        ></div>
 
     </div>
 
@@ -211,22 +210,20 @@
 
 <script>
 
-/* =========================================================
-   矿山管理系统
-   首页统一岗位入口 V2.9.4C
-========================================================= */
-
 "use strict";
 
 
-/* =========================================================
+/* =====================================================
    二级岗位
-========================================================= */
+===================================================== */
 
 const ROLE_GROUPS = {
 
     auxiliary: {
-        title: "🚧 请选择辅助车辆岗位",
+
+        title:
+            "🚧 请选择辅助车辆岗位",
+
         roles: [
             "铲车司机",
             "加油车司机",
@@ -235,18 +232,28 @@ const ROLE_GROUPS = {
             "洒水车司机",
             "推土机司机"
         ]
+
     },
 
+
     maintenance: {
-        title: "🔧 请选择维修岗位",
+
+        title:
+            "🔧 请选择维修岗位",
+
         roles: [
             "维修管理员",
             "修理工"
         ]
+
     },
 
+
     management: {
-        title: "👔 请选择中层管理岗位",
+
+        title:
+            "👔 请选择中层管理岗位",
+
         roles: [
             "测量员",
             "安全员",
@@ -255,17 +262,15 @@ const ROLE_GROUPS = {
             "后勤",
             "库房管理"
         ]
+
     }
 
 };
 
 
-/* =========================================================
+/* =====================================================
    岗位对应工作页面
-
-   目前已有页面直接使用。
-   尚未建立的页面后续逐个创建。
-========================================================= */
+===================================================== */
 
 const POSITION_PAGES = {
 
@@ -325,12 +330,13 @@ const POSITION_PAGES = {
 
     "管理员":
         "admin-review.html"
+
 };
 
 
-/* =========================================================
-   只有这两个岗位需要二次密码验证
-========================================================= */
+/* =====================================================
+   只有总经理和管理员需要密码验证
+===================================================== */
 
 const PASSWORD_PROTECTED_POSITIONS = [
     "总经理",
@@ -338,14 +344,15 @@ const PASSWORD_PROTECTED_POSITIONS = [
 ];
 
 
-/* =========================================================
-   打开二级岗位
-========================================================= */
+/* =====================================================
+   打开二级岗位选择
+===================================================== */
 
 function openRoleModal(groupName) {
 
     const group =
         ROLE_GROUPS[groupName];
+
 
     if (!group) {
         return;
@@ -357,10 +364,12 @@ function openRoleModal(groupName) {
             "roleModal"
         );
 
+
     const title =
         document.getElementById(
             "roleModalTitle"
         );
+
 
     const list =
         document.getElementById(
@@ -374,311 +383,52 @@ function openRoleModal(groupName) {
 
     list.innerHTML =
         group.roles.map(role => `
+
             <button
                 type="button"
                 onclick="selectPosition('${role}')"
                 style="
                     width:100%;
-                    min-height:48px;
+                    min-height:50px;
                     padding:12px 15px;
                     border:1px solid #cbd5e1;
                     border-radius:10px;
                     background:#f8fafc;
                     color:#0f172a;
+                    font-size:16px;
                     font-weight:700;
                     cursor:pointer;
                 "
             >
                 ${role}
             </button>
+
         `).join("");
 
 
     modal.style.display =
         "flex";
+
 }
 
 
-/* =========================================================
-   关闭弹窗
-========================================================= */
+/* =====================================================
+   关闭二级岗位选择
+===================================================== */
 
 function closeRoleModal() {
 
-    const modal =
-        document.getElementById(
-            "roleModal"
-        );
-
-    modal.style.display =
+    document.getElementById(
+        "roleModal"
+    ).style.display =
         "none";
+
 }
 
 
-/* =========================================================
-   选择岗位
-========================================================= */
-
-function selectPosition(position) {
-
-    closeRoleModal();
-
-
-    localStorage.setItem(
-        "selectedPosition",
-        position
-    );
-
-
-    const profile =
-        findLocalProfile(position);
-
-
-    /* 没资料 → 填写资料 */
-
-    if (!profile) {
-
-        goToRegistration(
-            position
-        );
-
-        return;
-    }
-
-
-    /* 待审核 */
-
-    if (
-        profile.status === "pending" ||
-        profile.approvalStatus === "pending"
-    ) {
-
-        goToWaiting(
-            position
-        );
-
-        return;
-    }
-
-
-    /* 审核驳回 */
-
-    if (
-        profile.status === "rejected" ||
-        profile.approvalStatus === "rejected"
-    ) {
-
-        goToRegistration(
-            position,
-            true
-        );
-
-        return;
-    }
-
-
-    /* 停用 / 离职 */
-
-    if (
-        profile.status === "disabled" ||
-        profile.status === "resigned"
-    ) {
-
-        alert(
-            "当前人员状态为停用或已离职，不能进入系统。"
-        );
-
-        return;
-    }
-
-
-    /* 是否审核通过 */
-
-    const approved =
-        profile.status === "approved" ||
-        profile.status === "active" ||
-        profile.status === "working" ||
-        profile.status === "leave" ||
-        profile.approvalStatus === "approved";
-
-
-    if (!approved) {
-
-        goToRegistration(
-            position
-        );
-
-        return;
-    }
-
-
-    /*
-       只有：
-       总经理
-       管理员
-
-       需要二次密码验证
-    */
-
-    if (
-        PASSWORD_PROTECTED_POSITIONS.includes(
-            position
-        )
-    ) {
-
-        goToPasswordVerification(
-            position,
-            profile
-        );
-
-        return;
-    }
-
-
-    /*
-       其他所有人员
-       管理员审核通过后
-       直接进入工作页面
-    */
-
-    enterWorkPage(
-        position
-    );
-}
-
-
-/* =========================================================
-   查找本机人员资料
-========================================================= */
-
-function findLocalProfile(position) {
-
-    let personnel = [];
-
-
-    try {
-
-        personnel =
-            JSON.parse(
-                localStorage.getItem(
-                    "personnelRecords"
-                )
-            ) || [];
-
-    } catch (error) {
-
-        console.error(
-            "人员资料读取失败：",
-            error
-        );
-
-        personnel = [];
-    }
-
-
-    const currentPersonId =
-        localStorage.getItem(
-            "currentPersonId"
-        );
-
-
-    if (currentPersonId) {
-
-        const current =
-            personnel.find(person => {
-
-                const id =
-                    person.personId ||
-                    person.driverId ||
-                    person.id ||
-                    "";
-
-                return (
-                    id === currentPersonId &&
-                    normalizePosition(
-                        person.position
-                    ) === position
-                );
-
-            });
-
-
-        if (current) {
-            return current;
-        }
-
-    }
-
-
-    /*
-       兼容原汽车司机资料
-    */
-
-    if (
-        position === "汽车司机"
-    ) {
-
-        try {
-
-            const driverProfile =
-                JSON.parse(
-                    localStorage.getItem(
-                        "driverProfile"
-                    )
-                );
-
-
-            if (driverProfile) {
-
-                return driverProfile;
-
-            }
-
-        } catch (error) {
-
-            console.error(
-                "原司机资料读取失败：",
-                error
-            );
-
-        }
-
-    }
-
-
-    /*
-       当前本地版临时规则：
-       如果同岗位只有一个人，
-       认为是当前登录人员。
-
-       后续 Supabase 后改成正式账号。
-    */
-
-    const samePosition =
-        personnel.filter(
-            person =>
-                normalizePosition(
-                    person.position
-                ) === position
-        );
-
-
-    if (
-        samePosition.length === 1
-    ) {
-
-        return samePosition[0];
-
-    }
-
-
-    return null;
-}
-
-
-/* =========================================================
-   兼容旧岗位名称
-========================================================= */
+/* =====================================================
+   岗位名称兼容
+===================================================== */
 
 function normalizePosition(position) {
 
@@ -706,10 +456,8 @@ function normalizePosition(position) {
             "修理工",
 
         "调度员":
-            "车队长",
+            "车队长"
 
-        "中层管理":
-            "中层管理"
     };
 
 
@@ -718,35 +466,344 @@ function normalizePosition(position) {
         position ||
         ""
     );
+
 }
 
 
-/* =========================================================
-   进入资料填写
-========================================================= */
+/* =====================================================
+   获取统一人员库
+===================================================== */
+
+function getPersonnelRecords() {
+
+    try {
+
+        const records =
+            JSON.parse(
+                localStorage.getItem(
+                    "personnelRecords"
+                )
+            );
+
+
+        return Array.isArray(records)
+            ? records
+            : [];
+
+
+    } catch (error) {
+
+        console.error(
+            "人员资料读取失败：",
+            error
+        );
+
+
+        return [];
+
+    }
+
+}
+
+
+/* =====================================================
+   查找当前登录人员
+
+   所有岗位，包括汽车司机，
+   都只使用 personnelRecords。
+===================================================== */
+
+function findCurrentProfile(position) {
+
+    const records =
+        getPersonnelRecords();
+
+
+    const currentPersonId =
+        localStorage.getItem(
+            "currentPersonId"
+        );
+
+
+    /*
+       第一优先：
+       使用当前人员ID查找
+    */
+
+    if (currentPersonId) {
+
+        const current =
+            records.find(person => {
+
+                const personId =
+                    person.personId ||
+                    person.driverId ||
+                    person.id ||
+                    "";
+
+
+                return (
+                    personId === currentPersonId &&
+                    normalizePosition(
+                        person.position
+                    ) === position
+                );
+
+            });
+
+
+        if (current) {
+
+            return current;
+
+        }
+
+    }
+
+
+    /*
+       当前 localStorage 测试阶段：
+
+       如果本机该岗位只有一名人员，
+       可以自动识别。
+
+       后续接 Supabase 后，
+       使用正式账号ID识别。
+    */
+
+    const samePosition =
+        records.filter(person =>
+
+            normalizePosition(
+                person.position
+            ) === position
+
+        );
+
+
+    if (
+        samePosition.length === 1
+    ) {
+
+        return samePosition[0];
+
+    }
+
+
+    return null;
+
+}
+
+
+/* =====================================================
+   选择岗位
+===================================================== */
+
+function selectPosition(position) {
+
+    closeRoleModal();
+
+
+    localStorage.setItem(
+        "selectedPosition",
+        position
+    );
+
+
+    const profile =
+        findCurrentProfile(
+            position
+        );
+
+
+    /*
+       没有资料
+       → 所有人统一填写入职资料
+    */
+
+    if (!profile) {
+
+        goToRegistration(
+            position
+        );
+
+        return;
+
+    }
+
+
+    /*
+       保存当前人员ID
+    */
+
+    const personId =
+        profile.personId ||
+        profile.driverId ||
+        profile.id ||
+        "";
+
+
+    if (personId) {
+
+        localStorage.setItem(
+            "currentPersonId",
+            personId
+        );
+
+    }
+
+
+    /*
+       待管理员审核
+    */
+
+    if (
+        profile.status === "pending" ||
+        profile.approvalStatus === "pending" ||
+        profile.personnelStatus === "待审核"
+    ) {
+
+        goToWaiting(
+            position
+        );
+
+        return;
+
+    }
+
+
+    /*
+       管理员驳回
+       → 修改资料重新提交
+    */
+
+    if (
+        profile.status === "rejected" ||
+        profile.approvalStatus === "rejected"
+    ) {
+
+        goToRegistration(
+            position,
+            true
+        );
+
+        return;
+
+    }
+
+
+    /*
+       停用 / 离职
+    */
+
+    if (
+        profile.status === "disabled" ||
+        profile.status === "resigned" ||
+        profile.personnelStatus === "停用" ||
+        profile.personnelStatus === "离职"
+    ) {
+
+        alert(
+            "当前人员已停用或离职，不能进入系统。"
+        );
+
+        return;
+
+    }
+
+
+    /*
+       判断管理员是否已经审核通过
+    */
+
+    const approved =
+
+        profile.approvalStatus ===
+            "approved" ||
+
+        profile.status ===
+            "approved" ||
+
+        profile.status ===
+            "active" ||
+
+        profile.status ===
+            "working" ||
+
+        profile.status ===
+            "leave" ||
+
+        profile.personnelStatus ===
+            "在职可用" ||
+
+        profile.personnelStatus ===
+            "作业中" ||
+
+        profile.personnelStatus ===
+            "请假";
+
+
+    /*
+       未审核通过
+       → 统一等待管理员审核
+    */
+
+    if (!approved) {
+
+        goToWaiting(
+            position
+        );
+
+        return;
+
+    }
+
+
+    /*
+       总经理 / 管理员
+
+       审核通过后
+       还必须进行密码验证
+    */
+
+    if (
+        PASSWORD_PROTECTED_POSITIONS.includes(
+            position
+        )
+    ) {
+
+        goToPasswordVerification(
+            position,
+            profile
+        );
+
+        return;
+
+    }
+
+
+    /*
+       其他所有岗位
+
+       管理员审核通过后
+       直接进入自己的工作页面
+    */
+
+    enterWorkPage(
+        position
+    );
+
+}
+
+
+/* =====================================================
+   所有人统一进入入职资料页面
+===================================================== */
 
 function goToRegistration(
     position,
     rejected = false
 ) {
-
-    /*
-       旧汽车司机页面暂时兼容。
-
-       其他岗位统一走
-       person-register.html
-    */
-
-    if (
-        position === "汽车司机"
-    ) {
-
-        location.href =
-            "driver-register.html";
-
-        return;
-    }
-
 
     const params =
         new URLSearchParams();
@@ -771,25 +828,15 @@ function goToRegistration(
     location.href =
         "person-register.html?" +
         params.toString();
+
 }
 
 
-/* =========================================================
-   等待审核
-========================================================= */
+/* =====================================================
+   所有人统一进入等待审核页面
+===================================================== */
 
 function goToWaiting(position) {
-
-    if (
-        position === "汽车司机"
-    ) {
-
-        location.href =
-            "driver-waiting.html";
-
-        return;
-    }
-
 
     const params =
         new URLSearchParams();
@@ -804,12 +851,13 @@ function goToWaiting(position) {
     location.href =
         "person-waiting.html?" +
         params.toString();
+
 }
 
 
-/* =========================================================
+/* =====================================================
    总经理 / 管理员密码验证
-========================================================= */
+===================================================== */
 
 function goToPasswordVerification(
     position,
@@ -848,12 +896,13 @@ function goToPasswordVerification(
     location.href =
         "management-login.html?" +
         params.toString();
+
 }
 
 
-/* =========================================================
-   进入对应工作页面
-========================================================= */
+/* =====================================================
+   进入工作页面
+===================================================== */
 
 function enterWorkPage(position) {
 
@@ -868,17 +917,19 @@ function enterWorkPage(position) {
         );
 
         return;
+
     }
 
 
     location.href =
         page;
+
 }
 
 
-/* =========================================================
-   点击遮罩关闭
-========================================================= */
+/* =====================================================
+   点击黑色遮罩关闭二级菜单
+===================================================== */
 
 document.addEventListener(
     "click",
