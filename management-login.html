@@ -83,6 +83,18 @@
             line-height: 1.6;
         }
 
+        .bootstrap-box {
+            display: none;
+            margin-bottom: 18px;
+            padding: 13px;
+            border: 1px solid #fde68a;
+            border-radius: 10px;
+            background: #fffbeb;
+            color: #92400e;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
         .person-box {
             background: #f8fafc;
             border: 1px solid #e2e8f0;
@@ -146,11 +158,6 @@
             cursor: pointer;
         }
 
-        button:disabled {
-            opacity: .6;
-            cursor: not-allowed;
-        }
-
         .primary-btn {
             background: #2563eb;
             color: #ffffff;
@@ -202,6 +209,7 @@
 
 <body>
 
+
 <header>
 
     <h1>
@@ -232,11 +240,27 @@
         </h2>
 
 
-        <p class="description">
+        <p
+            class="description"
+            id="pageDescription"
+        >
             当前岗位属于高权限岗位。
-            必须先通过管理员入职审核，
-            再完成密码验证才能进入系统。
+            必须完成密码验证才能进入系统。
         </p>
+
+
+        <div
+            class="bootstrap-box"
+            id="bootstrapBox"
+        >
+            ⚠️ 系统当前没有已审核管理员，
+            已进入“首个管理员初始化模式”。
+
+            输入正确的管理员密码后，
+            系统将自动建立首个管理员身份并进入管理员审核中心。
+
+            此初始化通道仅在系统没有任何已审核管理员时有效。
+        </div>
 
 
         <div class="person-box">
@@ -320,7 +344,6 @@
             <button
                 type="submit"
                 class="primary-btn"
-                id="loginButton"
             >
                 验证并进入
             </button>
@@ -341,11 +364,11 @@
 
             当前为 V2.9 本地测试版。
 
-            本页面只用于建立总经理 / 管理员二次验证流程。
+            管理密码暂时只用于测试整个权限流程。
 
             正式接入 Supabase 后，
-            管理密码和权限验证必须迁移到服务器端，
-            并删除网页中的测试密码。
+            管理员账号、密码和权限认证将迁移到服务器端，
+            网页代码中不再保存管理密码。
 
         </div>
 
@@ -355,7 +378,7 @@
 
 
 <footer>
-    矿山管理系统 · 管理权限验证 V2.9.6
+    矿山管理系统 · 管理权限验证 V2.9.7
 </footer>
 
 
@@ -365,33 +388,7 @@
 
 
 /* =========================================================
-   岗位兼容
-========================================================= */
-
-function normalizePosition(position) {
-
-    const map = {
-
-        "总经理":
-            "总经理",
-
-        "管理员":
-            "管理员"
-
-    };
-
-
-    return (
-        map[position] ||
-        position ||
-        ""
-    );
-
-}
-
-
-/* =========================================================
-   允许二次验证的岗位
+   高权限岗位
 ========================================================= */
 
 const PROTECTED_POSITIONS = [
@@ -416,7 +413,24 @@ const PROTECTED_PAGES = {
 
 
 /* =========================================================
-   当前岗位
+   V2.9 临时测试密码
+
+   正式 Supabase 版本必须删除。
+========================================================= */
+
+const TEMP_PASSWORDS = {
+
+    "总经理":
+        "888888",
+
+    "管理员":
+        "666666"
+
+};
+
+
+/* =========================================================
+   岗位
 ========================================================= */
 
 const params =
@@ -426,21 +440,20 @@ const params =
 
 
 const position =
-    normalizePosition(
 
-        params.get("position") ||
+    params.get(
+        "position"
+    ) ||
 
-        localStorage.getItem(
-            "pendingProtectedPosition"
-        ) ||
+    localStorage.getItem(
+        "pendingProtectedPosition"
+    ) ||
 
-        ""
-
-    );
+    "";
 
 
 /* =========================================================
-   岗位安全检查
+   岗位检查
 ========================================================= */
 
 if (
@@ -462,7 +475,28 @@ if (
 
 
 /* =========================================================
-   人员资料
+   人员ID
+========================================================= */
+
+function getPersonId(person) {
+
+    return (
+
+        person?.personId ||
+
+        person?.driverId ||
+
+        person?.id ||
+
+        ""
+
+    );
+
+}
+
+
+/* =========================================================
+   人员库
 ========================================================= */
 
 function getPersonnelRecords() {
@@ -497,178 +531,20 @@ function getPersonnelRecords() {
 }
 
 
-/* =========================================================
-   人员ID
-========================================================= */
+function savePersonnelRecords(records) {
 
-function getPersonId(person) {
-
-    return (
-
-        person?.personId ||
-
-        person?.driverId ||
-
-        person?.id ||
-
-        ""
-
-    );
-
-}
-
-
-/* =========================================================
-   判断岗位
-========================================================= */
-
-function personMatchesPosition(
-    person,
-    targetPosition
-) {
-
-    return (
-
-        normalizePosition(
-            person?.position
-        ) ===
-        normalizePosition(
-            targetPosition
+    localStorage.setItem(
+        "personnelRecords",
+        JSON.stringify(
+            records
         )
-
     );
 
 }
 
 
 /* =========================================================
-   获取当前待验证人员
-
-   优先顺序：
-
-   1. pendingProtectedPersonId
-   2. currentPersonId
-   3. 测试阶段：该岗位只有一个人时自动识别
-
-   这样即使以后存在多个管理员，
-   也优先精确识别当前人员。
-========================================================= */
-
-function getCurrentPerson() {
-
-    const records =
-        getPersonnelRecords();
-
-
-    /* -------------------------
-       第一优先级
-       待验证人员ID
-    -------------------------- */
-
-    const pendingId =
-        localStorage.getItem(
-            "pendingProtectedPersonId"
-        );
-
-
-    if (pendingId) {
-
-        const person =
-            records.find(
-                item =>
-
-                    getPersonId(item) ===
-                        pendingId &&
-
-                    personMatchesPosition(
-                        item,
-                        position
-                    )
-            );
-
-
-        if (person) {
-
-            return person;
-
-        }
-
-    }
-
-
-    /* -------------------------
-       第二优先级
-       当前登录人员ID
-    -------------------------- */
-
-    const currentPersonId =
-        localStorage.getItem(
-            "currentPersonId"
-        );
-
-
-    if (currentPersonId) {
-
-        const person =
-            records.find(
-                item =>
-
-                    getPersonId(item) ===
-                        currentPersonId &&
-
-                    personMatchesPosition(
-                        item,
-                        position
-                    )
-            );
-
-
-        if (person) {
-
-            return person;
-
-        }
-
-    }
-
-
-    /* -------------------------
-       第三优先级
-
-       仅 V2.9 本地测试兼容。
-
-       如果这个岗位只有一个人员，
-       可以自动识别。
-
-       Supabase 正式版删除。
-    -------------------------- */
-
-    const samePosition =
-        records.filter(
-            item =>
-                personMatchesPosition(
-                    item,
-                    position
-                )
-        );
-
-
-    if (
-        samePosition.length === 1
-    ) {
-
-        return samePosition[0];
-
-    }
-
-
-    return null;
-
-}
-
-
-/* =========================================================
-   审核状态
+   是否审核通过
 ========================================================= */
 
 function isApproved(person) {
@@ -679,10 +555,6 @@ function isApproved(person) {
 
     }
 
-
-    /*
-       驳回 / 停用 / 离职优先阻止。
-    */
 
     if (
         person.status === "rejected" ||
@@ -730,48 +602,160 @@ function isApproved(person) {
 
 
 /* =========================================================
+   是否已经存在已审核管理员
+========================================================= */
+
+function hasApprovedAdministrator() {
+
+    return getPersonnelRecords()
+        .some(
+            person =>
+
+                person.position ===
+                    "管理员" &&
+
+                isApproved(
+                    person
+                )
+        );
+
+}
+
+
+/* =========================================================
+   首个管理员初始化模式
+
+   仅满足以下两个条件：
+
+   1. 当前访问岗位 = 管理员
+   2. 系统不存在任何已审核管理员
+========================================================= */
+
+const isFirstAdminBootstrap =
+
+    position === "管理员" &&
+
+    !hasApprovedAdministrator();
+
+
+/* =========================================================
+   获取当前人员
+
+   优先：
+   1. pendingProtectedPersonId
+   2. currentPersonId
+   3. 同岗位唯一人员
+
+   首个管理员初始化模式除外。
+========================================================= */
+
+function getCurrentPerson() {
+
+    const records =
+        getPersonnelRecords();
+
+
+    const pendingId =
+        localStorage.getItem(
+            "pendingProtectedPersonId"
+        );
+
+
+    if (pendingId) {
+
+        const person =
+            records.find(
+                item =>
+
+                    getPersonId(item) ===
+                        pendingId &&
+
+                    item.position ===
+                        position
+            );
+
+
+        if (person) {
+
+            return person;
+
+        }
+
+    }
+
+
+    const currentPersonId =
+        localStorage.getItem(
+            "currentPersonId"
+        );
+
+
+    if (currentPersonId) {
+
+        const person =
+            records.find(
+                item =>
+
+                    getPersonId(item) ===
+                        currentPersonId &&
+
+                    item.position ===
+                        position
+            );
+
+
+        if (person) {
+
+            return person;
+
+        }
+
+    }
+
+
+    const samePosition =
+        records.filter(
+            item =>
+                item.position ===
+                    position
+        );
+
+
+    if (
+        samePosition.length === 1
+    ) {
+
+        return samePosition[0];
+
+    }
+
+
+    return null;
+
+}
+
+
+/* =========================================================
    当前人员
 ========================================================= */
 
 let currentPerson =
-    getCurrentPerson();
+    isFirstAdminBootstrap
+        ? null
+        : getCurrentPerson();
 
 
 /* =========================================================
-   必须找到当前人员
-========================================================= */
-
-if (!currentPerson) {
-
-    alert(
-        "无法确定当前登录人员。请从系统首页重新进入自己的岗位。"
-    );
-
-
-    clearPendingState();
-
-
-    location.replace(
-        "index.html"
-    );
-
-}
-
-
-/* =========================================================
-   岗位必须一致
+   普通高权限人员必须存在
 ========================================================= */
 
 if (
-    currentPerson &&
-    !personMatchesPosition(
-        currentPerson,
-        position
-    )
+    !isFirstAdminBootstrap &&
+    !currentPerson
 ) {
 
     alert(
-        "当前人员岗位与验证岗位不一致。"
+        "未找到当前人员资料，请重新从系统首页进入。"
     );
 
 
@@ -786,10 +770,11 @@ if (
 
 
 /* =========================================================
-   必须先通过管理员审核
+   非首个管理员必须先审核通过
 ========================================================= */
 
 if (
+    !isFirstAdminBootstrap &&
     currentPerson &&
     !isApproved(
         currentPerson
@@ -831,51 +816,55 @@ if (
 
 
 /* =========================================================
-   固定当前人员ID
-
-   到这里说明已经：
-   1. 找到人员
-   2. 岗位一致
-   3. 审核通过
-========================================================= */
-
-if (currentPerson) {
-
-    const personId =
-        getPersonId(
-            currentPerson
-        );
-
-
-    if (personId) {
-
-        localStorage.setItem(
-            "currentPersonId",
-            personId
-        );
-
-
-        localStorage.setItem(
-            "pendingProtectedPersonId",
-            personId
-        );
-
-    }
-
-
-    localStorage.setItem(
-        "pendingProtectedPosition",
-        position
-    );
-
-}
-
-
-/* =========================================================
    页面显示
 ========================================================= */
 
-if (currentPerson) {
+if (isFirstAdminBootstrap) {
+
+    document.getElementById(
+        "pageTitle"
+    ).textContent =
+        "首个管理员初始化";
+
+
+    document.getElementById(
+        "pageDescription"
+    ).textContent =
+        "系统尚未建立管理员。请输入管理员密码完成首次初始化。";
+
+
+    document.getElementById(
+        "bootstrapBox"
+    ).style.display =
+        "block";
+
+
+    document.getElementById(
+        "personName"
+    ).textContent =
+        "系统首个管理员";
+
+
+    document.getElementById(
+        "personPosition"
+    ).textContent =
+        "管理员";
+
+
+    document.getElementById(
+        "approvalStatus"
+    ).textContent =
+        "首次初始化";
+
+
+} else if (currentPerson) {
+
+    document.getElementById(
+        "pageTitle"
+    ).textContent =
+        position +
+        "密码验证";
+
 
     document.getElementById(
         "personName"
@@ -895,33 +884,161 @@ if (currentPerson) {
     ).textContent =
         "已通过";
 
+}
 
-    document.getElementById(
-        "pageTitle"
-    ).textContent =
-        position +
-        "密码验证";
+
+/* =========================================================
+   创建首个管理员
+========================================================= */
+
+function createFirstAdministrator() {
+
+    /*
+       再检查一次。
+
+       防止在输入密码期间，
+       系统已经产生管理员。
+    */
+
+    if (
+        hasApprovedAdministrator()
+    ) {
+
+        return null;
+
+    }
+
+
+    const records =
+        getPersonnelRecords();
+
+
+    const now =
+        new Date().toISOString();
+
+
+    const personId =
+        createPersonId();
+
+
+    const administrator = {
+
+        personId:
+            personId,
+
+        name:
+            "系统首个管理员",
+
+        phone:
+            "",
+
+        position:
+            "管理员",
+
+        personnelCategory:
+            "系统管理",
+
+        department:
+            "系统管理",
+
+        team:
+            "",
+
+        entryDate:
+            now.slice(
+                0,
+                10
+            ),
+
+        status:
+            "approved",
+
+        approvalStatus:
+            "approved",
+
+        personnelStatus:
+            "在职可用",
+
+        bootstrapAdmin:
+            true,
+
+        bootstrapType:
+            "first_admin",
+
+        createdAt:
+            now,
+
+        submittedAt:
+            now,
+
+        approvedAt:
+            now,
+
+        reviewedAt:
+            now,
+
+        updatedAt:
+            now,
+
+        approvedBy:
+            "系统初始化",
+
+        reviewedBy:
+            "系统初始化",
+
+        remark:
+            "系统首次初始化管理员"
+
+    };
+
+
+    records.push(
+        administrator
+    );
+
+
+    savePersonnelRecords(
+        records
+    );
+
+
+    return administrator;
 
 }
 
 
 /* =========================================================
-   V2.9 临时测试密码
-
-   仅用于当前前端流程测试。
-
-   正式上线必须删除。
+   创建人员ID
 ========================================================= */
 
-const TEMP_PASSWORDS = {
+function createPersonId() {
 
-    "总经理":
-        "888888",
+    if (
+        window.crypto &&
+        typeof window.crypto.randomUUID ===
+            "function"
+    ) {
 
-    "管理员":
-        "666666"
+        return crypto.randomUUID();
 
-};
+    }
+
+
+    return (
+
+        "person-" +
+
+        Date.now() +
+
+        "-" +
+
+        Math.random()
+            .toString(36)
+            .slice(2, 10)
+
+    );
+
+}
 
 
 /* =========================================================
@@ -945,18 +1062,6 @@ document.getElementById(
 
         const password =
             passwordInput.value;
-
-
-        if (!password) {
-
-            showError(
-                "请输入管理密码。"
-            );
-
-
-            return;
-
-        }
 
 
         const correctPassword =
@@ -985,63 +1090,64 @@ document.getElementById(
         }
 
 
-        /*
-           密码正确后不能直接放行。
+        /* =================================================
+           首个管理员
+        ================================================= */
 
-           必须重新读取人员库，
-           防止验证过程中管理员权限被撤销。
-        */
+        if (
+            isFirstAdminBootstrap
+        ) {
+
+            const administrator =
+                createFirstAdministrator();
+
+
+            if (!administrator) {
+
+                alert(
+                    "系统已经存在管理员，请重新从首页进入管理员岗位。"
+                );
+
+
+                clearPendingState();
+
+
+                location.replace(
+                    "index.html"
+                );
+
+
+                return;
+
+            }
+
+
+            establishSession(
+                administrator,
+                "管理员"
+            );
+
+
+            location.replace(
+                "admin-review.html"
+            );
+
+
+            return;
+
+        }
+
+
+        /* =================================================
+           普通总经理 / 后续管理员
+        ================================================= */
 
         const latestPerson =
             getCurrentPerson();
 
 
-        if (!latestPerson) {
-
-            alert(
-                "当前人员资料不存在，请重新登录。"
-            );
-
-
-            clearPendingState();
-
-
-            location.replace(
-                "index.html"
-            );
-
-
-            return;
-
-        }
-
-
         if (
-            !personMatchesPosition(
-                latestPerson,
-                position
-            )
-        ) {
-
-            alert(
-                "当前人员岗位已经发生变化，不能进入此管理页面。"
-            );
-
-
-            clearPendingState();
-
-
-            location.replace(
-                "index.html"
-            );
-
-
-            return;
-
-        }
-
-
-        if (
+            !latestPerson ||
             !isApproved(
                 latestPerson
             )
@@ -1053,18 +1159,15 @@ document.getElementById(
 
 
             alert(
-                "当前人员权限已经发生变化，请重新审核。"
+                "当前人员权限已发生变化，请重新进入系统。"
             );
+
+
+            clearPendingState();
 
 
             location.replace(
-
-                "person-waiting.html?position=" +
-
-                encodeURIComponent(
-                    position
-                )
-
+                "index.html"
             );
 
 
@@ -1073,83 +1176,10 @@ document.getElementById(
         }
 
 
-        const personId =
-            getPersonId(
-                latestPerson
-            );
-
-
-        if (!personId) {
-
-            showError(
-                "当前人员缺少人员ID，无法建立登录会话。"
-            );
-
-
-            return;
-
-        }
-
-
-        /*
-           建立30分钟管理会话。
-
-           不保存用户输入的密码。
-        */
-
-        const now =
-            Date.now();
-
-
-        const session = {
-
-            personId:
-                personId,
-
-            name:
-                latestPerson.name ||
-                "",
-
-            position:
-                position,
-
-            verified:
-                true,
-
-            verifiedAt:
-                now,
-
-            expiresAt:
-                now +
-                (
-                    30 *
-                    60 *
-                    1000
-                )
-
-        };
-
-
-        sessionStorage.setItem(
-            "managementSession",
-            JSON.stringify(
-                session
-            )
+        establishSession(
+            latestPerson,
+            position
         );
-
-
-        localStorage.setItem(
-            "currentPersonId",
-            personId
-        );
-
-
-        /*
-           验证已经完成，
-           清除待验证状态。
-        */
-
-        clearPendingState();
 
 
         const targetPage =
@@ -1182,19 +1212,83 @@ document.getElementById(
 
 
 /* =========================================================
-   清除待验证状态
+   建立30分钟管理会话
 ========================================================= */
 
-function clearPendingState() {
+function establishSession(
+    person,
+    targetPosition
+) {
 
-    localStorage.removeItem(
-        "pendingProtectedPersonId"
+    const personId =
+        getPersonId(
+            person
+        );
+
+
+    if (!personId) {
+
+        throw new Error(
+            "人员ID不存在"
+        );
+
+    }
+
+
+    const now =
+        Date.now();
+
+
+    const session = {
+
+        personId:
+            personId,
+
+        name:
+            person.name ||
+            "",
+
+        position:
+            targetPosition,
+
+        verified:
+            true,
+
+        verifiedAt:
+            now,
+
+        expiresAt:
+            now +
+            (
+                30 *
+                60 *
+                1000
+            )
+
+    };
+
+
+    sessionStorage.setItem(
+        "managementSession",
+        JSON.stringify(
+            session
+        )
     );
 
 
-    localStorage.removeItem(
-        "pendingProtectedPosition"
+    localStorage.setItem(
+        "currentPersonId",
+        personId
     );
+
+
+    localStorage.setItem(
+        "selectedPosition",
+        targetPosition
+    );
+
+
+    clearPendingState();
 
 }
 
@@ -1222,6 +1316,24 @@ function showError(message) {
 
 
 /* =========================================================
+   清除待验证状态
+========================================================= */
+
+function clearPendingState() {
+
+    localStorage.removeItem(
+        "pendingProtectedPersonId"
+    );
+
+
+    localStorage.removeItem(
+        "pendingProtectedPosition"
+    );
+
+}
+
+
+/* =========================================================
    返回首页
 ========================================================= */
 
@@ -1244,4 +1356,5 @@ function goHome() {
 
 
 </body>
+
 </html>
