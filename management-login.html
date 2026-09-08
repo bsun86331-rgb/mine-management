@@ -1,1 +1,893 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
 
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <meta name="theme-color" content="#0f172a">
+
+    <title>管理权限验证 - 矿山管理系统</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family:
+                Arial,
+                "Microsoft YaHei",
+                sans-serif;
+            background: #f1f5f9;
+            color: #0f172a;
+        }
+
+        header {
+            background: #0f172a;
+            color: #ffffff;
+            padding: 22px 16px;
+            text-align: center;
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 22px;
+        }
+
+        header p {
+            margin: 7px 0 0;
+            font-size: 13px;
+            opacity: .8;
+        }
+
+        main {
+            max-width: 460px;
+            margin: 0 auto;
+            padding: 35px 14px;
+        }
+
+        .card {
+            background: #ffffff;
+            border-radius: 18px;
+            padding: 24px 20px;
+            box-shadow:
+                0 8px 30px
+                rgba(15, 23, 42, .08);
+        }
+
+        .lock-icon {
+            text-align: center;
+            font-size: 54px;
+            margin-bottom: 10px;
+        }
+
+        .title {
+            margin: 0;
+            text-align: center;
+            font-size: 22px;
+        }
+
+        .description {
+            margin: 10px 0 22px;
+            text-align: center;
+            color: #64748b;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .person-box {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 14px;
+            margin-bottom: 20px;
+        }
+
+        .row {
+            display: flex;
+            justify-content: space-between;
+            gap: 15px;
+            padding: 7px 0;
+            font-size: 14px;
+        }
+
+        .label {
+            color: #64748b;
+        }
+
+        .value {
+            font-weight: 700;
+            text-align: right;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 7px;
+            font-weight: 700;
+            font-size: 14px;
+        }
+
+        input {
+            width: 100%;
+            padding: 13px;
+            border: 1px solid #cbd5e1;
+            border-radius: 9px;
+            font-size: 18px;
+            outline: none;
+        }
+
+        input:focus {
+            border-color: #2563eb;
+            box-shadow:
+                0 0 0 3px
+                rgba(37, 99, 235, .1);
+        }
+
+        button {
+            width: 100%;
+            border: 0;
+            border-radius: 10px;
+            padding: 14px;
+            margin-top: 10px;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .primary-btn {
+            background: #2563eb;
+            color: #ffffff;
+        }
+
+        .secondary-btn {
+            background: #ffffff;
+            color: #334155;
+            border: 1px solid #cbd5e1;
+        }
+
+        .message {
+            display: none;
+            padding: 11px;
+            border-radius: 9px;
+            margin-bottom: 15px;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .error {
+            display: block;
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #991b1b;
+        }
+
+        .notice {
+            margin-top: 18px;
+            padding: 12px;
+            background: #fff7ed;
+            border: 1px solid #fed7aa;
+            border-radius: 10px;
+            color: #9a3412;
+            font-size: 12px;
+            line-height: 1.6;
+        }
+
+        footer {
+            text-align: center;
+            padding: 20px;
+            color: #94a3b8;
+            font-size: 12px;
+        }
+    </style>
+</head>
+
+<body>
+
+<header>
+
+    <h1>🔐 管理权限验证</h1>
+
+    <p>
+        Management Security Verification
+    </p>
+
+</header>
+
+
+<main>
+
+    <div class="card">
+
+        <div class="lock-icon">
+            🔐
+        </div>
+
+
+        <h2
+            class="title"
+            id="pageTitle"
+        >
+            密码验证
+        </h2>
+
+
+        <p class="description">
+            当前岗位属于高权限岗位。
+            必须先通过管理员入职审核，
+            再完成密码验证才能进入系统。
+        </p>
+
+
+        <div class="person-box">
+
+            <div class="row">
+
+                <span class="label">
+                    姓名
+                </span>
+
+                <span
+                    class="value"
+                    id="personName"
+                >
+                    -
+                </span>
+
+            </div>
+
+
+            <div class="row">
+
+                <span class="label">
+                    岗位
+                </span>
+
+                <span
+                    class="value"
+                    id="personPosition"
+                >
+                    -
+                </span>
+
+            </div>
+
+
+            <div class="row">
+
+                <span class="label">
+                    审核状态
+                </span>
+
+                <span
+                    class="value"
+                    id="approvalStatus"
+                >
+                    -
+                </span>
+
+            </div>
+
+        </div>
+
+
+        <div
+            class="message"
+            id="messageBox"
+        >
+        </div>
+
+
+        <form id="loginForm">
+
+            <div class="form-group">
+
+                <label for="password">
+                    管理密码
+                </label>
+
+                <input
+                    id="password"
+                    type="password"
+                    autocomplete="current-password"
+                    placeholder="请输入管理密码"
+                    required
+                >
+
+            </div>
+
+
+            <button
+                type="submit"
+                class="primary-btn"
+            >
+                验证并进入
+            </button>
+
+
+            <button
+                type="button"
+                class="secondary-btn"
+                onclick="goHome()"
+            >
+                返回系统首页
+            </button>
+
+        </form>
+
+
+        <div class="notice">
+            当前为 V2.9 本地测试版。
+            此密码验证用于测试系统流程，
+            正式上线接入 Supabase 后，
+            密码将改为服务器端安全认证，
+            不在网页代码中保存真实管理密码。
+        </div>
+
+    </div>
+
+</main>
+
+
+<footer>
+    矿山管理系统 V2.9.5
+</footer>
+
+
+<script>
+
+"use strict";
+
+
+/* =========================================================
+   允许进行密码验证的岗位
+
+   只有：
+   1. 总经理
+   2. 管理员
+========================================================= */
+
+const PROTECTED_POSITIONS = [
+    "总经理",
+    "管理员"
+];
+
+
+/* =========================================================
+   对应工作页面
+========================================================= */
+
+const PROTECTED_PAGES = {
+
+    "总经理":
+        "general-manager.html",
+
+    "管理员":
+        "admin-review.html"
+
+};
+
+
+/* =========================================================
+   当前岗位
+========================================================= */
+
+const params =
+    new URLSearchParams(
+        location.search
+    );
+
+
+const position =
+    params.get("position") ||
+    localStorage.getItem(
+        "pendingProtectedPosition"
+    ) ||
+    "";
+
+
+/* =========================================================
+   基础安全检查
+========================================================= */
+
+if (
+    !PROTECTED_POSITIONS.includes(
+        position
+    )
+) {
+
+    alert(
+        "当前岗位不需要管理密码验证。"
+    );
+
+    location.href =
+        "index.html";
+
+}
+
+
+/* =========================================================
+   获取人员库
+========================================================= */
+
+function getPersonnelRecords() {
+
+    try {
+
+        const data =
+            JSON.parse(
+                localStorage.getItem(
+                    "personnelRecords"
+                )
+            );
+
+
+        return Array.isArray(data)
+            ? data
+            : [];
+
+
+    } catch (error) {
+
+        console.error(
+            "人员资料读取失败：",
+            error
+        );
+
+
+        return [];
+
+    }
+
+}
+
+
+/* =========================================================
+   当前待验证人员
+========================================================= */
+
+function getCurrentPerson() {
+
+    const records =
+        getPersonnelRecords();
+
+
+    const pendingId =
+        localStorage.getItem(
+            "pendingProtectedPersonId"
+        );
+
+
+    /*
+       必须优先使用人员ID。
+    */
+
+    if (pendingId) {
+
+        const person =
+            records.find(item => {
+
+                const id =
+                    item.personId ||
+                    item.driverId ||
+                    item.id ||
+                    "";
+
+
+                return (
+                    id === pendingId &&
+                    item.position === position
+                );
+
+            });
+
+
+        if (person) {
+
+            return person;
+
+        }
+
+    }
+
+
+    /*
+       当前 localStorage 测试阶段：
+       如果该岗位只有一个人员，
+       允许自动识别。
+
+       Supabase 上线后删除这个兼容逻辑。
+    */
+
+    const samePosition =
+        records.filter(
+            item =>
+                item.position === position
+        );
+
+
+    if (
+        samePosition.length === 1
+    ) {
+
+        return samePosition[0];
+
+    }
+
+
+    return null;
+
+}
+
+
+/* =========================================================
+   判断是否审核通过
+========================================================= */
+
+function isApproved(person) {
+
+    if (!person) {
+        return false;
+    }
+
+
+    return (
+
+        person.approvalStatus ===
+            "approved" ||
+
+        person.status ===
+            "approved" ||
+
+        person.status ===
+            "active" ||
+
+        person.status ===
+            "working" ||
+
+        person.status ===
+            "leave" ||
+
+        person.personnelStatus ===
+            "在职可用" ||
+
+        person.personnelStatus ===
+            "作业中" ||
+
+        person.personnelStatus ===
+            "请假"
+
+    );
+
+}
+
+
+/* =========================================================
+   当前人员
+========================================================= */
+
+const currentPerson =
+    getCurrentPerson();
+
+
+/* =========================================================
+   必须存在人员资料
+========================================================= */
+
+if (!currentPerson) {
+
+    alert(
+        "未找到当前人员资料，请重新从系统首页进入。"
+    );
+
+    location.href =
+        "index.html";
+
+}
+
+
+/* =========================================================
+   必须管理员审核通过
+========================================================= */
+
+if (
+    currentPerson &&
+    !isApproved(
+        currentPerson
+    )
+) {
+
+    alert(
+        "您的入职资料尚未通过管理员审核。"
+    );
+
+
+    location.href =
+        "person-waiting.html?position=" +
+        encodeURIComponent(
+            position
+        );
+
+}
+
+
+/* =========================================================
+   页面显示
+========================================================= */
+
+if (currentPerson) {
+
+    document.getElementById(
+        "personName"
+    ).textContent =
+        currentPerson.name ||
+        "-";
+
+
+    document.getElementById(
+        "personPosition"
+    ).textContent =
+        position;
+
+
+    document.getElementById(
+        "approvalStatus"
+    ).textContent =
+        "已通过";
+
+
+    document.getElementById(
+        "pageTitle"
+    ).textContent =
+        position +
+        "密码验证";
+
+}
+
+
+/* =========================================================
+   临时测试密码
+
+   重要：
+   这里只用于当前 GitHub Pages
+   V2.9 测试阶段。
+
+   这不是正式安全方案。
+
+   正式版会删除此处，
+   改为 Supabase Auth / 服务端认证。
+========================================================= */
+
+const TEMP_PASSWORDS = {
+
+    "总经理":
+        "888888",
+
+    "管理员":
+        "666666"
+
+};
+
+
+/* =========================================================
+   密码验证
+========================================================= */
+
+document.getElementById(
+    "loginForm"
+).addEventListener(
+    "submit",
+    function(event) {
+
+        event.preventDefault();
+
+
+        const password =
+            document.getElementById(
+                "password"
+            ).value;
+
+
+        const correctPassword =
+            TEMP_PASSWORDS[position];
+
+
+        if (
+            password !==
+            correctPassword
+        ) {
+
+            showError(
+                "密码错误，请重新输入。"
+            );
+
+
+            document.getElementById(
+                "password"
+            ).value =
+                "";
+
+
+            document.getElementById(
+                "password"
+            ).focus();
+
+
+            return;
+
+        }
+
+
+        /*
+           再次确认人员仍然审核通过。
+        */
+
+        const latestPerson =
+            getCurrentPerson();
+
+
+        if (
+            !latestPerson ||
+            !isApproved(
+                latestPerson
+            )
+        ) {
+
+            alert(
+                "当前人员权限已发生变化，请重新登录。"
+            );
+
+
+            location.href =
+                "index.html";
+
+
+            return;
+
+        }
+
+
+        const personId =
+            latestPerson.personId ||
+            latestPerson.driverId ||
+            latestPerson.id ||
+            "";
+
+
+        /*
+           当前本地测试版验证标记。
+
+           不保存用户输入的密码。
+        */
+
+        const session = {
+
+            personId:
+                personId,
+
+            position:
+                position,
+
+            verified:
+                true,
+
+            verifiedAt:
+                Date.now(),
+
+            expiresAt:
+                Date.now() +
+                (
+                    30 *
+                    60 *
+                    1000
+                )
+
+        };
+
+
+        sessionStorage.setItem(
+            "managementSession",
+            JSON.stringify(
+                session
+            )
+        );
+
+
+        localStorage.setItem(
+            "currentPersonId",
+            personId
+        );
+
+
+        /*
+           清除待验证状态
+        */
+
+        localStorage.removeItem(
+            "pendingProtectedPersonId"
+        );
+
+
+        localStorage.removeItem(
+            "pendingProtectedPosition"
+        );
+
+
+        const targetPage =
+            PROTECTED_PAGES[position];
+
+
+        if (!targetPage) {
+
+            alert(
+                "未找到对应管理页面。"
+            );
+
+            return;
+
+        }
+
+
+        location.href =
+            targetPage;
+
+    }
+);
+
+
+/* =========================================================
+   错误提示
+========================================================= */
+
+function showError(message) {
+
+    const box =
+        document.getElementById(
+            "messageBox"
+        );
+
+
+    box.textContent =
+        message;
+
+
+    box.className =
+        "message error";
+
+}
+
+
+/* =========================================================
+   返回首页
+========================================================= */
+
+function goHome() {
+
+    localStorage.removeItem(
+        "pendingProtectedPersonId"
+    );
+
+
+    localStorage.removeItem(
+        "pendingProtectedPosition"
+    );
+
+
+    location.href =
+        "index.html";
+
+}
+
+</script>
+
+</body>
+</html>
