@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
+
 <head>
+
     <meta charset="UTF-8">
 
     <meta
@@ -12,42 +14,284 @@
 
     <title>矿山管理系统</title>
 
-    <link
-        rel="stylesheet"
-        href="css/style.css?v=2.9.5"
-    >
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            background: #f1f5f9;
+            color: #0f172a;
+            font-family:
+                Arial,
+                "Microsoft YaHei",
+                sans-serif;
+        }
+
+        header {
+            padding: 28px 16px 24px;
+            background: #0f172a;
+            color: #ffffff;
+            text-align: center;
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 26px;
+        }
+
+        header p {
+            margin: 8px 0 0;
+            font-size: 13px;
+            opacity: .78;
+        }
+
+        main {
+            width: 100%;
+            max-width: 760px;
+            margin: 0 auto;
+            padding: 20px 14px 36px;
+        }
+
+        .welcome {
+            margin-bottom: 18px;
+            padding: 16px;
+            border-radius: 14px;
+            background: #ffffff;
+            box-shadow:
+                0 5px 20px
+                rgba(15, 23, 42, .06);
+        }
+
+        .welcome-title {
+            margin: 0 0 6px;
+            font-size: 17px;
+            font-weight: 700;
+        }
+
+        .welcome-text {
+            margin: 0;
+            color: #64748b;
+            font-size: 13px;
+            line-height: 1.65;
+        }
+
+        .portal-grid {
+            display: grid;
+            grid-template-columns:
+                repeat(2, minmax(0, 1fr));
+            gap: 14px;
+        }
+
+        .portal-card {
+            min-height: 126px;
+            padding: 18px 14px;
+            border: 0;
+            border-radius: 16px;
+            background: #ffffff;
+            color: #0f172a;
+            box-shadow:
+                0 5px 20px
+                rgba(15, 23, 42, .06);
+            text-align: center;
+            cursor: pointer;
+            transition:
+                transform .15s ease,
+                box-shadow .15s ease;
+        }
+
+        .portal-card:active {
+            transform: scale(.98);
+        }
+
+        .portal-icon {
+            display: block;
+            margin-bottom: 9px;
+            font-size: 36px;
+        }
+
+        .portal-title {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 17px;
+            font-weight: 700;
+        }
+
+        .portal-subtitle {
+            display: block;
+            color: #64748b;
+            font-size: 12px;
+            line-height: 1.45;
+        }
+
+        .admin-card {
+            border: 1px solid #cbd5e1;
+        }
+
+        footer {
+            padding: 20px 15px;
+            text-align: center;
+            color: #94a3b8;
+            font-size: 12px;
+        }
+
+
+        /* =====================================================
+           岗位选择弹窗
+        ===================================================== */
+
+        .modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 1000;
+            padding: 20px 14px;
+            background: rgba(15, 23, 42, .6);
+            overflow-y: auto;
+        }
+
+        .modal.show {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-card {
+            width: 100%;
+            max-width: 480px;
+            max-height: 90vh;
+            overflow-y: auto;
+            padding: 20px;
+            border-radius: 18px;
+            background: #ffffff;
+        }
+
+        .modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .modal-title {
+            margin: 0;
+            font-size: 20px;
+        }
+
+        .close-btn {
+            width: 38px;
+            height: 38px;
+            padding: 0;
+            border: 0;
+            border-radius: 999px;
+            background: #f1f5f9;
+            color: #334155;
+            font-size: 20px;
+            cursor: pointer;
+        }
+
+        .role-list {
+            display: grid;
+            gap: 10px;
+        }
+
+        .role-btn {
+            width: 100%;
+            min-height: 52px;
+            padding: 12px 14px;
+            border: 1px solid #cbd5e1;
+            border-radius: 11px;
+            background: #ffffff;
+            color: #0f172a;
+            text-align: left;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .role-btn:active {
+            background: #f8fafc;
+        }
+
+
+        @media (max-width: 520px) {
+
+            .portal-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .portal-card {
+                min-height: 105px;
+            }
+
+        }
+
+    </style>
+
 </head>
+
 
 <body>
 
+
 <header>
-    <h1>矿山管理系统</h1>
-    <p>Mine Management System</p>
+
+    <h1>
+        ⛏️ 矿山管理系统
+    </h1>
+
+    <p>
+        Mine Management System
+    </p>
+
 </header>
 
 
 <main>
 
-    <section>
 
-        <h2>请选择登录端口</h2>
+    <section class="welcome">
 
-        <p style="
-            text-align:center;
-            color:#64748b;
-            margin-bottom:20px;
-        ">
-            首次进入请选择本人实际岗位
+        <p class="welcome-title">
+            请选择您的工作岗位
         </p>
+
+        <p class="welcome-text">
+            首次使用需要填写个人资料并提交管理员审核。
+            审核通过后，再次点击自己的岗位即可进入对应工作页面。
+        </p>
+
+    </section>
+
+
+    <section class="portal-grid">
 
 
         <!-- 1 挖机司机 -->
 
         <button
             type="button"
+            class="portal-card"
             onclick="selectPosition('挖机司机')"
         >
-            🚜 挖机司机
+
+            <span class="portal-icon">
+                🚜
+            </span>
+
+            <span class="portal-title">
+                挖机司机
+            </span>
+
+            <span class="portal-subtitle">
+                挖掘机作业端
+            </span>
+
         </button>
 
 
@@ -55,19 +299,45 @@
 
         <button
             type="button"
+            class="portal-card"
             onclick="selectPosition('汽车司机')"
         >
-            🚚 汽车司机
+
+            <span class="portal-icon">
+                🚚
+            </span>
+
+            <span class="portal-title">
+                汽车司机
+            </span>
+
+            <span class="portal-subtitle">
+                运输车辆司机端
+            </span>
+
         </button>
 
 
-        <!-- 3 辅助车辆司机 -->
+        <!-- 3 辅助车辆 -->
 
         <button
             type="button"
+            class="portal-card"
             onclick="openRoleModal('auxiliary')"
         >
-            🚧 辅助车辆司机
+
+            <span class="portal-icon">
+                🚧
+            </span>
+
+            <span class="portal-title">
+                辅助车辆司机
+            </span>
+
+            <span class="portal-subtitle">
+                铲车 · 加油车 · 大巴 · 平路机等
+            </span>
+
         </button>
 
 
@@ -75,9 +345,22 @@
 
         <button
             type="button"
+            class="portal-card"
             onclick="selectPosition('车队长')"
         >
-            📋 车队长 / 调度
+
+            <span class="portal-icon">
+                📋
+            </span>
+
+            <span class="portal-title">
+                车队长 / 调度
+            </span>
+
+            <span class="portal-subtitle">
+                生产任务与车辆调度
+            </span>
+
         </button>
 
 
@@ -85,9 +368,22 @@
 
         <button
             type="button"
+            class="portal-card"
             onclick="openRoleModal('maintenance')"
         >
-            🔧 维修端
+
+            <span class="portal-icon">
+                🔧
+            </span>
+
+            <span class="portal-title">
+                维修端
+            </span>
+
+            <span class="portal-subtitle">
+                维修管理员 · 修理工
+            </span>
+
         </button>
 
 
@@ -95,9 +391,22 @@
 
         <button
             type="button"
+            class="portal-card"
             onclick="openRoleModal('management')"
         >
-            👔 中层管理
+
+            <span class="portal-icon">
+                👔
+            </span>
+
+            <span class="portal-title">
+                中层管理
+            </span>
+
+            <span class="portal-subtitle">
+                测量 · 安全 · 统计 · 会计 · 后勤等
+            </span>
+
         </button>
 
 
@@ -105,9 +414,22 @@
 
         <button
             type="button"
+            class="portal-card"
             onclick="selectPosition('总经理')"
         >
-            👑 总经理
+
+            <span class="portal-icon">
+                👑
+            </span>
+
+            <span class="portal-title">
+                总经理
+            </span>
+
+            <span class="portal-subtitle">
+                高权限管理与审批
+            </span>
+
         </button>
 
 
@@ -115,79 +437,61 @@
 
         <button
             type="button"
+            class="portal-card admin-card"
             onclick="selectPosition('管理员')"
         >
-            ⚙️ 管理员
+
+            <span class="portal-icon">
+                ⚙️
+            </span>
+
+            <span class="portal-title">
+                管理员
+            </span>
+
+            <span class="portal-subtitle">
+                人员审核与基础资料管理
+            </span>
+
         </button>
 
+
     </section>
+
 
 </main>
 
 
 <footer>
-    <p>矿山管理系统 V2.9.5</p>
+    矿山管理系统 · 首页 V2.9.6
 </footer>
 
 
-<!-- =====================================================
-     二级岗位选择
-===================================================== -->
+<!-- =========================================================
+     岗位选择弹窗
+========================================================= -->
 
 <div
+    class="modal"
     id="roleModal"
-    style="
-        display:none;
-        position:fixed;
-        inset:0;
-        z-index:9999;
-        background:rgba(15,23,42,.65);
-        align-items:center;
-        justify-content:center;
-        padding:20px;
-    "
+    onclick="handleModalBackground(event)"
 >
 
-    <div
-        style="
-            width:min(420px,100%);
-            max-height:85vh;
-            overflow:auto;
-            background:#ffffff;
-            border-radius:16px;
-            padding:20px;
-            box-shadow:0 20px 60px rgba(0,0,0,.25);
-        "
-    >
+    <div class="modal-card">
 
-        <div
-            style="
-                display:flex;
-                justify-content:space-between;
-                align-items:center;
-                gap:15px;
-                margin-bottom:16px;
-            "
-        >
+        <div class="modal-header">
 
-            <h3
+            <h2
+                class="modal-title"
                 id="roleModalTitle"
-                style="margin:0;"
             >
-                请选择岗位
-            </h3>
+                选择岗位
+            </h2>
 
             <button
                 type="button"
+                class="close-btn"
                 onclick="closeRoleModal()"
-                style="
-                    width:36px;
-                    height:36px;
-                    border:0;
-                    border-radius:50%;
-                    font-size:22px;
-                    cursor:pointer;
-                "
             >
                 ×
             </button>
@@ -196,12 +500,10 @@
 
 
         <div
-            id="roleModalList"
-            style="
-                display:grid;
-                gap:10px;
-            "
-        ></div>
+            class="role-list"
+            id="roleList"
+        >
+        </div>
 
     </div>
 
@@ -213,64 +515,9 @@
 "use strict";
 
 
-/* =====================================================
-   二级岗位
-===================================================== */
-
-const ROLE_GROUPS = {
-
-    auxiliary: {
-
-        title:
-            "🚧 请选择辅助车辆岗位",
-
-        roles: [
-            "铲车司机",
-            "加油车司机",
-            "大巴司机",
-            "平路机司机",
-            "洒水车司机",
-            "推土机司机"
-        ]
-
-    },
-
-
-    maintenance: {
-
-        title:
-            "🔧 请选择维修岗位",
-
-        roles: [
-            "维修管理员",
-            "修理工"
-        ]
-
-    },
-
-
-    management: {
-
-        title:
-            "👔 请选择中层管理岗位",
-
-        roles: [
-            "测量员",
-            "安全员",
-            "统计",
-            "会计",
-            "后勤",
-            "库房管理"
-        ]
-
-    }
-
-};
-
-
-/* =====================================================
-   岗位对应工作页面
-===================================================== */
+/* =========================================================
+   对应工作页面
+========================================================= */
 
 const POSITION_PAGES = {
 
@@ -334,9 +581,9 @@ const POSITION_PAGES = {
 };
 
 
-/* =====================================================
-   只有总经理和管理员需要密码验证
-===================================================== */
+/* =========================================================
+   只有以下岗位需要二次密码验证
+========================================================= */
 
 const PASSWORD_PROTECTED_POSITIONS = [
     "总经理",
@@ -344,91 +591,64 @@ const PASSWORD_PROTECTED_POSITIONS = [
 ];
 
 
-/* =====================================================
-   打开二级岗位选择
-===================================================== */
+/* =========================================================
+   弹窗岗位
+========================================================= */
 
-function openRoleModal(groupName) {
+const ROLE_GROUPS = {
 
-    const group =
-        ROLE_GROUPS[groupName];
+    auxiliary: {
+
+        title:
+            "选择辅助车辆岗位",
+
+        roles: [
+            "铲车司机",
+            "加油车司机",
+            "大巴司机",
+            "平路机司机",
+            "洒水车司机",
+            "推土机司机"
+        ]
+
+    },
 
 
-    if (!group) {
-        return;
+    maintenance: {
+
+        title:
+            "选择维修岗位",
+
+        roles: [
+            "维修管理员",
+            "修理工"
+        ]
+
+    },
+
+
+    management: {
+
+        title:
+            "选择中层管理岗位",
+
+        roles: [
+            "测量员",
+            "安全员",
+            "统计",
+            "会计",
+            "后勤",
+            "库房管理"
+        ]
+
     }
 
-
-    const modal =
-        document.getElementById(
-            "roleModal"
-        );
+};
 
 
-    const title =
-        document.getElementById(
-            "roleModalTitle"
-        );
-
-
-    const list =
-        document.getElementById(
-            "roleModalList"
-        );
-
-
-    title.textContent =
-        group.title;
-
-
-    list.innerHTML =
-        group.roles.map(role => `
-
-            <button
-                type="button"
-                onclick="selectPosition('${role}')"
-                style="
-                    width:100%;
-                    min-height:50px;
-                    padding:12px 15px;
-                    border:1px solid #cbd5e1;
-                    border-radius:10px;
-                    background:#f8fafc;
-                    color:#0f172a;
-                    font-size:16px;
-                    font-weight:700;
-                    cursor:pointer;
-                "
-            >
-                ${role}
-            </button>
-
-        `).join("");
-
-
-    modal.style.display =
-        "flex";
-
-}
-
-
-/* =====================================================
-   关闭二级岗位选择
-===================================================== */
-
-function closeRoleModal() {
-
-    document.getElementById(
-        "roleModal"
-    ).style.display =
-        "none";
-
-}
-
-
-/* =====================================================
-   岗位名称兼容
-===================================================== */
+/* =========================================================
+   岗位兼容
+========================================================= */
 
 function normalizePosition(position) {
 
@@ -470,15 +690,15 @@ function normalizePosition(position) {
 }
 
 
-/* =====================================================
-   获取统一人员库
-===================================================== */
+/* =========================================================
+   人员库
+========================================================= */
 
 function getPersonnelRecords() {
 
     try {
 
-        const records =
+        const data =
             JSON.parse(
                 localStorage.getItem(
                     "personnelRecords"
@@ -486,8 +706,8 @@ function getPersonnelRecords() {
             );
 
 
-        return Array.isArray(records)
-            ? records
+        return Array.isArray(data)
+            ? data
             : [];
 
 
@@ -506,14 +726,42 @@ function getPersonnelRecords() {
 }
 
 
-/* =====================================================
-   查找当前登录人员
+/* =========================================================
+   人员ID
+========================================================= */
 
-   所有岗位，包括汽车司机，
-   都只使用 personnelRecords。
-===================================================== */
+function getPersonId(person) {
+
+    return (
+
+        person?.personId ||
+
+        person?.driverId ||
+
+        person?.id ||
+
+        ""
+
+    );
+
+}
+
+
+/* =========================================================
+   找当前人员档案
+
+   优先：
+   1. currentPersonId
+   2. 同岗位唯一人员
+========================================================= */
 
 function findCurrentProfile(position) {
+
+    const normalizedPosition =
+        normalizePosition(
+            position
+        );
+
 
     const records =
         getPersonnelRecords();
@@ -527,34 +775,28 @@ function findCurrentProfile(position) {
 
     /*
        第一优先：
-       使用当前人员ID查找
+       当前人员ID
     */
 
     if (currentPersonId) {
 
-        const current =
-            records.find(person => {
+        const person =
+            records.find(
+                item =>
 
-                const personId =
-                    person.personId ||
-                    person.driverId ||
-                    person.id ||
-                    "";
+                    getPersonId(item) ===
+                        currentPersonId &&
 
-
-                return (
-                    personId === currentPersonId &&
                     normalizePosition(
-                        person.position
-                    ) === position
-                );
+                        item.position
+                    ) ===
+                        normalizedPosition
+            );
 
-            });
 
+        if (person) {
 
-        if (current) {
-
-            return current;
+            return person;
 
         }
 
@@ -562,22 +804,21 @@ function findCurrentProfile(position) {
 
 
     /*
-       当前 localStorage 测试阶段：
+       第二优先：
 
-       如果本机该岗位只有一名人员，
-       可以自动识别。
+       V2.9 本地测试兼容。
+       该岗位只有一个档案时自动识别。
 
-       后续接 Supabase 后，
-       使用正式账号ID识别。
+       Supabase 正式版删除。
     */
 
     const samePosition =
-        records.filter(person =>
-
-            normalizePosition(
-                person.position
-            ) === position
-
+        records.filter(
+            item =>
+                normalizePosition(
+                    item.position
+                ) ===
+                    normalizedPosition
         );
 
 
@@ -595,37 +836,142 @@ function findCurrentProfile(position) {
 }
 
 
-/* =====================================================
-   选择岗位
-===================================================== */
+/* =========================================================
+   审核状态
+========================================================= */
+
+function getApprovalState(person) {
+
+    if (!person) {
+
+        return "missing";
+
+    }
+
+
+    if (
+        person.status === "rejected" ||
+        person.approvalStatus === "rejected"
+    ) {
+
+        return "rejected";
+
+    }
+
+
+    if (
+        person.status === "disabled" ||
+        person.status === "resigned" ||
+        person.personnelStatus === "停用" ||
+        person.personnelStatus === "离职"
+    ) {
+
+        return "disabled";
+
+    }
+
+
+    const approved = (
+
+        person.approvalStatus ===
+            "approved" ||
+
+        person.status ===
+            "approved" ||
+
+        person.status ===
+            "active" ||
+
+        person.status ===
+            "working" ||
+
+        person.status ===
+            "leave" ||
+
+        person.personnelStatus ===
+            "在职可用" ||
+
+        person.personnelStatus ===
+            "作业中" ||
+
+        person.personnelStatus ===
+            "请假"
+
+    );
+
+
+    if (approved) {
+
+        return "approved";
+
+    }
+
+
+    return "pending";
+
+}
+
+
+/* =========================================================
+   点击岗位
+========================================================= */
 
 function selectPosition(position) {
+
+    const normalizedPosition =
+        normalizePosition(
+            position
+        );
+
+
+    if (!normalizedPosition) {
+
+        return;
+
+    }
+
 
     closeRoleModal();
 
 
     localStorage.setItem(
         "selectedPosition",
-        position
+        normalizedPosition
     );
 
 
-    const profile =
+    const person =
         findCurrentProfile(
-            position
+            normalizedPosition
+        );
+
+
+    const state =
+        getApprovalState(
+            person
         );
 
 
     /*
-       没有资料
-       → 所有人统一填写入职资料
+       没有档案：
+       进入统一入职登记。
     */
 
-    if (!profile) {
+    if (
+        state === "missing"
+    ) {
 
-        goToRegistration(
-            position
-        );
+        clearManagementSession();
+
+
+        location.href =
+
+            "person-register.html?position=" +
+
+            encodeURIComponent(
+                normalizedPosition
+            );
+
 
         return;
 
@@ -633,14 +979,13 @@ function selectPosition(position) {
 
 
     /*
-       保存当前人员ID
+       找到人员后固定当前人员ID。
     */
 
     const personId =
-        profile.personId ||
-        profile.driverId ||
-        profile.id ||
-        "";
+        getPersonId(
+            person
+        );
 
 
     if (personId) {
@@ -654,38 +999,27 @@ function selectPosition(position) {
 
 
     /*
-       待管理员审核
+       审核驳回：
+       返回登记页修改资料。
     */
 
     if (
-        profile.status === "pending" ||
-        profile.approvalStatus === "pending" ||
-        profile.personnelStatus === "待审核"
+        state === "rejected"
     ) {
 
-        goToWaiting(
-            position
-        );
-
-        return;
-
-    }
+        clearManagementSession();
 
 
-    /*
-       管理员驳回
-       → 修改资料重新提交
-    */
+        location.href =
 
-    if (
-        profile.status === "rejected" ||
-        profile.approvalStatus === "rejected"
-    ) {
+            "person-register.html?position=" +
 
-        goToRegistration(
-            position,
-            true
-        );
+            encodeURIComponent(
+                normalizedPosition
+            ) +
+
+            "&rejected=1";
+
 
         return;
 
@@ -697,15 +1031,16 @@ function selectPosition(position) {
     */
 
     if (
-        profile.status === "disabled" ||
-        profile.status === "resigned" ||
-        profile.personnelStatus === "停用" ||
-        profile.personnelStatus === "离职"
+        state === "disabled"
     ) {
 
+        clearManagementSession();
+
+
         alert(
-            "当前人员已停用或离职，不能进入系统。"
+            "该人员账号已停用或已经离职，不能进入系统。"
         );
+
 
         return;
 
@@ -713,46 +1048,24 @@ function selectPosition(position) {
 
 
     /*
-       判断管理员是否已经审核通过
+       待审核
     */
 
-    const approved =
+    if (
+        state === "pending"
+    ) {
 
-        profile.approvalStatus ===
-            "approved" ||
-
-        profile.status ===
-            "approved" ||
-
-        profile.status ===
-            "active" ||
-
-        profile.status ===
-            "working" ||
-
-        profile.status ===
-            "leave" ||
-
-        profile.personnelStatus ===
-            "在职可用" ||
-
-        profile.personnelStatus ===
-            "作业中" ||
-
-        profile.personnelStatus ===
-            "请假";
+        clearManagementSession();
 
 
-    /*
-       未审核通过
-       → 统一等待管理员审核
-    */
+        location.href =
 
-    if (!approved) {
+            "person-waiting.html?position=" +
 
-        goToWaiting(
-            position
-        );
+            encodeURIComponent(
+                normalizedPosition
+            );
+
 
         return;
 
@@ -760,10 +1073,65 @@ function selectPosition(position) {
 
 
     /*
-       总经理 / 管理员
+       审核通过
+    */
 
-       审核通过后
-       还必须进行密码验证
+    if (
+        state === "approved"
+    ) {
+
+        enterApprovedPosition(
+            person,
+            normalizedPosition
+        );
+
+    }
+
+}
+
+
+/* =========================================================
+   审核通过后进入岗位
+========================================================= */
+
+function enterApprovedPosition(
+    person,
+    position
+) {
+
+    const personId =
+        getPersonId(
+            person
+        );
+
+
+    if (!personId) {
+
+        alert(
+            "当前人员缺少人员ID，请重新提交人员资料。"
+        );
+
+
+        return;
+
+    }
+
+
+    localStorage.setItem(
+        "currentPersonId",
+        personId
+    );
+
+
+    localStorage.setItem(
+        "selectedPosition",
+        position
+    );
+
+
+    /*
+       总经理 / 管理员：
+       必须进入二次密码验证。
     */
 
     if (
@@ -772,10 +1140,55 @@ function selectPosition(position) {
         )
     ) {
 
-        goToPasswordVerification(
-            position,
-            profile
+        /*
+           如果已经存在有效的同岗位会话，
+           可以直接进入。
+        */
+
+        if (
+            hasValidManagementSession(
+                personId,
+                position
+            )
+        ) {
+
+            const page =
+                POSITION_PAGES[position];
+
+
+            if (page) {
+
+                location.href =
+                    page;
+
+            }
+
+
+            return;
+
+        }
+
+
+        localStorage.setItem(
+            "pendingProtectedPersonId",
+            personId
         );
+
+
+        localStorage.setItem(
+            "pendingProtectedPosition",
+            position
+        );
+
+
+        location.href =
+
+            "management-login.html?position=" +
+
+            encodeURIComponent(
+                position
+            );
+
 
         return;
 
@@ -783,128 +1196,11 @@ function selectPosition(position) {
 
 
     /*
-       其他所有岗位
-
-       管理员审核通过后
-       直接进入自己的工作页面
+       普通岗位不使用管理会话。
     */
 
-    enterWorkPage(
-        position
-    );
+    clearManagementSession();
 
-}
-
-
-/* =====================================================
-   所有人统一进入入职资料页面
-===================================================== */
-
-function goToRegistration(
-    position,
-    rejected = false
-) {
-
-    const params =
-        new URLSearchParams();
-
-
-    params.set(
-        "position",
-        position
-    );
-
-
-    if (rejected) {
-
-        params.set(
-            "rejected",
-            "1"
-        );
-
-    }
-
-
-    location.href =
-        "person-register.html?" +
-        params.toString();
-
-}
-
-
-/* =====================================================
-   所有人统一进入等待审核页面
-===================================================== */
-
-function goToWaiting(position) {
-
-    const params =
-        new URLSearchParams();
-
-
-    params.set(
-        "position",
-        position
-    );
-
-
-    location.href =
-        "person-waiting.html?" +
-        params.toString();
-
-}
-
-
-/* =====================================================
-   总经理 / 管理员密码验证
-===================================================== */
-
-function goToPasswordVerification(
-    position,
-    profile
-) {
-
-    const personId =
-        profile.personId ||
-        profile.driverId ||
-        profile.id ||
-        "";
-
-
-    localStorage.setItem(
-        "pendingProtectedPersonId",
-        personId
-    );
-
-
-    localStorage.setItem(
-        "pendingProtectedPosition",
-        position
-    );
-
-
-    const params =
-        new URLSearchParams();
-
-
-    params.set(
-        "position",
-        position
-    );
-
-
-    location.href =
-        "management-login.html?" +
-        params.toString();
-
-}
-
-
-/* =====================================================
-   进入工作页面
-===================================================== */
-
-function enterWorkPage(position) {
 
     const page =
         POSITION_PAGES[position];
@@ -915,6 +1211,7 @@ function enterWorkPage(position) {
         alert(
             "该岗位工作页面正在建设中。"
         );
+
 
         return;
 
@@ -927,22 +1224,190 @@ function enterWorkPage(position) {
 }
 
 
-/* =====================================================
-   点击黑色遮罩关闭二级菜单
-===================================================== */
+/* =========================================================
+   检查总经理 / 管理员会话
+========================================================= */
 
-document.addEventListener(
-    "click",
-    function(event) {
+function hasValidManagementSession(
+    personId,
+    position
+) {
 
-        const modal =
-            document.getElementById(
-                "roleModal"
+    try {
+
+        const session =
+            JSON.parse(
+                sessionStorage.getItem(
+                    "managementSession"
+                )
             );
 
 
+        if (!session) {
+
+            return false;
+
+        }
+
+
+        return (
+
+            session.verified === true &&
+
+            session.personId ===
+                personId &&
+
+            normalizePosition(
+                session.position
+            ) ===
+                normalizePosition(
+                    position
+                ) &&
+
+            Number(
+                session.expiresAt
+            ) >
+                Date.now()
+
+        );
+
+
+    } catch (error) {
+
+        sessionStorage.removeItem(
+            "managementSession"
+        );
+
+
+        return false;
+
+    }
+
+}
+
+
+/* =========================================================
+   清理管理会话
+========================================================= */
+
+function clearManagementSession() {
+
+    sessionStorage.removeItem(
+        "managementSession"
+    );
+
+
+    localStorage.removeItem(
+        "pendingProtectedPersonId"
+    );
+
+
+    localStorage.removeItem(
+        "pendingProtectedPosition"
+    );
+
+}
+
+
+/* =========================================================
+   打开岗位弹窗
+========================================================= */
+
+function openRoleModal(groupName) {
+
+    const group =
+        ROLE_GROUPS[groupName];
+
+
+    if (!group) {
+
+        return;
+
+    }
+
+
+    document.getElementById(
+        "roleModalTitle"
+    ).textContent =
+        group.title;
+
+
+    const container =
+        document.getElementById(
+            "roleList"
+        );
+
+
+    container.innerHTML =
+        group.roles
+            .map(
+                role => `
+
+                    <button
+                        type="button"
+                        class="role-btn"
+                        onclick="selectPosition('${role}')"
+                    >
+                        ${role}
+                    </button>
+
+                `
+            )
+            .join("");
+
+
+    document.getElementById(
+        "roleModal"
+    ).classList.add(
+        "show"
+    );
+
+}
+
+
+/* =========================================================
+   关闭岗位弹窗
+========================================================= */
+
+function closeRoleModal() {
+
+    document.getElementById(
+        "roleModal"
+    ).classList.remove(
+        "show"
+    );
+
+}
+
+
+/* =========================================================
+   点击背景关闭
+========================================================= */
+
+function handleModalBackground(event) {
+
+    if (
+        event.target.id ===
+        "roleModal"
+    ) {
+
+        closeRoleModal();
+
+    }
+
+}
+
+
+/* =========================================================
+   ESC关闭
+========================================================= */
+
+document.addEventListener(
+    "keydown",
+    function(event) {
+
         if (
-            event.target === modal
+            event.key === "Escape"
         ) {
 
             closeRoleModal();
@@ -953,6 +1418,7 @@ document.addEventListener(
 );
 
 </script>
+
 
 </body>
 </html>
