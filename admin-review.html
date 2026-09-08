@@ -15,18 +15,16 @@
     <title>管理员审核中心 - 矿山管理系统</title>
 
 
-    <!-- ==================================================
-         管理员页面入口保护
+    <!-- =====================================================
+         管理员登录保护
 
-         必须：
-         1. 已完成密码验证
-         2. 岗位必须是管理员
-         3. 验证会话没有过期
-
-         注意：
-         当前仍属于 GitHub Pages 本地测试保护。
-         V3.0 接 Supabase 后改为服务端认证。
-    =================================================== -->
+         V2.9 本地测试版：
+         1. 必须存在 managementSession
+         2. 必须是管理员
+         3. 必须在30分钟有效期内
+         4. 必须能在 personnelRecords 找到本人
+         5. 本人仍然必须处于审核通过状态
+    ====================================================== -->
 
     <script>
 
@@ -35,51 +33,118 @@
             "use strict";
 
 
-            let session = null;
+            function getPersonId(person) {
 
-
-            try {
-
-                session =
-                    JSON.parse(
-                        sessionStorage.getItem(
-                            "managementSession"
-                        )
-                    );
-
-            } catch (error) {
-
-                session = null;
+                return (
+                    person?.personId ||
+                    person?.driverId ||
+                    person?.id ||
+                    ""
+                );
 
             }
 
 
-            const now =
-                Date.now();
+            function normalizePosition(position) {
+
+                const map = {
+
+                    "管理员":
+                        "管理员"
+
+                };
 
 
-            const valid =
+                return (
+                    map[position] ||
+                    position ||
+                    ""
+                );
 
-                session &&
-
-                session.verified === true &&
-
-                session.position ===
-                    "管理员" &&
-
-                session.personId &&
-
-                Number(
-                    session.expiresAt
-                ) > now;
+            }
 
 
-            /*
-               没有有效管理员会话
-               → 不允许进入审核中心
-            */
+            function getPersonnelRecords() {
 
-            if (!valid) {
+                try {
+
+                    const data =
+                        JSON.parse(
+                            localStorage.getItem(
+                                "personnelRecords"
+                            )
+                        );
+
+
+                    return Array.isArray(data)
+                        ? data
+                        : [];
+
+
+                } catch (error) {
+
+                    return [];
+
+                }
+
+            }
+
+
+            function isApproved(person) {
+
+                if (!person) {
+
+                    return false;
+
+                }
+
+
+                if (
+                    person.status === "rejected" ||
+                    person.approvalStatus === "rejected" ||
+                    person.status === "disabled" ||
+                    person.status === "resigned" ||
+                    person.personnelStatus === "停用" ||
+                    person.personnelStatus === "离职"
+                ) {
+
+                    return false;
+
+                }
+
+
+                return (
+
+                    person.approvalStatus ===
+                        "approved" ||
+
+                    person.status ===
+                        "approved" ||
+
+                    person.status ===
+                        "active" ||
+
+                    person.status ===
+                        "working" ||
+
+                    person.status ===
+                        "leave" ||
+
+                    person.personnelStatus ===
+                        "在职可用" ||
+
+                    person.personnelStatus ===
+                        "作业中" ||
+
+                    person.personnelStatus ===
+                        "请假"
+
+                );
+
+            }
+
+
+            function redirectLogin() {
 
                 sessionStorage.removeItem(
                     "managementSession"
@@ -101,15 +166,100 @@
 
             }
 
+
+            let session = null;
+
+
+            try {
+
+                session =
+                    JSON.parse(
+                        sessionStorage.getItem(
+                            "managementSession"
+                        )
+                    );
+
+            } catch (error) {
+
+                session = null;
+
+            }
+
+
+            if (
+                !session ||
+                session.verified !== true ||
+                normalizePosition(
+                    session.position
+                ) !== "管理员" ||
+                !session.personId ||
+                Number(
+                    session.expiresAt
+                ) <= Date.now()
+            ) {
+
+                redirectLogin();
+
+                return;
+
+            }
+
+
+            const records =
+                getPersonnelRecords();
+
+
+            const administrator =
+                records.find(
+                    person =>
+
+                        getPersonId(person) ===
+                            session.personId &&
+
+                        normalizePosition(
+                            person.position
+                        ) ===
+                            "管理员"
+                );
+
+
+            if (
+                !administrator ||
+                !isApproved(
+                    administrator
+                )
+            ) {
+
+                redirectLogin();
+
+                return;
+
+            }
+
+
+            /*
+               保存当前管理员ID。
+
+               后续 management-login.html
+               可以准确识别当前人员。
+            */
+
+            localStorage.setItem(
+                "currentPersonId",
+                session.personId
+            );
+
+
+            window.__ADMIN_SESSION__ =
+                session;
+
+
+            window.__ADMIN_PERSON__ =
+                administrator;
+
         })();
 
     </script>
-
-
-    <link
-        rel="stylesheet"
-        href="css/style.css?v=2.9.5"
-    >
 
 
     <style>
@@ -118,91 +268,176 @@
             box-sizing: border-box;
         }
 
+        body {
+            margin: 0;
+            min-height: 100vh;
+            background: #f1f5f9;
+            color: #0f172a;
+            font-family:
+                Arial,
+                "Microsoft YaHei",
+                sans-serif;
+        }
 
-        .review-summary {
+        header {
+            background: #0f172a;
+            color: #ffffff;
+            padding: 20px 15px;
+        }
+
+        .header-inner {
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 15px;
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 23px;
+        }
+
+        header p {
+            margin: 7px 0 0;
+            color: #cbd5e1;
+            font-size: 13px;
+        }
+
+        .logout-btn {
+            flex-shrink: 0;
+            border: 1px solid #475569;
+            border-radius: 9px;
+            padding: 9px 12px;
+            background: #1e293b;
+            color: #ffffff;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        main {
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px 14px 40px;
+        }
+
+        .session-box {
+            margin-bottom: 16px;
+            padding: 12px 14px;
+            border: 1px solid #bbf7d0;
+            border-radius: 11px;
+            background: #f0fdf4;
+            color: #166534;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        .summary-grid {
             display: grid;
             grid-template-columns:
                 repeat(4, minmax(0, 1fr));
-            gap: 10px;
-            margin-bottom: 18px;
+            gap: 12px;
+            margin-bottom: 16px;
         }
-
 
         .summary-card {
-            background: #f8fafc;
-            border: 1px solid #e2e8f0;
-            border-radius: 12px;
-            padding: 14px 10px;
-            text-align: center;
+            padding: 16px;
+            border-radius: 14px;
+            background: #ffffff;
+            box-shadow:
+                0 4px 18px
+                rgba(15, 23, 42, .05);
         }
-
-
-        .summary-number {
-            display: block;
-            font-size: 24px;
-            font-weight: 700;
-            color: #0f172a;
-        }
-
 
         .summary-label {
-            display: block;
-            margin-top: 5px;
             color: #64748b;
             font-size: 12px;
         }
 
-
-        .filter-area {
-            display: grid;
-            grid-template-columns:
-                repeat(3, minmax(0, 1fr));
-            gap: 10px;
-            margin-bottom: 18px;
+        .summary-value {
+            margin-top: 5px;
+            font-size: 25px;
+            font-weight: 800;
         }
 
+        .toolbar {
+            display: grid;
+            grid-template-columns:
+                minmax(180px, 1fr)
+                180px
+                160px;
+            gap: 10px;
+            margin-bottom: 16px;
+            padding: 14px;
+            border-radius: 14px;
+            background: #ffffff;
+        }
 
-        .filter-area input,
-        .filter-area select {
+        input,
+        select,
+        textarea {
             width: 100%;
-            min-height: 44px;
+            min-height: 42px;
             padding: 9px 10px;
             border: 1px solid #cbd5e1;
-            border-radius: 9px;
+            border-radius: 8px;
             background: #ffffff;
             font-size: 14px;
         }
 
+        textarea {
+            min-height: 90px;
+            resize: vertical;
+        }
 
-        .table-wrapper {
+        .table-card {
+            overflow: hidden;
+            border-radius: 14px;
+            background: #ffffff;
+            box-shadow:
+                0 4px 18px
+                rgba(15, 23, 42, .05);
+        }
+
+        .table-wrap {
             overflow-x: auto;
         }
 
-
         table {
             width: 100%;
-            min-width: 950px;
             border-collapse: collapse;
+            min-width: 850px;
         }
-
 
         th,
         td {
-            padding: 11px 8px;
+            padding: 12px 10px;
             border-bottom: 1px solid #e2e8f0;
             text-align: left;
             font-size: 13px;
             vertical-align: middle;
         }
 
-
         th {
             background: #f8fafc;
-            white-space: nowrap;
+            color: #475569;
         }
 
+        tbody tr {
+            cursor: pointer;
+        }
 
-        .status-badge {
+        tbody tr:hover {
+            background: #f8fafc;
+        }
+
+        .badge {
             display: inline-block;
             padding: 5px 9px;
             border-radius: 999px;
@@ -211,178 +446,273 @@
             white-space: nowrap;
         }
 
-
-        .status-pending {
+        .badge-pending {
             background: #fef3c7;
             color: #92400e;
         }
 
-
-        .status-approved {
+        .badge-approved {
             background: #dcfce7;
             color: #166534;
         }
 
-
-        .status-rejected {
+        .badge-rejected {
             background: #fee2e2;
             color: #991b1b;
         }
 
-
-        .status-disabled {
+        .badge-disabled {
             background: #e2e8f0;
             color: #475569;
         }
 
+        .empty {
+            padding: 35px 15px;
+            text-align: center;
+            color: #94a3b8;
+        }
+
+        .action-link {
+            border: 0;
+            padding: 7px 10px;
+            border-radius: 7px;
+            background: #2563eb;
+            color: #ffffff;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .bottom-actions {
+            display: grid;
+            grid-template-columns:
+                repeat(2, minmax(0, 1fr));
+            gap: 10px;
+            margin-top: 16px;
+        }
+
+        .nav-btn {
+            min-height: 44px;
+            border: 0;
+            border-radius: 9px;
+            background: #ffffff;
+            color: #334155;
+            border: 1px solid #cbd5e1;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+
+        /* =====================================================
+           详情弹窗
+        ===================================================== */
+
+        .modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 2000;
+            padding: 20px 14px;
+            background: rgba(15, 23, 42, .65);
+            overflow-y: auto;
+        }
+
+        .modal.show {
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+        }
+
+        .modal-card {
+            width: 100%;
+            max-width: 760px;
+            margin: auto;
+            padding: 20px;
+            border-radius: 16px;
+            background: #ffffff;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 18px;
+        }
+
+        .modal-header h2 {
+            margin: 0;
+            font-size: 20px;
+        }
+
+        .close-btn {
+            width: 38px;
+            height: 38px;
+            border: 0;
+            border-radius: 999px;
+            background: #f1f5f9;
+            font-size: 20px;
+            cursor: pointer;
+        }
 
         .detail-grid {
             display: grid;
             grid-template-columns:
                 repeat(2, minmax(0, 1fr));
-            gap: 10px 20px;
+            gap: 10px 16px;
         }
-
 
         .detail-item {
             padding: 10px 0;
             border-bottom: 1px solid #e2e8f0;
-            word-break: break-word;
         }
 
-
-        .detail-item strong {
-            color: #475569;
+        .detail-label {
+            margin-bottom: 4px;
+            color: #64748b;
+            font-size: 12px;
         }
 
+        .detail-value {
+            word-break: break-all;
+            font-size: 14px;
+            font-weight: 700;
+        }
+
+        .security-notice {
+            display: none;
+            margin-top: 16px;
+            padding: 12px;
+            border: 1px solid #fed7aa;
+            border-radius: 9px;
+            background: #fff7ed;
+            color: #9a3412;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        .photo-section {
+            margin-top: 20px;
+        }
+
+        .photo-section h3 {
+            margin: 0 0 12px;
+            font-size: 16px;
+        }
 
         .photo-grid {
             display: grid;
             grid-template-columns:
                 repeat(2, minmax(0, 1fr));
-            gap: 15px;
-            margin-bottom: 20px;
+            gap: 12px;
         }
 
-
-        .photo-card {
+        .photo-box {
+            padding: 10px;
             border: 1px solid #e2e8f0;
-            border-radius: 12px;
-            padding: 12px;
+            border-radius: 10px;
             background: #f8fafc;
         }
 
-
-        .photo-card h3 {
-            margin: 0 0 10px;
-            font-size: 15px;
-        }
-
-
-        .photo-card img {
-            width: 100%;
-            max-height: 260px;
-            object-fit: contain;
-            background: #ffffff;
-            border-radius: 8px;
-        }
-
-
-        .review-action-area {
-            margin-top: 20px;
-        }
-
-
-        .review-action-area button {
+        .photo-title {
             margin-bottom: 8px;
+            color: #475569;
+            font-size: 12px;
+            font-weight: 700;
         }
 
+        .photo-box img {
+            display: none;
+            width: 100%;
+            max-height: 280px;
+            object-fit: contain;
+            border-radius: 7px;
+            background: #ffffff;
+        }
+
+        .no-photo {
+            padding: 25px 8px;
+            text-align: center;
+            color: #94a3b8;
+            font-size: 12px;
+        }
 
         .reject-area {
             display: none;
-            margin: 18px 0;
+            margin-top: 18px;
             padding: 14px;
+            border-radius: 10px;
             background: #fef2f2;
             border: 1px solid #fecaca;
-            border-radius: 12px;
         }
-
 
         .reject-area label {
             display: block;
-            margin-bottom: 8px;
-            font-weight: 700;
+            margin-bottom: 7px;
             color: #991b1b;
-        }
-
-
-        .reject-area textarea {
-            width: 100%;
-            min-height: 90px;
-            padding: 10px;
-            border: 1px solid #fca5a5;
-            border-radius: 8px;
-            resize: vertical;
-            font-size: 14px;
-        }
-
-
-        .security-notice {
-            margin-top: 15px;
-            padding: 12px;
-            background: #eff6ff;
-            border: 1px solid #bfdbfe;
-            border-radius: 10px;
-            color: #1e40af;
             font-size: 13px;
-            line-height: 1.6;
+            font-weight: 700;
         }
 
-
-        .login-info {
-            margin-bottom: 18px;
-            padding: 11px 13px;
-            background: #ecfdf5;
-            border: 1px solid #bbf7d0;
-            border-radius: 10px;
-            color: #166534;
-            font-size: 13px;
-        }
-
-
-        .top-actions {
+        .modal-actions {
             display: grid;
             grid-template-columns:
                 repeat(3, minmax(0, 1fr));
-            gap: 10px;
-            margin-top: 15px;
+            gap: 9px;
+            margin-top: 18px;
+        }
+
+        .modal-actions button {
+            min-height: 43px;
+            border: 0;
+            border-radius: 8px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .approve-btn {
+            background: #16a34a;
+            color: #ffffff;
+        }
+
+        .reject-btn {
+            background: #dc2626;
+            color: #ffffff;
+        }
+
+        .secondary-btn {
+            background: #ffffff;
+            color: #334155;
+            border: 1px solid #cbd5e1 !important;
+        }
+
+        .print-btn {
+            background: #475569;
+            color: #ffffff;
         }
 
 
-        @media (max-width: 700px) {
+        @media (max-width: 720px) {
 
-            .review-summary {
+            .summary-grid {
                 grid-template-columns:
                     repeat(2, minmax(0, 1fr));
             }
 
-
-            .filter-area {
+            .toolbar {
                 grid-template-columns: 1fr;
             }
-
 
             .detail-grid {
                 grid-template-columns: 1fr;
             }
 
-
             .photo-grid {
                 grid-template-columns: 1fr;
             }
 
-
-            .top-actions {
+            .modal-actions {
                 grid-template-columns: 1fr;
             }
 
@@ -398,13 +728,34 @@
 
 <header>
 
-    <h1>
-        ⚙️ 管理员审核中心
-    </h1>
+    <div class="header-inner">
 
-    <p>
-        Personnel Review Center
-    </p>
+        <div class="header-top">
+
+            <div>
+
+                <h1>
+                    ⚙️ 管理员审核中心
+                </h1>
+
+                <p>
+                    统一人员入职审核 · V2.9.6
+                </p>
+
+            </div>
+
+
+            <button
+                type="button"
+                class="logout-btn"
+                onclick="logoutAdmin()"
+            >
+                退出登录
+            </button>
+
+        </div>
+
+    </div>
 
 </header>
 
@@ -412,254 +763,168 @@
 <main>
 
 
-    <section>
+    <div
+        class="session-box"
+        id="sessionBox"
+    >
+        ✅ 当前已通过管理员身份验证
+    </div>
 
 
-        <div class="login-info">
+    <!-- 统计 -->
 
-            🔐 当前已通过管理员身份验证。
+    <section class="summary-grid">
 
-            <span id="sessionTimeText">
-            </span>
+        <div class="summary-card">
 
-        </div>
-
-
-        <h2>
-            所有人员入职审核
-        </h2>
-
-
-        <p style="
-            color:#64748b;
-            line-height:1.6;
-            margin-bottom:18px;
-        ">
-            所有岗位人员统一在这里进行入职审核。
-            审核通过后，普通岗位可以进入自己的工作端；
-            总经理和管理员仍需要完成管理密码验证。
-        </p>
-
-
-        <!-- ==================================================
-             审核统计
-        =================================================== -->
-
-        <div class="review-summary">
-
-
-            <div class="summary-card">
-
-                <span
-                    class="summary-number"
-                    id="totalCount"
-                >
-                    0
-                </span>
-
-                <span class="summary-label">
-                    全部人员
-                </span>
-
+            <div class="summary-label">
+                全部人员
             </div>
 
-
-            <div class="summary-card">
-
-                <span
-                    class="summary-number"
-                    id="pendingCount"
-                >
-                    0
-                </span>
-
-                <span class="summary-label">
-                    待审核
-                </span>
-
-            </div>
-
-
-            <div class="summary-card">
-
-                <span
-                    class="summary-number"
-                    id="approvedCount"
-                >
-                    0
-                </span>
-
-                <span class="summary-label">
-                    已通过
-                </span>
-
-            </div>
-
-
-            <div class="summary-card">
-
-                <span
-                    class="summary-number"
-                    id="rejectedCount"
-                >
-                    0
-                </span>
-
-                <span class="summary-label">
-                    已驳回
-                </span>
-
-            </div>
-
-
-        </div>
-
-
-        <!-- ==================================================
-             搜索筛选
-        =================================================== -->
-
-        <div class="filter-area">
-
-
-            <input
-                id="searchInput"
-                type="search"
-                placeholder="搜索姓名 / 手机号 / 部门"
+            <div
+                class="summary-value"
+                id="totalCount"
             >
-
-
-            <select id="positionFilter">
-
-                <option value="">
-                    全部岗位
-                </option>
-
-                <option value="挖机司机">
-                    挖机司机
-                </option>
-
-                <option value="汽车司机">
-                    汽车司机
-                </option>
-
-                <option value="铲车司机">
-                    铲车司机
-                </option>
-
-                <option value="加油车司机">
-                    加油车司机
-                </option>
-
-                <option value="大巴司机">
-                    大巴司机
-                </option>
-
-                <option value="平路机司机">
-                    平路机司机
-                </option>
-
-                <option value="洒水车司机">
-                    洒水车司机
-                </option>
-
-                <option value="推土机司机">
-                    推土机司机
-                </option>
-
-                <option value="车队长">
-                    车队长 / 调度
-                </option>
-
-                <option value="维修管理员">
-                    维修管理员
-                </option>
-
-                <option value="修理工">
-                    修理工
-                </option>
-
-                <option value="测量员">
-                    测量员
-                </option>
-
-                <option value="安全员">
-                    安全员
-                </option>
-
-                <option value="统计">
-                    统计
-                </option>
-
-                <option value="会计">
-                    会计
-                </option>
-
-                <option value="后勤">
-                    后勤
-                </option>
-
-                <option value="库房管理">
-                    库房管理
-                </option>
-
-                <option value="总经理">
-                    总经理
-                </option>
-
-                <option value="管理员">
-                    管理员
-                </option>
-
-            </select>
-
-
-            <select id="statusFilter">
-
-                <option value="">
-                    全部审核状态
-                </option>
-
-                <option value="pending">
-                    待审核
-                </option>
-
-                <option value="approved">
-                    已通过
-                </option>
-
-                <option value="rejected">
-                    已驳回
-                </option>
-
-            </select>
-
+                0
+            </div>
 
         </div>
 
 
-        <!-- ==================================================
-             空数据
-        =================================================== -->
+        <div class="summary-card">
 
-        <div id="emptyMessage">
+            <div class="summary-label">
+                待审核
+            </div>
 
-            <p>
-                当前没有人员登记信息。
-            </p>
+            <div
+                class="summary-value"
+                id="pendingCount"
+            >
+                0
+            </div>
 
         </div>
 
 
-        <!-- ==================================================
-             人员表格
-        =================================================== -->
+        <div class="summary-card">
 
-        <div
-            id="personnelTableArea"
-            class="table-wrapper"
-            style="display:none;"
+            <div class="summary-label">
+                已通过
+            </div>
+
+            <div
+                class="summary-value"
+                id="approvedCount"
+            >
+                0
+            </div>
+
+        </div>
+
+
+        <div class="summary-card">
+
+            <div class="summary-label">
+                已驳回
+            </div>
+
+            <div
+                class="summary-value"
+                id="rejectedCount"
+            >
+                0
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <!-- 搜索 -->
+
+    <section class="toolbar">
+
+        <input
+            id="searchInput"
+            type="search"
+            placeholder="搜索姓名 / 手机号 / 部门 / 车队"
+            oninput="renderTable()"
         >
+
+
+        <select
+            id="positionFilter"
+            onchange="renderTable()"
+        >
+
+            <option value="">
+                全部岗位
+            </option>
+
+            <option>挖机司机</option>
+            <option>汽车司机</option>
+
+            <option>铲车司机</option>
+            <option>加油车司机</option>
+            <option>大巴司机</option>
+            <option>平路机司机</option>
+            <option>洒水车司机</option>
+            <option>推土机司机</option>
+
+            <option>车队长</option>
+
+            <option>维修管理员</option>
+            <option>修理工</option>
+
+            <option>测量员</option>
+            <option>安全员</option>
+            <option>统计</option>
+            <option>会计</option>
+            <option>后勤</option>
+            <option>库房管理</option>
+
+            <option>总经理</option>
+            <option>管理员</option>
+
+        </select>
+
+
+        <select
+            id="statusFilter"
+            onchange="renderTable()"
+        >
+
+            <option value="">
+                全部状态
+            </option>
+
+            <option value="pending">
+                待审核
+            </option>
+
+            <option value="approved">
+                已通过
+            </option>
+
+            <option value="rejected">
+                已驳回
+            </option>
+
+            <option value="disabled">
+                停用 / 离职
+            </option>
+
+        </select>
+
+    </section>
+
+
+    <!-- 人员表 -->
+
+    <section class="table-card">
+
+        <div class="table-wrap">
 
             <table>
 
@@ -672,10 +937,6 @@
                         </th>
 
                         <th>
-                            手机号
-                        </th>
-
-                        <th>
                             岗位
                         </th>
 
@@ -684,7 +945,7 @@
                         </th>
 
                         <th>
-                            入职日期
+                            手机号
                         </th>
 
                         <th>
@@ -692,7 +953,7 @@
                         </th>
 
                         <th>
-                            审核状态
+                            状态
                         </th>
 
                         <th>
@@ -704,9 +965,7 @@
                 </thead>
 
 
-                <tbody
-                    id="personnelTableBody"
-                >
+                <tbody id="personnelTableBody">
                 </tbody>
 
             </table>
@@ -714,59 +973,79 @@
         </div>
 
 
-        <!-- ==================================================
-             页面操作
-        =================================================== -->
-
-        <div class="top-actions">
-
-
-            <button
-                type="button"
-                onclick="location.href='admin-master.html'"
-            >
-                🗂️ 基础资料中心
-            </button>
-
-
-            <button
-                type="button"
-                onclick="logoutAdmin()"
-            >
-                🔒 退出管理员
-            </button>
-
-
-            <button
-                type="button"
-                onclick="location.href='index.html'"
-            >
-                返回系统首页
-            </button>
-
-
+        <div
+            class="empty"
+            id="emptyState"
+            style="display:none;"
+        >
+            暂无符合条件的人员资料
         </div>
-
 
     </section>
 
 
-    <!-- ==================================================
-         人员详细档案
-    =================================================== -->
+    <div class="bottom-actions">
 
-    <section
-        id="detailSection"
-        style="
-            display:none;
-            margin-top:20px;
-        "
-    >
+        <button
+            type="button"
+            class="nav-btn"
+            onclick="location.href='admin-master.html'"
+        >
+            📚 基础资料中心
+        </button>
 
 
-        <h2>
-            人员详细档案
-        </h2>
+        <button
+            type="button"
+            class="nav-btn"
+            onclick="location.href='index.html'"
+        >
+            🏠 返回系统首页
+        </button>
+
+    </div>
+
+
+</main>
+
+
+<footer style="
+    text-align:center;
+    padding:20px;
+    color:#94a3b8;
+    font-size:12px;
+">
+    矿山管理系统 · 管理员审核中心 V2.9.6
+</footer>
+
+
+<!-- =========================================================
+     人员详情
+========================================================= -->
+
+<div
+    class="modal"
+    id="detailModal"
+    onclick="modalBackgroundClose(event)"
+>
+
+    <div class="modal-card">
+
+        <div class="modal-header">
+
+            <h2>
+                人员资料详情
+            </h2>
+
+            <button
+                type="button"
+                class="close-btn"
+                onclick="closeDetail()"
+            >
+                ×
+            </button>
+
+        </div>
 
 
         <div class="detail-grid">
@@ -774,169 +1053,326 @@
 
             <div class="detail-item">
 
-                <strong>
-                    姓名：
-                </strong>
+                <div class="detail-label">
+                    姓名
+                </div>
 
-                <span id="detailName">
-                </span>
-
-            </div>
-
-
-            <div class="detail-item">
-
-                <strong>
-                    手机号：
-                </strong>
-
-                <span id="detailPhone">
-                </span>
+                <div
+                    class="detail-value"
+                    id="detailName"
+                >
+                    -
+                </div>
 
             </div>
 
 
             <div class="detail-item">
 
-                <strong>
-                    岗位：
-                </strong>
+                <div class="detail-label">
+                    手机号
+                </div>
 
-                <span id="detailPosition">
-                </span>
-
-            </div>
-
-
-            <div class="detail-item">
-
-                <strong>
-                    人员类别：
-                </strong>
-
-                <span id="detailCategory">
-                </span>
+                <div
+                    class="detail-value"
+                    id="detailPhone"
+                >
+                    -
+                </div>
 
             </div>
 
 
             <div class="detail-item">
 
-                <strong>
-                    部门 / 车队：
-                </strong>
+                <div class="detail-label">
+                    岗位
+                </div>
 
-                <span id="detailTeam">
-                </span>
-
-            </div>
-
-
-            <div class="detail-item">
-
-                <strong>
-                    入职日期：
-                </strong>
-
-                <span id="detailEntryDate">
-                </span>
+                <div
+                    class="detail-value"
+                    id="detailPosition"
+                >
+                    -
+                </div>
 
             </div>
 
 
             <div class="detail-item">
 
-                <strong>
-                    紧急联系人：
-                </strong>
+                <div class="detail-label">
+                    人员类别
+                </div>
 
-                <span id="detailEmergencyContact">
-                </span>
-
-            </div>
-
-
-            <div class="detail-item">
-
-                <strong>
-                    紧急联系电话：
-                </strong>
-
-                <span id="detailEmergencyPhone">
-                </span>
+                <div
+                    class="detail-value"
+                    id="detailCategory"
+                >
+                    -
+                </div>
 
             </div>
 
 
             <div class="detail-item">
 
-                <strong>
-                    身份证号：
-                </strong>
+                <div class="detail-label">
+                    部门 / 车队
+                </div>
 
-                <span id="detailIdCardNumber">
-                </span>
-
-            </div>
-
-
-            <div class="detail-item">
-
-                <strong>
-                    护照号：
-                </strong>
-
-                <span id="detailPassportNumber">
-                </span>
+                <div
+                    class="detail-value"
+                    id="detailDepartment"
+                >
+                    -
+                </div>
 
             </div>
 
 
             <div class="detail-item">
 
-                <strong>
-                    银行卡号：
-                </strong>
+                <div class="detail-label">
+                    入职日期
+                </div>
 
-                <span id="detailBankCardNumber">
-                </span>
+                <div
+                    class="detail-value"
+                    id="detailEntryDate"
+                >
+                    -
+                </div>
 
             </div>
 
 
             <div class="detail-item">
 
-                <strong>
-                    审核状态：
-                </strong>
+                <div class="detail-label">
+                    身份证号
+                </div>
 
-                <span id="detailStatus">
-                </span>
+                <div
+                    class="detail-value"
+                    id="detailIdCard"
+                >
+                    -
+                </div>
 
             </div>
 
+
+            <div class="detail-item">
+
+                <div class="detail-label">
+                    护照号
+                </div>
+
+                <div
+                    class="detail-value"
+                    id="detailPassport"
+                >
+                    -
+                </div>
+
+            </div>
+
+
+            <div class="detail-item">
+
+                <div class="detail-label">
+                    银行卡号
+                </div>
+
+                <div
+                    class="detail-value"
+                    id="detailBankCard"
+                >
+                    -
+                </div>
+
+            </div>
+
+
+            <div class="detail-item">
+
+                <div class="detail-label">
+                    紧急联系人
+                </div>
+
+                <div
+                    class="detail-value"
+                    id="detailEmergencyContact"
+                >
+                    -
+                </div>
+
+            </div>
+
+
+            <div class="detail-item">
+
+                <div class="detail-label">
+                    紧急联系电话
+                </div>
+
+                <div
+                    class="detail-value"
+                    id="detailEmergencyPhone"
+                >
+                    -
+                </div>
+
+            </div>
+
+
+            <div class="detail-item">
+
+                <div class="detail-label">
+                    当前审核状态
+                </div>
+
+                <div
+                    class="detail-value"
+                    id="detailStatus"
+                >
+                    -
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <div class="detail-item">
+
+            <div class="detail-label">
+                备注
+            </div>
+
+            <div
+                class="detail-value"
+                id="detailRemark"
+            >
+                -
+            </div>
 
         </div>
 
 
         <div
-            class="detail-item"
-            style="margin-top:10px;"
+            class="security-notice"
+            id="securityNotice"
         >
-
-            <strong>
-                备注：
-            </strong>
-
-            <span id="detailRemark">
-            </span>
-
+            🔐 当前申请岗位属于高权限岗位。
+            管理员批准入职后，该人员仍需要完成管理密码验证，
+            才能进入对应管理页面。
         </div>
 
 
-        <!-- ==================================================
-             驳回原因
-        =================================================== -->
+        <!-- 证件照片 -->
+
+        <section class="photo-section">
+
+            <h3>
+                证件照片
+            </h3>
+
+
+            <div class="photo-grid">
+
+
+                <div class="photo-box">
+
+                    <div class="photo-title">
+                        身份证照片
+                    </div>
+
+                    <img
+                        id="detailIdCardPhoto"
+                        alt="身份证照片"
+                    >
+
+                    <div
+                        class="no-photo"
+                        id="detailIdCardPhotoEmpty"
+                    >
+                        未上传
+                    </div>
+
+                </div>
+
+
+                <div class="photo-box">
+
+                    <div class="photo-title">
+                        护照照片
+                    </div>
+
+                    <img
+                        id="detailPassportPhoto"
+                        alt="护照照片"
+                    >
+
+                    <div
+                        class="no-photo"
+                        id="detailPassportPhotoEmpty"
+                    >
+                        未上传
+                    </div>
+
+                </div>
+
+
+                <div class="photo-box">
+
+                    <div class="photo-title">
+                        驾驶证 / 操作证
+                    </div>
+
+                    <img
+                        id="detailLicensePhoto"
+                        alt="驾驶证或操作证"
+                    >
+
+                    <div
+                        class="no-photo"
+                        id="detailLicensePhotoEmpty"
+                    >
+                        未上传
+                    </div>
+
+                </div>
+
+
+                <div class="photo-box">
+
+                    <div class="photo-title">
+                        银行卡照片
+                    </div>
+
+                    <img
+                        id="detailBankPhoto"
+                        alt="银行卡照片"
+                    >
+
+                    <div
+                        class="no-photo"
+                        id="detailBankPhotoEmpty"
+                    >
+                        未上传
+                    </div>
+
+                </div>
+
+
+            </div>
+
+        </section>
+
+
+        <!-- 驳回原因 -->
 
         <div
             class="reject-area"
@@ -944,19 +1380,28 @@
         >
 
             <label for="rejectReasonInput">
-                审核不通过原因
+                驳回原因
             </label>
-
 
             <textarea
                 id="rejectReasonInput"
-                placeholder="请填写需要员工修改的内容，例如：身份证照片不清楚、手机号填写错误等"
+                placeholder="请输入需要申请人修改的内容"
             ></textarea>
 
 
             <button
-                id="confirmRejectButton"
                 type="button"
+                class="reject-btn"
+                style="
+                    width:100%;
+                    min-height:43px;
+                    border:0;
+                    border-radius:8px;
+                    margin-top:10px;
+                    font-weight:700;
+                    cursor:pointer;
+                "
+                onclick="confirmReject()"
             >
                 确认驳回
             </button>
@@ -964,292 +1409,1948 @@
         </div>
 
 
-        <!-- ==================================================
-             高权限岗位说明
-        =================================================== -->
-
-        <div
-            class="security-notice"
-            id="securityNotice"
-            style="display:none;"
-        >
-
-            🔐 此岗位属于高权限岗位。
-
-            管理员审核通过后，
-            仍需要通过密码验证，
-            才能进入对应管理页面。
-
-        </div>
-
-
-        <!-- ==================================================
-             证件照片
-        =================================================== -->
-
-        <h2 style="margin-top:30px;">
-            证件照片
-        </h2>
-
-
-        <div
-            id="photoArea"
-            class="photo-grid"
-        >
-
-
-            <div class="photo-card">
-
-                <h3>
-                    身份证照片
-                </h3>
-
-                <img
-                    id="detailIdCardPhoto"
-                    alt="身份证照片"
-                    style="display:none;"
-                >
-
-                <p id="idCardNoPhoto">
-                    未上传
-                </p>
-
-            </div>
-
-
-            <div class="photo-card">
-
-                <h3>
-                    护照照片
-                </h3>
-
-                <img
-                    id="detailPassportPhoto"
-                    alt="护照照片"
-                    style="display:none;"
-                >
-
-                <p id="passportNoPhoto">
-                    未上传
-                </p>
-
-            </div>
-
-
-            <div class="photo-card">
-
-                <h3>
-                    驾驶证 / 操作证照片
-                </h3>
-
-                <img
-                    id="detailDriverLicensePhoto"
-                    alt="驾驶证或操作证照片"
-                    style="display:none;"
-                >
-
-                <p id="driverLicenseNoPhoto">
-                    未上传
-                </p>
-
-            </div>
-
-
-            <div class="photo-card">
-
-                <h3>
-                    银行卡照片
-                </h3>
-
-                <img
-                    id="detailBankCardPhoto"
-                    alt="银行卡照片"
-                    style="display:none;"
-                >
-
-                <p id="bankCardNoPhoto">
-                    未上传
-                </p>
-
-            </div>
-
-
-        </div>
-
-
-        <!-- ==================================================
-             审核操作
-        =================================================== -->
-
-        <div class="review-action-area">
-
+        <div class="modal-actions">
 
             <button
-                id="approveButton"
                 type="button"
+                class="approve-btn"
+                id="approveButton"
+                onclick="approveCurrentPerson()"
             >
                 ✅ 审核通过
             </button>
 
 
             <button
+                type="button"
+                class="reject-btn"
                 id="rejectButton"
-                type="button"
+                onclick="showRejectArea()"
             >
-                ❌ 审核不通过
+                ❌ 驳回资料
             </button>
 
 
             <button
-                id="printProfileButton"
                 type="button"
+                class="print-btn"
+                onclick="printCurrentProfile()"
             >
-                🖨️ 打印人员档案
+                🖨️ 打印资料
             </button>
 
 
             <button
-                id="printPhotosButton"
                 type="button"
+                class="print-btn"
+                onclick="printCurrentPhotos()"
             >
-                🖨️ 打印证件照片
+                🖼️ 打印照片
             </button>
 
 
             <button
-                id="closeDetailButton"
                 type="button"
+                class="secondary-btn"
+                onclick="closeDetail()"
             >
-                关闭人员详情
+                关闭
             </button>
-
 
         </div>
 
+    </div>
 
-    </section>
-
-
-</main>
-
-
-<footer>
-
-    <p>
-        矿山管理系统 · 管理员统一审核 V2.9.6
-    </p>
-
-</footer>
-
-
-<script
-    src="js/admin-review.js?v=2.9.5"
-></script>
+</div>
 
 
 <script>
 
-    /* ==================================================
-       管理员会话显示
-    =================================================== */
-
-    (function () {
-
-        let session = null;
+"use strict";
 
 
-        try {
+/* =========================================================
+   当前详情人员ID
+========================================================= */
 
-            session =
-                JSON.parse(
-                    sessionStorage.getItem(
-                        "managementSession"
-                    )
-                );
-
-        } catch (error) {
-
-            return;
-
-        }
+let selectedPersonId = "";
 
 
-        if (!session) {
-            return;
-        }
+/* =========================================================
+   岗位兼容
+========================================================= */
+
+function normalizePosition(position) {
+
+    const map = {
+
+        "卡车司机":
+            "汽车司机",
+
+        "装载机司机":
+            "铲车司机",
+
+        "大巴":
+            "大巴司机",
+
+        "测量人员":
+            "测量员",
+
+        "后勤人员":
+            "后勤",
+
+        "库房管理员":
+            "库房管理",
+
+        "维修人员":
+            "修理工",
+
+        "调度员":
+            "车队长"
+
+    };
 
 
-        const remaining =
-            Number(
-                session.expiresAt
-            ) -
-            Date.now();
+    return (
+        map[position] ||
+        position ||
+        ""
+    );
+
+}
 
 
-        const minutes =
-            Math.max(
-                0,
-                Math.ceil(
-                    remaining /
-                    60000
+/* =========================================================
+   人员ID
+========================================================= */
+
+function getPersonId(person) {
+
+    return (
+        person?.personId ||
+        person?.driverId ||
+        person?.id ||
+        ""
+    );
+
+}
+
+
+/* =========================================================
+   人员库
+========================================================= */
+
+function getPersonnelRecords() {
+
+    try {
+
+        const data =
+            JSON.parse(
+                localStorage.getItem(
+                    "personnelRecords"
                 )
             );
 
 
-        const text =
-            document.getElementById(
-                "sessionTimeText"
-            );
+        return Array.isArray(data)
+            ? data
+            : [];
 
 
-        if (text) {
+    } catch (error) {
 
-            text.textContent =
-                " 本次验证约 " +
-                minutes +
-                " 分钟后失效。";
-
-        }
-
-    })();
-
-
-    /* ==================================================
-       退出管理员
-    =================================================== */
-
-    function logoutAdmin() {
-
-        const confirmed =
-            confirm(
-                "确定退出管理员端吗？"
-            );
-
-
-        if (!confirmed) {
-            return;
-        }
-
-
-        sessionStorage.removeItem(
-            "managementSession"
+        console.error(
+            "人员资料读取失败：",
+            error
         );
 
 
-        localStorage.removeItem(
-            "pendingProtectedPersonId"
-        );
-
-
-        localStorage.removeItem(
-            "pendingProtectedPosition"
-        );
-
-
-        location.href =
-            "index.html";
+        return [];
 
     }
+
+}
+
+
+function savePersonnelRecords(records) {
+
+    localStorage.setItem(
+        "personnelRecords",
+        JSON.stringify(
+            records
+        )
+    );
+
+}
+
+
+/* =========================================================
+   审核状态
+========================================================= */
+
+function getApprovalState(person) {
+
+    if (!person) {
+
+        return "pending";
+
+    }
+
+
+    if (
+        person.status === "rejected" ||
+        person.approvalStatus === "rejected"
+    ) {
+
+        return "rejected";
+
+    }
+
+
+    if (
+        person.status === "disabled" ||
+        person.status === "resigned" ||
+        person.personnelStatus === "停用" ||
+        person.personnelStatus === "离职"
+    ) {
+
+        return "disabled";
+
+    }
+
+
+    if (
+        person.approvalStatus === "approved" ||
+        person.status === "approved" ||
+        person.status === "active" ||
+        person.status === "working" ||
+        person.status === "leave" ||
+        person.personnelStatus === "在职可用" ||
+        person.personnelStatus === "作业中" ||
+        person.personnelStatus === "请假"
+    ) {
+
+        return "approved";
+
+    }
+
+
+    return "pending";
+
+}
+
+
+/* =========================================================
+   状态文字
+========================================================= */
+
+function getStateText(state) {
+
+    const map = {
+
+        pending:
+            "待审核",
+
+        approved:
+            "已通过",
+
+        rejected:
+            "已驳回",
+
+        disabled:
+            "停用 / 离职"
+
+    };
+
+
+    return (
+        map[state] ||
+        state
+    );
+
+}
+
+
+/* =========================================================
+   状态标签
+========================================================= */
+
+function getStateBadge(state) {
+
+    const classMap = {
+
+        pending:
+            "badge-pending",
+
+        approved:
+            "badge-approved",
+
+        rejected:
+            "badge-rejected",
+
+        disabled:
+            "badge-disabled"
+
+    };
+
+
+    return `
+        <span class="badge ${classMap[state] || "badge-disabled"}">
+            ${escapeHtml(getStateText(state))}
+        </span>
+    `;
+
+}
+
+
+/* =========================================================
+   时间
+========================================================= */
+
+function formatDateTime(value) {
+
+    if (!value) {
+
+        return "-";
+
+    }
+
+
+    const date =
+        new Date(value);
+
+
+    if (
+        Number.isNaN(
+            date.getTime()
+        )
+    ) {
+
+        return value;
+
+    }
+
+
+    return date.toLocaleString(
+        "zh-CN",
+        {
+            hour12: false
+        }
+    );
+
+}
+
+
+/* =========================================================
+   HTML转义
+========================================================= */
+
+function escapeHtml(value) {
+
+    return String(
+        value ?? ""
+    )
+        .replaceAll(
+            "&",
+            "&amp;"
+        )
+        .replaceAll(
+            "<",
+            "&lt;"
+        )
+        .replaceAll(
+            ">",
+            "&gt;"
+        )
+        .replaceAll(
+            '"',
+            "&quot;"
+        )
+        .replaceAll(
+            "'",
+            "&#039;"
+        );
+
+}
+
+
+/* =========================================================
+   统计
+========================================================= */
+
+function renderSummary() {
+
+    const records =
+        getPersonnelRecords();
+
+
+    const states =
+        records.map(
+            getApprovalState
+        );
+
+
+    document.getElementById(
+        "totalCount"
+    ).textContent =
+        records.length;
+
+
+    document.getElementById(
+        "pendingCount"
+    ).textContent =
+        states.filter(
+            state =>
+                state === "pending"
+        ).length;
+
+
+    document.getElementById(
+        "approvedCount"
+    ).textContent =
+        states.filter(
+            state =>
+                state === "approved"
+        ).length;
+
+
+    document.getElementById(
+        "rejectedCount"
+    ).textContent =
+        states.filter(
+            state =>
+                state === "rejected"
+        ).length;
+
+}
+
+
+/* =========================================================
+   人员表
+========================================================= */
+
+function renderTable() {
+
+    const search =
+        document
+            .getElementById(
+                "searchInput"
+            )
+            .value
+            .trim()
+            .toLowerCase();
+
+
+    const positionFilter =
+        document.getElementById(
+            "positionFilter"
+        ).value;
+
+
+    const statusFilter =
+        document.getElementById(
+            "statusFilter"
+        ).value;
+
+
+    let records =
+        getPersonnelRecords();
+
+
+    records =
+        records.filter(
+            person => {
+
+                const position =
+                    normalizePosition(
+                        person.position
+                    );
+
+
+                const state =
+                    getApprovalState(
+                        person
+                    );
+
+
+                const searchText = [
+
+                    person.name,
+
+                    person.phone,
+
+                    person.department,
+
+                    person.team,
+
+                    position
+
+                ]
+                    .join(" ")
+                    .toLowerCase();
+
+
+                if (
+                    search &&
+                    !searchText.includes(
+                        search
+                    )
+                ) {
+
+                    return false;
+
+                }
+
+
+                if (
+                    positionFilter &&
+                    position !==
+                        positionFilter
+                ) {
+
+                    return false;
+
+                }
+
+
+                if (
+                    statusFilter &&
+                    state !==
+                        statusFilter
+                ) {
+
+                    return false;
+
+                }
+
+
+                return true;
+
+            }
+        );
+
+
+    /*
+       待审核优先。
+    */
+
+    const stateOrder = {
+
+        pending: 0,
+        rejected: 1,
+        approved: 2,
+        disabled: 3
+
+    };
+
+
+    records.sort(
+        (a, b) => {
+
+            const stateDifference =
+
+                stateOrder[
+                    getApprovalState(a)
+                ] -
+
+                stateOrder[
+                    getApprovalState(b)
+                ];
+
+
+            if (stateDifference !== 0) {
+
+                return stateDifference;
+
+            }
+
+
+            const aTime =
+                new Date(
+                    a.submittedAt ||
+                    a.updatedAt ||
+                    a.createdAt ||
+                    0
+                ).getTime();
+
+
+            const bTime =
+                new Date(
+                    b.submittedAt ||
+                    b.updatedAt ||
+                    b.createdAt ||
+                    0
+                ).getTime();
+
+
+            return bTime - aTime;
+
+        }
+    );
+
+
+    const tbody =
+        document.getElementById(
+            "personnelTableBody"
+        );
+
+
+    const empty =
+        document.getElementById(
+            "emptyState"
+        );
+
+
+    if (!records.length) {
+
+        tbody.innerHTML =
+            "";
+
+
+        empty.style.display =
+            "block";
+
+
+        return;
+
+    }
+
+
+    empty.style.display =
+        "none";
+
+
+    tbody.innerHTML =
+        records
+            .map(
+                person => {
+
+                    const id =
+                        getPersonId(
+                            person
+                        );
+
+
+                    const state =
+                        getApprovalState(
+                            person
+                        );
+
+
+                    return `
+
+                        <tr onclick="openDetail('${escapeHtml(id)}')">
+
+                            <td>
+                                ${escapeHtml(person.name || "-")}
+                            </td>
+
+                            <td>
+                                ${escapeHtml(normalizePosition(person.position) || "-")}
+                            </td>
+
+                            <td>
+                                ${escapeHtml(person.department || person.team || "-")}
+                            </td>
+
+                            <td>
+                                ${escapeHtml(person.phone || "-")}
+                            </td>
+
+                            <td>
+                                ${escapeHtml(formatDateTime(
+                                    person.submittedAt ||
+                                    person.updatedAt ||
+                                    person.createdAt
+                                ))}
+                            </td>
+
+                            <td>
+                                ${getStateBadge(state)}
+                            </td>
+
+                            <td>
+
+                                <button
+                                    type="button"
+                                    class="action-link"
+                                    onclick="
+                                        event.stopPropagation();
+                                        openDetail('${escapeHtml(id)}');
+                                    "
+                                >
+                                    查看
+                                </button>
+
+                            </td>
+
+                        </tr>
+
+                    `;
+
+                }
+            )
+            .join("");
+
+}
+
+
+/* =========================================================
+   查找人员
+========================================================= */
+
+function findPerson(personId) {
+
+    return (
+        getPersonnelRecords()
+            .find(
+                person =>
+                    getPersonId(person) ===
+                    personId
+            ) ||
+        null
+    );
+
+}
+
+
+/* =========================================================
+   打开详情
+========================================================= */
+
+function openDetail(personId) {
+
+    const person =
+        findPerson(
+            personId
+        );
+
+
+    if (!person) {
+
+        alert(
+            "未找到人员资料。"
+        );
+
+
+        return;
+
+    }
+
+
+    selectedPersonId =
+        personId;
+
+
+    const position =
+        normalizePosition(
+            person.position
+        );
+
+
+    const state =
+        getApprovalState(
+            person
+        );
+
+
+    setText(
+        "detailName",
+        person.name
+    );
+
+
+    setText(
+        "detailPhone",
+        person.phone
+    );
+
+
+    setText(
+        "detailPosition",
+        position
+    );
+
+
+    setText(
+        "detailCategory",
+        person.personnelCategory ||
+        person.category
+    );
+
+
+    setText(
+        "detailDepartment",
+        person.department ||
+        person.team
+    );
+
+
+    setText(
+        "detailEntryDate",
+        person.entryDate
+    );
+
+
+    setText(
+        "detailIdCard",
+        person.idCardNumber
+    );
+
+
+    setText(
+        "detailPassport",
+        person.passportNumber
+    );
+
+
+    setText(
+        "detailBankCard",
+        person.bankCardNumber
+    );
+
+
+    setText(
+        "detailEmergencyContact",
+        person.emergencyContact
+    );
+
+
+    setText(
+        "detailEmergencyPhone",
+        person.emergencyPhone
+    );
+
+
+    setText(
+        "detailStatus",
+        getStateText(
+            state
+        )
+    );
+
+
+    setText(
+        "detailRemark",
+        person.remark
+    );
+
+
+    setPhoto(
+        "detailIdCardPhoto",
+        "detailIdCardPhotoEmpty",
+        person.idCardPhoto
+    );
+
+
+    setPhoto(
+        "detailPassportPhoto",
+        "detailPassportPhotoEmpty",
+        person.passportPhoto
+    );
+
+
+    setPhoto(
+        "detailLicensePhoto",
+        "detailLicensePhotoEmpty",
+        person.driverLicensePhoto ||
+        person.licensePhoto
+    );
+
+
+    setPhoto(
+        "detailBankPhoto",
+        "detailBankPhotoEmpty",
+        person.bankCardPhoto
+    );
+
+
+    document.getElementById(
+        "securityNotice"
+    ).style.display =
+        (
+            position === "总经理" ||
+            position === "管理员"
+        )
+            ? "block"
+            : "none";
+
+
+    document.getElementById(
+        "rejectArea"
+    ).style.display =
+        "none";
+
+
+    document.getElementById(
+        "rejectReasonInput"
+    ).value =
+        person.rejectReason ||
+        person.rejectionReason ||
+        "";
+
+
+    /*
+       已停用 / 离职人员不能在这里重新审批。
+    */
+
+    const disabled =
+        state === "disabled";
+
+
+    document.getElementById(
+        "approveButton"
+    ).style.display =
+        disabled
+            ? "none"
+            : "block";
+
+
+    document.getElementById(
+        "rejectButton"
+    ).style.display =
+        disabled
+            ? "none"
+            : "block";
+
+
+    document.getElementById(
+        "detailModal"
+    ).classList.add(
+        "show"
+    );
+
+}
+
+
+/* =========================================================
+   详情文字
+========================================================= */
+
+function setText(
+    elementId,
+    value
+) {
+
+    document.getElementById(
+        elementId
+    ).textContent =
+        value ||
+        "-";
+
+}
+
+
+/* =========================================================
+   图片
+========================================================= */
+
+function setPhoto(
+    imageId,
+    emptyId,
+    data
+) {
+
+    const image =
+        document.getElementById(
+            imageId
+        );
+
+
+    const empty =
+        document.getElementById(
+            emptyId
+        );
+
+
+    if (data) {
+
+        image.src =
+            data;
+
+
+        image.style.display =
+            "block";
+
+
+        empty.style.display =
+            "none";
+
+    } else {
+
+        image.removeAttribute(
+            "src"
+        );
+
+
+        image.style.display =
+            "none";
+
+
+        empty.style.display =
+            "block";
+
+    }
+
+}
+
+
+/* =========================================================
+   审核通过
+========================================================= */
+
+function approveCurrentPerson() {
+
+    if (!selectedPersonId) {
+
+        return;
+
+    }
+
+
+    const records =
+        getPersonnelRecords();
+
+
+    const index =
+        records.findIndex(
+            person =>
+                getPersonId(person) ===
+                selectedPersonId
+        );
+
+
+    if (index < 0) {
+
+        alert(
+            "未找到人员资料。"
+        );
+
+
+        return;
+
+    }
+
+
+    const person =
+        records[index];
+
+
+    if (
+        getApprovalState(person) ===
+        "disabled"
+    ) {
+
+        alert(
+            "停用或离职人员不能直接进行入职审核。"
+        );
+
+
+        return;
+
+    }
+
+
+    const confirmed =
+        confirm(
+            "确认审核通过“" +
+            (
+                person.name ||
+                "该人员"
+            ) +
+            "”的入职申请吗？"
+        );
+
+
+    if (!confirmed) {
+
+        return;
+
+    }
+
+
+    const now =
+        new Date().toISOString();
+
+
+    records[index] = {
+
+        ...person,
+
+        personId:
+            getPersonId(person),
+
+        position:
+            normalizePosition(
+                person.position
+            ),
+
+        status:
+            "approved",
+
+        approvalStatus:
+            "approved",
+
+        personnelStatus:
+            "在职可用",
+
+        approvedAt:
+            now,
+
+        reviewedAt:
+            now,
+
+        approvedBy:
+            "管理员",
+
+        reviewedBy:
+            "管理员",
+
+        updatedAt:
+            now
+
+    };
+
+
+    delete records[index].rejectReason;
+    delete records[index].rejectionReason;
+    delete records[index].rejectedAt;
+    delete records[index].reviewRemark;
+    delete records[index].approvalRemark;
+
+
+    savePersonnelRecords(
+        records
+    );
+
+
+    alert(
+        "审核通过。"
+    );
+
+
+    closeDetail();
+
+    refreshPage();
+
+}
+
+
+/* =========================================================
+   显示驳回输入
+========================================================= */
+
+function showRejectArea() {
+
+    document.getElementById(
+        "rejectArea"
+    ).style.display =
+        "block";
+
+
+    document.getElementById(
+        "rejectReasonInput"
+    ).focus();
+
+}
+
+
+/* =========================================================
+   确认驳回
+========================================================= */
+
+function confirmReject() {
+
+    if (!selectedPersonId) {
+
+        return;
+
+    }
+
+
+    const reason =
+        document
+            .getElementById(
+                "rejectReasonInput"
+            )
+            .value
+            .trim();
+
+
+    if (!reason) {
+
+        alert(
+            "请填写驳回原因。"
+        );
+
+
+        return;
+
+    }
+
+
+    const records =
+        getPersonnelRecords();
+
+
+    const index =
+        records.findIndex(
+            person =>
+                getPersonId(person) ===
+                selectedPersonId
+        );
+
+
+    if (index < 0) {
+
+        alert(
+            "未找到人员资料。"
+        );
+
+
+        return;
+
+    }
+
+
+    const person =
+        records[index];
+
+
+    if (
+        getApprovalState(person) ===
+        "disabled"
+    ) {
+
+        alert(
+            "停用或离职人员不能执行此操作。"
+        );
+
+
+        return;
+
+    }
+
+
+    const confirmed =
+        confirm(
+            "确认驳回“" +
+            (
+                person.name ||
+                "该人员"
+            ) +
+            "”的入职申请吗？"
+        );
+
+
+    if (!confirmed) {
+
+        return;
+
+    }
+
+
+    const now =
+        new Date().toISOString();
+
+
+    records[index] = {
+
+        ...person,
+
+        personId:
+            getPersonId(person),
+
+        position:
+            normalizePosition(
+                person.position
+            ),
+
+        status:
+            "rejected",
+
+        approvalStatus:
+            "rejected",
+
+        personnelStatus:
+            "待审核",
+
+        rejectReason:
+            reason,
+
+        rejectionReason:
+            reason,
+
+        reviewRemark:
+            reason,
+
+        rejectedAt:
+            now,
+
+        reviewedAt:
+            now,
+
+        reviewedBy:
+            "管理员",
+
+        updatedAt:
+            now
+
+    };
+
+
+    delete records[index].approvedAt;
+    delete records[index].approvedBy;
+
+
+    savePersonnelRecords(
+        records
+    );
+
+
+    alert(
+        "资料已驳回，申请人可以修改后重新提交。"
+    );
+
+
+    closeDetail();
+
+    refreshPage();
+
+}
+
+
+/* =========================================================
+   关闭详情
+========================================================= */
+
+function closeDetail() {
+
+    selectedPersonId =
+        "";
+
+
+    document.getElementById(
+        "detailModal"
+    ).classList.remove(
+        "show"
+    );
+
+}
+
+
+/* =========================================================
+   点击背景关闭
+========================================================= */
+
+function modalBackgroundClose(event) {
+
+    if (
+        event.target.id ===
+        "detailModal"
+    ) {
+
+        closeDetail();
+
+    }
+
+}
+
+
+/* =========================================================
+   打印人员资料
+========================================================= */
+
+function printCurrentProfile() {
+
+    const person =
+        findPerson(
+            selectedPersonId
+        );
+
+
+    if (!person) {
+
+        return;
+
+    }
+
+
+    const printWindow =
+        window.open(
+            "",
+            "_blank"
+        );
+
+
+    if (!printWindow) {
+
+        alert(
+            "浏览器阻止了打印窗口，请允许弹出窗口后重试。"
+        );
+
+
+        return;
+
+    }
+
+
+    const state =
+        getStateText(
+            getApprovalState(
+                person
+            )
+        );
+
+
+    printWindow.document.write(`
+
+        <!DOCTYPE html>
+
+        <html lang="zh-CN">
+
+        <head>
+
+            <meta charset="UTF-8">
+
+            <title>
+                人员资料
+            </title>
+
+            <style>
+
+                body {
+                    font-family:
+                        Arial,
+                        "Microsoft YaHei",
+                        sans-serif;
+                    padding: 30px;
+                    color: #111827;
+                }
+
+                h1 {
+                    text-align: center;
+                }
+
+                table {
+                    width: 100%;
+                    border-collapse: collapse;
+                }
+
+                td {
+                    border: 1px solid #d1d5db;
+                    padding: 10px;
+                }
+
+                td:first-child {
+                    width: 30%;
+                    font-weight: bold;
+                    background: #f3f4f6;
+                }
+
+            </style>
+
+        </head>
+
+        <body>
+
+            <h1>
+                矿山管理系统人员资料
+            </h1>
+
+            <table>
+
+                <tr>
+                    <td>姓名</td>
+                    <td>${escapeHtml(person.name || "-")}</td>
+                </tr>
+
+                <tr>
+                    <td>手机号</td>
+                    <td>${escapeHtml(person.phone || "-")}</td>
+                </tr>
+
+                <tr>
+                    <td>岗位</td>
+                    <td>${escapeHtml(normalizePosition(person.position) || "-")}</td>
+                </tr>
+
+                <tr>
+                    <td>人员类别</td>
+                    <td>${escapeHtml(person.personnelCategory || "-")}</td>
+                </tr>
+
+                <tr>
+                    <td>部门 / 车队</td>
+                    <td>${escapeHtml(person.department || person.team || "-")}</td>
+                </tr>
+
+                <tr>
+                    <td>入职日期</td>
+                    <td>${escapeHtml(person.entryDate || "-")}</td>
+                </tr>
+
+                <tr>
+                    <td>身份证号</td>
+                    <td>${escapeHtml(person.idCardNumber || "-")}</td>
+                </tr>
+
+                <tr>
+                    <td>护照号</td>
+                    <td>${escapeHtml(person.passportNumber || "-")}</td>
+                </tr>
+
+                <tr>
+                    <td>银行卡号</td>
+                    <td>${escapeHtml(person.bankCardNumber || "-")}</td>
+                </tr>
+
+                <tr>
+                    <td>紧急联系人</td>
+                    <td>${escapeHtml(person.emergencyContact || "-")}</td>
+                </tr>
+
+                <tr>
+                    <td>紧急联系电话</td>
+                    <td>${escapeHtml(person.emergencyPhone || "-")}</td>
+                </tr>
+
+                <tr>
+                    <td>审核状态</td>
+                    <td>${escapeHtml(state)}</td>
+                </tr>
+
+                <tr>
+                    <td>备注</td>
+                    <td>${escapeHtml(person.remark || "-")}</td>
+                </tr>
+
+            </table>
+
+        </body>
+
+        </html>
+
+    `);
+
+
+    printWindow.document.close();
+
+    printWindow.focus();
+
+    printWindow.print();
+
+}
+
+
+/* =========================================================
+   打印证件照片
+========================================================= */
+
+function printCurrentPhotos() {
+
+    const person =
+        findPerson(
+            selectedPersonId
+        );
+
+
+    if (!person) {
+
+        return;
+
+    }
+
+
+    const photos = [
+
+        {
+            title:
+                "身份证照片",
+
+            data:
+                person.idCardPhoto
+        },
+
+        {
+            title:
+                "护照照片",
+
+            data:
+                person.passportPhoto
+        },
+
+        {
+            title:
+                "驾驶证 / 操作证",
+
+            data:
+                person.driverLicensePhoto ||
+                person.licensePhoto
+        },
+
+        {
+            title:
+                "银行卡照片",
+
+            data:
+                person.bankCardPhoto
+        }
+
+    ].filter(
+        item =>
+            item.data
+    );
+
+
+    if (!photos.length) {
+
+        alert(
+            "该人员没有上传证件照片。"
+        );
+
+
+        return;
+
+    }
+
+
+    const printWindow =
+        window.open(
+            "",
+            "_blank"
+        );
+
+
+    if (!printWindow) {
+
+        alert(
+            "浏览器阻止了打印窗口，请允许弹出窗口后重试。"
+        );
+
+
+        return;
+
+    }
+
+
+    printWindow.document.write(`
+
+        <!DOCTYPE html>
+
+        <html lang="zh-CN">
+
+        <head>
+
+            <meta charset="UTF-8">
+
+            <title>
+                证件照片
+            </title>
+
+            <style>
+
+                body {
+                    font-family:
+                        Arial,
+                        "Microsoft YaHei",
+                        sans-serif;
+                    padding: 25px;
+                }
+
+                h1 {
+                    text-align: center;
+                }
+
+                .photo {
+                    margin-bottom: 30px;
+                    page-break-inside: avoid;
+                }
+
+                .photo h2 {
+                    font-size: 17px;
+                }
+
+                img {
+                    max-width: 100%;
+                    max-height: 650px;
+                    object-fit: contain;
+                }
+
+            </style>
+
+        </head>
+
+        <body>
+
+            <h1>
+                ${escapeHtml(person.name || "")}
+                · 证件照片
+            </h1>
+
+            ${
+                photos
+                    .map(
+                        photo => `
+
+                            <div class="photo">
+
+                                <h2>
+                                    ${escapeHtml(photo.title)}
+                                </h2>
+
+                                <img
+                                    src="${photo.data}"
+                                    alt="${escapeHtml(photo.title)}"
+                                >
+
+                            </div>
+
+                        `
+                    )
+                    .join("")
+            }
+
+        </body>
+
+        </html>
+
+    `);
+
+
+    printWindow.document.close();
+
+    printWindow.focus();
+
+    printWindow.print();
+
+}
+
+
+/* =========================================================
+   管理员会话持续验证
+========================================================= */
+
+function validateAdminSession() {
+
+    let session = null;
+
+
+    try {
+
+        session =
+            JSON.parse(
+                sessionStorage.getItem(
+                    "managementSession"
+                )
+            );
+
+    } catch (error) {
+
+        session = null;
+
+    }
+
+
+    if (
+        !session ||
+        session.verified !== true ||
+        session.position !== "管理员" ||
+        !session.personId ||
+        Number(
+            session.expiresAt
+        ) <= Date.now()
+    ) {
+
+        logoutToLogin();
+
+        return false;
+
+    }
+
+
+    const administrator =
+        getPersonnelRecords()
+            .find(
+                person =>
+
+                    getPersonId(person) ===
+                        session.personId &&
+
+                    normalizePosition(
+                        person.position
+                    ) ===
+                        "管理员"
+            );
+
+
+    if (
+        !administrator ||
+        getApprovalState(
+            administrator
+        ) !== "approved"
+    ) {
+
+        logoutToLogin();
+
+        return false;
+
+    }
+
+
+    const remainingMinutes =
+        Math.max(
+            0,
+            Math.ceil(
+                (
+                    Number(
+                        session.expiresAt
+                    ) -
+                    Date.now()
+                ) /
+                60000
+            )
+        );
+
+
+    document.getElementById(
+        "sessionBox"
+    ).textContent =
+
+        "✅ 当前管理员：" +
+
+        (
+            administrator.name ||
+            "管理员"
+        ) +
+
+        "　身份验证有效，剩余约 " +
+
+        remainingMinutes +
+
+        " 分钟";
+
+
+    return true;
+
+}
+
+
+/* =========================================================
+   会话失效
+========================================================= */
+
+function logoutToLogin() {
+
+    sessionStorage.removeItem(
+        "managementSession"
+    );
+
+
+    localStorage.setItem(
+        "pendingProtectedPosition",
+        "管理员"
+    );
+
+
+    location.replace(
+        "management-login.html?position=" +
+        encodeURIComponent(
+            "管理员"
+        )
+    );
+
+}
+
+
+/* =========================================================
+   主动退出
+========================================================= */
+
+function logoutAdmin() {
+
+    sessionStorage.removeItem(
+        "managementSession"
+    );
+
+
+    localStorage.removeItem(
+        "pendingProtectedPersonId"
+    );
+
+
+    localStorage.removeItem(
+        "pendingProtectedPosition"
+    );
+
+
+    location.href =
+        "index.html";
+
+}
+
+
+/* =========================================================
+   页面刷新
+========================================================= */
+
+function refreshPage() {
+
+    if (
+        !validateAdminSession()
+    ) {
+
+        return;
+
+    }
+
+
+    renderSummary();
+
+    renderTable();
+
+}
+
+
+/* =========================================================
+   ESC关闭
+========================================================= */
+
+document.addEventListener(
+    "keydown",
+    function(event) {
+
+        if (
+            event.key === "Escape"
+        ) {
+
+            closeDetail();
+
+        }
+
+    }
+);
+
+
+/* =========================================================
+   启动
+========================================================= */
+
+refreshPage();
+
+
+/*
+   每30秒重新检查：
+
+   1. 管理会话有没有过期
+   2. 管理员本人有没有被停用
+   3. 管理员岗位有没有发生变化
+*/
+
+setInterval(
+    validateAdminSession,
+    30000
+);
 
 </script>
 
