@@ -2,11 +2,18 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
 
     <title>矿山管理系统</title>
 
-    <link rel="stylesheet" href="css/style.css">
+    <link
+        rel="stylesheet"
+        href="css/style.css?v=2.9.4a"
+    >
 </head>
 
 <body>
@@ -16,22 +23,29 @@
     <p>Mine Management System</p>
 </header>
 
+
 <main>
 
     <section>
 
         <h2>请选择登录端口</h2>
 
-        <!--
-        司机端不能直接固定进入注册页面。
-        点击以后由 enterDriverPortal() 判断审核状态。
-        -->
+
+        <!-- =========================
+             司机端
+        ========================== -->
+
         <button
             type="button"
             onclick="enterDriverPortal()"
         >
             🚚 司机端
         </button>
+
+
+        <!-- =========================
+             挖机端
+        ========================== -->
 
         <button
             type="button"
@@ -40,12 +54,22 @@
             🚜 挖机端
         </button>
 
+
+        <!-- =========================
+             加油端
+        ========================== -->
+
         <button
             type="button"
             onclick="alert('加油端正在建设中')"
         >
             ⛽ 加油端
         </button>
+
+
+        <!-- =========================
+             维修端
+        ========================== -->
 
         <button
             type="button"
@@ -54,12 +78,22 @@
             🔧 维修端
         </button>
 
+
+        <!-- =========================
+             辅助车辆端
+        ========================== -->
+
         <button
             type="button"
             onclick="alert('辅助车辆端正在建设中')"
         >
             🚧 辅助车辆端
         </button>
+
+
+        <!-- =========================
+             调度端
+        ========================== -->
 
         <button
             type="button"
@@ -68,6 +102,11 @@
             📋 调度端
         </button>
 
+
+        <!-- =========================
+             管理员审核
+        ========================== -->
+
         <button
             type="button"
             onclick="location.href='admin-review.html'"
@@ -75,23 +114,64 @@
             ⚙️ 管理员端
         </button>
 
+
+        <!-- =========================
+             基础资料中心
+             V2.9.4A
+        ========================== -->
+
+        <button
+            type="button"
+            onclick="location.href='admin-master.html'"
+        >
+            🗂️ 基础资料中心
+        </button>
+
+
+        <!-- =========================
+             总经理端
+        ========================== -->
+
+        <button
+            type="button"
+            onclick="enterGeneralManagerPortal()"
+        >
+            👔 总经理端
+        </button>
+
     </section>
 
 </main>
 
+
 <footer>
-    <p>矿山管理系统 V2.8.1</p>
+    <p>矿山管理系统 V2.9.4A</p>
 </footer>
 
 
 <script>
 
-/*
-========================================
-司机入口
-V2.8.1
-========================================
-*/
+/* =========================================================
+   矿山管理系统
+   首页 V2.9.4A
+========================================================= */
+
+
+/* =========================================================
+   司机入口
+
+   没注册
+   → 注册
+
+   待审核
+   → 等待审核
+
+   已通过
+   → 工作页面
+
+   已驳回
+   → 修改资料重新提交
+========================================================= */
 
 function enterDriverPortal() {
 
@@ -105,7 +185,8 @@ function enterDriverPortal() {
             );
 
         if (saved) {
-            profile = JSON.parse(saved);
+            profile =
+                JSON.parse(saved);
         }
 
     } catch (error) {
@@ -114,11 +195,6 @@ function enterDriverPortal() {
             "司机资料读取失败：",
             error
         );
-
-        /*
-        数据损坏时清除错误数据，
-        重新进入注册。
-        */
 
         localStorage.removeItem(
             "driverProfile"
@@ -131,9 +207,7 @@ function enterDriverPortal() {
     }
 
 
-    /*
-    没有注册资料
-    */
+    /* 没有注册资料 */
 
     if (!profile) {
 
@@ -144,9 +218,7 @@ function enterDriverPortal() {
     }
 
 
-    /*
-    等待审核
-    */
+    /* 等待审核 */
 
     if (
         profile.status ===
@@ -160,9 +232,7 @@ function enterDriverPortal() {
     }
 
 
-    /*
-    审核通过
-    */
+    /* 审核通过 */
 
     if (
         profile.status ===
@@ -176,9 +246,7 @@ function enterDriverPortal() {
     }
 
 
-    /*
-    审核未通过
-    */
+    /* 审核未通过 */
 
     if (
         profile.status ===
@@ -192,12 +260,28 @@ function enterDriverPortal() {
     }
 
 
-    /*
-    未知状态
-    */
+    /* 未知状态 */
 
     location.href =
         "driver-register.html";
+}
+
+
+/* =========================================================
+   总经理入口
+
+   当前 V2.9.4A 阶段：
+   如果总经理页面已经存在，
+   直接进入。
+
+   后续 V2.9.5 再统一做
+   总经理注册 / 登录 / 权限。
+========================================================= */
+
+function enterGeneralManagerPortal() {
+
+    location.href =
+        "general-manager.html";
 }
 
 </script>
