@@ -1,71 +1,27 @@
 /*
-===================================================
+========================================================
 矿山管理系统
-调度端 V2.9.1
-===================================================
-
-核心规则：
-
-1. 生产看板只显示 pending / active。
-2. completed 进入历史任务。
-3. withdrawn 相当于删除。
-4. 任务执行中允许增加 / 减少挖机与卡车。
-5. GPS异常趟次需要调度审核。
-6. 司机故障换车必须调度批准。
-7. 一线员工请假由调度审批。
-8. 调度 / 中层人员请假提交总经理审批。
-9. 调度可以下达罚单。
-10. 所有关键操作保留时间和处理记录。
-
-当前版本仍为 localStorage 原型。
-===================================================
+调度端 V2.9.3
+人员调度 + 总经理审批版
+========================================================
 */
-
 
 document.addEventListener("DOMContentLoaded", function () {
 
-    /*
-    ===================================================
-    Storage
-    ===================================================
-    */
-
     const STORAGE = {
-
-        TASKS:
-            "dispatchPublishedTasks",
-
-        LEGACY_TASK:
-            "publishedDispatchTask",
-
-        TRIPS:
-            "driverTripRecords",
-
-        PERSONNEL:
-            "personnelRecords",
-
-        DRIVER_PROFILE:
-            "driverProfile",
-
-        CHANGE_REQUESTS:
-            "driverVehicleChangeRequests",
-
-        LEAVE_REQUESTS:
-            "leaveRequests",
-
-        PENALTIES:
-            "penaltyRecords",
-
-        DISPATCH_PROFILE:
-            "dispatchUserProfile"
+        TASKS: "dispatchPublishedTasks",
+        LEGACY_TASK: "publishedDispatchTask",
+        TRIPS: "driverTripRecords",
+        PERSONNEL: "personnelRecords",
+        DRIVER_PROFILE: "driverProfile",
+        DRIVER_CURRENT_TASK: "driverCurrentTask",
+        CHANGE_REQUESTS: "driverVehicleChangeRequests",
+        LEAVES: "leaveRequests",
+        PENALTIES: "penaltyRecords",
+        DISPATCH_PROFILE: "dispatchUserProfile"
     };
 
-
-    /*
-    ===================================================
-    设备基础资料
-    ===================================================
-    */
+    const $ = id => document.getElementById(id);
 
     const equipment = {
 
@@ -78,50 +34,44 @@ document.addEventListener("DOMContentLoaded", function () {
             { id: "EX-06", status: "available" }
         ],
 
-        trucks: Array.from(
-            { length: 20 },
-            function (_, index) {
+        trucks: Array.from({ length: 20 }, (_, index) => {
 
-                const number =
-                    String(index + 1)
-                        .padStart(3, "0");
+            const id =
+                "T-" +
+                String(index + 1).padStart(3, "0");
 
-                const id =
-                    "T-" + number;
-
-                if (id === "T-005") {
-                    return {
-                        id,
-                        status: "maintenance",
-                        reason: "轮胎维修"
-                    };
-                }
-
-                if (id === "T-012") {
-                    return {
-                        id,
-                        status: "maintenance",
-                        reason: "发动机检查"
-                    };
-                }
-
+            if (id === "T-005") {
                 return {
                     id,
-                    status: "available"
+                    status: "maintenance",
+                    reason: "轮胎维修"
                 };
             }
-        ),
+
+            if (id === "T-012") {
+                return {
+                    id,
+                    status: "maintenance",
+                    reason: "发动机检查"
+                };
+            }
+
+            return {
+                id,
+                status: "available"
+            };
+        }),
 
         loader: [
             { id: "L-01", status: "available" },
             { id: "L-02", status: "available" },
             { id: "L-03", status: "available" },
-            { id: "L-04", status: "maintenance", reason: "维修中" }
+            { id: "L-04", status: "maintenance" }
         ],
 
         water: [
             { id: "W-01", status: "available" },
-            { id: "W-02", status: "maintenance", reason: "维修中" },
+            { id: "W-02", status: "maintenance" },
             { id: "W-03", status: "available" }
         ],
 
@@ -132,7 +82,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
         grader: [
             { id: "G-01", status: "available" },
-            { id: "G-02", status: "maintenance", reason: "维修中" }
+            { id: "G-02", status: "maintenance" }
         ],
 
         dozer: [
@@ -147,408 +97,257 @@ document.addEventListener("DOMContentLoaded", function () {
     };
 
 
-    /*
-    ===================================================
-    页面状态
-    ===================================================
-    */
-
     let currentDraft = null;
+
+    let bindings = [];
+
+    let driverAssignments = [];
+
+    let auxiliaryAssignments = [];
 
     let selectedExcavatorId = null;
 
     let selectedTruckIds = [];
 
-    let bindings = [];
-
-    let auxiliaryAssignments = [];
-
     let openedTaskId = null;
 
-    let adjustmentTaskId = null;
 
-    let adjustmentBindings = [];
-
-    let adjustmentSelectedExcavatorId = null;
-
-    let adjustmentSelectedTruckIds = [];
+    init();
 
 
-    /*
-    ===================================================
-    DOM快捷工具
-    ===================================================
-    */
+    function init() {
 
-    const $ =
-        function (id) {
-            return document.getElementById(id);
-        };
-
-
-    /*
-    ===================================================
-    初始化
-    ===================================================
-    */
-
-    initialize();
-
-
-    function initialize() {
-
-        migrateData();
+        migrateTasks();
 
         setAutomaticShift();
 
         bindEvents();
 
-        renderProductionBoard();
-
-        renderHistoryBoard();
-
-        renderTodoCenter();
-
-        populatePenaltyPersonnel();
+        refreshAll();
 
         setInterval(
-            function () {
-
-                synchronizeTaskStatus();
-
-                renderProductionBoard();
-
-                renderHistoryBoard();
-
-                renderTodoCenter();
-
-            },
+            refreshAll,
             5000
         );
     }
 
 
-    /*
-    ===================================================
-    数据迁移
-    ===================================================
-    */
+    function bindEvents() {
 
-    function migrateData() {
+        $("newTaskButton")?.addEventListener(
+            "click",
+            openTaskCreate
+        );
 
-        let tasks =
-            getTasks();
+        $("cancelCreateButton")?.addEventListener(
+            "click",
+            cancelDraft
+        );
 
-        /*
-        撤回旧任务直接删除
-        */
+        $("generateTaskButton")?.addEventListener(
+            "click",
+            generateDraft
+        );
 
-        tasks =
-            tasks.filter(
-                function (task) {
-                    return task.status !== "withdrawn";
-                }
-            );
+        $("bindTrucksButton")?.addEventListener(
+            "click",
+            bindSelectedTrucks
+        );
 
+        $("publishTaskButton")?.addEventListener(
+            "click",
+            publishTask
+        );
 
-        /*
-        旧版本 active 但实际上没有趟次，
-        自动恢复待执行。
-        */
+        $("historyTaskButton")?.addEventListener(
+            "click",
+            toggleHistory
+        );
 
-        tasks.forEach(
-            function (task) {
+        $("historyDateFilter")?.addEventListener(
+            "change",
+            renderHistory
+        );
 
-                const tripCount =
-                    getTaskTrips(task).length;
+        $("historyShiftFilter")?.addEventListener(
+            "change",
+            renderHistory
+        );
 
-                if (
-                    task.status === "active" &&
-                    tripCount === 0
-                ) {
-                    task.status = "pending";
-                }
+        $("historyAreaFilter")?.addEventListener(
+            "input",
+            renderHistory
+        );
 
-                if (
-                    task.status === "pending" &&
-                    tripCount > 0
-                ) {
-                    task.status = "active";
-                }
+        $("resetHistoryFilterButton")?.addEventListener(
+            "click",
+            function () {
 
-                if (!Array.isArray(task.equipmentAdjustments)) {
-                    task.equipmentAdjustments = [];
-                }
+                $("historyDateFilter").value = "";
 
-                if (!Array.isArray(task.bindings)) {
-                    task.bindings = [];
-                }
+                $("historyShiftFilter").value = "";
 
-                if (!Array.isArray(task.auxiliaryAssignments)) {
-                    task.auxiliaryAssignments = [];
-                }
+                $("historyAreaFilter").value = "";
+
+                renderHistory();
             }
         );
 
-        saveTasks(tasks);
+
+        $("auxiliaryTypeSelect")?.addEventListener(
+            "change",
+            renderAuxiliaryVehicles
+        );
+
+        $("addAuxiliaryButton")?.addEventListener(
+            "click",
+            addAuxiliary
+        );
+
+
+        $("closePublishedTaskModalButton")?.addEventListener(
+            "click",
+            () => hideModal("publishedTaskModal")
+        );
+
+        $("withdrawPublishedTaskButton")?.addEventListener(
+            "click",
+            withdrawOpenedTask
+        );
+
+        $("completePublishedTaskButton")?.addEventListener(
+            "click",
+            completeOpenedTask
+        );
+
+
+        $("openVehicleChangeButton")?.addEventListener(
+            "click",
+            openVehicleChanges
+        );
+
+        $("closeVehicleChangeModal")?.addEventListener(
+            "click",
+            () => hideModal("vehicleChangeModal")
+        );
+
+
+        $("openGpsReviewButton")?.addEventListener(
+            "click",
+            openGpsReview
+        );
+
+        $("closeGpsReviewModal")?.addEventListener(
+            "click",
+            () => hideModal("gpsReviewModal")
+        );
+
+
+        $("openLeaveReviewButton")?.addEventListener(
+            "click",
+            openLeaveReview
+        );
+
+        $("closeLeaveReviewModal")?.addEventListener(
+            "click",
+            () => hideModal("leaveReviewModal")
+        );
+
+
+        $("myLeaveButton")?.addEventListener(
+            "click",
+            openMyLeave
+        );
+
+        $("closeMyLeaveModal")?.addEventListener(
+            "click",
+            () => hideModal("myLeaveModal")
+        );
+
+        $("submitMyLeaveButton")?.addEventListener(
+            "click",
+            submitMyLeave
+        );
+
+
+        $("issuePenaltyButton")?.addEventListener(
+            "click",
+            openPenalty
+        );
+
+        $("closePenaltyModal")?.addEventListener(
+            "click",
+            () => hideModal("penaltyModal")
+        );
+
+        $("submitPenaltyButton")?.addEventListener(
+            "click",
+            submitPenalty
+        );
+
+        $("openPenaltyManagerButton")?.addEventListener(
+            "click",
+            openPenaltyManager
+        );
+
+        $("closePenaltyManagerModal")?.addEventListener(
+            "click",
+            () => hideModal("penaltyManagerModal")
+        );
     }
 
 
     /*
-    ===================================================
-    事件绑定
-    ===================================================
+    ========================================================
+    刷新
+    ========================================================
     */
 
-    function bindEvents() {
+    function refreshAll() {
 
-        $("newTaskButton")
-            ?.addEventListener(
-                "click",
-                openCreateTask
-            );
+        synchronizeTaskStatus();
 
-        $("cancelCreateButton")
-            ?.addEventListener(
-                "click",
-                cancelCreateTask
-            );
+        renderProductionBoard();
 
-        $("generateTaskButton")
-            ?.addEventListener(
-                "click",
-                generateDraftTask
-            );
+        renderHistory();
 
-        $("bindTrucksButton")
-            ?.addEventListener(
-                "click",
-                bindSelectedTrucks
-            );
+        renderPersonnelStatusBoard();
 
-        $("publishTaskButton")
-            ?.addEventListener(
-                "click",
-                publishTask
-            );
+        renderTodoCounts();
 
-        $("historyTaskButton")
-            ?.addEventListener(
-                "click",
-                toggleHistory
-            );
+        populatePenaltyPersonnel();
 
-        $("resetHistoryFilterButton")
-            ?.addEventListener(
-                "click",
-                resetHistoryFilter
-            );
+        if (currentDraft) {
 
-        $("historyDateFilter")
-            ?.addEventListener(
-                "change",
-                renderHistoryBoard
-            );
+            renderDriverAssignments();
 
-        $("historyShiftFilter")
-            ?.addEventListener(
-                "change",
-                renderHistoryBoard
-            );
+            renderExcavators();
 
-        $("historyAreaFilter")
-            ?.addEventListener(
-                "input",
-                renderHistoryBoard
-            );
+            renderTrucks();
 
-        $("auxiliaryTypeSelect")
-            ?.addEventListener(
-                "change",
-                updateAuxiliaryVehicles
-            );
-
-        $("auxiliaryWorkSelect")
-            ?.addEventListener(
-                "change",
-                updateAuxiliaryCustomInput
-            );
-
-        $("addAuxiliaryButton")
-            ?.addEventListener(
-                "click",
-                addAuxiliaryAssignment
-            );
-
-
-        /*
-        任务弹窗
-        */
-
-        $("closePublishedTaskModalButton")
-            ?.addEventListener(
-                "click",
-                closePublishedTaskModal
-            );
-
-        $("withdrawPublishedTaskButton")
-            ?.addEventListener(
-                "click",
-                withdrawOpenedTask
-            );
-
-        $("completePublishedTaskButton")
-            ?.addEventListener(
-                "click",
-                completeOpenedTask
-            );
-
-        $("adjustTaskButton")
-            ?.addEventListener(
-                "click",
-                openAdjustment
-            );
-
-
-        /*
-        调整
-        */
-
-        $("closeAdjustmentButton")
-            ?.addEventListener(
-                "click",
-                closeAdjustment
-            );
-
-        $("saveAdjustmentButton")
-            ?.addEventListener(
-                "click",
-                saveAdjustment
-            );
-
-
-        /*
-        换车
-        */
-
-        $("openVehicleChangeButton")
-            ?.addEventListener(
-                "click",
-                openVehicleChangeModal
-            );
-
-        $("closeVehicleChangeModal")
-            ?.addEventListener(
-                "click",
-                function () {
-                    hideModal("vehicleChangeModal");
-                }
-            );
-
-
-        /*
-        GPS审核
-        */
-
-        $("openGpsReviewButton")
-            ?.addEventListener(
-                "click",
-                openGpsReviewModal
-            );
-
-        $("closeGpsReviewModal")
-            ?.addEventListener(
-                "click",
-                function () {
-                    hideModal("gpsReviewModal");
-                }
-            );
-
-
-        /*
-        请假
-        */
-
-        $("openLeaveReviewButton")
-            ?.addEventListener(
-                "click",
-                openLeaveReviewModal
-            );
-
-        $("closeLeaveReviewModal")
-            ?.addEventListener(
-                "click",
-                function () {
-                    hideModal("leaveReviewModal");
-                }
-            );
-
-        $("myLeaveButton")
-            ?.addEventListener(
-                "click",
-                openMyLeaveModal
-            );
-
-        $("closeMyLeaveModal")
-            ?.addEventListener(
-                "click",
-                function () {
-                    hideModal("myLeaveModal");
-                }
-            );
-
-        $("submitMyLeaveButton")
-            ?.addEventListener(
-                "click",
-                submitMyLeave
-            );
-
-
-        /*
-        罚单
-        */
-
-        $("issuePenaltyButton")
-            ?.addEventListener(
-                "click",
-                openPenaltyModal
-            );
-
-        $("openPenaltyManagerButton")
-            ?.addEventListener(
-                "click",
-                openPenaltyManagerModal
-            );
-
-        $("closePenaltyModal")
-            ?.addEventListener(
-                "click",
-                function () {
-                    hideModal("penaltyModal");
-                }
-            );
-
-        $("closePenaltyManagerModal")
-            ?.addEventListener(
-                "click",
-                function () {
-                    hideModal("penaltyManagerModal");
-                }
-            );
-
-        $("submitPenaltyButton")
-            ?.addEventListener(
-                "click",
-                submitPenalty
-            );
+            renderAuxiliaryVehicles();
+        }
     }
 
 
     /*
-    ===================================================
-    自动班次
-    ===================================================
+    ========================================================
+    草稿任务
+    ========================================================
     */
+
+    function openTaskCreate() {
+
+        $("taskCreateSection")
+            .classList
+            .remove("hidden");
+
+        $("taskCreateSection")
+            .scrollIntoView({
+                behavior: "smooth"
+            });
+    }
+
 
     function setAutomaticShift() {
 
@@ -562,52 +361,15 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
 
-    /*
-    ===================================================
-    创建生产任务
-    ===================================================
-    */
-
-    function openCreateTask() {
-
-        $("taskCreateSection")
-            .classList.remove("hidden");
-
-        $("taskCreateSection")
-            .scrollIntoView({
-                behavior: "smooth"
-            });
-    }
-
-
-    function cancelCreateTask() {
-
-        currentDraft = null;
-
-        selectedExcavatorId = null;
-
-        selectedTruckIds = [];
-
-        bindings = [];
-
-        auxiliaryAssignments = [];
-
-        hideDraftSections();
-
-        $("taskCreateSection")
-            .classList.add("hidden");
-    }
-
-
-    function generateDraftTask() {
+    function generateDraft() {
 
         const area =
-            $("taskArea")
-                .value
-                .trim();
+            $("taskArea").value.trim();
 
         if (!area) {
+
             alert("请输入作业区域。");
+
             return;
         }
 
@@ -620,21 +382,21 @@ document.addEventListener("DOMContentLoaded", function () {
                 getLocalDateKey(),
 
             date:
-                new Date()
-                    .toLocaleDateString("zh-CN"),
+                new Date().toLocaleDateString("zh-CN"),
 
             shift:
                 $("taskShift").value,
 
             area,
 
-            remark:
-                $("taskRemark")
-                    .value
-                    .trim(),
+            loadingPoint:
+                $("taskLoadingPoint").value.trim(),
 
-            status:
-                "configuring",
+            unloadingPoint:
+                $("taskUnloadingPoint").value.trim(),
+
+            remark:
+                $("taskRemark").value.trim(),
 
             createdAt:
                 new Date().toISOString()
@@ -642,29 +404,13 @@ document.addEventListener("DOMContentLoaded", function () {
 
         bindings = [];
 
+        driverAssignments = [];
+
         auxiliaryAssignments = [];
 
         selectedExcavatorId = null;
 
         selectedTruckIds = [];
-
-        renderDraftSummary();
-
-        showDraftSections();
-
-        renderAllEquipment();
-
-        renderBindings();
-
-        renderAuxiliaryAssignments();
-    }
-
-
-    function renderDraftSummary() {
-
-        if (!currentDraft) {
-            return;
-        }
 
         setText(
             "summaryDate",
@@ -681,205 +427,189 @@ document.addEventListener("DOMContentLoaded", function () {
             currentDraft.area
         );
 
-        setText(
-            "summaryRemark",
-            currentDraft.remark || "无"
-        );
-    }
-
-
-    function showDraftSections() {
-
         [
             "taskSummarySection",
-            "legendSection",
             "excavatorSection",
             "truckSection",
             "bindingSection",
+            "driverAssignmentSection",
             "auxiliarySection",
             "publishSection"
         ].forEach(
-            function (id) {
-                $(id)
-                    ?.classList
-                    .remove("hidden");
-            }
+            id => $(id).classList.remove("hidden")
         );
-    }
-
-
-    function hideDraftSections() {
-
-        [
-            "taskSummarySection",
-            "legendSection",
-            "excavatorSection",
-            "truckSection",
-            "bindingSection",
-            "auxiliarySection",
-            "publishSection"
-        ].forEach(
-            function (id) {
-                $(id)
-                    ?.classList
-                    .add("hidden");
-            }
-        );
-    }
-
-
-    /*
-    ===================================================
-    设备占用
-    ===================================================
-    */
-
-    function getOccupiedDeviceIds(
-        ignoredTaskId
-    ) {
-
-        const ids =
-            new Set();
-
-        getTasks()
-            .filter(
-                function (task) {
-
-                    return (
-                        task.taskId !== ignoredTaskId &&
-                        (
-                            task.status === "pending" ||
-                            task.status === "active"
-                        )
-                    );
-                }
-            )
-            .forEach(
-                function (task) {
-
-                    (task.bindings || [])
-                        .forEach(
-                            function (binding) {
-
-                                ids.add(
-                                    binding.excavatorId
-                                );
-
-                                (binding.truckIds || [])
-                                    .forEach(
-                                        function (truckId) {
-                                            ids.add(truckId);
-                                        }
-                                    );
-                            }
-                        );
-
-                    (task.auxiliaryAssignments || [])
-                        .forEach(
-                            function (item) {
-                                ids.add(item.vehicleId);
-                            }
-                        );
-                }
-            );
-
-        return ids;
-    }
-
-
-    function renderAllEquipment() {
 
         renderExcavators();
 
         renderTrucks();
 
-        setText(
-            "excavatorCount",
-            equipment.excavators.length + " 台"
-        );
+        renderBindings();
 
-        setText(
-            "truckCount",
-            equipment.trucks.length + " 台"
-        );
+        renderDriverAssignments();
 
-        updateAuxiliaryVehicles();
+        renderAuxiliaryVehicles();
+
+        renderAuxiliaryAssignments();
+    }
+
+
+    function cancelDraft() {
+
+        currentDraft = null;
+
+        bindings = [];
+
+        driverAssignments = [];
+
+        auxiliaryAssignments = [];
+
+        selectedExcavatorId = null;
+
+        selectedTruckIds = [];
+
+        [
+            "taskCreateSection",
+            "taskSummarySection",
+            "excavatorSection",
+            "truckSection",
+            "bindingSection",
+            "driverAssignmentSection",
+            "auxiliarySection",
+            "publishSection"
+        ].forEach(
+            id => $(id).classList.add("hidden")
+        );
     }
 
 
     /*
-    ===================================================
-    挖机
-    ===================================================
+    ========================================================
+    设备
+    ========================================================
     */
 
+    function getOccupiedEquipmentIds(ignoreTaskId = "") {
+
+        const set =
+            new Set();
+
+        getTasks()
+            .filter(
+                task =>
+                    task.taskId !== ignoreTaskId &&
+                    (
+                        task.status === "pending" ||
+                        task.status === "active"
+                    )
+            )
+            .forEach(
+                task => {
+
+                    (task.bindings || []).forEach(
+                        binding => {
+
+                            set.add(
+                                binding.excavatorId
+                            );
+
+                            (binding.truckIds || []).forEach(
+                                id => set.add(id)
+                            );
+                        }
+                    );
+
+                    (task.auxiliaryAssignments || []).forEach(
+                        item => set.add(item.vehicleId)
+                    );
+                }
+            );
+
+        return set;
+    }
+
+
     function renderExcavators() {
+
+        if (!currentDraft) {
+            return;
+        }
 
         const board =
             $("excavatorBoard");
 
         const occupied =
-            getOccupiedDeviceIds();
+            getOccupiedEquipmentIds();
 
         board.innerHTML = "";
 
         equipment.excavators.forEach(
-            function (device) {
+            device => {
 
-                const card =
+                const selected =
+                    selectedExcavatorId === device.id;
+
+                const usedInDraft =
+                    bindings.some(
+                        item =>
+                            item.excavatorId === device.id
+                    );
+
+                const button =
                     document.createElement("button");
 
-                card.type =
-                    "button";
+                button.type = "button";
 
-                card.className =
+                button.className =
                     getDeviceClass(
                         device,
                         occupied,
-                        selectedExcavatorId === device.id
+                        selected,
+                        usedInDraft
                     );
 
-                card.innerHTML =
-                    "<strong>" +
-                    escapeHtml(device.id) +
-                    "</strong>" +
-                    "<span>" +
-                    getDeviceStatusText(
-                        device,
-                        occupied,
-                        selectedExcavatorId === device.id
-                    ) +
-                    "</span>";
+                button.innerHTML =
+                    `<strong>${escapeHtml(device.id)}</strong>
+                     <span>${
+                         usedInDraft
+                             ? "本任务已用"
+                             : selected
+                                 ? "已选择"
+                                 : device.status === "maintenance"
+                                     ? "维修中"
+                                     : occupied.has(device.id)
+                                         ? "已分配"
+                                         : "可调配"
+                     }</span>`;
 
-                card.addEventListener(
+                button.disabled =
+                    usedInDraft;
+
+                button.addEventListener(
                     "click",
                     function () {
 
-                        if (
-                            device.status === "maintenance"
-                        ) {
+                        if (device.status === "maintenance") {
+
                             alert(
                                 device.id +
-                                " 正在维修。\n\n" +
-                                (device.reason || "")
+                                " 正在维修。"
                             );
 
                             return;
                         }
 
-                        if (
-                            occupied.has(device.id)
-                        ) {
+                        if (occupied.has(device.id)) {
+
                             alert(
                                 device.id +
-                                " 已被其他任务占用。"
+                                " 已被其他生产任务使用。"
                             );
 
                             return;
                         }
 
                         selectedExcavatorId =
-                            selectedExcavatorId === device.id
+                            selected
                                 ? null
                                 : device.id;
 
@@ -891,101 +621,109 @@ document.addEventListener("DOMContentLoaded", function () {
                     }
                 );
 
-                board.appendChild(card);
+                board.appendChild(button);
             }
         );
     }
 
 
-    /*
-    ===================================================
-    卡车
-    ===================================================
-    */
-
     function renderTrucks() {
+
+        if (!currentDraft) {
+            return;
+        }
 
         const board =
             $("truckBoard");
 
         const occupied =
-            getOccupiedDeviceIds();
+            getOccupiedEquipmentIds();
+
+        const usedInDraft =
+            new Set(
+                bindings.flatMap(
+                    item =>
+                        item.truckIds || []
+                )
+            );
 
         board.innerHTML = "";
 
         equipment.trucks.forEach(
-            function (device) {
+            device => {
 
                 const selected =
                     selectedTruckIds.includes(
                         device.id
                     );
 
-                const card =
+                const button =
                     document.createElement("button");
 
-                card.type =
-                    "button";
+                button.type = "button";
 
-                card.className =
+                button.className =
                     getDeviceClass(
                         device,
                         occupied,
-                        selected
+                        selected,
+                        usedInDraft.has(device.id)
                     );
 
-                card.innerHTML =
-                    "<strong>" +
-                    escapeHtml(device.id) +
-                    "</strong>" +
-                    "<span>" +
-                    getDeviceStatusText(
-                        device,
-                        occupied,
-                        selected
-                    ) +
-                    "</span>";
+                button.disabled =
+                    usedInDraft.has(device.id);
 
-                card.addEventListener(
+                button.innerHTML =
+                    `<strong>${escapeHtml(device.id)}</strong>
+                     <span>${
+                         usedInDraft.has(device.id)
+                             ? "本任务已用"
+                             : selected
+                                 ? "已选择"
+                                 : device.status === "maintenance"
+                                     ? "维修中"
+                                     : occupied.has(device.id)
+                                         ? "已分配"
+                                         : "可调配"
+                     }</span>`;
+
+                button.addEventListener(
                     "click",
                     function () {
 
                         if (!selectedExcavatorId) {
+
                             alert("请先选择挖机。");
+
                             return;
                         }
 
-                        if (
-                            device.status === "maintenance"
-                        ) {
+                        if (device.status === "maintenance") {
+
+                            alert(device.id + " 正在维修。");
+
+                            return;
+                        }
+
+                        if (occupied.has(device.id)) {
+
                             alert(
                                 device.id +
-                                " 正在维修。"
+                                " 已被其他任务使用。"
                             );
 
                             return;
                         }
 
                         if (
-                            occupied.has(device.id)
-                        ) {
-                            alert(
-                                device.id +
-                                " 已分配给其他任务。"
-                            );
-
-                            return;
-                        }
-
-                        if (
-                            selectedTruckIds.includes(device.id)
+                            selectedTruckIds.includes(
+                                device.id
+                            )
                         ) {
 
                             selectedTruckIds =
                                 selectedTruckIds.filter(
-                                    function (id) {
-                                        return id !== device.id;
-                                    }
+                                    id => id !== device.id
                                 );
 
                         } else {
@@ -999,36 +737,28 @@ document.addEventListener("DOMContentLoaded", function () {
                     }
                 );
 
-                board.appendChild(card);
+                board.appendChild(button);
             }
         );
 
 
         if (selectedExcavatorId) {
 
-            $("selectedExcavatorInfo")
-                .textContent =
-                "当前挖机：" +
-                selectedExcavatorId +
-                " · 已选择 " +
-                selectedTruckIds.length +
-                " 台卡车";
+            setText(
+                "selectedExcavatorInfo",
+                `当前挖机：${selectedExcavatorId} · 已选${selectedTruckIds.length}台卡车`
+            );
 
             $("bindTrucksButton")
                 .classList
                 .remove("hidden");
 
-            $("bindTrucksButton")
-                .textContent =
-                "绑定所选卡车（" +
-                selectedTruckIds.length +
-                "台）";
-
         } else {
 
-            $("selectedExcavatorInfo")
-                .textContent =
-                "当前未选择挖机";
+            setText(
+                "selectedExcavatorInfo",
+                "请先选择挖机"
+            );
 
             $("bindTrucksButton")
                 .classList
@@ -1040,53 +770,41 @@ document.addEventListener("DOMContentLoaded", function () {
     function bindSelectedTrucks() {
 
         if (!selectedExcavatorId) {
+
             alert("请选择挖机。");
+
             return;
         }
 
         if (!selectedTruckIds.length) {
-            alert("请选择至少一台卡车。");
+
+            alert("至少选择一台卡车。");
+
             return;
         }
 
-        const existingIndex =
-            bindings.findIndex(
-                function (item) {
-                    return (
-                        item.excavatorId ===
-                        selectedExcavatorId
-                    );
-                }
-            );
-
-        const binding = {
+        bindings.push({
 
             excavatorId:
                 selectedExcavatorId,
 
             truckIds:
-                selectedTruckIds.slice()
-        };
-
-        if (existingIndex >= 0) {
-
-            bindings[existingIndex] =
-                binding;
-
-        } else {
-
-            bindings.push(binding);
-        }
+                [...selectedTruckIds]
+        });
 
         selectedExcavatorId = null;
 
         selectedTruckIds = [];
+
+        synchronizeDraftDriverAssignments();
 
         renderExcavators();
 
         renderTrucks();
 
         renderBindings();
+
+        renderDriverAssignments();
     }
 
 
@@ -1098,58 +816,56 @@ document.addEventListener("DOMContentLoaded", function () {
         if (!bindings.length) {
 
             box.innerHTML =
-                '<div class="empty-placeholder">暂无绑定关系</div>';
+                '<div class="empty-placeholder">暂无设备绑定</div>';
 
             return;
         }
 
         box.innerHTML =
             bindings.map(
-                function (binding, index) {
-
-                    return `
-                        <div class="binding-row">
-                            <div>
-                                <strong>
-                                    🚜 ${escapeHtml(binding.excavatorId)}
-                                </strong>
-
-                                <span>
-                                    🚚 ${(binding.truckIds || [])
-                                        .map(escapeHtml)
-                                        .join("、")}
-                                </span>
-                            </div>
-
-                            <button
-                                type="button"
-                                class="mini-danger-button"
-                                data-remove-binding="${index}"
-                            >
-                                删除
-                            </button>
+                (binding, index) => `
+                    <div class="binding-row">
+                        <div>
+                            <strong>🚜 ${escapeHtml(binding.excavatorId)}</strong>
+                            <span>
+                                🚚 ${(binding.truckIds || []).map(escapeHtml).join("、")}
+                            </span>
                         </div>
-                    `;
-                }
+
+                        <button
+                            type="button"
+                            class="mini-danger-button"
+                            data-remove-binding="${index}"
+                        >
+                            删除
+                        </button>
+                    </div>
+                `
             ).join("");
 
         box.querySelectorAll(
             "[data-remove-binding]"
         ).forEach(
-            function (button) {
+            button => {
 
                 button.addEventListener(
                     "click",
                     function () {
 
-                        const index =
-                            Number(
-                                button.dataset.removeBinding
-                            );
+                        bindings.splice(
+                            Number(button.dataset.removeBinding),
+                            1
+                        );
 
-                        bindings.splice(index, 1);
+                        synchronizeDraftDriverAssignments();
 
                         renderBindings();
+
+                        renderDriverAssignments();
+
+                        renderExcavators();
+
+                        renderTrucks();
                     }
                 );
             }
@@ -1158,171 +874,571 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
     /*
-    ===================================================
-    辅助车辆
-    ===================================================
+    ========================================================
+    司机分配
+    ========================================================
     */
 
-    function updateAuxiliaryVehicles() {
+    function synchronizeDraftDriverAssignments() {
 
-        const type =
-            $("auxiliaryTypeSelect")
-                ?.value;
+        const trucks = [];
 
-        const vehicleSelect =
-            $("auxiliaryVehicleSelect");
+        bindings.forEach(
+            binding => {
 
-        if (!vehicleSelect) {
-            return;
-        }
+                (binding.truckIds || []).forEach(
+                    truckId => {
 
-        vehicleSelect.innerHTML =
-            '<option value="">选择车辆</option>';
+                        trucks.push({
+                            truckId,
+                            excavatorId:
+                                binding.excavatorId
+                        });
+                    }
+                );
+            }
+        );
 
-        if (!type || !equipment[type]) {
-            updateAuxiliaryWorkOptions();
-            return;
-        }
+        driverAssignments =
+            trucks.map(
+                item => {
 
-        const occupied =
-            getOccupiedDeviceIds();
-
-        equipment[type]
-            .forEach(
-                function (vehicle) {
-
-                    const option =
-                        document.createElement("option");
-
-                    option.value =
-                        vehicle.id;
-
-                    const unavailable =
-                        vehicle.status === "maintenance" ||
-                        occupied.has(vehicle.id);
-
-                    option.disabled =
-                        unavailable;
-
-                    option.textContent =
-                        vehicle.id +
-                        (
-                            vehicle.status === "maintenance"
-                                ? "（维修）"
-                                : occupied.has(vehicle.id)
-                                    ? "（已分配）"
-                                    : ""
+                    const old =
+                        driverAssignments.find(
+                            record =>
+                                record.vehicleNumber ===
+                                item.truckId
                         );
 
-                    vehicleSelect.appendChild(option);
+                    if (old) {
+
+                        return {
+                            ...old,
+                            vehicleId:
+                                item.truckId,
+                            vehicleNumber:
+                                item.truckId,
+                            excavatorId:
+                                item.excavatorId,
+                            excavatorNumber:
+                                item.excavatorId
+                        };
+                    }
+
+                    return {
+                        vehicleId:
+                            item.truckId,
+                        vehicleNumber:
+                            item.truckId,
+                        excavatorId:
+                            item.excavatorId,
+                        excavatorNumber:
+                            item.excavatorId,
+                        driverId: "",
+                        driverName: "",
+                        team: ""
+                    };
                 }
             );
-
-        updateAuxiliaryWorkOptions();
     }
 
 
-    function updateAuxiliaryWorkOptions() {
+    function renderDriverAssignments() {
+
+        if (!currentDraft) {
+            return;
+        }
+
+        synchronizeDraftDriverAssignments();
+
+        const box =
+            $("driverAssignmentList");
+
+        const total =
+            driverAssignments.length;
+
+        const completed =
+            driverAssignments.filter(
+                item => item.driverId
+            ).length;
+
+        setText(
+            "driverAssignmentStatus",
+            `${completed} / ${total}`
+        );
+
+        if (!total) {
+
+            box.innerHTML =
+                '<div class="empty-placeholder">请先绑定挖机和卡车</div>';
+
+            return;
+        }
+
+        const people =
+            getApprovedDrivers();
+
+        box.innerHTML =
+            driverAssignments.map(
+                assignment => {
+
+                    const options =
+                        people.map(
+                            person => {
+
+                                const state =
+                                    getPersonStatusForDraft(
+                                        person
+                                    );
+
+                                const alreadyUsed =
+                                    driverAssignments.some(
+                                        item =>
+                                            item.driverId === person.driverId &&
+                                            item.vehicleNumber !==
+                                            assignment.vehicleNumber
+                                    );
+
+                                const disabled =
+                                    state.code === "leave" ||
+                                    state.code === "working" ||
+                                    state.code === "disabled" ||
+                                    alreadyUsed;
+
+                                let suffix =
+                                    state.label;
+
+                                if (alreadyUsed) {
+                                    suffix = "本任务已分配";
+                                }
+
+                                return `
+                                    <option
+                                        value="${escapeHtml(person.driverId)}"
+                                        ${
+                                            assignment.driverId === person.driverId
+                                                ? "selected"
+                                                : ""
+                                        }
+                                        ${disabled ? "disabled" : ""}
+                                    >
+                                        ${escapeHtml(person.name || "-")}
+                                        ·
+                                        ${escapeHtml(person.team || "-")}
+                                        ·
+                                        ${escapeHtml(suffix)}
+                                    </option>
+                                `;
+                            }
+                        ).join("");
+
+                    return `
+                        <div class="driver-assignment-row">
+
+                            <div class="assignment-equipment">
+                                <strong>
+                                    🚚 ${escapeHtml(assignment.vehicleNumber)}
+                                </strong>
+
+                                <span>
+                                    跟随 🚜 ${escapeHtml(assignment.excavatorNumber)}
+                                </span>
+                            </div>
+
+                            <select
+                                data-driver-truck="${escapeHtml(assignment.vehicleNumber)}"
+                            >
+                                <option value="">
+                                    请选择司机
+                                </option>
+
+                                ${options}
+                            </select>
+
+                        </div>
+                    `;
+                }
+            ).join("");
+
+
+        box.querySelectorAll(
+            "[data-driver-truck]"
+        ).forEach(
+            select => {
+
+                select.addEventListener(
+                    "change",
+                    function () {
+
+                        assignDriverToTruck(
+                            select.dataset.driverTruck,
+                            select.value
+                        );
+                    }
+                );
+            }
+        );
+    }
+
+
+    function assignDriverToTruck(
+        truckId,
+        driverId
+    ) {
+
+        const assignment =
+            driverAssignments.find(
+                item =>
+                    item.vehicleNumber ===
+                    truckId
+            );
+
+        if (!assignment) {
+            return;
+        }
+
+        if (!driverId) {
+
+            assignment.driverId = "";
+            assignment.driverName = "";
+            assignment.team = "";
+
+            renderDriverAssignments();
+
+            return;
+        }
+
+        const person =
+            getApprovedDrivers().find(
+                item =>
+                    item.driverId === driverId
+            );
+
+        if (!person) {
+            return;
+        }
+
+        const state =
+            getPersonStatusForDraft(person);
+
+        if (state.code === "leave") {
+
+            alert(
+                `${person.name} 在本班次处于已批准请假时间，不能分配任务。`
+            );
+
+            renderDriverAssignments();
+
+            return;
+        }
+
+        if (state.code === "working") {
+
+            alert(
+                `${person.name} 已在其他生产任务中。`
+            );
+
+            renderDriverAssignments();
+
+            return;
+        }
+
+        if (state.code === "pending") {
+
+            const goOn =
+                confirm(
+                    `${person.name} 在本班次有待审批请假申请。\n\n是否仍然安排本生产任务？`
+                );
+
+            if (!goOn) {
+
+                renderDriverAssignments();
+
+                return;
+            }
+        }
+
+        assignment.driverId =
+            person.driverId;
+
+        assignment.driverName =
+            person.name || "";
+
+        assignment.team =
+            person.team || "";
+
+        renderDriverAssignments();
+    }
+
+
+    /*
+    ========================================================
+    人员状态
+    ========================================================
+    */
+
+    function renderPersonnelStatusBoard() {
+
+        const people =
+            getApprovedDrivers();
+
+        setText(
+            "personnelCountBadge",
+            people.length + " 人"
+        );
+
+        const box =
+            $("personnelStatusBoard");
+
+        if (!people.length) {
+
+            box.innerHTML =
+                '<div class="empty-placeholder">暂无已审核司机</div>';
+
+            return;
+        }
+
+        box.innerHTML =
+            people.map(
+                person => {
+
+                    const state =
+                        getCurrentPersonStatus(person);
+
+                    return `
+                        <div class="person-card ${state.code}">
+                            <div>
+                                <strong>
+                                    ${escapeHtml(person.name || "-")}
+                                </strong>
+
+                                <span>
+                                    ${escapeHtml(person.team || "-")}
+                                    ·
+                                    ${escapeHtml(person.position || "卡车司机")}
+                                </span>
+                            </div>
+
+                            <span class="person-state">
+                                ${escapeHtml(state.label)}
+                            </span>
+                        </div>
+                    `;
+                }
+            ).join("");
+    }
+
+
+    function getCurrentPersonStatus(person) {
+
+        if (
+            person.enabled === false ||
+            person.status === "disabled"
+        ) {
+            return {
+                code: "disabled",
+                label: "⚫ 停用"
+            };
+        }
+
+        const now =
+            new Date();
+
+        if (
+            hasApprovedLeaveOverlap(
+                person,
+                now,
+                now
+            )
+        ) {
+            return {
+                code: "leave",
+                label: "🟣 请假"
+            };
+        }
+
+        if (
+            getPersonActiveTask(person)
+        ) {
+            return {
+                code: "working",
+                label: "🔴 作业中"
+            };
+        }
+
+        if (
+            hasPendingLeaveAtTime(
+                person,
+                now
+            )
+        ) {
+            return {
+                code: "pending",
+                label: "🟡 请假待审批"
+            };
+        }
+
+        return {
+            code: "available",
+            label: "🟢 可调度"
+        };
+    }
+
+
+    function getPersonStatusForDraft(person) {
+
+        if (!currentDraft) {
+
+            return getCurrentPersonStatus(
+                person
+            );
+        }
+
+        if (
+            person.enabled === false ||
+            person.status === "disabled"
+        ) {
+            return {
+                code: "disabled",
+                label: "⚫ 停用"
+            };
+        }
+
+        const range =
+            getTaskDateRange(
+                currentDraft
+            );
+
+        if (
+            hasApprovedLeaveOverlap(
+                person,
+                range.start,
+                range.end
+            )
+        ) {
+            return {
+                code: "leave",
+                label: "🟣 本班请假"
+            };
+        }
+
+        if (
+            getPersonActiveTask(person)
+        ) {
+            return {
+                code: "working",
+                label: "🔴 作业中"
+            };
+        }
+
+        if (
+            hasPendingLeaveOverlap(
+                person,
+                range.start,
+                range.end
+            )
+        ) {
+            return {
+                code: "pending",
+                label: "🟡 请假待审批"
+            };
+        }
+
+        return {
+            code: "available",
+            label: "🟢 可调度"
+        };
+    }
+
+
+    function getPersonActiveTask(person) {
+
+        return getTasks().find(
+            task =>
+                (
+                    task.status === "pending" ||
+                    task.status === "active"
+                ) &&
+                (task.driverAssignments || []).some(
+                    item =>
+                        samePerson(
+                            item.driverId,
+                            item.driverName,
+                            person
+                        )
+                )
+        ) || null;
+    }
+
+
+    /*
+    ========================================================
+    辅助车辆
+    ========================================================
+    */
+
+    function renderAuxiliaryVehicles() {
 
         const type =
-            $("auxiliaryTypeSelect")
-                ?.value;
+            $("auxiliaryTypeSelect")?.value;
 
         const select =
-            $("auxiliaryWorkSelect");
+            $("auxiliaryVehicleSelect");
 
         if (!select) {
             return;
         }
 
-        const options = {
-
-            loader: [
-                "日常作业",
-                "清理挖机附近散料",
-                "修整运输道路",
-                "装煤",
-                "排土场作业",
-                "手动录入"
-            ],
-
-            water: [
-                "日常洒水",
-                "运输道路洒水",
-                "采区洒水",
-                "排土场洒水",
-                "临时调配",
-                "手动录入"
-            ],
-
-            fuel: [
-                "日常作业",
-                "手动录入"
-            ],
-
-            grader: [
-                "日常作业",
-                "修整运输道路",
-                "手动录入"
-            ],
-
-            dozer: [
-                "日常作业",
-                "排土场作业",
-                "手动录入"
-            ],
-
-            bus: [
-                "人员运输",
-                "日常作业",
-                "手动录入"
-            ]
-        };
-
         select.innerHTML =
-            '<option value="">选择作业内容</option>';
-
-        (options[type] || [])
-            .forEach(
-                function (text) {
-
-                    const option =
-                        document.createElement("option");
-
-                    option.value =
-                        text;
-
-                    option.textContent =
-                        text;
-
-                    select.appendChild(option);
-                }
-            );
-    }
-
-
-    function updateAuxiliaryCustomInput() {
-
-        const custom =
-            $("auxiliaryCustomWork");
+            '<option value="">选择车辆</option>';
 
         if (
-            $("auxiliaryWorkSelect").value ===
-            "手动录入"
+            !type ||
+            !equipment[type]
         ) {
-
-            custom.classList.remove("hidden");
-
-        } else {
-
-            custom.classList.add("hidden");
-
-            custom.value = "";
+            return;
         }
+
+        const occupied =
+            getOccupiedEquipmentIds();
+
+        equipment[type].forEach(
+            vehicle => {
+
+                const option =
+                    document.createElement("option");
+
+                option.value =
+                    vehicle.id;
+
+                const unavailable =
+                    vehicle.status === "maintenance" ||
+                    occupied.has(vehicle.id) ||
+                    auxiliaryAssignments.some(
+                        item =>
+                            item.vehicleId === vehicle.id
+                    );
+
+                option.disabled =
+                    unavailable;
+
+                option.textContent =
+                    vehicle.id +
+                    (
+                        vehicle.status === "maintenance"
+                            ? "（维修）"
+                            : occupied.has(vehicle.id)
+                                ? "（已分配）"
+                                : ""
+                    );
+
+                select.appendChild(option);
+            }
+        );
     }
 
 
-    function addAuxiliaryAssignment() {
+    function addAuxiliary() {
 
         const type =
             $("auxiliaryTypeSelect").value;
@@ -1330,18 +1446,8 @@ document.addEventListener("DOMContentLoaded", function () {
         const vehicleId =
             $("auxiliaryVehicleSelect").value;
 
-        let work =
-            $("auxiliaryWorkSelect").value;
-
-        if (
-            work === "手动录入"
-        ) {
-
-            work =
-                $("auxiliaryCustomWork")
-                    .value
-                    .trim();
-        }
+        const work =
+            $("auxiliaryWorkInput").value.trim();
 
         if (
             !type ||
@@ -1356,39 +1462,17 @@ document.addEventListener("DOMContentLoaded", function () {
             return;
         }
 
-        if (
-            auxiliaryAssignments.some(
-                function (item) {
-                    return item.vehicleId === vehicleId;
-                }
-            )
-        ) {
-
-            alert(
-                "该车辆已经加入当前任务。"
-            );
-
-            return;
-        }
-
         auxiliaryAssignments.push({
-
             type,
-
             vehicleId,
-
             work
         });
 
+        $("auxiliaryWorkInput").value = "";
+
         renderAuxiliaryAssignments();
 
-        $("auxiliaryVehicleSelect").value = "";
-
-        $("auxiliaryWorkSelect").value = "";
-
-        $("auxiliaryCustomWork")
-            .classList
-            .add("hidden");
+        renderAuxiliaryVehicles();
     }
 
 
@@ -1400,56 +1484,53 @@ document.addEventListener("DOMContentLoaded", function () {
         if (!auxiliaryAssignments.length) {
 
             box.innerHTML =
-                '<div class="empty-placeholder">暂未配置辅助车辆</div>';
+                '<div class="empty-placeholder">暂无辅助车辆</div>';
 
             return;
         }
 
         box.innerHTML =
             auxiliaryAssignments.map(
-                function (item, index) {
+                (item, index) => `
+                    <div class="binding-row">
+                        <div>
+                            <strong>
+                                ${escapeHtml(item.vehicleId)}
+                            </strong>
 
-                    return `
-                        <div class="binding-row">
-                            <div>
-                                <strong>
-                                    ${escapeHtml(item.vehicleId)}
-                                </strong>
-
-                                <span>
-                                    ${escapeHtml(item.work)}
-                                </span>
-                            </div>
-
-                            <button
-                                type="button"
-                                class="mini-danger-button"
-                                data-remove-aux="${index}"
-                            >
-                                删除
-                            </button>
+                            <span>
+                                ${escapeHtml(item.work)}
+                            </span>
                         </div>
-                    `;
-                }
+
+                        <button
+                            class="mini-danger-button"
+                            data-remove-aux="${index}"
+                            type="button"
+                        >
+                            删除
+                        </button>
+                    </div>
+                `
             ).join("");
 
         box.querySelectorAll(
             "[data-remove-aux]"
         ).forEach(
-            function (button) {
+            button => {
 
                 button.addEventListener(
                     "click",
                     function () {
 
                         auxiliaryAssignments.splice(
-                            Number(
-                                button.dataset.removeAux
-                            ),
+                            Number(button.dataset.removeAux),
                             1
                         );
 
                         renderAuxiliaryAssignments();
+
+                        renderAuxiliaryVehicles();
                     }
                 );
             }
@@ -1458,9 +1539,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
     /*
-    ===================================================
-    发布任务
-    ===================================================
+    ========================================================
+    发布
+    ========================================================
     */
 
     function publishTask() {
@@ -1469,30 +1550,95 @@ document.addEventListener("DOMContentLoaded", function () {
             return;
         }
 
-        if (
-            !bindings.length &&
-            !auxiliaryAssignments.length
+        if (!bindings.length) {
+
+            alert(
+                "请至少配置一组挖机和卡车。"
+            );
+
+            return;
+        }
+
+        synchronizeDraftDriverAssignments();
+
+        const incomplete =
+            driverAssignments.filter(
+                item =>
+                    !item.driverId
+            );
+
+        if (incomplete.length) {
+
+            alert(
+                "以下卡车尚未分配司机：\n\n" +
+                incomplete
+                    .map(item => item.vehicleNumber)
+                    .join("、")
+            );
+
+            return;
+        }
+
+
+        const duplicateDrivers =
+            findDuplicateDriverIds(
+                driverAssignments
+            );
+
+        if (duplicateDrivers.length) {
+
+            alert(
+                "同一司机不能同时驾驶多台卡车，请重新检查人员分配。"
+            );
+
+            return;
+        }
+
+
+        for (
+            const assignment of
+            driverAssignments
         ) {
 
-            alert(
-                "请至少配置一组生产设备或辅助车辆。"
-            );
+            const person =
+                getApprovedDrivers().find(
+                    item =>
+                        item.driverId ===
+                        assignment.driverId
+                );
 
-            return;
+            if (!person) {
+
+                alert(
+                    assignment.driverName +
+                    " 已不在可用人员中，请重新选择。"
+                );
+
+                return;
+            }
+
+            const state =
+                getPersonStatusForDraft(
+                    person
+                );
+
+            if (
+                state.code === "leave" ||
+                state.code === "working" ||
+                state.code === "disabled"
+            ) {
+
+                alert(
+                    person.name +
+                    " 当前状态：" +
+                    state.label +
+                    "，不能发布本任务。"
+                );
+
+                return;
+            }
         }
 
-        const conflict =
-            findDraftConflict();
-
-        if (conflict) {
-
-            alert(
-                conflict +
-                " 已被其他任务占用，请重新选择。"
-            );
-
-            return;
-        }
 
         const task = {
 
@@ -1502,10 +1648,24 @@ document.addEventListener("DOMContentLoaded", function () {
                 "pending",
 
             bindings:
-                deepClone(bindings),
+                clone(bindings),
+
+            driverAssignments:
+                clone(driverAssignments)
+                    .map(
+                        item => ({
+                            ...item,
+
+                            loadingPoint:
+                                currentDraft.loadingPoint,
+
+                            unloadingPoint:
+                                currentDraft.unloadingPoint
+                        })
+                    ),
 
             auxiliaryAssignments:
-                deepClone(auxiliaryAssignments),
+                clone(auxiliaryAssignments),
 
             equipmentAdjustments:
                 [],
@@ -1514,6 +1674,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 new Date().toISOString()
         };
 
+
         const tasks =
             getTasks();
 
@@ -1521,77 +1682,115 @@ document.addEventListener("DOMContentLoaded", function () {
 
         saveTasks(tasks);
 
+
         localStorage.setItem(
             STORAGE.LEGACY_TASK,
             JSON.stringify(task)
         );
 
-        alert(
-            "生产任务发布成功。"
+
+        syncTaskToLocalDriver(
+            task
         );
 
-        cancelCreateTask();
 
-        $("taskArea").value = "";
+        alert(
+            "生产任务发布成功。\n\n" +
+            `已分配 ${driverAssignments.length} 名司机。`
+        );
 
-        $("taskRemark").value = "";
 
-        renderProductionBoard();
+        cancelDraft();
 
-        renderHistoryBoard();
+        clearTaskInputs();
 
-        renderTodoCenter();
+        refreshAll();
     }
 
 
-    function findDraftConflict() {
+    function syncTaskToLocalDriver(task) {
 
-        const occupied =
-            getOccupiedDeviceIds();
+        const localDriver =
+            readJson(
+                STORAGE.DRIVER_PROFILE,
+                null
+            );
 
-        for (const binding of bindings) {
-
-            if (
-                occupied.has(
-                    binding.excavatorId
-                )
-            ) {
-                return binding.excavatorId;
-            }
-
-            for (
-                const truckId of
-                binding.truckIds || []
-            ) {
-
-                if (
-                    occupied.has(truckId)
-                ) {
-                    return truckId;
-                }
-            }
+        if (!localDriver) {
+            return;
         }
 
-        for (
-            const item of
-            auxiliaryAssignments
-        ) {
+        const assignment =
+            (task.driverAssignments || [])
+                .find(
+                    item =>
+                        samePerson(
+                            item.driverId,
+                            item.driverName,
+                            localDriver
+                        )
+                );
 
-            if (
-                occupied.has(item.vehicleId)
-            ) {
-                return item.vehicleId;
-            }
+        if (!assignment) {
+            return;
         }
 
-        return null;
+        const driverTask = {
+
+            taskId:
+                task.taskId,
+
+            dispatchTaskId:
+                task.taskId,
+
+            workArea:
+                task.area || "",
+
+            shift:
+                task.shift || "",
+
+            remark:
+                task.remark || "",
+
+            vehicleNumber:
+                assignment.vehicleNumber,
+
+            vehicleId:
+                assignment.vehicleId,
+
+            excavatorNumber:
+                assignment.excavatorNumber,
+
+            excavatorId:
+                assignment.excavatorId,
+
+            loadingPoint:
+                task.loadingPoint || "",
+
+            unloadingPoint:
+                task.unloadingPoint || "",
+
+            status:
+                "assigned",
+
+            vehicleClaimed:
+                false,
+
+            createdAt:
+                task.publishedAt
+        };
+
+        localStorage.setItem(
+            STORAGE.DRIVER_CURRENT_TASK,
+            JSON.stringify(driverTask)
+        );
     }
 
 
     /*
-    ===================================================
-    任务状态
-    ===================================================
+    ========================================================
+    生产任务 / 历史
+    ========================================================
     */
 
     function synchronizeTaskStatus() {
@@ -1602,7 +1801,7 @@ document.addEventListener("DOMContentLoaded", function () {
         let changed = false;
 
         tasks.forEach(
-            function (task) {
+            task => {
 
                 if (
                     task.status !== "pending" &&
@@ -1611,30 +1810,25 @@ document.addEventListener("DOMContentLoaded", function () {
                     return;
                 }
 
-                const trips =
-                    getTaskTrips(task);
+                const tripCount =
+                    getTaskTrips(task)
+                        .filter(
+                            trip =>
+                                trip.dispatchConfirmation !==
+                                "rejected"
+                        )
+                        .length;
 
                 if (
                     task.status === "pending" &&
-                    trips.length > 0
+                    tripCount > 0
                 ) {
 
                     task.status = "active";
 
                     task.startedAt =
                         task.startedAt ||
-                        trips[0].completedAt ||
                         new Date().toISOString();
-
-                    changed = true;
-                }
-
-                if (
-                    task.status === "active" &&
-                    trips.length === 0
-                ) {
-
-                    task.status = "pending";
 
                     changed = true;
                 }
@@ -1647,43 +1841,24 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
 
-    /*
-    ===================================================
-    生产任务看板
-    ===================================================
-    */
-
     function renderProductionBoard() {
-
-        synchronizeTaskStatus();
 
         const tasks =
             getTasks()
                 .filter(
-                    function (task) {
-
-                        return (
-                            task.status === "pending" ||
-                            task.status === "active"
-                        );
-                    }
+                    task =>
+                        task.status === "pending" ||
+                        task.status === "active"
                 )
                 .sort(
-                    function (a, b) {
-
-                        return new Date(
-                            b.publishedAt || 0
-                        ) -
-                        new Date(
-                            a.publishedAt || 0
-                        );
-                    }
+                    (a, b) =>
+                        new Date(b.publishedAt || 0) -
+                        new Date(a.publishedAt || 0)
                 );
 
         setText(
             "productionTaskCount",
-            tasks.length +
-            " 个进行中任务"
+            `${tasks.length} 个进行中任务`
         );
 
         const board =
@@ -1699,35 +1874,19 @@ document.addEventListener("DOMContentLoaded", function () {
 
         board.innerHTML =
             tasks.map(
-                function (task) {
+                task => {
 
                     const trips =
                         getTaskTrips(task);
 
-                    const excavatorCount =
-                        (task.bindings || []).length;
-
-                    const truckCount =
-                        (task.bindings || [])
-                            .reduce(
-                                function (sum, item) {
-                                    return (
-                                        sum +
-                                        (item.truckIds || []).length
-                                    );
-                                },
-                                0
-                            );
-
                     return `
                         <button
                             type="button"
-                            class="production-task-card ${task.status}"
-                            data-task-id="${escapeHtml(task.taskId)}"
+                            class="production-task-card ${escapeHtml(task.status)}"
+                            data-task="${escapeHtml(task.taskId)}"
                         >
 
-                            <div class="production-task-card-top">
-
+                            <div class="task-card-top">
                                 <div>
                                     <strong>
                                         ${escapeHtml(task.area || "-")}
@@ -1740,41 +1899,43 @@ document.addEventListener("DOMContentLoaded", function () {
                                     </span>
                                 </div>
 
-                                <span class="task-status-pill ${task.status}">
+                                <span class="task-status-pill ${escapeHtml(task.status)}">
                                     ${
                                         task.status === "active"
                                             ? "执行中"
                                             : "待执行"
                                     }
                                 </span>
-
                             </div>
 
-
-                            <div class="task-card-stat-grid">
-
+                            <div class="task-stat-grid">
                                 <div>
                                     <span>挖机</span>
-                                    <strong>${excavatorCount}</strong>
+                                    <strong>
+                                        ${(task.bindings || []).length}
+                                    </strong>
                                 </div>
 
                                 <div>
                                     <span>卡车</span>
-                                    <strong>${truckCount}</strong>
-                                </div>
-
-                                <div>
-                                    <span>辅助</span>
                                     <strong>
-                                        ${(task.auxiliaryAssignments || []).length}
+                                        ${(task.driverAssignments || []).length}
                                     </strong>
                                 </div>
 
                                 <div>
-                                    <span>趟次</span>
-                                    <strong>${trips.length}</strong>
+                                    <span>司机</span>
+                                    <strong>
+                                        ${(task.driverAssignments || []).length}
+                                    </strong>
                                 </div>
 
+                                <div>
+                                    <span>趟数</span>
+                                    <strong>
+                                        ${trips.length}
+                                    </strong>
+                                </div>
                             </div>
 
                         </button>
@@ -1783,241 +1944,23 @@ document.addEventListener("DOMContentLoaded", function () {
             ).join("");
 
         board.querySelectorAll(
-            "[data-task-id]"
+            "[data-task]"
         ).forEach(
-            function (button) {
+            button => {
 
                 button.addEventListener(
                     "click",
-                    function () {
-
-                        openPublishedTask(
-                            button.dataset.taskId
-                        );
-                    }
-                );
-            }
-        );
-    }
-
-
-    /*
-    ===================================================
-    历史任务
-    ===================================================
-    */
-
-    function toggleHistory() {
-
-        $("historyTaskSection")
-            .classList
-            .toggle("hidden");
-
-        if (
-            !$("historyTaskSection")
-                .classList
-                .contains("hidden")
-        ) {
-
-            renderHistoryBoard();
-
-            $("historyTaskSection")
-                .scrollIntoView({
-                    behavior: "smooth"
-                });
-        }
-    }
-
-
-    function resetHistoryFilter() {
-
-        $("historyDateFilter").value = "";
-
-        $("historyShiftFilter").value = "";
-
-        $("historyAreaFilter").value = "";
-
-        renderHistoryBoard();
-    }
-
-
-    function renderHistoryBoard() {
-
-        let tasks =
-            getTasks()
-                .filter(
-                    function (task) {
-                        return task.status === "completed";
-                    }
-                );
-
-        const date =
-            $("historyDateFilter")
-                ?.value || "";
-
-        const shift =
-            $("historyShiftFilter")
-                ?.value || "";
-
-        const area =
-            $("historyAreaFilter")
-                ?.value
-                ?.trim()
-                ?.toLowerCase() || "";
-
-        if (date) {
-
-            tasks =
-                tasks.filter(
-                    function (task) {
-                        return getTaskDateKey(task) === date;
-                    }
-                );
-        }
-
-        if (shift) {
-
-            tasks =
-                tasks.filter(
-                    function (task) {
-                        return task.shift === shift;
-                    }
-                );
-        }
-
-        if (area) {
-
-            tasks =
-                tasks.filter(
-                    function (task) {
-
-                        return String(
-                            task.area || ""
+                    () =>
+                        openTaskDetail(
+                            button.dataset.task
                         )
-                            .toLowerCase()
-                            .includes(area);
-                    }
-                );
-        }
-
-        tasks.sort(
-            function (a, b) {
-
-                return new Date(
-                    b.completedAt || 0
-                ) -
-                new Date(
-                    a.completedAt || 0
-                );
-            }
-        );
-
-        setText(
-            "historyTaskCount",
-            tasks.length +
-            " 个已完成任务"
-        );
-
-        const board =
-            $("historyTaskBoard");
-
-        if (!tasks.length) {
-
-            board.innerHTML =
-                '<div class="empty-placeholder">暂无符合条件的已完成任务</div>';
-
-            return;
-        }
-
-        board.innerHTML =
-            tasks.map(
-                function (task) {
-
-                    return `
-                        <button
-                            type="button"
-                            class="production-task-card completed"
-                            data-history-task="${escapeHtml(task.taskId)}"
-                        >
-
-                            <div class="production-task-card-top">
-
-                                <div>
-                                    <strong>
-                                        ${escapeHtml(task.area || "-")}
-                                    </strong>
-
-                                    <span>
-                                        ${escapeHtml(task.shift || "-")}
-                                        ·
-                                        ${escapeHtml(task.date || task.dateKey || "-")}
-                                    </span>
-                                </div>
-
-                                <span class="task-status-pill completed">
-                                    已完成
-                                </span>
-
-                            </div>
-
-                            <div class="task-card-stat-grid">
-
-                                <div>
-                                    <span>趟次</span>
-                                    <strong>
-                                        ${getTaskTrips(task).length}
-                                    </strong>
-                                </div>
-
-                                <div>
-                                    <span>设备调整</span>
-                                    <strong>
-                                        ${(task.equipmentAdjustments || []).length}
-                                    </strong>
-                                </div>
-
-                                <div>
-                                    <span>完成时间</span>
-                                    <strong>
-                                        ${formatTime(task.completedAt)}
-                                    </strong>
-                                </div>
-
-                            </div>
-
-                        </button>
-                    `;
-                }
-            ).join("");
-
-        board.querySelectorAll(
-            "[data-history-task]"
-        ).forEach(
-            function (button) {
-
-                button.addEventListener(
-                    "click",
-                    function () {
-
-                        openPublishedTask(
-                            button.dataset.historyTask
-                        );
-                    }
                 );
             }
         );
     }
 
 
-    /*
-    ===================================================
-    任务详情
-    ===================================================
-    */
-
-    function openPublishedTask(
-        taskId
-    ) {
+    function openTaskDetail(taskId) {
 
         const task =
             getTaskById(taskId);
@@ -2029,72 +1972,99 @@ document.addEventListener("DOMContentLoaded", function () {
         openedTaskId =
             taskId;
 
-        const trips =
-            getTaskTrips(task);
-
         $("publishedTaskModalTitle")
             .textContent =
             "生产任务 · " +
             (task.area || "-");
 
 
+        const driverHtml =
+            (task.driverAssignments || []).length
+                ?
+                task.driverAssignments.map(
+                    item => `
+                        <div class="detail-driver-row">
+                            <span>
+                                🚜 ${escapeHtml(item.excavatorNumber || "-")}
+                            </span>
+
+                            <strong>
+                                🚚 ${escapeHtml(item.vehicleNumber || "-")}
+                            </strong>
+
+                            <b>
+                                👷 ${escapeHtml(item.driverName || "-")}
+                            </b>
+                        </div>
+                    `
+                ).join("")
+                :
+                '<div class="empty-placeholder">无司机分配资料</div>';
+
+
+        const tripCount =
+            getTaskTrips(task).length;
+
+
         $("publishedTaskModalContent")
-            .innerHTML =
-            buildTaskDetailHtml(
-                task,
-                trips
+            .innerHTML = `
+                <div class="detail-summary-grid">
+                    <div>
+                        <span>任务编号</span>
+                        <strong>${escapeHtml(task.taskId)}</strong>
+                    </div>
+
+                    <div>
+                        <span>班次</span>
+                        <strong>${escapeHtml(task.shift || "-")}</strong>
+                    </div>
+
+                    <div>
+                        <span>区域</span>
+                        <strong>${escapeHtml(task.area || "-")}</strong>
+                    </div>
+
+                    <div>
+                        <span>当前趟数</span>
+                        <strong>${tripCount}</strong>
+                    </div>
+                </div>
+
+                <h4>👷 人员 / 车辆 / 挖机</h4>
+
+                ${driverHtml}
+
+                <h4>运输路线</h4>
+
+                <div class="detail-note">
+                    ${escapeHtml(task.loadingPoint || "-")}
+                    →
+                    ${escapeHtml(task.unloadingPoint || "-")}
+                </div>
+
+                <h4>调度说明</h4>
+
+                <div class="detail-note">
+                    ${escapeHtml(task.remark || "无")}
+                </div>
+            `;
+
+
+        $("withdrawPublishedTaskButton")
+            .classList
+            .toggle(
+                "hidden",
+                task.status !== "pending"
             );
 
 
-        const withdrawButton =
-            $("withdrawPublishedTaskButton");
-
-        const completeButton =
-            $("completePublishedTaskButton");
-
-        const adjustButton =
-            $("adjustTaskButton");
-
-
-        withdrawButton
+        $("completePublishedTaskButton")
             .classList
-            .add("hidden");
+            .toggle(
+                "hidden",
+                task.status !== "active"
+            );
 
-        completeButton
-            .classList
-            .add("hidden");
-
-        adjustButton
-            .classList
-            .add("hidden");
-
-
-        if (
-            task.status === "pending"
-        ) {
-
-            withdrawButton
-                .classList
-                .remove("hidden");
-
-            adjustButton
-                .classList
-                .remove("hidden");
-        }
-
-
-        if (
-            task.status === "active"
-        ) {
-
-            completeButton
-                .classList
-                .remove("hidden");
-
-            adjustButton
-                .classList
-                .remove("hidden");
-        }
 
         showModal(
             "publishedTaskModal"
@@ -2102,181 +2072,24 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
 
-    function buildTaskDetailHtml(
-        task,
-        trips
-    ) {
-
-        const bindingsHtml =
-            (task.bindings || []).length
-                ?
-                (task.bindings || [])
-                    .map(
-                        function (item) {
-
-                            return `
-                                <div class="detail-row">
-                                    <span>
-                                        ${escapeHtml(item.excavatorId)}
-                                    </span>
-
-                                    <strong>
-                                        ${(item.truckIds || [])
-                                            .map(escapeHtml)
-                                            .join("、")}
-                                    </strong>
-                                </div>
-                            `;
-                        }
-                    )
-                    .join("")
-                :
-                '<div class="empty-placeholder">无主采设备</div>';
-
-
-        const auxiliaryHtml =
-            (task.auxiliaryAssignments || []).length
-                ?
-                (task.auxiliaryAssignments || [])
-                    .map(
-                        function (item) {
-
-                            return `
-                                <div class="detail-row">
-                                    <span>
-                                        ${escapeHtml(item.vehicleId)}
-                                    </span>
-
-                                    <strong>
-                                        ${escapeHtml(item.work)}
-                                    </strong>
-                                </div>
-                            `;
-                        }
-                    )
-                    .join("")
-                :
-                '<div class="empty-placeholder">无辅助车辆</div>';
-
-
-        const adjustmentsHtml =
-            (task.equipmentAdjustments || []).length
-                ?
-                task.equipmentAdjustments
-                    .map(
-                        function (item) {
-
-                            return `
-                                <div class="timeline-row">
-                                    <strong>
-                                        ${formatDateTime(item.time)}
-                                    </strong>
-
-                                    <span>
-                                        ${escapeHtml(item.summary || "设备调整")}
-                                    </span>
-                                </div>
-                            `;
-                        }
-                    )
-                    .join("")
-                :
-                '<div class="empty-placeholder">无设备调整记录</div>';
-
-
-        return `
-            <div class="detail-summary-grid">
-
-                <div>
-                    <span>任务ID</span>
-                    <strong>
-                        ${escapeHtml(task.taskId)}
-                    </strong>
-                </div>
-
-                <div>
-                    <span>日期</span>
-                    <strong>
-                        ${escapeHtml(task.date || task.dateKey || "-")}
-                    </strong>
-                </div>
-
-                <div>
-                    <span>班次</span>
-                    <strong>
-                        ${escapeHtml(task.shift || "-")}
-                    </strong>
-                </div>
-
-                <div>
-                    <span>区域</span>
-                    <strong>
-                        ${escapeHtml(task.area || "-")}
-                    </strong>
-                </div>
-
-                <div>
-                    <span>运输趟次</span>
-                    <strong>
-                        ${trips.length}
-                    </strong>
-                </div>
-
-            </div>
-
-            <h4>🚜 挖机 / 卡车</h4>
-            ${bindingsHtml}
-
-            <h4>🚧 辅助车辆</h4>
-            ${auxiliaryHtml}
-
-            <h4>📝 调度说明</h4>
-
-            <div class="detail-note">
-                ${escapeHtml(task.remark || "无")}
-            </div>
-
-            <h4>🔄 设备调整记录</h4>
-            ${adjustmentsHtml}
-        `;
-    }
-
-
-    function closePublishedTaskModal() {
-
-        openedTaskId = null;
-
-        hideModal(
-            "publishedTaskModal"
-        );
-    }
-
-
-    /*
-    ===================================================
-    撤回
-    ===================================================
-    */
-
     function withdrawOpenedTask() {
-
-        if (!openedTaskId) {
-            return;
-        }
 
         const task =
             getTaskById(openedTaskId);
 
-        if (!task) {
+        if (
+            !task ||
+            task.status !== "pending"
+        ) {
             return;
         }
 
         if (
-            task.status !== "pending"
+            getTaskTrips(task).length
         ) {
 
             alert(
-                "已经开始执行的任务不能撤回。"
+                "该任务已经产生运输记录，不能撤回。"
             );
 
             return;
@@ -2284,86 +2097,53 @@ document.addEventListener("DOMContentLoaded", function () {
 
         if (
             !confirm(
-                "确认撤回并删除本任务吗？"
+                "确认撤回并删除该生产任务吗？"
             )
         ) {
             return;
         }
 
         const tasks =
-            getTasks()
-                .filter(
-                    function (item) {
-
-                        return (
-                            item.taskId !==
-                            openedTaskId
-                        );
-                    }
-                );
+            getTasks().filter(
+                item =>
+                    item.taskId !== openedTaskId
+            );
 
         saveTasks(tasks);
 
-        const legacy =
-            readJson(
-                STORAGE.LEGACY_TASK,
-                null
-            );
+        clearLocalDriverTaskIfMatches(
+            openedTaskId
+        );
 
-        if (
-            legacy &&
-            legacy.taskId === openedTaskId
-        ) {
+        hideModal(
+            "publishedTaskModal"
+        );
 
-            localStorage.removeItem(
-                STORAGE.LEGACY_TASK
-            );
-        }
-
-        closePublishedTaskModal();
-
-        renderProductionBoard();
+        refreshAll();
     }
 
 
-    /*
-    ===================================================
-    完成任务
-    ===================================================
-    */
-
     function completeOpenedTask() {
-
-        if (!openedTaskId) {
-            return;
-        }
 
         const tasks =
             getTasks();
 
-        const index =
-            tasks.findIndex(
-                function (item) {
-                    return item.taskId === openedTaskId;
-                }
+        const task =
+            tasks.find(
+                item =>
+                    item.taskId === openedTaskId
             );
 
-        if (index < 0) {
+        if (!task) {
             return;
         }
-
-        const task =
-            tasks[index];
-
-        const trips =
-            getTaskTrips(task);
 
         if (
             task.status !== "active"
         ) {
 
             alert(
-                "任务尚未产生运输记录，不能直接完成。"
+                "任务还没有开始产生运输记录。"
             );
 
             return;
@@ -2371,7 +2151,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
         if (
             !confirm(
-                "确认本生产任务已经完成吗？"
+                "确认该生产任务已经完成？"
             )
         ) {
             return;
@@ -2383,693 +2163,200 @@ document.addEventListener("DOMContentLoaded", function () {
         task.completedAt =
             new Date().toISOString();
 
-        task.transportTripCount =
-            trips.length;
-
-        tasks[index] =
-            task;
-
         saveTasks(tasks);
 
-        closePublishedTaskModal();
-
-        renderProductionBoard();
-
-        renderHistoryBoard();
-    }
-
-
-    /*
-    ===================================================
-    中途设备调整
-    ===================================================
-    */
-
-    function openAdjustment() {
-
-        const task =
-            getTaskById(
-                openedTaskId
-            );
-
-        if (!task) {
-            return;
-        }
-
-        if (
-            task.status !== "pending" &&
-            task.status !== "active"
-        ) {
-
-            return;
-        }
-
-        adjustmentTaskId =
-            task.taskId;
-
-        adjustmentBindings =
-            deepClone(
-                task.bindings || []
-            );
-
-        adjustmentSelectedExcavatorId =
-            null;
-
-        adjustmentSelectedTruckIds =
-            [];
-
-        renderAdjustmentCurrentBindings();
-
-        renderAdjustmentBoards();
+        clearLocalDriverTaskIfMatches(
+            task.taskId
+        );
 
         hideModal(
             "publishedTaskModal"
         );
 
-        showModal(
-            "adjustTaskModal"
-        );
+        refreshAll();
     }
 
 
-    function renderAdjustmentCurrentBindings() {
+    function clearLocalDriverTaskIfMatches(
+        taskId
+    ) {
 
-        const box =
-            $("adjustCurrentBindings");
+        const current =
+            readJson(
+                STORAGE.DRIVER_CURRENT_TASK,
+                null
+            );
 
-        if (!adjustmentBindings.length) {
+        if (
+            current &&
+            current.taskId === taskId
+        ) {
 
-            box.innerHTML =
-                '<div class="empty-placeholder">当前无挖机卡车绑定</div>';
+            current.status =
+                "completed";
+
+            current.completedAt =
+                new Date().toISOString();
+
+            localStorage.setItem(
+                STORAGE.DRIVER_CURRENT_TASK,
+                JSON.stringify(current)
+            );
+        }
+    }
+
+
+    function toggleHistory() {
+
+        $("historyTaskSection")
+            .classList
+            .toggle("hidden");
+
+        renderHistory();
+    }
+
+
+    function renderHistory() {
+
+        const board =
+            $("historyTaskBoard");
+
+        if (!board) {
+            return;
+        }
+
+        let tasks =
+            getTasks().filter(
+                item =>
+                    item.status === "completed"
+            );
+
+        const date =
+            $("historyDateFilter")?.value || "";
+
+        const shift =
+            $("historyShiftFilter")?.value || "";
+
+        const area =
+            $("historyAreaFilter")
+                ?.value
+                .trim()
+                .toLowerCase() || "";
+
+
+        if (date) {
+
+            tasks =
+                tasks.filter(
+                    task =>
+                        task.dateKey === date
+                );
+        }
+
+        if (shift) {
+
+            tasks =
+                tasks.filter(
+                    task =>
+                        task.shift === shift
+                );
+        }
+
+        if (area) {
+
+            tasks =
+                tasks.filter(
+                    task =>
+                        String(task.area || "")
+                            .toLowerCase()
+                            .includes(area)
+                );
+        }
+
+        setText(
+            "historyTaskCount",
+            `${tasks.length} 个`
+        );
+
+        if (!tasks.length) {
+
+            board.innerHTML =
+                '<div class="empty-placeholder">暂无历史任务</div>';
 
             return;
         }
 
-        box.innerHTML =
-            adjustmentBindings.map(
-                function (binding, index) {
-
-                    return `
-                        <div class="binding-row">
-
+        board.innerHTML =
+            tasks.map(
+                task => `
+                    <button
+                        class="production-task-card completed"
+                        data-history="${escapeHtml(task.taskId)}"
+                        type="button"
+                    >
+                        <div class="task-card-top">
                             <div>
                                 <strong>
-                                    🚜 ${escapeHtml(binding.excavatorId)}
+                                    ${escapeHtml(task.area || "-")}
                                 </strong>
 
                                 <span>
-                                    🚚 ${(binding.truckIds || [])
-                                        .map(escapeHtml)
-                                        .join("、")}
+                                    ${escapeHtml(task.shift || "-")}
+                                    ·
+                                    ${escapeHtml(task.date || "-")}
                                 </span>
                             </div>
 
-                            <button
-                                type="button"
-                                class="mini-danger-button"
-                                data-adjust-remove="${index}"
-                            >
-                                减少挖机
-                            </button>
-
+                            <span class="task-status-pill completed">
+                                已完成
+                            </span>
                         </div>
-                    `;
-                }
+
+                        <div class="task-stat-grid">
+                            <div>
+                                <span>司机</span>
+                                <strong>
+                                    ${(task.driverAssignments || []).length}
+                                </strong>
+                            </div>
+
+                            <div>
+                                <span>趟数</span>
+                                <strong>
+                                    ${getTaskTrips(task).length}
+                                </strong>
+                            </div>
+                        </div>
+                    </button>
+                `
             ).join("");
 
-
-        box.querySelectorAll(
-            "[data-adjust-remove]"
+        board.querySelectorAll(
+            "[data-history]"
         ).forEach(
-            function (button) {
+            button => {
 
                 button.addEventListener(
                     "click",
-                    function () {
-
-                        adjustmentBindings.splice(
-                            Number(
-                                button.dataset.adjustRemove
-                            ),
-                            1
-                        );
-
-                        renderAdjustmentCurrentBindings();
-
-                        renderAdjustmentBoards();
-                    }
+                    () =>
+                        openTaskDetail(
+                            button.dataset.history
+                        )
                 );
             }
         );
     }
 
 
-    function renderAdjustmentBoards() {
-
-        renderAdjustmentExcavators();
-
-        renderAdjustmentTrucks();
-    }
-
-
-    function renderAdjustmentExcavators() {
-
-        const board =
-            $("adjustExcavatorBoard");
-
-        board.innerHTML =
-            "<h4>可增加挖机</h4>";
-
-        const occupied =
-            getOccupiedDeviceIds(
-                adjustmentTaskId
-            );
-
-        equipment.excavators
-            .forEach(
-                function (device) {
-
-                    const alreadyUsed =
-                        adjustmentBindings.some(
-                            function (item) {
-                                return (
-                                    item.excavatorId ===
-                                    device.id
-                                );
-                            }
-                        );
-
-                    const selected =
-                        adjustmentSelectedExcavatorId ===
-                        device.id;
-
-                    const button =
-                        document.createElement(
-                            "button"
-                        );
-
-                    button.type =
-                        "button";
-
-                    button.className =
-                        getDeviceClass(
-                            device,
-                            occupied,
-                            selected
-                        );
-
-                    if (alreadyUsed) {
-                        button.classList.add(
-                            "device-assigned"
-                        );
-                    }
-
-                    button.innerHTML =
-                        "<strong>" +
-                        escapeHtml(device.id) +
-                        "</strong>" +
-                        "<span>" +
-                        (
-                            alreadyUsed
-                                ? "本任务已使用"
-                                : selected
-                                    ? "✓ 当前选择"
-                                    : "可调配"
-                        ) +
-                        "</span>";
-
-                    button.disabled =
-                        alreadyUsed ||
-                        device.status === "maintenance" ||
-                        occupied.has(device.id);
-
-                    button.addEventListener(
-                        "click",
-                        function () {
-
-                            adjustmentSelectedExcavatorId =
-                                device.id;
-
-                            adjustmentSelectedTruckIds =
-                                [];
-
-                            renderAdjustmentBoards();
-                        }
-                    );
-
-                    board.appendChild(button);
-                }
-            );
-    }
-
-
-    function renderAdjustmentTrucks() {
-
-        const board =
-            $("adjustTruckBoard");
-
-        board.innerHTML =
-            "<h4>选择跟随卡车</h4>";
-
-        if (
-            !adjustmentSelectedExcavatorId
-        ) {
-
-            board.innerHTML +=
-                '<div class="empty-placeholder">请先选择要增加的挖机</div>';
-
-            return;
-        }
-
-        const occupied =
-            getOccupiedDeviceIds(
-                adjustmentTaskId
-            );
-
-        const alreadyInTask =
-            new Set();
-
-        adjustmentBindings
-            .forEach(
-                function (binding) {
-
-                    (binding.truckIds || [])
-                        .forEach(
-                            function (id) {
-                                alreadyInTask.add(id);
-                            }
-                        );
-                }
-            );
-
-
-        equipment.trucks
-            .forEach(
-                function (device) {
-
-                    const selected =
-                        adjustmentSelectedTruckIds
-                            .includes(device.id);
-
-                    const button =
-                        document.createElement(
-                            "button"
-                        );
-
-                    button.type =
-                        "button";
-
-                    button.className =
-                        getDeviceClass(
-                            device,
-                            occupied,
-                            selected
-                        );
-
-                    const unavailable =
-                        device.status === "maintenance" ||
-                        occupied.has(device.id) ||
-                        alreadyInTask.has(device.id);
-
-                    if (
-                        alreadyInTask.has(device.id)
-                    ) {
-                        button.classList.add(
-                            "device-assigned"
-                        );
-                    }
-
-                    button.disabled =
-                        unavailable;
-
-                    button.innerHTML =
-                        "<strong>" +
-                        escapeHtml(device.id) +
-                        "</strong><span>" +
-                        (
-                            selected
-                                ? "✓ 已选择"
-                                : alreadyInTask.has(device.id)
-                                    ? "本任务已使用"
-                                    : "可调配"
-                        ) +
-                        "</span>";
-
-                    button.addEventListener(
-                        "click",
-                        function () {
-
-                            if (
-                                adjustmentSelectedTruckIds
-                                    .includes(device.id)
-                            ) {
-
-                                adjustmentSelectedTruckIds =
-                                    adjustmentSelectedTruckIds.filter(
-                                        function (id) {
-                                            return id !== device.id;
-                                        }
-                                    );
-
-                            } else {
-
-                                adjustmentSelectedTruckIds.push(
-                                    device.id
-                                );
-                            }
-
-                            renderAdjustmentTrucks();
-                        }
-                    );
-
-                    board.appendChild(button);
-                }
-            );
-    }
-
-
-    function saveAdjustment() {
-
-        if (!adjustmentTaskId) {
-            return;
-        }
-
-        /*
-        如果选择了新挖机，必须至少选择一辆卡车。
-        */
-
-        if (
-            adjustmentSelectedExcavatorId
-        ) {
-
-            if (
-                !adjustmentSelectedTruckIds.length
-            ) {
-
-                alert(
-                    "增加挖机时必须选择跟随卡车。"
-                );
-
-                return;
-            }
-
-            adjustmentBindings.push({
-
-                excavatorId:
-                    adjustmentSelectedExcavatorId,
-
-                truckIds:
-                    adjustmentSelectedTruckIds.slice()
-            });
-        }
-
-
-        const tasks =
-            getTasks();
-
-        const index =
-            tasks.findIndex(
-                function (item) {
-
-                    return (
-                        item.taskId ===
-                        adjustmentTaskId
-                    );
-                }
-            );
-
-        if (index < 0) {
-            return;
-        }
-
-        const task =
-            tasks[index];
-
-        const before =
-            deepClone(
-                task.bindings || []
-            );
-
-        const after =
-            deepClone(
-                adjustmentBindings
-            );
-
-
-        if (
-            JSON.stringify(
-                normalizeBindings(before)
-            ) ===
-            JSON.stringify(
-                normalizeBindings(after)
-            )
-        ) {
-
-            alert(
-                "设备没有发生变化。"
-            );
-
-            return;
-        }
-
-
-        task.bindings =
-            after;
-
-
-        task.equipmentAdjustments =
-            task.equipmentAdjustments ||
-            [];
-
-
-        task.equipmentAdjustments.push({
-
-            adjustmentId:
-                "ADJ_" + Date.now(),
-
-            time:
-                new Date().toISOString(),
-
-            summary:
-                buildAdjustmentSummary(
-                    before,
-                    after
-                ),
-
-            beforeBindings:
-                before,
-
-            afterBindings:
-                after
-        });
-
-
-        tasks[index] =
-            task;
-
-        saveTasks(tasks);
-
-
-        closeAdjustment();
-
-        renderProductionBoard();
-
-        openPublishedTask(
-            adjustmentTaskId
-        );
-    }
-
-
-    function closeAdjustment() {
-
-        hideModal(
-            "adjustTaskModal"
-        );
-
-        adjustmentTaskId = null;
-
-        adjustmentBindings = [];
-
-        adjustmentSelectedExcavatorId = null;
-
-        adjustmentSelectedTruckIds = [];
-    }
-
-
-    function buildAdjustmentSummary(
-        before,
-        after
-    ) {
-
-        const beforeExcavators =
-            new Set(
-                before.map(
-                    function (item) {
-                        return item.excavatorId;
-                    }
-                )
-            );
-
-        const afterExcavators =
-            new Set(
-                after.map(
-                    function (item) {
-                        return item.excavatorId;
-                    }
-                )
-            );
-
-        const added =
-            [...afterExcavators]
-                .filter(
-                    function (id) {
-                        return !beforeExcavators.has(id);
-                    }
-                );
-
-        const removed =
-            [...beforeExcavators]
-                .filter(
-                    function (id) {
-                        return !afterExcavators.has(id);
-                    }
-                );
-
-        const parts = [];
-
-        if (added.length) {
-
-            parts.push(
-                "增加挖机：" +
-                added.join("、")
-            );
-        }
-
-        if (removed.length) {
-
-            parts.push(
-                "减少挖机：" +
-                removed.join("、")
-            );
-        }
-
-        if (!parts.length) {
-
-            parts.push(
-                "调整卡车绑定关系"
-            );
-        }
-
-        return parts.join("；");
-    }
-
-
     /*
-    ===================================================
-    调度待办中心
-    ===================================================
+    ========================================================
+    换车
+    ========================================================
     */
 
-    function renderTodoCenter() {
+    function openVehicleChanges() {
 
-        const changeRequests =
-            getChangeRequests()
-                .filter(
-                    function (item) {
-                        return item.status === "pending";
-                    }
-                );
-
-
-        const gpsRecords =
-            getTrips()
-                .filter(
-                    isGpsPendingReview
-                );
-
-
-        const leaveRequests =
-            getLeaveRequests()
-                .filter(
-                    function (item) {
-
-                        return (
-                            item.status === "pending" &&
-                            item.approverRole === "dispatch"
-                        );
-                    }
-                );
-
-
-        const penalties =
-            getPenalties()
-                .filter(
-                    function (item) {
-
-                        return (
-                            item.status ===
-                            "pending_acknowledgement"
-                        );
-                    }
-                );
-
-
-        setText(
-            "vehicleChangeTodoCount",
-            changeRequests.length
-        );
-
-        setText(
-            "gpsTodoCount",
-            gpsRecords.length
-        );
-
-        setText(
-            "leaveTodoCount",
-            leaveRequests.length
-        );
-
-        setText(
-            "penaltyTodoCount",
-            penalties.length
-        );
-    }
-
-
-    /*
-    ===================================================
-    换车审批
-    ===================================================
-    */
-
-    function getChangeRequests() {
-
-        const value =
-            readJson(
-                STORAGE.CHANGE_REQUESTS,
-                []
-            );
-
-        return Array.isArray(value)
-            ? value
-            : [];
-    }
-
-
-    function saveChangeRequests(
-        records
-    ) {
-
-        localStorage.setItem(
-            STORAGE.CHANGE_REQUESTS,
-            JSON.stringify(records)
-        );
-    }
-
-
-    function openVehicleChangeModal() {
-
-        renderVehicleChangeRequests();
+        renderVehicleChanges();
 
         showModal(
             "vehicleChangeModal"
@@ -3077,140 +2364,80 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
 
-    function renderVehicleChangeRequests() {
+    function renderVehicleChanges() {
 
-        const requests =
+        const records =
             getChangeRequests()
                 .filter(
-                    function (item) {
-                        return item.status === "pending";
-                    }
-                )
-                .sort(
-                    function (a, b) {
-
-                        return new Date(
-                            b.requestedAt || 0
-                        ) -
-                        new Date(
-                            a.requestedAt || 0
-                        );
-                    }
+                    item =>
+                        item.status === "pending"
                 );
-
 
         const box =
             $("vehicleChangeRequestList");
 
-
-        if (!requests.length) {
+        if (!records.length) {
 
             box.innerHTML =
-                '<div class="empty-placeholder">当前没有待审批换车申请</div>';
+                '<div class="empty-placeholder">暂无待审批换车申请</div>';
 
             return;
         }
 
-
-        const availableTrucks =
-            getAvailableReplacementTrucks();
-
-
         box.innerHTML =
-            requests.map(
-                function (request) {
+            records.map(
+                item => {
+
+                    const trucks =
+                        getAvailableReplacementTrucks(
+                            item.taskId
+                        );
 
                     return `
                         <div class="approval-card">
 
-                            <div class="approval-card-title">
+                            <div class="approval-title">
+                                <strong>
+                                    ${escapeHtml(item.driverName || "-")}
+                                </strong>
 
-                                <div>
-                                    <strong>
-                                        ${escapeHtml(request.driverName || "-")}
-                                    </strong>
-
-                                    <span>
-                                        ${escapeHtml(request.oldVehicleNumber || "-")}
-                                    </span>
-                                </div>
-
-                                <span class="pending-pill">
-                                    待审批
+                                <span>
+                                    ${escapeHtml(item.oldVehicleNumber || "-")}
                                 </span>
-
                             </div>
 
-
-                            <div class="approval-detail-grid">
-
-                                <div>
-                                    <span>任务ID</span>
-                                    <strong>
-                                        ${escapeHtml(request.taskId || "-")}
-                                    </strong>
-                                </div>
-
-                                <div>
-                                    <span>申请时间</span>
-                                    <strong>
-                                        ${formatDateTime(request.requestedAt)}
-                                    </strong>
-                                </div>
-
+                            <div class="approval-note">
+                                ${escapeHtml(item.reason || "-")}
                             </div>
 
+                            <select data-change-vehicle="${escapeHtml(item.requestId)}">
+                                <option value="">选择新车辆</option>
 
-                            <div class="approval-reason">
-                                <strong>故障原因：</strong>
-                                ${escapeHtml(request.reason || "-")}
-                            </div>
-
-
-                            <label>
-                                指定替换车辆
-                            </label>
-
-                            <select
-                                data-change-select="${escapeHtml(request.requestId)}"
-                            >
-
-                                <option value="">
-                                    选择车辆
-                                </option>
-
-                                ${availableTrucks.map(
-                                    function (truck) {
-
-                                        return `
-                                            <option value="${escapeHtml(truck.id)}">
-                                                ${escapeHtml(truck.id)}
-                                            </option>
-                                        `;
-                                    }
+                                ${trucks.map(
+                                    truck => `
+                                        <option value="${escapeHtml(truck.id)}">
+                                            ${escapeHtml(truck.id)}
+                                        </option>
+                                    `
                                 ).join("")}
-
                             </select>
 
-
                             <div class="approval-buttons">
-
                                 <button
-                                    type="button"
                                     class="success-button"
-                                    data-approve-change="${escapeHtml(request.requestId)}"
+                                    data-change-approve="${escapeHtml(item.requestId)}"
+                                    type="button"
                                 >
-                                    批准换车
+                                    批准
                                 </button>
 
                                 <button
-                                    type="button"
                                     class="danger-button"
-                                    data-reject-change="${escapeHtml(request.requestId)}"
+                                    data-change-reject="${escapeHtml(item.requestId)}"
+                                    type="button"
                                 >
                                     驳回
                                 </button>
-
                             </div>
 
                         </div>
@@ -3220,36 +2447,32 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
         box.querySelectorAll(
-            "[data-approve-change]"
+            "[data-change-approve]"
         ).forEach(
-            function (button) {
+            button => {
 
                 button.addEventListener(
                     "click",
-                    function () {
-
+                    () =>
                         approveVehicleChange(
-                            button.dataset.approveChange
-                        );
-                    }
+                            button.dataset.changeApprove
+                        )
                 );
             }
         );
 
 
         box.querySelectorAll(
-            "[data-reject-change]"
+            "[data-change-reject]"
         ).forEach(
-            function (button) {
+            button => {
 
                 button.addEventListener(
                     "click",
-                    function () {
-
+                    () =>
                         rejectVehicleChange(
-                            button.dataset.rejectChange
-                        );
-                    }
+                            button.dataset.changeReject
+                        )
                 );
             }
         );
@@ -3262,113 +2485,51 @@ document.addEventListener("DOMContentLoaded", function () {
 
         const select =
             document.querySelector(
-                '[data-change-select="' +
-                CSS.escape(requestId) +
-                '"]'
+                `[data-change-vehicle="${CSS.escape(requestId)}"]`
             );
 
         const newVehicle =
-            select
-                ?.value;
+            select?.value || "";
 
         if (!newVehicle) {
 
-            alert(
-                "请选择替换车辆。"
-            );
+            alert("请选择替换车辆。");
 
             return;
         }
-
-
-        const available =
-            getAvailableReplacementTrucks()
-                .some(
-                    function (truck) {
-                        return truck.id === newVehicle;
-                    }
-                );
-
-
-        if (!available) {
-
-            alert(
-                "该车辆当前已不可调配，请重新选择。"
-            );
-
-            renderVehicleChangeRequests();
-
-            return;
-        }
-
-
-        if (
-            !confirm(
-                "确认批准换车？\n\n" +
-                "新车辆：" +
-                newVehicle
-            )
-        ) {
-            return;
-        }
-
 
         const requests =
             getChangeRequests();
 
-        const index =
-            requests.findIndex(
-                function (item) {
-
-                    return (
-                        item.requestId ===
-                        requestId
-                    );
-                }
+        const request =
+            requests.find(
+                item =>
+                    item.requestId === requestId
             );
 
-
-        if (index < 0) {
+        if (!request) {
             return;
         }
 
+        const oldVehicle =
+            request.oldVehicleNumber ||
+            request.oldVehicleId;
 
-        requests[index].status =
+
+        request.status =
             "approved";
 
-        requests[index].approvedVehicleId =
+        request.approvedVehicleId =
             newVehicle;
 
-        requests[index].approvedVehicleNumber =
+        request.approvedVehicleNumber =
             newVehicle;
 
-        requests[index].approvedAt =
+        request.approvedAt =
             new Date().toISOString();
 
-        requests[index].approvedBy =
-            "调度";
-
-
-        requests[index].timeline =
-            requests[index].timeline || [];
-
-
-        requests[index].timeline.push({
-
-            time:
-                new Date().toISOString(),
-
-            action:
-                "调度批准换车",
-
-            detail:
-                (
-                    requests[index].oldVehicleNumber ||
-                    "-"
-                ) +
-                " → " +
-                newVehicle
-        });
+        request.approvedBy =
+            "调度端";
 
 
         saveChangeRequests(
@@ -3376,13 +2537,106 @@ document.addEventListener("DOMContentLoaded", function () {
         );
 
 
-        renderVehicleChangeRequests();
+        updateTaskVehicleAfterChange(
+            request.taskId,
+            request.driverId,
+            request.driverName,
+            oldVehicle,
+            newVehicle
+        );
 
-        renderTodoCenter();
+
+        renderVehicleChanges();
+
+        refreshAll();
+
 
         alert(
-            "换车申请已批准。\n司机端领取新车辆后可继续原任务。"
+            `换车已批准：${oldVehicle} → ${newVehicle}`
         );
+    }
+
+
+    function updateTaskVehicleAfterChange(
+        taskId,
+        driverId,
+        driverName,
+        oldVehicle,
+        newVehicle
+    ) {
+
+        const tasks =
+            getTasks();
+
+        const task =
+            tasks.find(
+                item =>
+                    item.taskId === taskId
+            );
+
+        if (!task) {
+            return;
+        }
+
+
+        (task.bindings || []).forEach(
+            binding => {
+
+                binding.truckIds =
+                    (binding.truckIds || []).map(
+                        truckId =>
+                            truckId === oldVehicle
+                                ? newVehicle
+                                : truckId
+                    );
+            }
+        );
+
+
+        const assignment =
+            (task.driverAssignments || []).find(
+                item =>
+                    (
+                        driverId &&
+                        item.driverId === driverId
+                    ) ||
+                    (
+                        !driverId &&
+                        item.driverName === driverName
+                    )
+            );
+
+
+        if (assignment) {
+
+            assignment.vehicleId =
+                newVehicle;
+
+            assignment.vehicleNumber =
+                newVehicle;
+        }
+
+
+        task.equipmentAdjustments =
+            task.equipmentAdjustments || [];
+
+
+        task.equipmentAdjustments.push({
+            adjustmentId:
+                "CHANGE_" + Date.now(),
+
+            time:
+                new Date().toISOString(),
+
+            summary:
+                `故障换车：${oldVehicle} → ${newVehicle}`,
+
+            driverName:
+                driverName || ""
+        });
+
+
+        saveTasks(tasks);
     }
 
 
@@ -3399,118 +2653,65 @@ document.addEventListener("DOMContentLoaded", function () {
             return;
         }
 
-        const requests =
+        const records =
             getChangeRequests();
 
-        const index =
-            requests.findIndex(
-                function (item) {
-                    return item.requestId === requestId;
-                }
+        const record =
+            records.find(
+                item =>
+                    item.requestId === requestId
             );
 
-        if (index < 0) {
+        if (!record) {
             return;
         }
 
-
-        requests[index].status =
+        record.status =
             "rejected";
 
-        requests[index].rejectReason =
-            reason.trim() ||
-            "调度未批准";
+        record.rejectReason =
+            reason.trim();
 
-        requests[index].rejectedAt =
+        record.rejectedAt =
             new Date().toISOString();
 
-        requests[index].rejectedBy =
-            "调度";
+        record.rejectedBy =
+            "调度端";
 
+        saveChangeRequests(records);
 
-        saveChangeRequests(
-            requests
-        );
+        renderVehicleChanges();
 
-        renderVehicleChangeRequests();
-
-        renderTodoCenter();
+        refreshAll();
     }
 
 
-    function getAvailableReplacementTrucks() {
+    function getAvailableReplacementTrucks(
+        taskId
+    ) {
 
         const occupied =
-            getOccupiedDeviceIds();
-
-        return equipment.trucks
-            .filter(
-                function (truck) {
-
-                    return (
-                        truck.status !== "maintenance" &&
-                        !occupied.has(truck.id)
-                    );
-                }
+            getOccupiedEquipmentIds(
+                taskId
             );
+
+        return equipment.trucks.filter(
+            truck =>
+                truck.status !== "maintenance" &&
+                !occupied.has(truck.id)
+        );
     }
 
 
     /*
-    ===================================================
-    GPS异常趟次审核
-    ===================================================
+    ========================================================
+    GPS审核
+    ========================================================
     */
 
-    function getTrips() {
+    function openGpsReview() {
 
-        const trips =
-            readJson(
-                STORAGE.TRIPS,
-                []
-            );
-
-        return Array.isArray(trips)
-            ? trips
-            : [];
-    }
-
-
-    function saveTrips(
-        trips
-    ) {
-
-        localStorage.setItem(
-            STORAGE.TRIPS,
-            JSON.stringify(trips)
-        );
-    }
-
-
-    function isGpsPendingReview(
-        record
-    ) {
-
-        const abnormal =
-            record.gpsStatus !== "正常" &&
-            record.gpsStatus !== "normal";
-
-        const notProcessed =
-            record.dispatchConfirmation !== "confirmed" &&
-            record.dispatchConfirmation !== "rejected" &&
-            record.dispatchConfirmation !== "已确认有效" &&
-            record.dispatchConfirmation !== "已判定无效";
-
-        return (
-            abnormal &&
-            notProcessed
-        );
-    }
-
-
-    function openGpsReviewModal() {
-
-        renderGpsReviewList();
+        renderGpsReview();
 
         showModal(
             "gpsReviewModal"
@@ -3518,170 +2719,127 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
 
-    function renderGpsReviewList() {
+    function renderGpsReview() {
 
         const records =
-            getTrips()
-                .filter(
-                    isGpsPendingReview
-                )
-                .sort(
-                    function (a, b) {
-
-                        return new Date(
-                            b.completedAt || 0
-                        ) -
-                        new Date(
-                            a.completedAt || 0
-                        );
-                    }
-                );
-
+            getTrips().filter(
+                trip =>
+                    trip.gpsStatus !== "正常" &&
+                    trip.gpsStatus !== "normal" &&
+                    trip.dispatchConfirmation !== "confirmed" &&
+                    trip.dispatchConfirmation !== "rejected"
+            );
 
         const box =
             $("gpsReviewList");
 
-
         if (!records.length) {
 
             box.innerHTML =
-                '<div class="empty-placeholder">没有待审核GPS异常趟次</div>';
+                '<div class="empty-placeholder">暂无GPS异常待审核</div>';
 
             return;
         }
 
-
         box.innerHTML =
             records.map(
-                function (record) {
+                record => `
+                    <div class="approval-card">
 
-                    return `
-                        <div class="approval-card">
+                        <div class="approval-title">
+                            <strong>
+                                ${escapeHtml(record.driverName || "-")}
+                            </strong>
 
-                            <div class="approval-card-title">
+                            <span>
+                                ${escapeHtml(record.vehicleNumber || "-")}
+                            </span>
+                        </div>
 
-                                <div>
-                                    <strong>
-                                        ${escapeHtml(record.driverName || "-")}
-                                    </strong>
+                        <div class="approval-detail-grid">
 
-                                    <span>
-                                        ${escapeHtml(record.vehicleNumber || "-")}
-                                    </span>
-                                </div>
-
-                                <span class="warning-pill">
-                                    GPS异常
-                                </span>
-
+                            <div>
+                                <span>区域</span>
+                                <strong>
+                                    ${escapeHtml(record.workArea || "-")}
+                                </strong>
                             </div>
 
-
-                            <div class="approval-detail-grid">
-
-                                <div>
-                                    <span>作业区域</span>
-                                    <strong>
-                                        ${escapeHtml(record.workArea || "-")}
-                                    </strong>
-                                </div>
-
-                                <div>
-                                    <span>挖机</span>
-                                    <strong>
-                                        ${escapeHtml(record.excavatorNumber || record.excavatorId || "-")}
-                                    </strong>
-                                </div>
-
-                                <div>
-                                    <span>GPS状态</span>
-                                    <strong>
-                                        ${escapeHtml(record.gpsStatus || "异常")}
-                                    </strong>
-                                </div>
-
-                                <div>
-                                    <span>精度</span>
-                                    <strong>
-                                        ${
-                                            record.gpsAccuracy
-                                                ? "±" +
-                                                  escapeHtml(record.gpsAccuracy) +
-                                                  "米"
-                                                : "无定位"
-                                        }
-                                    </strong>
-                                </div>
-
-                                <div>
-                                    <span>完成时间</span>
-                                    <strong>
-                                        ${formatDateTime(record.completedAt)}
-                                    </strong>
-                                </div>
-
+                            <div>
+                                <span>GPS</span>
+                                <strong>
+                                    ${escapeHtml(record.gpsStatus || "异常")}
+                                </strong>
                             </div>
 
-
-                            <div class="approval-buttons">
-
-                                <button
-                                    type="button"
-                                    class="success-button"
-                                    data-confirm-trip="${escapeHtml(getTripId(record))}"
-                                >
-                                    确认有效
-                                </button>
-
-                                <button
-                                    type="button"
-                                    class="danger-button"
-                                    data-reject-trip="${escapeHtml(getTripId(record))}"
-                                >
-                                    判定无效
-                                </button>
-
+                            <div>
+                                <span>精度</span>
+                                <strong>
+                                    ${
+                                        record.gpsAccuracy
+                                            ? "±" +
+                                              Math.round(record.gpsAccuracy) +
+                                              "米"
+                                            : "无定位"
+                                    }
+                                </strong>
                             </div>
 
                         </div>
-                    `;
-                }
+
+                        <div class="approval-buttons">
+
+                            <button
+                                data-gps-confirm="${escapeHtml(getTripId(record))}"
+                                class="success-button"
+                                type="button"
+                            >
+                                确认有效
+                            </button>
+
+                            <button
+                                data-gps-reject="${escapeHtml(getTripId(record))}"
+                                class="danger-button"
+                                type="button"
+                            >
+                                判定无效
+                            </button>
+
+                        </div>
+                    </div>
+                `
             ).join("");
 
 
         box.querySelectorAll(
-            "[data-confirm-trip]"
+            "[data-gps-confirm]"
         ).forEach(
-            function (button) {
+            button => {
 
                 button.addEventListener(
                     "click",
-                    function () {
-
+                    () =>
                         reviewGpsTrip(
-                            button.dataset.confirmTrip,
+                            button.dataset.gpsConfirm,
                             true
-                        );
-                    }
+                        )
                 );
             }
         );
 
 
         box.querySelectorAll(
-            "[data-reject-trip]"
+            "[data-gps-reject]"
         ).forEach(
-            function (button) {
+            button => {
 
                 button.addEventListener(
                     "click",
-                    function () {
-
+                    () =>
                         reviewGpsTrip(
-                            button.dataset.rejectTrip,
+                            button.dataset.gpsReject,
                             false
-                        );
-                    }
+                        )
                 );
             }
         );
@@ -3693,104 +2851,64 @@ document.addEventListener("DOMContentLoaded", function () {
         approved
     ) {
 
-        const note =
+        const remark =
             prompt(
                 approved
-                    ? "调度确认备注（可不填）："
-                    : "请输入判定无效原因："
+                    ? "确认备注（可空）："
+                    : "请输入无效原因："
             );
 
-        if (note === null) {
+        if (remark === null) {
             return;
         }
-
 
         const trips =
             getTrips();
 
-        const index =
-            trips.findIndex(
-                function (item) {
-
-                    return (
-                        getTripId(item) ===
-                        tripId
-                    );
-                }
+        const record =
+            trips.find(
+                item =>
+                    getTripId(item) === tripId
             );
 
-        if (index < 0) {
+        if (!record) {
             return;
         }
 
-
-        trips[index].dispatchConfirmation =
+        record.dispatchConfirmation =
             approved
                 ? "confirmed"
                 : "rejected";
 
-
-        trips[index].officialCountEligible =
+        record.officialCountEligible =
             approved;
 
-
-        trips[index].dispatchReviewedAt =
+        record.dispatchReviewedAt =
             new Date().toISOString();
 
+        record.dispatchReviewedBy =
+            "调度端";
 
-        trips[index].dispatchReviewedBy =
-            "调度";
-
-
-        trips[index].dispatchReviewNote =
-            note.trim();
-
+        record.dispatchReviewNote =
+            remark.trim();
 
         saveTrips(trips);
 
+        renderGpsReview();
 
-        renderGpsReviewList();
-
-        renderTodoCenter();
-
-        renderProductionBoard();
+        refreshAll();
     }
 
 
     /*
-    ===================================================
-    请假审批
-    ===================================================
+    ========================================================
+    司机请假审批
+    ========================================================
     */
 
-    function getLeaveRequests() {
+    function openLeaveReview() {
 
-        const data =
-            readJson(
-                STORAGE.LEAVE_REQUESTS,
-                []
-            );
-
-        return Array.isArray(data)
-            ? data
-            : [];
-    }
-
-
-    function saveLeaveRequests(
-        records
-    ) {
-
-        localStorage.setItem(
-            STORAGE.LEAVE_REQUESTS,
-            JSON.stringify(records)
-        );
-    }
-
-
-    function openLeaveReviewModal() {
-
-        renderLeaveReviewList();
+        renderLeaveReview();
 
         showModal(
             "leaveReviewModal"
@@ -3798,245 +2916,206 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
 
-    function renderLeaveReviewList() {
+    function renderLeaveReview() {
 
         const requests =
-            getLeaveRequests()
+            getLeaves()
                 .filter(
-                    function (item) {
-
-                        return (
-                            item.status === "pending" &&
-                            item.approverRole === "dispatch"
-                        );
-                    }
-                )
-                .sort(
-                    function (a, b) {
-
-                        return new Date(
-                            b.submittedAt || 0
-                        ) -
-                        new Date(
-                            a.submittedAt || 0
-                        );
-                    }
+                    item =>
+                        item.status === "pending" &&
+                        item.approverRole === "dispatch"
                 );
-
 
         const box =
             $("leaveReviewList");
 
-
         if (!requests.length) {
 
             box.innerHTML =
-                '<div class="empty-placeholder">当前没有一线人员请假待审批</div>';
+                '<div class="empty-placeholder">暂无司机请假待审批</div>';
 
             return;
         }
 
-
         box.innerHTML =
             requests.map(
-                function (item) {
+                item => `
+                    <div class="approval-card">
 
-                    return `
-                        <div class="approval-card">
+                        <div class="approval-title">
+                            <strong>
+                                ${escapeHtml(
+                                    item.applicantName ||
+                                    item.personName ||
+                                    "-"
+                                )}
+                            </strong>
 
-                            <div class="approval-card-title">
+                            <span>
+                                ${escapeHtml(item.leaveType || "请假")}
+                            </span>
+                        </div>
 
-                                <div>
-                                    <strong>
-                                        ${escapeHtml(item.applicantName || "-")}
-                                    </strong>
+                        <div class="approval-detail-grid">
 
-                                    <span>
-                                        ${escapeHtml(item.position || "-")}
-                                        ·
-                                        ${escapeHtml(item.team || "-")}
-                                    </span>
-                                </div>
-
-                                <span class="pending-pill">
-                                    待审批
-                                </span>
-
+                            <div>
+                                <span>开始</span>
+                                <strong>
+                                    ${formatDateTime(
+                                        item.startTime ||
+                                        item.startAt
+                                    )}
+                                </strong>
                             </div>
 
-
-                            <div class="approval-detail-grid">
-
-                                <div>
-                                    <span>类型</span>
-                                    <strong>
-                                        ${escapeHtml(item.leaveType || "-")}
-                                    </strong>
-                                </div>
-
-                                <div>
-                                    <span>开始</span>
-                                    <strong>
-                                        ${formatDateTime(item.startTime)}
-                                    </strong>
-                                </div>
-
-                                <div>
-                                    <span>结束</span>
-                                    <strong>
-                                        ${formatDateTime(item.endTime)}
-                                    </strong>
-                                </div>
-
-                            </div>
-
-
-                            <div class="approval-reason">
-                                <strong>原因：</strong>
-                                ${escapeHtml(item.reason || "-")}
-                            </div>
-
-
-                            <div class="approval-buttons">
-
-                                <button
-                                    type="button"
-                                    class="success-button"
-                                    data-approve-leave="${escapeHtml(item.leaveId)}"
-                                >
-                                    批准请假
-                                </button>
-
-                                <button
-                                    type="button"
-                                    class="danger-button"
-                                    data-reject-leave="${escapeHtml(item.leaveId)}"
-                                >
-                                    驳回
-                                </button>
-
+                            <div>
+                                <span>结束</span>
+                                <strong>
+                                    ${formatDateTime(
+                                        item.endTime ||
+                                        item.endAt
+                                    )}
+                                </strong>
                             </div>
 
                         </div>
-                    `;
-                }
+
+                        <div class="approval-note">
+                            ${escapeHtml(item.reason || "-")}
+                        </div>
+
+                        <div class="approval-buttons">
+
+                            <button
+                                data-leave-approve="${escapeHtml(item.leaveId)}"
+                                class="success-button"
+                                type="button"
+                            >
+                                批准
+                            </button>
+
+                            <button
+                                data-leave-reject="${escapeHtml(item.leaveId)}"
+                                class="danger-button"
+                                type="button"
+                            >
+                                驳回
+                            </button>
+
+                        </div>
+                    </div>
+                `
             ).join("");
 
 
         box.querySelectorAll(
-            "[data-approve-leave]"
+            "[data-leave-approve]"
         ).forEach(
-            function (button) {
+            button => {
 
                 button.addEventListener(
                     "click",
-                    function () {
-
-                        processLeaveRequest(
-                            button.dataset.approveLeave,
+                    () =>
+                        reviewDriverLeave(
+                            button.dataset.leaveApprove,
                             true
-                        );
-                    }
+                        )
                 );
             }
         );
 
 
         box.querySelectorAll(
-            "[data-reject-leave]"
+            "[data-leave-reject]"
         ).forEach(
-            function (button) {
+            button => {
 
                 button.addEventListener(
                     "click",
-                    function () {
-
-                        processLeaveRequest(
-                            button.dataset.rejectLeave,
+                    () =>
+                        reviewDriverLeave(
+                            button.dataset.leaveReject,
                             false
-                        );
-                    }
+                        )
                 );
             }
         );
     }
 
 
-    function processLeaveRequest(
+    function reviewDriverLeave(
         leaveId,
         approved
     ) {
 
-        const remark =
+        const note =
             prompt(
                 approved
-                    ? "审批备注（可不填）："
+                    ? "审批备注（可空）："
                     : "请输入驳回原因："
             );
 
-        if (remark === null) {
+        if (note === null) {
             return;
         }
-
 
         const records =
-            getLeaveRequests();
+            getLeaves();
 
-        const index =
-            records.findIndex(
-                function (item) {
-                    return item.leaveId === leaveId;
-                }
+        const item =
+            records.find(
+                record =>
+                    record.leaveId === leaveId
             );
 
-        if (index < 0) {
+        if (!item) {
             return;
         }
 
-
-        records[index].status =
+        item.status =
             approved
                 ? "approved"
                 : "rejected";
 
+        item.approvedBy =
+            "调度端";
 
-        records[index].approvedBy =
-            "调度";
-
-
-        records[index].approvedAt =
+        item.approvedAt =
             new Date().toISOString();
 
+        item.reviewedBy =
+            "调度端";
 
-        records[index].approvalRemark =
-            remark.trim();
+        item.reviewedAt =
+            item.approvedAt;
 
+        item.approvalRemark =
+            note.trim();
 
-        saveLeaveRequests(
-            records
-        );
+        item.reviewRemark =
+            note.trim();
 
+        saveLeaves(records);
 
-        renderLeaveReviewList();
+        renderLeaveReview();
 
-        renderTodoCenter();
+        refreshAll();
     }
 
 
     /*
-    ===================================================
-    调度 / 管理人员请假
-    ===================================================
+    ========================================================
+    调度自己的请假 -> 总经理
+    ========================================================
     */
 
-    function openMyLeaveModal() {
+    function openMyLeave() {
 
         const profile =
             readJson(
                 STORAGE.DISPATCH_PROFILE,
                 null
             );
-
 
         if (profile) {
 
@@ -4047,7 +3126,6 @@ document.addEventListener("DOMContentLoaded", function () {
                 profile.position || "调度员";
         }
 
-
         showModal(
             "myLeaveModal"
         );
@@ -4057,17 +3135,10 @@ document.addEventListener("DOMContentLoaded", function () {
     function submitMyLeave() {
 
         const name =
-            $("leaveApplicantName")
-                .value
-                .trim();
+            $("leaveApplicantName").value.trim();
 
         const position =
-            $("leaveApplicantPosition")
-                .value
-                .trim();
-
-        const type =
-            $("leaveType").value;
+            $("leaveApplicantPosition").value.trim();
 
         const start =
             $("leaveStart").value;
@@ -4076,10 +3147,7 @@ document.addEventListener("DOMContentLoaded", function () {
             $("leaveEnd").value;
 
         const reason =
-            $("leaveReason")
-                .value
-                .trim();
-
+            $("leaveReason").value.trim();
 
         if (
             !name ||
@@ -4096,7 +3164,6 @@ document.addEventListener("DOMContentLoaded", function () {
             return;
         }
 
-
         if (
             new Date(end) <=
             new Date(start)
@@ -4109,7 +3176,6 @@ document.addEventListener("DOMContentLoaded", function () {
             return;
         }
 
-
         localStorage.setItem(
             STORAGE.DISPATCH_PROFILE,
             JSON.stringify({
@@ -4120,8 +3186,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
         const records =
-            getLeaveRequests();
-
+            getLeaves();
 
         records.push({
 
@@ -4129,55 +3194,52 @@ document.addEventListener("DOMContentLoaded", function () {
                 "LEAVE_" + Date.now(),
 
             applicantId:
-                "DISPATCH_" + name,
+                "MANAGEMENT_" +
+                Date.now(),
 
             applicantName:
                 name,
 
+            personName:
+                name,
+
+            role:
+                "management",
+
             position,
 
             team:
-                "调度 / 管理",
-
-            employeeLevel:
-                "management",
+                "管理人员",
 
             leaveType:
-                type,
+                $("leaveType").value,
 
             startTime:
-                new Date(start)
-                    .toISOString(),
+                new Date(start).toISOString(),
 
             endTime:
-                new Date(end)
-                    .toISOString(),
+                new Date(end).toISOString(),
 
             reason,
 
             status:
                 "pending",
 
-            approverRole:
+            approvalRoute:
                 "general_manager",
 
-            approvalLevel:
-                "总经理审批",
+            approverRole:
+                "general_manager",
 
             submittedAt:
                 new Date().toISOString()
         });
 
-
-        saveLeaveRequests(
-            records
-        );
-
+        saveLeaves(records);
 
         hideModal(
             "myLeaveModal"
         );
-
 
         $("leaveStart").value = "";
 
@@ -4185,40 +3247,24 @@ document.addEventListener("DOMContentLoaded", function () {
 
         $("leaveReason").value = "";
 
-
         alert(
-            "请假申请已提交。\n审批人：总经理。"
+            "请假申请已提交总经理审批。"
         );
     }
 
 
     /*
-    ===================================================
+    ========================================================
     罚单
-    ===================================================
+    ========================================================
     */
 
-    function getPenalties() {
+    function openPenalty() {
 
-        const value =
-            readJson(
-                STORAGE.PENALTIES,
-                []
-            );
+        populatePenaltyPersonnel();
 
-        return Array.isArray(value)
-            ? value
-            : [];
-    }
-
-
-    function savePenalties(
-        records
-    ) {
-
-        localStorage.setItem(
-            STORAGE.PENALTIES,
-            JSON.stringify(records)
+        showModal(
+            "penaltyModal"
         );
     }
 
@@ -4232,56 +3278,32 @@ document.addEventListener("DOMContentLoaded", function () {
             return;
         }
 
-
-        const records =
-            getPersonnelRecords();
-
+        const people =
+            getApprovedDrivers();
 
         select.innerHTML =
             '<option value="">选择人员</option>';
 
-
-        records.forEach(
-            function (person) {
+        people.forEach(
+            person => {
 
                 const option =
                     document.createElement("option");
 
                 option.value =
-                    person.driverId ||
-                    person.employeeId ||
-                    person.name;
+                    person.driverId;
 
                 option.dataset.name =
                     person.name || "";
-
-                option.dataset.position =
-                    person.position || "";
 
                 option.dataset.team =
                     person.team || "";
 
                 option.textContent =
-                    (
-                        person.name || "未命名"
-                    ) +
-                    " · " +
-                    (
-                        person.position || "-"
-                    );
+                    `${person.name || "-"} · ${person.team || "-"}`;
 
                 select.appendChild(option);
             }
-        );
-    }
-
-
-    function openPenaltyModal() {
-
-        populatePenaltyPersonnel();
-
-        showModal(
-            "penaltyModal"
         );
     }
 
@@ -4291,29 +3313,22 @@ document.addEventListener("DOMContentLoaded", function () {
         const select =
             $("penaltyPerson");
 
-        const selected =
+        const option =
             select.options[
                 select.selectedIndex
             ];
 
-
-        if (
-            !select.value
-        ) {
+        if (!select.value) {
 
             alert(
-                "请选择被处罚人员。"
+                "请选择人员。"
             );
 
             return;
         }
 
-
         const description =
-            $("penaltyDescription")
-                .value
-                .trim();
-
+            $("penaltyDescription").value.trim();
 
         if (!description) {
 
@@ -4324,12 +3339,10 @@ document.addEventListener("DOMContentLoaded", function () {
             return;
         }
 
-
-        const records =
+        const penalties =
             getPenalties();
 
-
-        records.push({
+        penalties.push({
 
             penaltyId:
                 "PENALTY_" + Date.now(),
@@ -4338,18 +3351,13 @@ document.addEventListener("DOMContentLoaded", function () {
                 select.value,
 
             personName:
-                selected.dataset.name || "",
-
-            position:
-                selected.dataset.position || "",
+                option.dataset.name || "",
 
             team:
-                selected.dataset.team || "",
+                option.dataset.team || "",
 
             vehicleNumber:
-                $("penaltyVehicle")
-                    .value
-                    .trim(),
+                $("penaltyVehicle").value.trim(),
 
             violationType:
                 $("penaltyType").value,
@@ -4366,30 +3374,21 @@ document.addEventListener("DOMContentLoaded", function () {
 
             description,
 
-            issuedBy:
-                "调度",
-
-            issuedAt:
-                new Date().toISOString(),
-
             status:
                 "pending_acknowledgement",
 
-            acknowledgedAt:
-                null,
+            issuedBy:
+                "调度端",
 
-            processedAt:
-                null
+            issuedAt:
+                new Date().toISOString()
         });
 
-
-        savePenalties(records);
-
+        savePenalties(penalties);
 
         hideModal(
             "penaltyModal"
         );
-
 
         $("penaltyVehicle").value = "";
 
@@ -4399,17 +3398,15 @@ document.addEventListener("DOMContentLoaded", function () {
 
         $("penaltyDescription").value = "";
 
-
-        renderTodoCenter();
-
+        refreshAll();
 
         alert(
-            "罚单已经下达。\n员工端将显示“待确认”。"
+            "罚单已下达。"
         );
     }
 
 
-    function openPenaltyManagerModal() {
+    function openPenaltyManager() {
 
         renderPenaltyManager();
 
@@ -4424,22 +3421,10 @@ document.addEventListener("DOMContentLoaded", function () {
         const records =
             getPenalties()
                 .slice()
-                .sort(
-                    function (a, b) {
-
-                        return new Date(
-                            b.issuedAt || 0
-                        ) -
-                        new Date(
-                            a.issuedAt || 0
-                        );
-                    }
-                );
-
+                .reverse();
 
         const box =
             $("penaltyManagerList");
-
 
         if (!records.length) {
 
@@ -4449,92 +3434,356 @@ document.addEventListener("DOMContentLoaded", function () {
             return;
         }
 
-
         box.innerHTML =
             records.map(
-                function (item) {
+                item => `
+                    <div class="approval-card">
 
-                    const statusText =
-                        item.status === "acknowledged"
-                            ? "已知晓"
-                            : item.status === "processed"
-                                ? "已处理"
-                                : "待员工确认";
+                        <div class="approval-title">
+                            <strong>
+                                ${escapeHtml(item.personName || "-")}
+                            </strong>
 
-
-                    return `
-                        <div class="approval-card">
-
-                            <div class="approval-card-title">
-
-                                <div>
-                                    <strong>
-                                        ${escapeHtml(item.personName || "-")}
-                                    </strong>
-
-                                    <span>
-                                        ${escapeHtml(item.violationType || "-")}
-                                    </span>
-                                </div>
-
-                                <span class="warning-pill">
-                                    ${statusText}
-                                </span>
-
-                            </div>
-
-
-                            <div class="approval-detail-grid">
-
-                                <div>
-                                    <span>车辆</span>
-                                    <strong>
-                                        ${escapeHtml(item.vehicleNumber || "-")}
-                                    </strong>
-                                </div>
-
-                                <div>
-                                    <span>金额</span>
-                                    <strong>
-                                        ¥ ${Number(item.amount || 0)}
-                                    </strong>
-                                </div>
-
-                                <div>
-                                    <span>扣分</span>
-                                    <strong>
-                                        ${Number(item.points || 0)}
-                                    </strong>
-                                </div>
-
-                                <div>
-                                    <span>开单时间</span>
-                                    <strong>
-                                        ${formatDateTime(item.issuedAt)}
-                                    </strong>
-                                </div>
-
-                            </div>
-
-
-                            <div class="approval-reason">
-                                ${escapeHtml(item.description || "-")}
-                            </div>
-
+                            <span>
+                                ${
+                                    item.status === "acknowledged"
+                                        ? "已知晓"
+                                        : item.status === "processed"
+                                            ? "已处理"
+                                            : "待确认"
+                                }
+                            </span>
                         </div>
-                    `;
-                }
+
+                        <div class="approval-note">
+                            ${escapeHtml(item.violationType || "-")}
+                            ·
+                            ${escapeHtml(item.description || "-")}
+                        </div>
+
+                        <div class="approval-detail-grid">
+                            <div>
+                                <span>金额</span>
+                                <strong>
+                                    ¥${Number(item.amount || 0)}
+                                </strong>
+                            </div>
+
+                            <div>
+                                <span>扣分</span>
+                                <strong>
+                                    ${Number(item.points || 0)}
+                                </strong>
+                            </div>
+                        </div>
+
+                    </div>
+                `
             ).join("");
     }
 
 
     /*
-    ===================================================
-    人员
-    ===================================================
+    ========================================================
+    待办
+    ========================================================
     */
 
-    function getPersonnelRecords() {
+    function renderTodoCounts() {
+
+        setText(
+            "vehicleChangeTodoCount",
+            getChangeRequests().filter(
+                item =>
+                    item.status === "pending"
+            ).length
+        );
+
+        setText(
+            "gpsTodoCount",
+            getTrips().filter(
+                item =>
+                    item.gpsStatus !== "正常" &&
+                    item.gpsStatus !== "normal" &&
+                    item.dispatchConfirmation !== "confirmed" &&
+                    item.dispatchConfirmation !== "rejected"
+            ).length
+        );
+
+        setText(
+            "leaveTodoCount",
+            getLeaves().filter(
+                item =>
+                    item.status === "pending" &&
+                    item.approverRole === "dispatch"
+            ).length
+        );
+
+        setText(
+            "penaltyTodoCount",
+            getPenalties().filter(
+                item =>
+                    item.status ===
+                    "pending_acknowledgement"
+            ).length
+        );
+    }
+
+
+    /*
+    ========================================================
+    请假重叠
+    ========================================================
+    */
+
+    function hasApprovedLeaveOverlap(
+        person,
+        start,
+        end
+    ) {
+
+        return getLeaves().some(
+            leave => {
+
+                if (
+                    leave.status !== "approved"
+                ) {
+                    return false;
+                }
+
+                if (
+                    !leaveMatchesPerson(
+                        leave,
+                        person
+                    )
+                ) {
+                    return false;
+                }
+
+                const leaveStart =
+                    new Date(
+                        leave.startTime ||
+                        leave.startAt
+                    );
+
+                const leaveEnd =
+                    new Date(
+                        leave.endTime ||
+                        leave.endAt
+                    );
+
+                return (
+                    leaveStart <= end &&
+                    leaveEnd >= start
+                );
+            }
+        );
+    }
+
+
+    function hasPendingLeaveOverlap(
+        person,
+        start,
+        end
+    ) {
+
+        return getLeaves().some(
+            leave => {
+
+                if (
+                    leave.status !== "pending"
+                ) {
+                    return false;
+                }
+
+                if (
+                    !leaveMatchesPerson(
+                        leave,
+                        person
+                    )
+                ) {
+                    return false;
+                }
+
+                const leaveStart =
+                    new Date(
+                        leave.startTime ||
+                        leave.startAt
+                    );
+
+                const leaveEnd =
+                    new Date(
+                        leave.endTime ||
+                        leave.endAt
+                    );
+
+                return (
+                    leaveStart < end &&
+                    leaveEnd > start
+                );
+            }
+        );
+    }
+
+
+    function hasPendingLeaveAtTime(
+        person,
+        time
+    ) {
+
+        return hasPendingLeaveOverlap(
+            person,
+            time,
+            new Date(
+                time.getTime() + 1000
+            )
+        );
+    }
+
+
+    function leaveMatchesPerson(
+        leave,
+        person
+    ) {
+
+        const leaveId =
+            leave.applicantId ||
+            leave.personId ||
+            "";
+
+        const leaveName =
+            leave.applicantName ||
+            leave.personName ||
+            "";
+
+        if (
+            leaveId &&
+            person.driverId
+        ) {
+
+            return (
+                String(leaveId) ===
+                String(person.driverId)
+            );
+        }
+
+        return (
+            String(leaveName).trim() &&
+            String(leaveName).trim() ===
+            String(person.name || "").trim()
+        );
+    }
+
+
+    function getTaskDateRange(task) {
+
+        const dateKey =
+            task.dateKey ||
+            getLocalDateKey();
+
+        const start =
+            new Date(
+                `${dateKey}T${
+                    task.shift === "夜班"
+                        ? "20:00:00"
+                        : "08:00:00"
+                }`
+            );
+
+        const end =
+            new Date(start);
+
+        if (
+            task.shift === "夜班"
+        ) {
+
+            end.setDate(
+                end.getDate() + 1
+            );
+
+            end.setHours(
+                8,
+                0,
+                0,
+                0
+            );
+
+        } else {
+
+            end.setHours(
+                20,
+                0,
+                0,
+                0
+            );
+        }
+
+        return {
+            start,
+            end
+        };
+    }
+
+
+    /*
+    ========================================================
+    数据
+    ========================================================
+    */
+
+    function migrateTasks() {
+
+        let tasks =
+            getTasks();
+
+        tasks =
+            tasks.filter(
+                task =>
+                    task.status !== "withdrawn"
+            );
+
+        tasks.forEach(
+            task => {
+
+                if (
+                    !Array.isArray(
+                        task.driverAssignments
+                    )
+                ) {
+                    task.driverAssignments = [];
+                }
+
+                if (
+                    !Array.isArray(
+                        task.bindings
+                    )
+                ) {
+                    task.bindings = [];
+                }
+
+                if (
+                    !Array.isArray(
+                        task.auxiliaryAssignments
+                    )
+                ) {
+                    task.auxiliaryAssignments = [];
+                }
+
+                if (
+                    !Array.isArray(
+                        task.equipmentAdjustments
+                    )
+                ) {
+                    task.equipmentAdjustments = [];
+                }
+            }
+        );
+
+        saveTasks(tasks);
+    }
+
+
+    function getApprovedDrivers() {
 
         let records =
             readJson(
@@ -4542,124 +3791,94 @@ document.addEventListener("DOMContentLoaded", function () {
                 []
             );
 
-
         if (!Array.isArray(records)) {
             records = [];
         }
 
-
-        const driver =
+        const single =
             readJson(
                 STORAGE.DRIVER_PROFILE,
                 null
             );
 
-
         if (
-            driver &&
-            driver.name &&
-            !records.some(
-                function (item) {
-                    return (
+            single &&
+            single.status === "approved"
+        ) {
+
+            const exists =
+                records.some(
+                    item =>
                         item.driverId &&
+                        single.driverId &&
                         item.driverId ===
-                        driver.driverId
-                    );
+                        single.driverId
+                );
+
+            if (!exists) {
+                records.push(single);
+            }
+        }
+
+        const map =
+            new Map();
+
+        records.forEach(
+            person => {
+
+                if (
+                    person.status &&
+                    person.status !== "approved" &&
+                    person.status !== "active"
+                ) {
+                    return;
                 }
-            )
-        ) {
 
-            records.push(driver);
-        }
+                const id =
+                    person.driverId ||
+                    person.employeeId ||
+                    person.id ||
+                    person.name;
 
+                if (!id) {
+                    return;
+                }
 
-        return records;
+                map.set(
+                    String(id),
+                    {
+                        ...person,
+                        driverId:
+                            String(id)
+                    }
+                );
+            }
+        );
+
+        return [...map.values()]
+            .filter(
+                item =>
+                    !item.position ||
+                    item.position.includes("司机")
+            );
     }
 
-
-    /*
-    ===================================================
-    设备显示工具
-    ===================================================
-    */
-
-    function getDeviceClass(
-        device,
-        occupied,
-        selected
-    ) {
-
-        if (selected) {
-            return "device-card device-draft";
-        }
-
-        if (
-            device.status ===
-            "maintenance"
-        ) {
-            return "device-card device-maintenance";
-        }
-
-        if (
-            occupied.has(device.id)
-        ) {
-            return "device-card device-assigned";
-        }
-
-        return "device-card device-available";
-    }
-
-
-    function getDeviceStatusText(
-        device,
-        occupied,
-        selected
-    ) {
-
-        if (selected) {
-            return "✓ 已选择";
-        }
-
-        if (
-            device.status ===
-            "maintenance"
-        ) {
-            return "维修中";
-        }
-
-        if (
-            occupied.has(device.id)
-        ) {
-            return "已分配";
-        }
-
-        return "可调配";
-    }
-
-
-    /*
-    ===================================================
-    数据工具
-    ===================================================
-    */
 
     function getTasks() {
 
-        const tasks =
+        const data =
             readJson(
                 STORAGE.TASKS,
                 []
             );
 
-        return Array.isArray(tasks)
-            ? tasks
+        return Array.isArray(data)
+            ? data
             : [];
     }
 
 
-    function saveTasks(
-        tasks
-    ) {
+    function saveTasks(tasks) {
 
         localStorage.setItem(
             STORAGE.TASKS,
@@ -4668,86 +3887,221 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
 
-    function getTaskById(
-        taskId
-    ) {
+    function getTaskById(taskId) {
 
-        return getTasks()
-            .find(
-                function (task) {
-                    return task.taskId === taskId;
-                }
-            ) || null;
+        return getTasks().find(
+            task =>
+                task.taskId === taskId
+        ) || null;
     }
 
 
-    function getTaskTrips(
-        task
-    ) {
+    function getTrips() {
 
-        if (!task) {
-            return [];
-        }
-
-        const taskId =
-            task.taskId ||
-            task.id;
-
-        return getTrips()
-            .filter(
-                function (trip) {
-
-                    return (
-                        trip.taskId === taskId ||
-                        trip.dispatchTaskId === taskId ||
-                        trip.productionTaskId === taskId
-                    );
-                }
+        const data =
+            readJson(
+                STORAGE.TRIPS,
+                []
             );
+
+        return Array.isArray(data)
+            ? data
+            : [];
     }
 
 
-    function getTripId(
-        record
-    ) {
+    function saveTrips(records) {
 
-        return (
-            record.tripId ||
-            record.id ||
-            ""
+        localStorage.setItem(
+            STORAGE.TRIPS,
+            JSON.stringify(records)
         );
     }
 
 
-    function getTaskDateKey(
-        task
+    function getTaskTrips(task) {
+
+        return getTrips().filter(
+            trip =>
+                trip.taskId === task.taskId ||
+                trip.dispatchTaskId === task.taskId
+        );
+    }
+
+
+    function getChangeRequests() {
+
+        const data =
+            readJson(
+                STORAGE.CHANGE_REQUESTS,
+                []
+            );
+
+        return Array.isArray(data)
+            ? data
+            : [];
+    }
+
+
+    function saveChangeRequests(records) {
+
+        localStorage.setItem(
+            STORAGE.CHANGE_REQUESTS,
+            JSON.stringify(records)
+        );
+    }
+
+
+    function getLeaves() {
+
+        const data =
+            readJson(
+                STORAGE.LEAVES,
+                []
+            );
+
+        return Array.isArray(data)
+            ? data
+            : [];
+    }
+
+
+    function saveLeaves(records) {
+
+        localStorage.setItem(
+            STORAGE.LEAVES,
+            JSON.stringify(records)
+        );
+    }
+
+
+    function getPenalties() {
+
+        const data =
+            readJson(
+                STORAGE.PENALTIES,
+                []
+            );
+
+        return Array.isArray(data)
+            ? data
+            : [];
+    }
+
+
+    function savePenalties(records) {
+
+        localStorage.setItem(
+            STORAGE.PENALTIES,
+            JSON.stringify(records)
+        );
+    }
+
+
+    /*
+    ========================================================
+    工具
+    ========================================================
+    */
+
+    function getDeviceClass(
+        device,
+        occupied,
+        selected,
+        draftUsed
     ) {
 
-        if (task.dateKey) {
-            return task.dateKey;
+        if (draftUsed) {
+            return "device-card draft-used";
         }
 
-        if (task.publishedAt) {
+        if (selected) {
+            return "device-card selected";
+        }
 
-            const date =
-                new Date(
-                    task.publishedAt
-                );
+        if (
+            device.status === "maintenance"
+        ) {
+            return "device-card maintenance";
+        }
+
+        if (
+            occupied.has(device.id)
+        ) {
+            return "device-card occupied";
+        }
+
+        return "device-card available";
+    }
+
+
+    function samePerson(
+        id,
+        name,
+        person
+    ) {
+
+        if (
+            id &&
+            person.driverId
+        ) {
 
             return (
-                date.getFullYear() +
-                "-" +
-                String(
-                    date.getMonth() + 1
-                ).padStart(2, "0") +
-                "-" +
-                String(
-                    date.getDate()
-                ).padStart(2, "0")
+                String(id) ===
+                String(person.driverId)
             );
         }
 
-        return "";
+        return (
+            String(name || "").trim() &&
+            String(name || "").trim() ===
+            String(person.name || "").trim()
+        );
+    }
+
+
+    function findDuplicateDriverIds(
+        records
+    ) {
+
+        const seen =
+            new Set();
+
+        const duplicates =
+            new Set();
+
+        records.forEach(
+            item => {
+
+                if (!item.driverId) {
+                    return;
+                }
+
+                if (
+                    seen.has(item.driverId)
+                ) {
+                    duplicates.add(
+                        item.driverId
+                    );
+                }
+
+                seen.add(
+                    item.driverId
+                );
+            }
+        );
+
+        return [...duplicates];
+    }
+
+
+    function getTripId(item) {
+
+        return (
+            item.tripId ||
+            item.id ||
+            ""
+        );
     }
 
 
@@ -4756,170 +4110,65 @@ document.addEventListener("DOMContentLoaded", function () {
         const date =
             new Date();
 
-        return (
-            date.getFullYear() +
-            "-" +
+        return [
+            date.getFullYear(),
             String(
                 date.getMonth() + 1
-            ).padStart(2, "0") +
-            "-" +
+            ).padStart(2, "0"),
             String(
                 date.getDate()
             ).padStart(2, "0")
+        ].join("-");
+    }
+
+
+    function clearTaskInputs() {
+
+        $("taskArea").value = "";
+
+        $("taskLoadingPoint").value = "";
+
+        $("taskUnloadingPoint").value = "";
+
+        $("taskRemark").value = "";
+    }
+
+
+    function showModal(id) {
+
+        $(id)?.classList.remove(
+            "hidden"
+        );
+
+        document.body.classList.add(
+            "modal-open"
         );
     }
 
 
-    /*
-    ===================================================
-    UI工具
-    ===================================================
-    */
+    function hideModal(id) {
 
-    function showModal(
-        id
-    ) {
+        $(id)?.classList.add(
+            "hidden"
+        );
 
-        $(id)
-            ?.classList
-            .remove("hidden");
-
-        document.body
-            .classList
-            .add("modal-open");
-    }
-
-
-    function hideModal(
-        id
-    ) {
-
-        $(id)
-            ?.classList
-            .add("hidden");
-
-        document.body
-            .classList
-            .remove("modal-open");
-    }
-
-
-    function setText(
-        id,
-        value
-    ) {
-
-        const element =
-            $(id);
-
-        if (element) {
-            element.textContent = value;
-        }
-    }
-
-
-    function readJson(
-        key,
-        fallback
-    ) {
-
-        try {
-
-            const value =
-                localStorage.getItem(key);
-
-            if (!value) {
-                return fallback;
-            }
-
-            return JSON.parse(value);
-
-        } catch (error) {
-
-            console.error(
-                "读取数据失败：",
-                key,
-                error
-            );
-
-            return fallback;
-        }
-    }
-
-
-    function deepClone(
-        value
-    ) {
-
-        return JSON.parse(
-            JSON.stringify(value)
+        document.body.classList.remove(
+            "modal-open"
         );
     }
 
 
-    function normalizeBindings(
-        value
-    ) {
+    function setText(id, text) {
 
-        return (value || [])
-            .map(
-                function (item) {
+        const el = $(id);
 
-                    return {
-                        excavatorId:
-                            item.excavatorId,
-
-                        truckIds:
-                            (item.truckIds || [])
-                                .slice()
-                                .sort()
-                    };
-                }
-            )
-            .sort(
-                function (a, b) {
-
-                    return String(a.excavatorId)
-                        .localeCompare(
-                            String(b.excavatorId)
-                        );
-                }
-            );
+        if (el) {
+            el.textContent = text;
+        }
     }
 
 
-    function formatTime(
-        value
-    ) {
-
-        if (!value) {
-            return "-";
-        }
-
-        const date =
-            new Date(value);
-
-        if (
-            Number.isNaN(
-                date.getTime()
-            )
-        ) {
-            return "-";
-        }
-
-        return date.toLocaleTimeString(
-            "zh-CN",
-            {
-                hour: "2-digit",
-                minute: "2-digit"
-            }
-        );
-    }
-
-
-    function formatDateTime(
-        value
-    ) {
+    function formatDateTime(value) {
 
         if (!value) {
             return "-";
@@ -4948,19 +4197,48 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
 
-    function escapeHtml(
-        value
+    function clone(value) {
+
+        return JSON.parse(
+            JSON.stringify(value)
+        );
+    }
+
+
+    function readJson(
+        key,
+        fallback
     ) {
 
-        const div =
-            document.createElement(
-                "div"
+        try {
+
+            const raw =
+                localStorage.getItem(key);
+
+            return raw
+                ? JSON.parse(raw)
+                : fallback;
+
+        } catch (error) {
+
+            console.error(
+                "读取数据失败：",
+                key,
+                error
             );
 
+            return fallback;
+        }
+    }
+
+
+    function escapeHtml(value) {
+
+        const div =
+            document.createElement("div");
+
         div.textContent =
-            String(
-                value ?? ""
-            );
+            String(value ?? "");
 
         return div.innerHTML;
     }
