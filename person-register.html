@@ -1,1 +1,2069 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
 
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <meta name="theme-color" content="#0f172a">
+
+    <title>人员入职登记 - 矿山管理系统</title>
+
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            background: #f1f5f9;
+            color: #0f172a;
+            font-family:
+                Arial,
+                "Microsoft YaHei",
+                sans-serif;
+        }
+
+        header {
+            padding: 22px 15px;
+            text-align: center;
+            background: #0f172a;
+            color: #ffffff;
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 23px;
+        }
+
+        header p {
+            margin: 7px 0 0;
+            font-size: 13px;
+            opacity: .8;
+        }
+
+        main {
+            width: 100%;
+            max-width: 700px;
+            margin: 0 auto;
+            padding: 20px 14px 35px;
+        }
+
+        .card {
+            margin-bottom: 16px;
+            padding: 18px;
+            background: #ffffff;
+            border-radius: 16px;
+            box-shadow:
+                0 5px 20px
+                rgba(15, 23, 42, .06);
+        }
+
+        .card h2 {
+            margin: 0 0 16px;
+            font-size: 18px;
+        }
+
+        .notice {
+            margin-bottom: 16px;
+            padding: 12px 14px;
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
+            border-radius: 10px;
+            color: #1e40af;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        .reject-notice {
+            display: none;
+            margin-bottom: 16px;
+            padding: 12px 14px;
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            border-radius: 10px;
+            color: #991b1b;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns:
+                repeat(2, minmax(0, 1fr));
+            gap: 14px;
+        }
+
+        .form-group {
+            margin-bottom: 14px;
+        }
+
+        .form-group.full {
+            grid-column: 1 / -1;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 7px;
+            font-size: 14px;
+            font-weight: 700;
+        }
+
+        .required {
+            color: #dc2626;
+        }
+
+        input,
+        select,
+        textarea {
+            width: 100%;
+            min-height: 45px;
+            padding: 10px 11px;
+            border: 1px solid #cbd5e1;
+            border-radius: 9px;
+            background: #ffffff;
+            font-size: 15px;
+        }
+
+        input[readonly] {
+            background: #f8fafc;
+            color: #475569;
+        }
+
+        textarea {
+            min-height: 90px;
+            resize: vertical;
+        }
+
+        .tip {
+            margin-top: 5px;
+            color: #64748b;
+            font-size: 12px;
+            line-height: 1.5;
+        }
+
+        .photo-preview {
+            display: none;
+            width: 100%;
+            max-height: 260px;
+            margin-top: 10px;
+            object-fit: contain;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            background: #f8fafc;
+        }
+
+        button {
+            width: 100%;
+            min-height: 48px;
+            margin-top: 10px;
+            border: 0;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .primary-btn {
+            background: #2563eb;
+            color: #ffffff;
+        }
+
+        .secondary-btn {
+            background: #ffffff;
+            color: #334155;
+            border: 1px solid #cbd5e1;
+        }
+
+        .submit-tip {
+            margin-top: 12px;
+            color: #64748b;
+            text-align: center;
+            font-size: 12px;
+            line-height: 1.6;
+        }
+
+        footer {
+            padding: 18px;
+            text-align: center;
+            color: #94a3b8;
+            font-size: 12px;
+        }
+
+        @media (max-width: 600px) {
+
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+
+<header>
+
+    <h1>
+        👤 人员入职登记
+    </h1>
+
+    <p>
+        矿山管理系统 · 统一人员注册
+    </p>
+
+</header>
+
+
+<main>
+
+
+    <div
+        class="reject-notice"
+        id="rejectNotice"
+    >
+
+        <strong>
+            上次审核未通过
+        </strong>
+
+        <div
+            id="rejectReasonText"
+            style="margin-top:5px;"
+        >
+        </div>
+
+        请修改资料后重新提交管理员审核。
+
+    </div>
+
+
+    <div class="notice">
+
+        所有岗位统一填写个人资料。
+
+        提交后由管理员审核。
+
+        审核通过后才能进入对应工作页面。
+
+        总经理和管理员审核通过后，还需要进行密码验证。
+
+    </div>
+
+
+    <!-- 基本资料 -->
+
+    <section class="card">
+
+        <h2>
+            基本资料
+        </h2>
+
+
+        <div class="form-grid">
+
+
+            <div class="form-group">
+
+                <label>
+                    姓名
+                    <span class="required">*</span>
+                </label>
+
+                <input
+                    id="name"
+                    type="text"
+                    autocomplete="name"
+                    placeholder="请输入姓名"
+                >
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label>
+                    手机号
+                    <span class="required">*</span>
+                </label>
+
+                <input
+                    id="phone"
+                    type="tel"
+                    autocomplete="tel"
+                    placeholder="请输入手机号"
+                >
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label>
+                    申请岗位
+                    <span class="required">*</span>
+                </label>
+
+                <input
+                    id="position"
+                    type="text"
+                    readonly
+                >
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label>
+                    部门 / 车队
+                    <span class="required">*</span>
+                </label>
+
+                <input
+                    id="department"
+                    type="text"
+                    placeholder="例如：山一车队 / 测量部"
+                >
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label>
+                    入职日期
+                </label>
+
+                <input
+                    id="entryDate"
+                    type="date"
+                >
+
+            </div>
+
+
+        </div>
+
+    </section>
+
+
+    <!-- 身份资料 -->
+
+    <section class="card">
+
+        <h2>
+            身份证件
+        </h2>
+
+
+        <div class="form-grid">
+
+
+            <div class="form-group">
+
+                <label>
+                    身份证号
+                </label>
+
+                <input
+                    id="idCardNumber"
+                    type="text"
+                    placeholder="中国籍人员填写"
+                >
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label>
+                    护照号
+                </label>
+
+                <input
+                    id="passportNumber"
+                    type="text"
+                    placeholder="无身份证时填写护照"
+                >
+
+            </div>
+
+
+            <div class="form-group full">
+
+                <div class="tip">
+                    身份证号和护照号至少填写一项。
+                </div>
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label>
+                    身份证照片
+                </label>
+
+                <input
+                    id="idCardPhoto"
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                >
+
+                <img
+                    id="idCardPreview"
+                    class="photo-preview"
+                    alt="身份证照片"
+                >
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label>
+                    护照照片
+                </label>
+
+                <input
+                    id="passportPhoto"
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                >
+
+                <img
+                    id="passportPreview"
+                    class="photo-preview"
+                    alt="护照照片"
+                >
+
+            </div>
+
+
+        </div>
+
+    </section>
+
+
+    <!-- 驾驶证 / 操作证 -->
+
+    <section
+        class="card"
+        id="driverLicenseSection"
+        style="display:none;"
+    >
+
+        <h2>
+            驾驶证 / 操作证
+        </h2>
+
+
+        <div class="notice">
+
+            当前岗位属于车辆驾驶或设备操作岗位，
+            请上传驾驶证或相关设备操作证照片。
+
+        </div>
+
+
+        <div class="form-group">
+
+            <label>
+                驾驶证 / 操作证照片
+            </label>
+
+            <input
+                id="driverLicensePhoto"
+                type="file"
+                accept="image/*"
+                capture="environment"
+            >
+
+            <img
+                id="driverLicensePreview"
+                class="photo-preview"
+                alt="驾驶证或操作证照片"
+            >
+
+        </div>
+
+    </section>
+
+
+    <!-- 银行信息 -->
+
+    <section class="card">
+
+        <h2>
+            银行信息
+        </h2>
+
+
+        <div class="form-group">
+
+            <label>
+                银行卡号
+            </label>
+
+            <input
+                id="bankCardNumber"
+                type="text"
+                inputmode="numeric"
+                placeholder="请输入银行卡号"
+            >
+
+        </div>
+
+
+        <div class="form-group">
+
+            <label>
+                银行卡照片
+            </label>
+
+            <input
+                id="bankCardPhoto"
+                type="file"
+                accept="image/*"
+                capture="environment"
+            >
+
+            <img
+                id="bankCardPreview"
+                class="photo-preview"
+                alt="银行卡照片"
+            >
+
+        </div>
+
+    </section>
+
+
+    <!-- 紧急联系人 -->
+
+    <section class="card">
+
+        <h2>
+            紧急联系人
+        </h2>
+
+
+        <div class="form-grid">
+
+
+            <div class="form-group">
+
+                <label>
+                    紧急联系人
+                    <span class="required">*</span>
+                </label>
+
+                <input
+                    id="emergencyContact"
+                    type="text"
+                    placeholder="请输入联系人姓名"
+                >
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label>
+                    联系电话
+                    <span class="required">*</span>
+                </label>
+
+                <input
+                    id="emergencyPhone"
+                    type="tel"
+                    placeholder="请输入联系电话"
+                >
+
+            </div>
+
+
+        </div>
+
+    </section>
+
+
+    <!-- 备注 -->
+
+    <section class="card">
+
+        <h2>
+            其他信息
+        </h2>
+
+
+        <div class="form-group">
+
+            <label>
+                备注
+            </label>
+
+            <textarea
+                id="remark"
+                placeholder="其他需要说明的信息"
+            ></textarea>
+
+        </div>
+
+    </section>
+
+
+    <button
+        type="button"
+        class="primary-btn"
+        id="submitButton"
+        onclick="submitRegistration()"
+    >
+        提交管理员审核
+    </button>
+
+
+    <button
+        type="button"
+        class="secondary-btn"
+        onclick="location.href='index.html'"
+    >
+        返回系统首页
+    </button>
+
+
+    <div class="submit-tip">
+
+        提交后进入等待审核页面。
+
+        管理员审核通过前不能进入工作端。
+
+    </div>
+
+
+</main>
+
+
+<footer>
+    矿山管理系统 · 统一人员注册 V2.9.6
+</footer>
+
+
+<script>
+
+"use strict";
+
+
+/* =========================================================
+   岗位
+========================================================= */
+
+const params =
+    new URLSearchParams(
+        location.search
+    );
+
+
+const POSITION_ALIASES = {
+
+    "卡车司机":
+        "汽车司机",
+
+    "装载机司机":
+        "铲车司机",
+
+    "大巴":
+        "大巴司机",
+
+    "测量人员":
+        "测量员",
+
+    "后勤人员":
+        "后勤",
+
+    "库房管理员":
+        "库房管理",
+
+    "维修人员":
+        "修理工",
+
+    "调度员":
+        "车队长"
+
+};
+
+
+function normalizePosition(position) {
+
+    return (
+        POSITION_ALIASES[position] ||
+        position ||
+        ""
+    );
+
+}
+
+
+const selectedPosition =
+    normalizePosition(
+        params.get("position") ||
+        localStorage.getItem(
+            "selectedPosition"
+        ) ||
+        ""
+    );
+
+
+const rejectedMode =
+    params.get("rejected") === "1";
+
+
+/* =========================================================
+   全部有效岗位
+========================================================= */
+
+const VALID_POSITIONS = [
+
+    "挖机司机",
+    "汽车司机",
+
+    "铲车司机",
+    "加油车司机",
+    "大巴司机",
+    "平路机司机",
+    "洒水车司机",
+    "推土机司机",
+
+    "车队长",
+
+    "维修管理员",
+    "修理工",
+
+    "测量员",
+    "安全员",
+    "统计",
+    "会计",
+    "后勤",
+    "库房管理",
+
+    "总经理",
+    "管理员"
+
+];
+
+
+/* =========================================================
+   需要驾驶证 / 操作证的岗位
+
+   汽车司机已经正式加入。
+========================================================= */
+
+const DRIVER_POSITIONS = [
+
+    "汽车司机",
+    "挖机司机",
+
+    "铲车司机",
+    "加油车司机",
+    "大巴司机",
+    "平路机司机",
+    "洒水车司机",
+    "推土机司机"
+
+];
+
+
+/* =========================================================
+   图片缓存
+========================================================= */
+
+const photoData = {
+
+    idCardPhoto: "",
+    passportPhoto: "",
+    driverLicensePhoto: "",
+    bankCardPhoto: ""
+
+};
+
+
+/* =========================================================
+   人员库
+========================================================= */
+
+function getPersonnelRecords() {
+
+    try {
+
+        const data =
+            JSON.parse(
+                localStorage.getItem(
+                    "personnelRecords"
+                )
+            );
+
+
+        return Array.isArray(data)
+            ? data
+            : [];
+
+
+    } catch (error) {
+
+        console.error(
+            "读取人员资料失败：",
+            error
+        );
+
+
+        return [];
+
+    }
+
+}
+
+
+function savePersonnelRecords(records) {
+
+    localStorage.setItem(
+        "personnelRecords",
+        JSON.stringify(records)
+    );
+
+}
+
+
+/* =========================================================
+   人员ID
+========================================================= */
+
+function getPersonId(person) {
+
+    return (
+        person?.personId ||
+        person?.driverId ||
+        person?.id ||
+        ""
+    );
+
+}
+
+
+/* =========================================================
+   查找当前人员
+========================================================= */
+
+function findExistingProfile() {
+
+    const records =
+        getPersonnelRecords();
+
+
+    const currentPersonId =
+        localStorage.getItem(
+            "currentPersonId"
+        );
+
+
+    if (!currentPersonId) {
+
+        return null;
+
+    }
+
+
+    return (
+        records.find(person =>
+
+            getPersonId(person) ===
+            currentPersonId
+
+        ) ||
+        null
+    );
+
+}
+
+
+/* =========================================================
+   人员类别
+========================================================= */
+
+function getPersonnelCategory(position) {
+
+    const driverPositions = [
+
+        "汽车司机",
+        "挖机司机",
+        "铲车司机",
+        "加油车司机",
+        "大巴司机",
+        "平路机司机",
+        "洒水车司机",
+        "推土机司机"
+
+    ];
+
+
+    if (
+        driverPositions.includes(
+            position
+        )
+    ) {
+
+        return "司机 / 设备操作人员";
+
+    }
+
+
+    if (
+        position === "维修管理员" ||
+        position === "修理工"
+    ) {
+
+        return "维修人员";
+
+    }
+
+
+    if (
+        [
+            "测量员",
+            "安全员",
+            "统计",
+            "会计",
+            "后勤",
+            "库房管理"
+        ].includes(position)
+    ) {
+
+        return "中层 / 职能人员";
+
+    }
+
+
+    if (
+        position === "车队长"
+    ) {
+
+        return "生产管理人员";
+
+    }
+
+
+    if (
+        position === "总经理"
+    ) {
+
+        return "总经理";
+
+    }
+
+
+    if (
+        position === "管理员"
+    ) {
+
+        return "系统管理员";
+
+    }
+
+
+    return "其他人员";
+
+}
+
+
+/* =========================================================
+   生成ID
+========================================================= */
+
+function createPersonId() {
+
+    if (
+        window.crypto &&
+        typeof crypto.randomUUID ===
+            "function"
+    ) {
+
+        return crypto.randomUUID();
+
+    }
+
+
+    return (
+        "PERSON-" +
+        Date.now() +
+        "-" +
+        Math.random()
+            .toString(36)
+            .slice(2, 9)
+    );
+
+}
+
+
+/* =========================================================
+   图片压缩
+
+   localStorage 容量有限，
+   所以先压缩再保存。
+========================================================= */
+
+function compressImage(file) {
+
+    return new Promise(
+        (resolve, reject) => {
+
+            if (!file) {
+
+                resolve("");
+
+                return;
+
+            }
+
+
+            if (
+                !file.type.startsWith(
+                    "image/"
+                )
+            ) {
+
+                reject(
+                    new Error(
+                        "请选择图片文件。"
+                    )
+                );
+
+                return;
+
+            }
+
+
+            const reader =
+                new FileReader();
+
+
+            reader.onload =
+                function (event) {
+
+                    const image =
+                        new Image();
+
+
+                    image.onload =
+                        function () {
+
+                            const maxSize =
+                                1000;
+
+
+                            let width =
+                                image.width;
+
+
+                            let height =
+                                image.height;
+
+
+                            if (
+                                width > maxSize ||
+                                height > maxSize
+                            ) {
+
+                                const ratio =
+                                    Math.min(
+                                        maxSize / width,
+                                        maxSize / height
+                                    );
+
+
+                                width =
+                                    Math.round(
+                                        width * ratio
+                                    );
+
+
+                                height =
+                                    Math.round(
+                                        height * ratio
+                                    );
+
+                            }
+
+
+                            const canvas =
+                                document.createElement(
+                                    "canvas"
+                                );
+
+
+                            canvas.width =
+                                width;
+
+
+                            canvas.height =
+                                height;
+
+
+                            const context =
+                                canvas.getContext(
+                                    "2d"
+                                );
+
+
+                            context.drawImage(
+                                image,
+                                0,
+                                0,
+                                width,
+                                height
+                            );
+
+
+                            resolve(
+                                canvas.toDataURL(
+                                    "image/jpeg",
+                                    0.6
+                                )
+                            );
+
+                        };
+
+
+                    image.onerror =
+                        function () {
+
+                            reject(
+                                new Error(
+                                    "图片读取失败。"
+                                )
+                            );
+
+                        };
+
+
+                    image.src =
+                        event.target.result;
+
+                };
+
+
+            reader.onerror =
+                function () {
+
+                    reject(
+                        new Error(
+                            "文件读取失败。"
+                        )
+                    );
+
+                };
+
+
+            reader.readAsDataURL(
+                file
+            );
+
+        }
+    );
+
+}
+
+
+/* =========================================================
+   图片选择
+========================================================= */
+
+async function handlePhotoChange(
+    inputId,
+    previewId,
+    dataKey
+) {
+
+    const input =
+        document.getElementById(
+            inputId
+        );
+
+
+    const file =
+        input.files?.[0];
+
+
+    if (!file) {
+
+        return;
+
+    }
+
+
+    try {
+
+        const data =
+            await compressImage(
+                file
+            );
+
+
+        photoData[dataKey] =
+            data;
+
+
+        showPhotoPreview(
+            previewId,
+            data
+        );
+
+
+    } catch (error) {
+
+        alert(
+            error.message ||
+            "图片处理失败。"
+        );
+
+
+        input.value = "";
+
+    }
+
+}
+
+
+/* =========================================================
+   显示图片
+========================================================= */
+
+function showPhotoPreview(
+    elementId,
+    data
+) {
+
+    const image =
+        document.getElementById(
+            elementId
+        );
+
+
+    if (!data) {
+
+        image.style.display =
+            "none";
+
+
+        image.removeAttribute(
+            "src"
+        );
+
+
+        return;
+
+    }
+
+
+    image.src =
+        data;
+
+
+    image.style.display =
+        "block";
+
+}
+
+
+/* =========================================================
+   初始化照片事件
+========================================================= */
+
+function bindPhotoEvents() {
+
+    document
+        .getElementById(
+            "idCardPhoto"
+        )
+        .addEventListener(
+            "change",
+            () =>
+                handlePhotoChange(
+                    "idCardPhoto",
+                    "idCardPreview",
+                    "idCardPhoto"
+                )
+        );
+
+
+    document
+        .getElementById(
+            "passportPhoto"
+        )
+        .addEventListener(
+            "change",
+            () =>
+                handlePhotoChange(
+                    "passportPhoto",
+                    "passportPreview",
+                    "passportPhoto"
+                )
+        );
+
+
+    document
+        .getElementById(
+            "driverLicensePhoto"
+        )
+        .addEventListener(
+            "change",
+            () =>
+                handlePhotoChange(
+                    "driverLicensePhoto",
+                    "driverLicensePreview",
+                    "driverLicensePhoto"
+                )
+        );
+
+
+    document
+        .getElementById(
+            "bankCardPhoto"
+        )
+        .addEventListener(
+            "change",
+            () =>
+                handlePhotoChange(
+                    "bankCardPhoto",
+                    "bankCardPreview",
+                    "bankCardPhoto"
+                )
+        );
+
+}
+
+
+/* =========================================================
+   加载已有资料
+
+   用于：
+   1. 审核驳回后修改
+   2. 防止重新填写时资料丢失
+========================================================= */
+
+function loadExistingProfile() {
+
+    const person =
+        findExistingProfile();
+
+
+    if (!person) {
+
+        return;
+
+    }
+
+
+    const existingPosition =
+        normalizePosition(
+            person.position
+        );
+
+
+    /*
+       只加载同一岗位资料，
+       防止切换岗位时误加载其他档案。
+    */
+
+    if (
+        existingPosition &&
+        selectedPosition &&
+        existingPosition !==
+            selectedPosition
+    ) {
+
+        return;
+
+    }
+
+
+    document.getElementById(
+        "name"
+    ).value =
+        person.name || "";
+
+
+    document.getElementById(
+        "phone"
+    ).value =
+        person.phone || "";
+
+
+    document.getElementById(
+        "department"
+    ).value =
+        person.department ||
+        person.team ||
+        "";
+
+
+    document.getElementById(
+        "entryDate"
+    ).value =
+        person.entryDate || "";
+
+
+    document.getElementById(
+        "idCardNumber"
+    ).value =
+        person.idCardNumber || "";
+
+
+    document.getElementById(
+        "passportNumber"
+    ).value =
+        person.passportNumber || "";
+
+
+    document.getElementById(
+        "bankCardNumber"
+    ).value =
+        person.bankCardNumber || "";
+
+
+    document.getElementById(
+        "emergencyContact"
+    ).value =
+        person.emergencyContact || "";
+
+
+    document.getElementById(
+        "emergencyPhone"
+    ).value =
+        person.emergencyPhone || "";
+
+
+    document.getElementById(
+        "remark"
+    ).value =
+        person.remark || "";
+
+
+    photoData.idCardPhoto =
+        person.idCardPhoto || "";
+
+
+    photoData.passportPhoto =
+        person.passportPhoto || "";
+
+
+    photoData.driverLicensePhoto =
+        person.driverLicensePhoto ||
+        person.licensePhoto ||
+        "";
+
+
+    photoData.bankCardPhoto =
+        person.bankCardPhoto || "";
+
+
+    showPhotoPreview(
+        "idCardPreview",
+        photoData.idCardPhoto
+    );
+
+
+    showPhotoPreview(
+        "passportPreview",
+        photoData.passportPhoto
+    );
+
+
+    showPhotoPreview(
+        "driverLicensePreview",
+        photoData.driverLicensePhoto
+    );
+
+
+    showPhotoPreview(
+        "bankCardPreview",
+        photoData.bankCardPhoto
+    );
+
+
+    if (rejectedMode) {
+
+        const reason =
+            person.rejectReason ||
+            person.rejectionReason ||
+            person.reviewRemark ||
+            person.approvalRemark ||
+            "请修改资料后重新提交。";
+
+
+        document.getElementById(
+            "rejectReasonText"
+        ).textContent =
+            reason;
+
+
+        document.getElementById(
+            "rejectNotice"
+        ).style.display =
+            "block";
+
+    }
+
+}
+
+
+/* =========================================================
+   表单检查
+========================================================= */
+
+function validateForm() {
+
+    const name =
+        document.getElementById(
+            "name"
+        ).value.trim();
+
+
+    const phone =
+        document.getElementById(
+            "phone"
+        ).value.trim();
+
+
+    const department =
+        document.getElementById(
+            "department"
+        ).value.trim();
+
+
+    const idCardNumber =
+        document.getElementById(
+            "idCardNumber"
+        ).value.trim();
+
+
+    const passportNumber =
+        document.getElementById(
+            "passportNumber"
+        ).value.trim();
+
+
+    const emergencyContact =
+        document.getElementById(
+            "emergencyContact"
+        ).value.trim();
+
+
+    const emergencyPhone =
+        document.getElementById(
+            "emergencyPhone"
+        ).value.trim();
+
+
+    if (!selectedPosition) {
+
+        alert(
+            "没有识别到申请岗位，请返回首页重新选择岗位。"
+        );
+
+        return false;
+
+    }
+
+
+    if (
+        !VALID_POSITIONS.includes(
+            selectedPosition
+        )
+    ) {
+
+        alert(
+            "当前岗位无效，请返回首页重新选择岗位。"
+        );
+
+        return false;
+
+    }
+
+
+    if (!name) {
+
+        alert(
+            "请填写姓名。"
+        );
+
+        return false;
+
+    }
+
+
+    if (!phone) {
+
+        alert(
+            "请填写手机号。"
+        );
+
+        return false;
+
+    }
+
+
+    if (!department) {
+
+        alert(
+            "请填写部门或车队。"
+        );
+
+        return false;
+
+    }
+
+
+    if (
+        !idCardNumber &&
+        !passportNumber
+    ) {
+
+        alert(
+            "身份证号和护照号至少填写一项。"
+        );
+
+        return false;
+
+    }
+
+
+    if (!emergencyContact) {
+
+        alert(
+            "请填写紧急联系人。"
+        );
+
+        return false;
+
+    }
+
+
+    if (!emergencyPhone) {
+
+        alert(
+            "请填写紧急联系电话。"
+        );
+
+        return false;
+
+    }
+
+
+    return true;
+
+}
+
+
+/* =========================================================
+   提交登记
+========================================================= */
+
+function submitRegistration() {
+
+    if (!validateForm()) {
+
+        return;
+
+    }
+
+
+    const button =
+        document.getElementById(
+            "submitButton"
+        );
+
+
+    button.disabled =
+        true;
+
+
+    button.textContent =
+        "正在提交...";
+
+
+    try {
+
+        const records =
+            getPersonnelRecords();
+
+
+        const existing =
+            findExistingProfile();
+
+
+        const oldData =
+            existing || {};
+
+
+        const personId =
+            getPersonId(existing) ||
+            createPersonId();
+
+
+        const now =
+            new Date().toISOString();
+
+
+        const record = {
+
+            ...oldData,
+
+            personId:
+                personId,
+
+            name:
+                document
+                    .getElementById(
+                        "name"
+                    )
+                    .value
+                    .trim(),
+
+            phone:
+                document
+                    .getElementById(
+                        "phone"
+                    )
+                    .value
+                    .trim(),
+
+            position:
+                selectedPosition,
+
+            personnelCategory:
+                getPersonnelCategory(
+                    selectedPosition
+                ),
+
+            department:
+                document
+                    .getElementById(
+                        "department"
+                    )
+                    .value
+                    .trim(),
+
+            team:
+                document
+                    .getElementById(
+                        "department"
+                    )
+                    .value
+                    .trim(),
+
+            entryDate:
+                document
+                    .getElementById(
+                        "entryDate"
+                    )
+                    .value,
+
+            idCardNumber:
+                document
+                    .getElementById(
+                        "idCardNumber"
+                    )
+                    .value
+                    .trim(),
+
+            passportNumber:
+                document
+                    .getElementById(
+                        "passportNumber"
+                    )
+                    .value
+                    .trim(),
+
+            bankCardNumber:
+                document
+                    .getElementById(
+                        "bankCardNumber"
+                    )
+                    .value
+                    .trim(),
+
+            emergencyContact:
+                document
+                    .getElementById(
+                        "emergencyContact"
+                    )
+                    .value
+                    .trim(),
+
+            emergencyPhone:
+                document
+                    .getElementById(
+                        "emergencyPhone"
+                    )
+                    .value
+                    .trim(),
+
+            remark:
+                document
+                    .getElementById(
+                        "remark"
+                    )
+                    .value
+                    .trim(),
+
+            idCardPhoto:
+                photoData.idCardPhoto,
+
+            passportPhoto:
+                photoData.passportPhoto,
+
+            driverLicensePhoto:
+                photoData.driverLicensePhoto,
+
+            bankCardPhoto:
+                photoData.bankCardPhoto,
+
+            status:
+                "pending",
+
+            approvalStatus:
+                "pending",
+
+            personnelStatus:
+                "待审核",
+
+            submittedAt:
+                now,
+
+            updatedAt:
+                now,
+
+            createdAt:
+                oldData.createdAt ||
+                now,
+
+            resubmitCount:
+                existing
+                    ? Number(
+                        oldData.resubmitCount ||
+                        0
+                    ) + 1
+                    : 0
+
+        };
+
+
+        /*
+           重新提交后清除旧驳回信息。
+        */
+
+        delete record.rejectReason;
+        delete record.rejectionReason;
+        delete record.rejectedAt;
+
+        delete record.approvedAt;
+        delete record.approvedBy;
+
+        delete record.reviewedAt;
+        delete record.reviewedBy;
+
+        delete record.reviewRemark;
+        delete record.approvalRemark;
+
+
+        const index =
+            records.findIndex(
+                item =>
+                    getPersonId(item) ===
+                    personId
+            );
+
+
+        if (index >= 0) {
+
+            records[index] =
+                record;
+
+        } else {
+
+            records.push(
+                record
+            );
+
+        }
+
+
+        savePersonnelRecords(
+            records
+        );
+
+
+        localStorage.setItem(
+            "currentPersonId",
+            personId
+        );
+
+
+        localStorage.setItem(
+            "selectedPosition",
+            selectedPosition
+        );
+
+
+        /*
+           防止旧管理验证会话继续存在。
+        */
+
+        sessionStorage.removeItem(
+            "managementSession"
+        );
+
+
+        localStorage.removeItem(
+            "pendingProtectedPersonId"
+        );
+
+
+        localStorage.removeItem(
+            "pendingProtectedPosition"
+        );
+
+
+        location.href =
+            "person-waiting.html?position=" +
+            encodeURIComponent(
+                selectedPosition
+            );
+
+
+    } catch (error) {
+
+        console.error(
+            "人员资料提交失败：",
+            error
+        );
+
+
+        alert(
+            "资料保存失败。当前测试版使用浏览器本地存储，如果上传照片过多或照片过大，可能导致存储空间不足。"
+        );
+
+
+        button.disabled =
+            false;
+
+
+        button.textContent =
+            "提交管理员审核";
+
+    }
+
+}
+
+
+/* =========================================================
+   页面初始化
+========================================================= */
+
+function initPage() {
+
+    if (!selectedPosition) {
+
+        alert(
+            "没有选择岗位，请返回系统首页重新选择。"
+        );
+
+
+        location.href =
+            "index.html";
+
+
+        return;
+
+    }
+
+
+    if (
+        !VALID_POSITIONS.includes(
+            selectedPosition
+        )
+    ) {
+
+        alert(
+            "岗位信息无效，请重新选择岗位。"
+        );
+
+
+        location.href =
+            "index.html";
+
+
+        return;
+
+    }
+
+
+    localStorage.setItem(
+        "selectedPosition",
+        selectedPosition
+    );
+
+
+    document.getElementById(
+        "position"
+    ).value =
+        selectedPosition;
+
+
+    /*
+       汽车司机以及其他驾驶/设备岗位
+       显示驾驶证 / 操作证区域。
+    */
+
+    if (
+        DRIVER_POSITIONS.includes(
+            selectedPosition
+        )
+    ) {
+
+        document.getElementById(
+            "driverLicenseSection"
+        ).style.display =
+            "block";
+
+    }
+
+
+    bindPhotoEvents();
+
+    loadExistingProfile();
+
+}
+
+
+initPage();
+
+</script>
+
+
+</body>
+
+</html>
