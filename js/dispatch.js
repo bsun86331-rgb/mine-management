@@ -395,42 +395,43 @@ document.addEventListener(
         /* =====================================================
            总刷新
         ===================================================== */
+function refreshAll() {
 
-        function refreshAll() {
+    reconcileEquipmentWorkingStatus();
 
-            refreshEquipmentCatalog();
+    refreshEquipmentCatalog();
 
-            synchronizeTaskStatus();
+    synchronizeTaskStatus();
 
-            renderProductionBoard();
+    renderProductionBoard();
 
-            renderHistory();
+    renderHistory();
 
-            renderPersonnelStatusBoard();
+    renderPersonnelStatusBoard();
 
-            renderTodoCounts();
+    renderTodoCounts();
 
-            populatePenaltyPersonnel();
+    populatePenaltyPersonnel();
 
 
-            if (currentDraft) {
+    if (currentDraft) {
 
-                renderExcavators();
+        renderExcavators();
 
-                renderTrucks();
+        renderTrucks();
 
-                renderBindings();
+        renderBindings();
 
-                renderDriverAssignments();
+        renderDriverAssignments();
 
-                renderExcavatorDriverAssignments();
+        renderExcavatorDriverAssignments();
 
-                renderAuxiliaryVehicles();
+        renderAuxiliaryVehicles();
 
-                renderAuxiliaryAssignments();
-            }
-        }
-
+        renderAuxiliaryAssignments();
+    }
+}
+       
 
 
         /* =====================================================
@@ -708,7 +709,140 @@ document.addEventListener(
             };
         }
 
+function reconcileEquipmentWorkingStatus() {
 
+    const records =
+        getEquipmentRecords();
+
+
+    if (!records.length) {
+
+        return;
+    }
+
+
+    const occupiedIds =
+        new Set();
+
+
+    getTasks()
+        .filter(
+            task =>
+                task.status === "pending" ||
+                task.status === "active"
+        )
+        .forEach(
+            task => {
+
+                (task.bindings || [])
+                    .forEach(
+                        binding => {
+
+                            if (binding.excavatorId) {
+
+                                occupiedIds.add(
+                                    String(binding.excavatorId)
+                                );
+                            }
+
+
+                            (binding.truckIds || [])
+                                .forEach(
+                                    truckId => {
+
+                                        if (truckId) {
+
+                                            occupiedIds.add(
+                                                String(truckId)
+                                            );
+                                        }
+                                    }
+                                );
+                        }
+                    );
+
+
+                (task.auxiliaryAssignments || [])
+                    .forEach(
+                        item => {
+
+                            if (item.vehicleId) {
+
+                                occupiedIds.add(
+                                    String(item.vehicleId)
+                                );
+                            }
+                        }
+                    );
+            }
+        );
+
+
+    let changed =
+        false;
+
+
+    records.forEach(
+        device => {
+
+            const normalized =
+                normalizeEquipmentRecord(device);
+
+
+            if (!normalized.id) {
+
+                return;
+            }
+
+
+            if (
+                normalized.status === "maintenance" ||
+                normalized.status === "service" ||
+                normalized.status === "disabled"
+            ) {
+
+                return;
+            }
+
+
+            if (
+                occupiedIds.has(
+                    String(normalized.id)
+                )
+            ) {
+
+                return;
+            }
+
+
+            if (
+                normalized.status === "working"
+            ) {
+
+                device.status =
+                    "available";
+
+                device.currentStatus =
+                    "可用";
+
+                device.equipmentStatus =
+                    "可用";
+
+                device.updatedAt =
+                    new Date().toISOString();
+
+                changed =
+                    true;
+            }
+        }
+    );
+
+
+    if (changed) {
+
+        saveEquipmentRecords(records);
+    }
+}
         function getEquipmentRecords() {
 
             const records =
