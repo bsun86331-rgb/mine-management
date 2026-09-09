@@ -1,1 +1,3322 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
 
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <meta
+        name="theme-color"
+        content="#0f172a"
+    >
+
+    <title>
+        全员加油申请中心 - 矿山管理系统
+    </title>
+
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+        }
+
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family:
+                Arial,
+                "Microsoft YaHei",
+                sans-serif;
+            background: #f1f5f9;
+            color: #0f172a;
+        }
+
+
+        header {
+            position: sticky;
+            top: 0;
+            z-index: 30;
+            padding: 17px 14px;
+            background: #0f172a;
+            color: #ffffff;
+            box-shadow:
+                0 4px 18px
+                rgba(15, 23, 42, .2);
+        }
+
+
+        .header-inner {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+
+        .header-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+
+        header h1 {
+            margin: 0;
+            font-size: 22px;
+        }
+
+
+        header p {
+            margin: 5px 0 0;
+            color: #cbd5e1;
+            font-size: 12px;
+        }
+
+
+        main {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 15px 14px 40px;
+        }
+
+
+        button {
+            border: 0;
+            border-radius: 10px;
+            padding: 12px 15px;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+
+        button:disabled {
+            opacity: .5;
+            cursor: not-allowed;
+        }
+
+
+        .header-btn {
+            background: #1e293b;
+            border: 1px solid #475569;
+            color: #ffffff;
+        }
+
+
+        .primary-btn {
+            background: #2563eb;
+            color: #ffffff;
+        }
+
+
+        .success-btn {
+            background: #16a34a;
+            color: #ffffff;
+        }
+
+
+        .warning-btn {
+            background: #f59e0b;
+            color: #ffffff;
+        }
+
+
+        .danger-btn {
+            background: #dc2626;
+            color: #ffffff;
+        }
+
+
+        .secondary-btn {
+            background: #ffffff;
+            color: #334155;
+            border: 1px solid #cbd5e1;
+        }
+
+
+        .card {
+            margin-bottom: 15px;
+            padding: 17px;
+            border-radius: 16px;
+            background: #ffffff;
+            box-shadow:
+                0 5px 20px
+                rgba(15, 23, 42, .06);
+        }
+
+
+        .section-title {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+
+        .section-title h2 {
+            margin: 0;
+            font-size: 18px;
+        }
+
+
+        .section-title p {
+            margin: 5px 0 0;
+            color: #64748b;
+            font-size: 12px;
+            line-height: 1.6;
+        }
+
+
+        .badge {
+            display: inline-block;
+            flex-shrink: 0;
+            padding: 5px 10px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+
+        .badge.default {
+            background: #e2e8f0;
+            color: #475569;
+        }
+
+
+        .badge.green {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+
+        .badge.yellow {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+
+        .badge.red {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+
+        .badge.blue {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+
+        .info-grid {
+            display: grid;
+            grid-template-columns:
+                repeat(2, minmax(0, 1fr));
+            gap: 10px;
+        }
+
+
+        .info-box {
+            padding: 12px;
+            border-radius: 11px;
+            background: #f8fafc;
+        }
+
+
+        .info-box span {
+            display: block;
+            margin-bottom: 5px;
+            color: #64748b;
+            font-size: 12px;
+        }
+
+
+        .info-box strong {
+            display: block;
+            font-size: 15px;
+            word-break: break-word;
+        }
+
+
+        .form-grid {
+            display: grid;
+            grid-template-columns:
+                repeat(2, minmax(0, 1fr));
+            gap: 12px;
+        }
+
+
+        .form-group {
+            margin-bottom: 13px;
+        }
+
+
+        label {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+
+        input,
+        select,
+        textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #cbd5e1;
+            border-radius: 9px;
+            background: #ffffff;
+            font-size: 14px;
+            outline: none;
+        }
+
+
+        textarea {
+            min-height: 90px;
+            resize: vertical;
+        }
+
+
+        input:focus,
+        select:focus,
+        textarea:focus {
+            border-color: #2563eb;
+            box-shadow:
+                0 0 0 3px
+                rgba(37, 99, 235, .08);
+        }
+
+
+        .location-panel {
+            padding: 15px;
+            border-radius: 13px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+        }
+
+
+        .location-status {
+            margin-top: 10px;
+            padding: 13px;
+            border-radius: 10px;
+            font-size: 13px;
+            line-height: 1.7;
+        }
+
+
+        .location-status.waiting {
+            background: #f8fafc;
+            color: #64748b;
+        }
+
+
+        .location-status.inside {
+            background: #ecfdf5;
+            color: #166534;
+            border: 1px solid #bbf7d0;
+        }
+
+
+        .location-status.outside {
+            background: #fef2f2;
+            color: #991b1b;
+            border: 1px solid #fecaca;
+        }
+
+
+        .location-status.error {
+            background: #fff7ed;
+            color: #9a3412;
+            border: 1px solid #fed7aa;
+        }
+
+
+        .actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+
+        .record-list {
+            display: grid;
+            gap: 10px;
+        }
+
+
+        .record-card {
+            padding: 13px;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            background: #f8fafc;
+        }
+
+
+        .record-top {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+
+        .record-info {
+            margin-top: 8px;
+            color: #64748b;
+            font-size: 12px;
+            line-height: 1.7;
+        }
+
+
+        .photo-thumb {
+            width: 100px;
+            height: 78px;
+            margin-top: 10px;
+            border-radius: 8px;
+            border: 1px solid #cbd5e1;
+            object-fit: cover;
+            cursor: pointer;
+        }
+
+
+        .empty {
+            padding: 30px 12px;
+            color: #94a3b8;
+            text-align: center;
+            font-size: 14px;
+            line-height: 1.8;
+        }
+
+
+        .warning-box {
+            padding: 13px;
+            border-radius: 11px;
+            border: 1px solid #fed7aa;
+            background: #fff7ed;
+            color: #9a3412;
+            font-size: 13px;
+            line-height: 1.7;
+        }
+
+
+        .test-panel {
+            margin-top: 12px;
+            padding: 12px;
+            border-radius: 11px;
+            background: #f8fafc;
+            border: 1px dashed #94a3b8;
+        }
+
+
+        .modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 100;
+            padding: 20px;
+            background:
+                rgba(15, 23, 42, .85);
+            align-items: center;
+            justify-content: center;
+        }
+
+
+        .modal.show {
+            display: flex;
+        }
+
+
+        .modal-content {
+            position: relative;
+            width: 100%;
+            max-width: 900px;
+        }
+
+
+        .modal-content img {
+            width: 100%;
+            max-height: 85vh;
+            object-fit: contain;
+            border-radius: 12px;
+            background: #000000;
+        }
+
+
+        .modal-close {
+            position: absolute;
+            top: -12px;
+            right: -12px;
+            width: 42px;
+            height: 42px;
+            padding: 0;
+            border-radius: 50%;
+            background: #ffffff;
+            color: #0f172a;
+            font-size: 22px;
+        }
+
+
+        footer {
+            padding: 20px;
+            color: #94a3b8;
+            text-align: center;
+            font-size: 12px;
+        }
+
+
+        @media (
+            max-width: 640px
+        ) {
+
+            .info-grid,
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+
+<header>
+
+    <div class="header-inner">
+
+        <div class="header-row">
+
+            <div>
+
+                <h1>
+                    ⛽ 全员加油申请中心
+                </h1>
+
+                <p>
+                    Fuel Request Center · V2.9.9C
+                </p>
+
+            </div>
+
+
+            <button
+                type="button"
+                class="header-btn"
+                onclick="goHome()"
+            >
+                返回首页
+            </button>
+
+        </div>
+
+    </div>
+
+</header>
+
+
+
+<main>
+
+
+    <!-- 当前人员 -->
+
+    <section class="card">
+
+        <div class="section-title">
+
+            <div>
+
+                <h2>
+                    👷 当前申请人
+                </h2>
+
+                <p>
+                    所有岗位均可使用
+                </p>
+
+            </div>
+
+
+            <span
+                id="personBadge"
+                class="badge default"
+            >
+                未识别
+            </span>
+
+        </div>
+
+
+        <div class="info-grid">
+
+            <div class="info-box">
+
+                <span>
+                    姓名
+                </span>
+
+                <strong id="personName">
+                    -
+                </strong>
+
+            </div>
+
+
+            <div class="info-box">
+
+                <span>
+                    岗位
+                </span>
+
+                <strong id="personPosition">
+                    -
+                </strong>
+
+            </div>
+
+
+            <div class="info-box">
+
+                <span>
+                    部门 / 车队
+                </span>
+
+                <strong id="personDepartment">
+                    -
+                </strong>
+
+            </div>
+
+
+            <div class="info-box">
+
+                <span>
+                    人员编号
+                </span>
+
+                <strong id="personId">
+                    -
+                </strong>
+
+            </div>
+
+        </div>
+
+
+        <div
+            id="manualPersonArea"
+            class="test-panel"
+            style="display:none;"
+        >
+
+            <strong>
+                测试模式：手工填写申请人
+            </strong>
+
+
+            <div class="form-grid" style="margin-top:10px;">
+
+                <div class="form-group">
+
+                    <label for="manualName">
+                        姓名
+                    </label>
+
+                    <input
+                        id="manualName"
+                        type="text"
+                        placeholder="请输入姓名"
+                    >
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label for="manualPosition">
+                        岗位
+                    </label>
+
+                    <input
+                        id="manualPosition"
+                        type="text"
+                        placeholder="例如：挖机司机"
+                    >
+
+                </div>
+
+            </div>
+
+
+            <button
+                type="button"
+                class="secondary-btn"
+                onclick="saveManualPerson()"
+            >
+                使用该测试身份
+            </button>
+
+        </div>
+
+    </section>
+
+
+
+    <!-- 设备信息 -->
+
+    <section class="card">
+
+        <div class="section-title">
+
+            <div>
+
+                <h2>
+                    🚜 加油设备 / 车辆
+                </h2>
+
+                <p>
+                    所有需要加油的车辆和工程设备都可申请
+                </p>
+
+            </div>
+
+        </div>
+
+
+        <div class="form-grid">
+
+            <div class="form-group">
+
+                <label for="equipmentType">
+                    设备类型
+                </label>
+
+                <select
+                    id="equipmentType"
+                    onchange="saveDraftFields()"
+                >
+
+                    <option value="">
+                        请选择设备类型
+                    </option>
+
+                    <option value="矿卡">
+                        矿卡 / 汽车
+                    </option>
+
+                    <option value="挖掘机">
+                        挖掘机
+                    </option>
+
+                    <option value="装载机">
+                        装载机
+                    </option>
+
+                    <option value="推土机">
+                        推土机
+                    </option>
+
+                    <option value="平路机">
+                        平路机
+                    </option>
+
+                    <option value="洒水车">
+                        洒水车
+                    </option>
+
+                    <option value="大巴">
+                        大巴
+                    </option>
+
+                    <option value="维修车辆">
+                        维修车辆
+                    </option>
+
+                    <option value="管理车辆">
+                        管理车辆
+                    </option>
+
+                    <option value="其他">
+                        其他
+                    </option>
+
+                </select>
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label for="equipmentNumber">
+                    设备 / 车辆编号
+                </label>
+
+                <input
+                    id="equipmentNumber"
+                    type="text"
+                    placeholder="例如：T-021 / W-001"
+                    oninput="saveDraftFields()"
+                >
+
+            </div>
+
+        </div>
+
+
+        <div class="form-group">
+
+            <label for="requestRemark">
+                申请备注
+            </label>
+
+            <textarea
+                id="requestRemark"
+                placeholder="可填写特殊说明"
+                oninput="saveDraftFields()"
+            ></textarea>
+
+        </div>
+
+    </section>
+
+
+
+    <!-- GPS -->
+
+    <section class="card">
+
+        <div class="section-title">
+
+            <div>
+
+                <h2>
+                    📍 加油范围定位
+                </h2>
+
+                <p>
+                    进入加油车设定范围后才允许提交申请
+                </p>
+
+            </div>
+
+
+            <span
+                id="gpsBadge"
+                class="badge default"
+            >
+                未定位
+            </span>
+
+        </div>
+
+
+        <div class="location-panel">
+
+            <div class="info-grid">
+
+                <div class="info-box">
+
+                    <span>
+                        加油范围
+                    </span>
+
+                    <strong id="fuelRadiusText">
+                        50 米
+                    </strong>
+
+                </div>
+
+
+                <div class="info-box">
+
+                    <span>
+                        当前距离
+                    </span>
+
+                    <strong id="distanceText">
+                        -
+                    </strong>
+
+                </div>
+
+            </div>
+
+
+            <div
+                id="locationStatus"
+                class="location-status waiting"
+            >
+                请点击“开始定位”。
+            </div>
+
+
+            <div class="actions">
+
+                <button
+                    type="button"
+                    class="primary-btn"
+                    onclick="startLocation()"
+                >
+                    📍 开始定位
+                </button>
+
+
+                <button
+                    id="submitRequestButton"
+                    type="button"
+                    class="success-btn"
+                    onclick="submitFuelRequest()"
+                    disabled
+                >
+                    提交加油申请
+                </button>
+
+            </div>
+
+        </div>
+
+
+        <div class="test-panel">
+
+            <strong>
+                🧪 测试定位
+            </strong>
+
+
+            <div class="actions">
+
+                <button
+                    type="button"
+                    class="secondary-btn"
+                    onclick="testInsideRange()"
+                >
+                    测试进入范围
+                </button>
+
+
+                <button
+                    type="button"
+                    class="secondary-btn"
+                    onclick="testOutsideRange()"
+                >
+                    测试离开范围
+                </button>
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+
+    <!-- 当前申请 -->
+
+    <section class="card">
+
+        <div class="section-title">
+
+            <div>
+
+                <h2>
+                    🕒 当前加油申请
+                </h2>
+
+                <p>
+                    查看当前设备的加油状态
+                </p>
+
+            </div>
+
+        </div>
+
+
+        <div id="currentRequestArea">
+
+            <div class="empty">
+                当前没有加油申请
+            </div>
+
+        </div>
+
+    </section>
+
+
+
+    <!-- 待确认清单 -->
+
+    <section class="card">
+
+        <div class="section-title">
+
+            <div>
+
+                <h2>
+                    🧾 待确认加油清单
+                </h2>
+
+                <p>
+                    核对油量和照片后确认或驳回
+                </p>
+
+            </div>
+
+
+            <button
+                type="button"
+                class="warning-btn"
+                onclick="generateTestFuelRecord()"
+            >
+                🧪 测试加油单
+            </button>
+
+        </div>
+
+
+        <div
+            id="pendingFuelRecordList"
+            class="record-list"
+        >
+        </div>
+
+    </section>
+
+
+
+    <!-- 历史 -->
+
+    <section class="card">
+
+        <div class="section-title">
+
+            <div>
+
+                <h2>
+                    📚 我的加油记录
+                </h2>
+
+                <p>
+                    当前设备历史加油记录
+                </p>
+
+            </div>
+
+        </div>
+
+
+        <div
+            id="historyList"
+            class="record-list"
+        >
+        </div>
+
+    </section>
+
+
+</main>
+
+
+
+<footer>
+
+    矿山管理系统 · 全员加油申请中心 V2.9.9C
+
+</footer>
+
+
+
+<div
+    id="photoModal"
+    class="modal"
+    onclick="closePhotoModal()"
+>
+
+    <div
+        class="modal-content"
+        onclick="event.stopPropagation()"
+    >
+
+        <button
+            type="button"
+            class="modal-close"
+            onclick="closePhotoModal()"
+        >
+            ×
+        </button>
+
+
+        <img
+            id="photoModalImage"
+            alt="加油凭证"
+        >
+
+    </div>
+
+</div>
+
+
+
+<script>
+
+"use strict";
+
+
+/* =========================================================
+   数据键
+========================================================= */
+
+const STORAGE = {
+
+    PERSONNEL:
+        "personnelRecords",
+
+    REQUESTS:
+        "fuelRequests",
+
+    RECORDS:
+        "fuelRecords",
+
+    CONFIG:
+        "fuelStationConfig",
+
+    DRAFT:
+        "fuelRequestDraft",
+
+    MANUAL_PERSON:
+        "fuelRequestManualPerson"
+};
+
+
+
+/* =========================================================
+   当前状态
+========================================================= */
+
+let currentPerson =
+    null;
+
+
+let currentLatitude =
+    null;
+
+
+let currentLongitude =
+    null;
+
+
+let currentDistance =
+    null;
+
+
+let isInsideFuelRange =
+    false;
+
+
+
+initialize();
+
+
+
+/* =========================================================
+   初始化
+========================================================= */
+
+function initialize() {
+
+    ensureFuelConfig();
+
+
+    currentPerson =
+        getCurrentPerson();
+
+
+    renderPerson();
+
+
+    restoreDraftFields();
+
+
+    renderConfig();
+
+
+    renderAll();
+
+
+    setInterval(
+        renderAll,
+        5000
+    );
+}
+
+
+
+/* =========================================================
+   默认加油区域配置
+========================================================= */
+
+function ensureFuelConfig() {
+
+    const existing =
+        readJson(
+            STORAGE.CONFIG,
+            null
+        );
+
+
+    if (
+        existing
+    ) {
+
+        return;
+    }
+
+
+    /*
+     * 当前只是本地测试配置。
+     * 真正GPS测试前可以由加油车端设置当前位置。
+     */
+    const config = {
+
+        latitude:
+            null,
+
+        longitude:
+            null,
+
+        radius:
+            50,
+
+        fuelTruckNumber:
+            "F-001"
+    };
+
+
+    save(
+        STORAGE.CONFIG,
+        config
+    );
+}
+
+
+
+function getFuelConfig() {
+
+    return readJson(
+        STORAGE.CONFIG,
+        {
+            latitude:
+                null,
+
+            longitude:
+                null,
+
+            radius:
+                50,
+
+            fuelTruckNumber:
+                "F-001"
+        }
+    );
+}
+
+
+
+function renderConfig() {
+
+    const config =
+        getFuelConfig();
+
+
+    setText(
+        "fuelRadiusText",
+        Number(
+            config.radius ||
+            50
+        ) +
+        " 米"
+    );
+}
+
+
+
+/* =========================================================
+   人员
+========================================================= */
+
+function getPersonnelRecords() {
+
+    const data =
+        readJson(
+            STORAGE.PERSONNEL,
+            []
+        );
+
+
+    return Array.isArray(
+        data
+    )
+        ? data
+        : [];
+}
+
+
+
+function getPersonId(
+    person
+) {
+
+    return String(
+
+        person?.personId ||
+
+        person?.driverId ||
+
+        person?.employeeId ||
+
+        person?.id ||
+
+        ""
+
+    );
+}
+
+
+
+function getCurrentPerson() {
+
+    const records =
+        getPersonnelRecords();
+
+
+    const currentPersonId =
+        localStorage.getItem(
+            "currentPersonId"
+        );
+
+
+    if (
+        currentPersonId
+    ) {
+
+        const found =
+            records.find(
+                item =>
+                    getPersonId(
+                        item
+                    ) ===
+                    currentPersonId
+            );
+
+
+        if (
+            found
+        ) {
+
+            return found;
+        }
+    }
+
+
+    const manual =
+        readJson(
+            STORAGE.MANUAL_PERSON,
+            null
+        );
+
+
+    if (
+        manual
+    ) {
+
+        return manual;
+    }
+
+
+    return null;
+}
+
+
+
+function renderPerson() {
+
+    const manualArea =
+        document.getElementById(
+            "manualPersonArea"
+        );
+
+
+    const badge =
+        document.getElementById(
+            "personBadge"
+        );
+
+
+    if (
+        !currentPerson
+    ) {
+
+        setText(
+            "personName",
+            "-"
+        );
+
+
+        setText(
+            "personPosition",
+            "-"
+        );
+
+
+        setText(
+            "personDepartment",
+            "-"
+        );
+
+
+        setText(
+            "personId",
+            "-"
+        );
+
+
+        badge.textContent =
+            "未识别";
+
+
+        badge.className =
+            "badge red";
+
+
+        manualArea.style.display =
+            "block";
+
+
+        return;
+    }
+
+
+    manualArea.style.display =
+        "none";
+
+
+    setText(
+        "personName",
+        currentPerson.name ||
+        "-"
+    );
+
+
+    setText(
+        "personPosition",
+        currentPerson.position ||
+        "-"
+    );
+
+
+    setText(
+        "personDepartment",
+        currentPerson.department ||
+        currentPerson.team ||
+        "-"
+    );
+
+
+    setText(
+        "personId",
+        getPersonId(
+            currentPerson
+        ) ||
+        "测试身份"
+    );
+
+
+    badge.textContent =
+        "已识别";
+
+
+    badge.className =
+        "badge green";
+}
+
+
+
+function saveManualPerson() {
+
+    const name =
+        document
+            .getElementById(
+                "manualName"
+            )
+            .value
+            .trim();
+
+
+    const position =
+        document
+            .getElementById(
+                "manualPosition"
+            )
+            .value
+            .trim();
+
+
+    if (
+        !name ||
+        !position
+    ) {
+
+        alert(
+            "请填写姓名和岗位。"
+        );
+
+        return;
+    }
+
+
+    const person = {
+
+        personId:
+            "TEST_" +
+            Date.now(),
+
+        name,
+
+        position,
+
+        department:
+            "测试人员"
+    };
+
+
+    save(
+        STORAGE.MANUAL_PERSON,
+        person
+    );
+
+
+    currentPerson =
+        person;
+
+
+    renderPerson();
+
+
+    renderAll();
+}
+
+
+
+/* =========================================================
+   草稿字段
+========================================================= */
+
+function saveDraftFields() {
+
+    const draft = {
+
+        equipmentType:
+            document
+                .getElementById(
+                    "equipmentType"
+                )
+                .value,
+
+        equipmentNumber:
+            document
+                .getElementById(
+                    "equipmentNumber"
+                )
+                .value,
+
+        remark:
+            document
+                .getElementById(
+                    "requestRemark"
+                )
+                .value
+    };
+
+
+    save(
+        STORAGE.DRAFT,
+        draft
+    );
+}
+
+
+
+function restoreDraftFields() {
+
+    const draft =
+        readJson(
+            STORAGE.DRAFT,
+            {}
+        );
+
+
+    document.getElementById(
+        "equipmentType"
+    ).value =
+        draft.equipmentType ||
+        "";
+
+
+    document.getElementById(
+        "equipmentNumber"
+    ).value =
+        draft.equipmentNumber ||
+        "";
+
+
+    document.getElementById(
+        "requestRemark"
+    ).value =
+        draft.remark ||
+        "";
+}
+
+
+
+/* =========================================================
+   GPS定位
+========================================================= */
+
+function startLocation() {
+
+    if (
+        !navigator.geolocation
+    ) {
+
+        showLocationError(
+            "当前设备或浏览器不支持定位功能。"
+        );
+
+        return;
+    }
+
+
+    setGpsStatus(
+        "正在获取当前位置...",
+        "waiting",
+        "定位中"
+    );
+
+
+    navigator.geolocation.getCurrentPosition(
+
+        function (
+            position
+        ) {
+
+            currentLatitude =
+                position.coords.latitude;
+
+
+            currentLongitude =
+                position.coords.longitude;
+
+
+            evaluateFuelRange();
+
+        },
+
+        function (
+            error
+        ) {
+
+            let message =
+                "定位失败。";
+
+
+            if (
+                error.code ===
+                1
+            ) {
+
+                message =
+                    "定位权限被拒绝，请允许浏览器访问位置。";
+            }
+
+
+            if (
+                error.code ===
+                2
+            ) {
+
+                message =
+                    "暂时无法获取当前位置。";
+            }
+
+
+            if (
+                error.code ===
+                3
+            ) {
+
+                message =
+                    "定位超时，请重新尝试。";
+            }
+
+
+            showLocationError(
+                message
+            );
+        },
+
+        {
+            enableHighAccuracy:
+                true,
+
+            timeout:
+                15000,
+
+            maximumAge:
+                5000
+        }
+    );
+}
+
+
+
+/* =========================================================
+   判断是否在加油范围
+========================================================= */
+
+function evaluateFuelRange() {
+
+    const config =
+        getFuelConfig();
+
+
+    const radius =
+        Number(
+            config.radius ||
+            50
+        );
+
+
+    /*
+     * 如果当前加油车还没有真实位置，
+     * 不允许真实GPS提交。
+     */
+    if (
+        config.latitude ===
+            null
+
+        ||
+
+        config.longitude ===
+            null
+    ) {
+
+        isInsideFuelRange =
+            false;
+
+
+        currentDistance =
+            null;
+
+
+        setText(
+            "distanceText",
+            "-"
+        );
+
+
+        setGpsStatus(
+            "当前还没有设置加油车真实位置。可以先使用下方“测试进入范围”验证页面流程。",
+            "error",
+            "未配置"
+        );
+
+
+        updateSubmitButton();
+
+
+        return;
+    }
+
+
+    currentDistance =
+        calculateDistanceMeters(
+
+            currentLatitude,
+
+            currentLongitude,
+
+            Number(
+                config.latitude
+            ),
+
+            Number(
+                config.longitude
+            )
+        );
+
+
+    setText(
+        "distanceText",
+        currentDistance.toFixed(
+            1
+        ) +
+        " 米"
+    );
+
+
+    if (
+        currentDistance <=
+        radius
+    ) {
+
+        isInsideFuelRange =
+            true;
+
+
+        setGpsStatus(
+            "✅ 已进入加油车加油范围，可以提交加油申请。",
+            "inside",
+            "范围内"
+        );
+
+
+    } else {
+
+        isInsideFuelRange =
+            false;
+
+
+        setGpsStatus(
+            "❌ 当前不在加油车加油范围之内，请靠近加油车后重新定位。",
+            "outside",
+            "范围外"
+        );
+    }
+
+
+    updateSubmitButton();
+}
+
+
+
+function calculateDistanceMeters(
+    lat1,
+    lon1,
+    lat2,
+    lon2
+) {
+
+    const earthRadius =
+        6371000;
+
+
+    const toRadians =
+        value =>
+            value *
+            Math.PI /
+            180;
+
+
+    const dLat =
+        toRadians(
+            lat2 -
+            lat1
+        );
+
+
+    const dLon =
+        toRadians(
+            lon2 -
+            lon1
+        );
+
+
+    const a =
+
+        Math.sin(
+            dLat /
+            2
+        ) ** 2
+
+        +
+
+        Math.cos(
+            toRadians(
+                lat1
+            )
+        )
+
+        *
+
+        Math.cos(
+            toRadians(
+                lat2
+            )
+        )
+
+        *
+
+        Math.sin(
+            dLon /
+            2
+        ) ** 2;
+
+
+    const c =
+        2 *
+        Math.atan2(
+            Math.sqrt(
+                a
+            ),
+            Math.sqrt(
+                1 -
+                a
+            )
+        );
+
+
+    return (
+        earthRadius *
+        c
+    );
+}
+
+
+
+/* =========================================================
+   测试定位
+========================================================= */
+
+function testInsideRange() {
+
+    currentDistance =
+        20;
+
+
+    isInsideFuelRange =
+        true;
+
+
+    setText(
+        "distanceText",
+        "20.0 米"
+    );
+
+
+    setGpsStatus(
+        "✅ 测试模式：已进入加油范围，可以提交加油申请。",
+        "inside",
+        "范围内"
+    );
+
+
+    updateSubmitButton();
+}
+
+
+
+function testOutsideRange() {
+
+    currentDistance =
+        120;
+
+
+    isInsideFuelRange =
+        false;
+
+
+    setText(
+        "distanceText",
+        "120.0 米"
+    );
+
+
+    setGpsStatus(
+        "❌ 测试模式：当前不在加油车加油范围之内。",
+        "outside",
+        "范围外"
+    );
+
+
+    updateSubmitButton();
+}
+
+
+
+function showLocationError(
+    message
+) {
+
+    isInsideFuelRange =
+        false;
+
+
+    setGpsStatus(
+        message,
+        "error",
+        "定位失败"
+    );
+
+
+    updateSubmitButton();
+}
+
+
+
+function setGpsStatus(
+    message,
+    className,
+    badgeText
+) {
+
+    const box =
+        document.getElementById(
+            "locationStatus"
+        );
+
+
+    box.textContent =
+        message;
+
+
+    box.className =
+        "location-status " +
+        className;
+
+
+    const badge =
+        document.getElementById(
+            "gpsBadge"
+        );
+
+
+    badge.textContent =
+        badgeText;
+
+
+    badge.className =
+        "badge " +
+        (
+            className ===
+                "inside"
+                ? "green"
+                :
+            className ===
+                "outside"
+                ? "red"
+                :
+            className ===
+                "error"
+                ? "yellow"
+                :
+                "default"
+        );
+}
+
+
+
+function updateSubmitButton() {
+
+    const button =
+        document.getElementById(
+            "submitRequestButton"
+        );
+
+
+    button.disabled =
+        !isInsideFuelRange;
+}
+
+
+
+/* =========================================================
+   提交申请
+========================================================= */
+
+function submitFuelRequest() {
+
+    if (
+        !currentPerson
+    ) {
+
+        alert(
+            "当前没有识别到申请人。"
+        );
+
+        return;
+    }
+
+
+    const equipmentType =
+        document
+            .getElementById(
+                "equipmentType"
+            )
+            .value;
+
+
+    const equipmentNumber =
+        document
+            .getElementById(
+                "equipmentNumber"
+            )
+            .value
+            .trim();
+
+
+    const remark =
+        document
+            .getElementById(
+                "requestRemark"
+            )
+            .value
+            .trim();
+
+
+    if (
+        !equipmentType ||
+        !equipmentNumber
+    ) {
+
+        alert(
+            "请选择设备类型并填写设备编号。"
+        );
+
+        return;
+    }
+
+
+    if (
+        !isInsideFuelRange
+    ) {
+
+        alert(
+            "当前不在加油车加油范围之内。"
+        );
+
+        return;
+    }
+
+
+    const existing =
+        getFuelRequests()
+            .find(
+                item =>
+                    item.equipmentNumber ===
+                        equipmentNumber
+
+                    &&
+
+                    (
+                        item.status ===
+                            "waiting"
+
+                        ||
+
+                        item.status ===
+                            "fueling"
+                    )
+            );
+
+
+    if (
+        existing
+    ) {
+
+        alert(
+            "该设备已有正在处理的加油申请。"
+        );
+
+        return;
+    }
+
+
+    const config =
+        getFuelConfig();
+
+
+    const requests =
+        getFuelRequests();
+
+
+    requests.push({
+
+        requestId:
+            createId(
+                "FUELREQ"
+            ),
+
+        applicantId:
+            getPersonId(
+                currentPerson
+            ),
+
+        applicantName:
+            currentPerson.name ||
+            "",
+
+        applicantPosition:
+            currentPerson.position ||
+            "",
+
+        department:
+            currentPerson.department ||
+            currentPerson.team ||
+            "",
+
+        equipmentType,
+
+        equipmentNumber,
+
+        /*
+         * 兼容当前 fuel.html 使用的旧字段
+         */
+        vehicleNumber:
+            equipmentNumber,
+
+        driverName:
+            currentPerson.name ||
+            "",
+
+        remark,
+
+        latitude:
+            currentLatitude,
+
+        longitude:
+            currentLongitude,
+
+        distance:
+            currentDistance,
+
+        gpsStatus:
+            "范围内",
+
+        fuelTruckNumber:
+            config.fuelTruckNumber ||
+            "F-001",
+
+        status:
+            "waiting",
+
+        requestedAt:
+            new Date()
+                .toISOString()
+    });
+
+
+    save(
+        STORAGE.REQUESTS,
+        requests
+    );
+
+
+    renderAll();
+
+
+    alert(
+        "加油申请已提交，请等待加油车司机处理。"
+    );
+}
+
+
+
+/* =========================================================
+   当前申请
+========================================================= */
+
+function renderCurrentRequest() {
+
+    const equipmentNumber =
+        document
+            .getElementById(
+                "equipmentNumber"
+            )
+            .value
+            .trim();
+
+
+    const box =
+        document.getElementById(
+            "currentRequestArea"
+        );
+
+
+    if (
+        !equipmentNumber
+    ) {
+
+        box.innerHTML = `
+            <div class="empty">
+                请先填写设备编号
+            </div>
+        `;
+
+        return;
+    }
+
+
+    const requests =
+        getFuelRequests()
+            .filter(
+                item =>
+                    (
+                        item.equipmentNumber ||
+                        item.vehicleNumber
+                    ) ===
+                    equipmentNumber
+            )
+            .sort(
+                (
+                    a,
+                    b
+                ) =>
+                    new Date(
+                        b.requestedAt ||
+                        0
+                    ) -
+                    new Date(
+                        a.requestedAt ||
+                        0
+                    )
+            );
+
+
+    const current =
+        requests.find(
+            item =>
+                item.status ===
+                    "waiting"
+
+                ||
+
+                item.status ===
+                    "fueling"
+        );
+
+
+    if (
+        !current
+    ) {
+
+        box.innerHTML = `
+            <div class="empty">
+                当前没有进行中的加油申请
+            </div>
+        `;
+
+        return;
+    }
+
+
+    let statusText =
+        "等待加油";
+
+
+    let badgeClass =
+        "yellow";
+
+
+    if (
+        current.status ===
+        "fueling"
+    ) {
+
+        statusText =
+            "正在加油";
+
+
+        badgeClass =
+            "green";
+    }
+
+
+    box.innerHTML = `
+
+        <div class="record-card">
+
+            <div class="record-top">
+
+                <strong>
+                    ${escapeHtml(
+                        current.equipmentNumber ||
+                        current.vehicleNumber ||
+                        "-"
+                    )}
+                </strong>
+
+
+                <span class="badge ${badgeClass}">
+                    ${statusText}
+                </span>
+
+            </div>
+
+
+            <div class="record-info">
+
+                设备类型：
+                ${escapeHtml(current.equipmentType || "-")}
+
+                <br>
+
+                申请时间：
+                ${formatDateTime(current.requestedAt)}
+
+                <br>
+
+                加油车：
+                ${escapeHtml(current.fuelTruckNumber || "F-001")}
+
+                <br>
+
+                GPS：
+                ${escapeHtml(current.gpsStatus || "-")}
+
+            </div>
+
+        </div>
+    `;
+}
+
+
+
+/* =========================================================
+   待确认记录
+========================================================= */
+
+function renderPendingFuelRecords() {
+
+    const equipmentNumber =
+        document
+            .getElementById(
+                "equipmentNumber"
+            )
+            .value
+            .trim();
+
+
+    const box =
+        document.getElementById(
+            "pendingFuelRecordList"
+        );
+
+
+    if (
+        !equipmentNumber
+    ) {
+
+        box.innerHTML = `
+            <div class="empty">
+                请先填写设备编号
+            </div>
+        `;
+
+        return;
+    }
+
+
+    const records =
+        getFuelRecords()
+            .filter(
+                item =>
+                    item.vehicleNumber ===
+                        equipmentNumber
+
+                    &&
+
+                    item.confirmationStatus ===
+                        "pending"
+            )
+            .slice()
+            .reverse();
+
+
+    if (
+        !records.length
+    ) {
+
+        box.innerHTML = `
+            <div class="empty">
+                当前没有待确认加油清单
+            </div>
+        `;
+
+        return;
+    }
+
+
+    box.innerHTML =
+        records
+            .map(
+                item => {
+
+                    const photoHtml =
+                        item.photoData
+                            ? `
+                            <img
+                                class="photo-thumb"
+                                src="${item.photoData}"
+                                alt="加油凭证"
+                                onclick="openPhotoModal('${escapeJs(item.fuelId)}')"
+                            >
+                            `
+                            : `
+                            <div class="warning-box" style="margin-top:10px;">
+                                该记录没有照片凭证
+                            </div>
+                            `;
+
+
+                    return `
+
+                    <div class="record-card">
+
+                        <div class="record-top">
+
+                            <strong>
+                                ⛽
+                                ${Number(item.amount || 0).toFixed(1)} L
+                            </strong>
+
+
+                            <span class="badge yellow">
+                                待确认
+                            </span>
+
+                        </div>
+
+
+                        <div class="record-info">
+
+                            设备：
+                            ${escapeHtml(item.vehicleNumber || "-")}
+
+                            <br>
+
+                            申请人：
+                            ${escapeHtml(item.driverName || "-")}
+
+                            <br>
+
+                            加油车：
+                            ${escapeHtml(item.fuelTruckNumber || "F-001")}
+
+                            <br>
+
+                            开始时间：
+                            ${formatDateTime(item.startedAt)}
+
+                            <br>
+
+                            完成时间：
+                            ${formatDateTime(item.completedAt)}
+
+                        </div>
+
+
+                        ${photoHtml}
+
+
+                        <div class="actions">
+
+                            <button
+                                type="button"
+                                class="success-btn"
+                                onclick="confirmFuelRecord('${escapeJs(item.fuelId)}')"
+                            >
+                                ✅ 确认无误
+                            </button>
+
+
+                            <button
+                                type="button"
+                                class="danger-btn"
+                                onclick="rejectFuelRecord('${escapeJs(item.fuelId)}')"
+                            >
+                                ❌ 数据有误
+                            </button>
+
+                        </div>
+
+                    </div>
+                    `;
+                }
+            )
+            .join(
+                ""
+            );
+}
+
+
+
+/* =========================================================
+   确认 / 驳回
+========================================================= */
+
+function confirmFuelRecord(
+    fuelId
+) {
+
+    const records =
+        getFuelRecords();
+
+
+    const item =
+        records.find(
+            record =>
+                record.fuelId ===
+                fuelId
+        );
+
+
+    if (
+        !item
+    ) {
+
+        return;
+    }
+
+
+    item.confirmationStatus =
+        "confirmed";
+
+
+    item.confirmedAt =
+        new Date()
+            .toISOString();
+
+
+    item.confirmedBy =
+        currentPerson?.name ||
+        "";
+
+
+    save(
+        STORAGE.RECORDS,
+        records
+    );
+
+
+    renderAll();
+
+
+    alert(
+        "加油清单已确认。"
+    );
+}
+
+
+
+function rejectFuelRecord(
+    fuelId
+) {
+
+    const reason =
+        prompt(
+            "请输入驳回原因："
+        );
+
+
+    if (
+        reason ===
+        null
+    ) {
+
+        return;
+    }
+
+
+    if (
+        !reason.trim()
+    ) {
+
+        alert(
+            "驳回必须填写原因。"
+        );
+
+        return;
+    }
+
+
+    const records =
+        getFuelRecords();
+
+
+    const item =
+        records.find(
+            record =>
+                record.fuelId ===
+                fuelId
+        );
+
+
+    if (
+        !item
+    ) {
+
+        return;
+    }
+
+
+    item.confirmationStatus =
+        "rejected";
+
+
+    item.rejectReason =
+        reason.trim();
+
+
+    item.rejectedAt =
+        new Date()
+            .toISOString();
+
+
+    item.rejectedBy =
+        currentPerson?.name ||
+        "";
+
+
+    save(
+        STORAGE.RECORDS,
+        records
+    );
+
+
+    renderAll();
+
+
+    alert(
+        "该加油清单已驳回，请等待加油车司机核对。"
+    );
+}
+
+
+
+/* =========================================================
+   历史
+========================================================= */
+
+function renderHistory() {
+
+    const equipmentNumber =
+        document
+            .getElementById(
+                "equipmentNumber"
+            )
+            .value
+            .trim();
+
+
+    const box =
+        document.getElementById(
+            "historyList"
+        );
+
+
+    if (
+        !equipmentNumber
+    ) {
+
+        box.innerHTML = `
+            <div class="empty">
+                请先填写设备编号
+            </div>
+        `;
+
+        return;
+    }
+
+
+    const records =
+        getFuelRecords()
+            .filter(
+                item =>
+                    item.vehicleNumber ===
+                    equipmentNumber
+            )
+            .slice()
+            .reverse();
+
+
+    if (
+        !records.length
+    ) {
+
+        box.innerHTML = `
+            <div class="empty">
+                暂无历史加油记录
+            </div>
+        `;
+
+        return;
+    }
+
+
+    box.innerHTML =
+        records
+            .map(
+                item => {
+
+                    let statusText =
+                        "待确认";
+
+
+                    let badgeClass =
+                        "yellow";
+
+
+                    if (
+                        item.confirmationStatus ===
+                        "confirmed"
+                    ) {
+
+                        statusText =
+                            "已确认";
+
+                        badgeClass =
+                            "green";
+                    }
+
+
+                    if (
+                        item.confirmationStatus ===
+                        "rejected"
+                    ) {
+
+                        statusText =
+                            "已驳回";
+
+                        badgeClass =
+                            "red";
+                    }
+
+
+                    return `
+
+                    <div class="record-card">
+
+                        <div class="record-top">
+
+                            <strong>
+                                ${formatDate(item.completedAt)}
+                                ·
+                                ${Number(item.amount || 0).toFixed(1)} L
+                            </strong>
+
+
+                            <span class="badge ${badgeClass}">
+                                ${statusText}
+                            </span>
+
+                        </div>
+
+
+                        <div class="record-info">
+
+                            设备：
+                            ${escapeHtml(item.vehicleNumber || "-")}
+
+                            <br>
+
+                            加油车：
+                            ${escapeHtml(item.fuelTruckNumber || "F-001")}
+
+                            <br>
+
+                            时间：
+                            ${formatDateTime(item.completedAt)}
+
+                            ${
+                                item.rejectReason
+                                    ? `<br>驳回原因：${escapeHtml(item.rejectReason)}`
+                                    : ""
+                            }
+
+                        </div>
+
+                    </div>
+                    `;
+                }
+            )
+            .join(
+                ""
+            );
+}
+
+
+
+/* =========================================================
+   测试生成待确认加油单
+========================================================= */
+
+function generateTestFuelRecord() {
+
+    if (
+        !currentPerson
+    ) {
+
+        alert(
+            "请先识别或填写当前申请人。"
+        );
+
+        return;
+    }
+
+
+    const equipmentNumber =
+        document
+            .getElementById(
+                "equipmentNumber"
+            )
+            .value
+            .trim();
+
+
+    if (
+        !equipmentNumber
+    ) {
+
+        alert(
+            "请先填写设备编号。"
+        );
+
+        return;
+    }
+
+
+    const records =
+        getFuelRecords();
+
+
+    records.push({
+
+        fuelId:
+            createId(
+                "FUEL"
+            ),
+
+        requestId:
+            createId(
+                "TESTREQ"
+            ),
+
+        vehicleNumber:
+            equipmentNumber,
+
+        driverName:
+            currentPerson.name ||
+            "",
+
+        amount:
+            350,
+
+        fuelTruckNumber:
+            "F-001",
+
+        photoData:
+            "",
+
+        startedAt:
+            new Date(
+                Date.now() -
+                10 *
+                60 *
+                1000
+            ).toISOString(),
+
+        completedAt:
+            new Date()
+                .toISOString(),
+
+        confirmationStatus:
+            "pending",
+
+        createdAt:
+            new Date()
+                .toISOString()
+    });
+
+
+    save(
+        STORAGE.RECORDS,
+        records
+    );
+
+
+    renderAll();
+
+
+    alert(
+        "测试待确认加油单已生成。"
+    );
+}
+
+
+
+/* =========================================================
+   总刷新
+========================================================= */
+
+function renderAll() {
+
+    /*
+     * 不重建表单输入框，
+     * 所以5秒刷新不会把设备编号清空。
+     */
+
+    currentPerson =
+        getCurrentPerson();
+
+
+    renderPerson();
+
+
+    renderCurrentRequest();
+
+
+    renderPendingFuelRecords();
+
+
+    renderHistory();
+}
+
+
+
+/* =========================================================
+   数据
+========================================================= */
+
+function getFuelRequests() {
+
+    const data =
+        readJson(
+            STORAGE.REQUESTS,
+            []
+        );
+
+
+    return Array.isArray(
+        data
+    )
+        ? data
+        : [];
+}
+
+
+
+function getFuelRecords() {
+
+    const data =
+        readJson(
+            STORAGE.RECORDS,
+            []
+        );
+
+
+    return Array.isArray(
+        data
+    )
+        ? data
+        : [];
+}
+
+
+
+/* =========================================================
+   图片
+========================================================= */
+
+function openPhotoModal(
+    fuelId
+) {
+
+    const record =
+        getFuelRecords()
+            .find(
+                item =>
+                    item.fuelId ===
+                    fuelId
+            );
+
+
+    if (
+        !record ||
+        !record.photoData
+    ) {
+
+        alert(
+            "该记录没有照片凭证。"
+        );
+
+        return;
+    }
+
+
+    document.getElementById(
+        "photoModalImage"
+    ).src =
+        record.photoData;
+
+
+    document.getElementById(
+        "photoModal"
+    ).classList.add(
+        "show"
+    );
+}
+
+
+
+function closePhotoModal() {
+
+    document.getElementById(
+        "photoModal"
+    ).classList.remove(
+        "show"
+    );
+
+
+    document.getElementById(
+        "photoModalImage"
+    ).src =
+        "";
+}
+
+
+
+/* =========================================================
+   工具
+========================================================= */
+
+function readJson(
+    key,
+    fallback
+) {
+
+    try {
+
+        const raw =
+            localStorage.getItem(
+                key
+            );
+
+
+        return raw
+            ? JSON.parse(
+                raw
+            )
+            : fallback;
+
+
+    } catch (
+        error
+    ) {
+
+        console.error(
+            "读取失败：",
+            key,
+            error
+        );
+
+
+        return fallback;
+    }
+}
+
+
+
+function save(
+    key,
+    data
+) {
+
+    localStorage.setItem(
+        key,
+        JSON.stringify(
+            data
+        )
+    );
+}
+
+
+
+function setText(
+    id,
+    value
+) {
+
+    const element =
+        document.getElementById(
+            id
+        );
+
+
+    if (
+        element
+    ) {
+
+        element.textContent =
+            value;
+    }
+}
+
+
+
+function createId(
+    prefix
+) {
+
+    return (
+        prefix +
+        "_" +
+        Date.now() +
+        "_" +
+        Math.random()
+            .toString(
+                36
+            )
+            .slice(
+                2,
+                7
+            )
+    );
+}
+
+
+
+function formatDateTime(
+    value
+) {
+
+    if (
+        !value
+    ) {
+
+        return "-";
+    }
+
+
+    const date =
+        new Date(
+            value
+        );
+
+
+    if (
+        Number.isNaN(
+            date.getTime()
+        )
+    ) {
+
+        return "-";
+    }
+
+
+    return date
+        .toLocaleString(
+            "zh-CN"
+        );
+}
+
+
+
+function formatDate(
+    value
+) {
+
+    if (
+        !value
+    ) {
+
+        return "-";
+    }
+
+
+    const date =
+        new Date(
+            value
+        );
+
+
+    if (
+        Number.isNaN(
+            date.getTime()
+        )
+    ) {
+
+        return "-";
+    }
+
+
+    return date
+        .toLocaleDateString(
+            "zh-CN"
+        );
+}
+
+
+
+function escapeHtml(
+    value
+) {
+
+    const div =
+        document.createElement(
+            "div"
+        );
+
+
+    div.textContent =
+        String(
+            value ??
+            ""
+        );
+
+
+    return div.innerHTML;
+}
+
+
+
+function escapeJs(
+    value
+) {
+
+    return String(
+        value ||
+        ""
+    )
+        .replace(
+            /\\/g,
+            "\\\\"
+        )
+        .replace(
+            /'/g,
+            "\\'"
+        );
+}
+
+
+
+function goHome() {
+
+    location.href =
+        "index.html";
+}
+
+</script>
+
+
+</body>
+
+</html>
