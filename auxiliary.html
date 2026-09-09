@@ -1,1 +1,4418 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
 
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <meta
+        name="theme-color"
+        content="#0f172a"
+    >
+
+    <title>
+        辅助车辆司机工作端 - 矿山管理系统
+    </title>
+
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+        }
+
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family:
+                Arial,
+                "Microsoft YaHei",
+                sans-serif;
+            background: #f1f5f9;
+            color: #0f172a;
+        }
+
+
+        header {
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            padding: 16px 14px;
+            background: #0f172a;
+            color: #ffffff;
+            box-shadow:
+                0 4px 18px
+                rgba(15, 23, 42, .2);
+        }
+
+
+        .header-inner {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+
+        .header-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+
+        header h1 {
+            margin: 0;
+            font-size: 22px;
+        }
+
+
+        header p {
+            margin: 5px 0 0;
+            color: #cbd5e1;
+            font-size: 12px;
+        }
+
+
+        main {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 14px 14px 40px;
+        }
+
+
+        button {
+            border: 0;
+            border-radius: 10px;
+            padding: 12px 15px;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+
+        button:disabled {
+            opacity: .5;
+            cursor: not-allowed;
+        }
+
+
+        .header-btn {
+            background: #1e293b;
+            border: 1px solid #475569;
+            color: #ffffff;
+        }
+
+
+        .primary-btn {
+            background: #2563eb;
+            color: #ffffff;
+        }
+
+
+        .success-btn {
+            background: #16a34a;
+            color: #ffffff;
+        }
+
+
+        .warning-btn {
+            background: #f59e0b;
+            color: #ffffff;
+        }
+
+
+        .danger-btn {
+            background: #dc2626;
+            color: #ffffff;
+        }
+
+
+        .secondary-btn {
+            background: #ffffff;
+            color: #334155;
+            border: 1px solid #cbd5e1;
+        }
+
+
+        .fuel-btn {
+            background: #0891b2;
+            color: #ffffff;
+        }
+
+
+        .material-btn {
+            background: #7c3aed;
+            color: #ffffff;
+        }
+
+
+        .nav-grid {
+            display: grid;
+            grid-template-columns:
+                repeat(4, minmax(0, 1fr));
+            gap: 8px;
+            margin-bottom: 14px;
+        }
+
+
+        .nav-btn {
+            min-height: 58px;
+            padding: 10px;
+            background: #ffffff;
+            color: #334155;
+            border: 1px solid #e2e8f0;
+        }
+
+
+        .nav-btn.active {
+            background: #0f172a;
+            color: #ffffff;
+        }
+
+
+        .page-section {
+            display: none;
+        }
+
+
+        .page-section.active {
+            display: block;
+        }
+
+
+        .card {
+            margin-bottom: 14px;
+            padding: 17px;
+            border-radius: 16px;
+            background: #ffffff;
+            box-shadow:
+                0 5px 20px
+                rgba(15, 23, 42, .06);
+        }
+
+
+        .section-title {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+
+        .section-title h2 {
+            margin: 0;
+            font-size: 18px;
+        }
+
+
+        .section-title p {
+            margin: 5px 0 0;
+            color: #64748b;
+            font-size: 12px;
+            line-height: 1.6;
+        }
+
+
+        .badge {
+            display: inline-block;
+            flex-shrink: 0;
+            padding: 5px 10px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+
+        .badge.default {
+            background: #e2e8f0;
+            color: #475569;
+        }
+
+
+        .badge.green {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+
+        .badge.yellow {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+
+        .badge.red {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+
+        .badge.blue {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+
+        .badge.purple {
+            background: #ede9fe;
+            color: #6d28d9;
+        }
+
+
+        .info-grid {
+            display: grid;
+            grid-template-columns:
+                repeat(2, minmax(0, 1fr));
+            gap: 10px;
+        }
+
+
+        .info-box {
+            min-width: 0;
+            padding: 12px;
+            border-radius: 11px;
+            background: #f8fafc;
+        }
+
+
+        .info-box span {
+            display: block;
+            margin-bottom: 5px;
+            color: #64748b;
+            font-size: 12px;
+        }
+
+
+        .info-box strong {
+            display: block;
+            font-size: 15px;
+            line-height: 1.5;
+            word-break: break-word;
+        }
+
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns:
+                repeat(4, minmax(0, 1fr));
+            gap: 10px;
+        }
+
+
+        .summary-card {
+            padding: 14px 12px;
+            border-radius: 13px;
+            background: #f8fafc;
+        }
+
+
+        .summary-card span {
+            display: block;
+            color: #64748b;
+            font-size: 12px;
+        }
+
+
+        .summary-card strong {
+            display: block;
+            margin-top: 7px;
+            font-size: 24px;
+        }
+
+
+        .summary-card small {
+            color: #64748b;
+            font-size: 12px;
+        }
+
+
+        .form-grid {
+            display: grid;
+            grid-template-columns:
+                repeat(2, minmax(0, 1fr));
+            gap: 12px;
+        }
+
+
+        .form-group {
+            margin-bottom: 13px;
+        }
+
+
+        label {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+
+        input,
+        select,
+        textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #cbd5e1;
+            border-radius: 9px;
+            background: #ffffff;
+            font-size: 14px;
+            outline: none;
+        }
+
+
+        textarea {
+            min-height: 90px;
+            resize: vertical;
+        }
+
+
+        input:focus,
+        select:focus,
+        textarea:focus {
+            border-color: #2563eb;
+            box-shadow:
+                0 0 0 3px
+                rgba(37, 99, 235, .08);
+        }
+
+
+        .task-card {
+            padding: 16px;
+            border: 1px solid #bfdbfe;
+            border-radius: 14px;
+            background: #eff6ff;
+        }
+
+
+        .task-card.active {
+            border-color: #86efac;
+            background: #f0fdf4;
+        }
+
+
+        .task-route {
+            margin-top: 12px;
+            padding: 12px;
+            border-radius: 10px;
+            background: #ffffff;
+            font-size: 13px;
+            line-height: 1.7;
+        }
+
+
+        .task-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+
+        .quick-grid {
+            display: grid;
+            grid-template-columns:
+                repeat(3, minmax(0, 1fr));
+            gap: 10px;
+        }
+
+
+        .quick-button {
+            min-height: 82px;
+            padding: 12px;
+            border: 1px solid #e2e8f0;
+            border-radius: 14px;
+            background: #ffffff;
+            color: #0f172a;
+            text-align: center;
+        }
+
+
+        .quick-icon {
+            display: block;
+            margin-bottom: 7px;
+            font-size: 24px;
+        }
+
+
+        .quick-title {
+            display: block;
+            font-size: 14px;
+            font-weight: 700;
+        }
+
+
+        .quick-sub {
+            display: block;
+            margin-top: 4px;
+            color: #64748b;
+            font-size: 11px;
+            font-weight: 400;
+        }
+
+
+        .record-list {
+            display: grid;
+            gap: 10px;
+        }
+
+
+        .record-card {
+            padding: 13px;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            background: #f8fafc;
+        }
+
+
+        .record-top {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+
+        .record-top strong {
+            font-size: 14px;
+        }
+
+
+        .record-info {
+            margin-top: 8px;
+            color: #64748b;
+            font-size: 12px;
+            line-height: 1.7;
+        }
+
+
+        .notice {
+            margin-bottom: 14px;
+            padding: 13px;
+            border: 1px solid #bfdbfe;
+            border-radius: 12px;
+            background: #eff6ff;
+            color: #1e40af;
+            font-size: 13px;
+            line-height: 1.7;
+        }
+
+
+        .warning-box {
+            padding: 13px;
+            border: 1px solid #fed7aa;
+            border-radius: 11px;
+            background: #fff7ed;
+            color: #9a3412;
+            font-size: 13px;
+            line-height: 1.7;
+        }
+
+
+        .empty {
+            padding: 30px 12px;
+            color: #94a3b8;
+            text-align: center;
+            font-size: 14px;
+            line-height: 1.8;
+        }
+
+
+        .work-clock {
+            margin-top: 12px;
+            padding: 20px 15px;
+            border-radius: 14px;
+            background: #0f172a;
+            color: #ffffff;
+            text-align: center;
+        }
+
+
+        .work-clock span {
+            display: block;
+            color: #cbd5e1;
+            font-size: 12px;
+        }
+
+
+        .work-clock strong {
+            display: block;
+            margin-top: 7px;
+            font-size: 32px;
+        }
+
+
+        footer {
+            padding: 20px;
+            color: #94a3b8;
+            text-align: center;
+            font-size: 12px;
+        }
+
+
+        @media (
+            max-width: 720px
+        ) {
+
+            .nav-grid {
+                grid-template-columns:
+                    repeat(2, minmax(0, 1fr));
+            }
+
+
+            .summary-grid {
+                grid-template-columns:
+                    repeat(2, minmax(0, 1fr));
+            }
+
+
+            .quick-grid {
+                grid-template-columns:
+                    repeat(2, minmax(0, 1fr));
+            }
+
+
+            .info-grid,
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+
+        @media (
+            max-width: 420px
+        ) {
+
+            .quick-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+
+<header>
+
+    <div class="header-inner">
+
+        <div class="header-row">
+
+            <div>
+
+                <h1>
+                    🚜 辅助车辆司机工作端
+                </h1>
+
+                <p>
+                    Auxiliary Vehicle Operator · V2.9.9D
+                </p>
+
+            </div>
+
+
+            <button
+                type="button"
+                class="header-btn"
+                onclick="goHome()"
+            >
+                返回首页
+            </button>
+
+        </div>
+
+    </div>
+
+</header>
+
+
+
+<main>
+
+
+    <div class="notice">
+
+        本端适用于铲车、推土机、平路机、洒水车、大巴及其他辅助车辆司机。
+
+        <br>
+
+        当前版本先完成工作界面和基础记录，复杂跨端实时同步后续统一接入。
+
+    </div>
+
+
+
+    <!-- 导航 -->
+
+    <div class="nav-grid">
+
+        <button
+            class="nav-btn active"
+            data-page="work"
+            type="button"
+        >
+            🚜 今日工作
+        </button>
+
+
+        <button
+            class="nav-btn"
+            data-page="history"
+            type="button"
+        >
+            📚 作业记录
+        </button>
+
+
+        <button
+            class="nav-btn"
+            data-page="service"
+            type="button"
+        >
+            🛠 故障 / 物资
+        </button>
+
+
+        <button
+            class="nav-btn"
+            data-page="leave"
+            type="button"
+        >
+            📝 请假
+        </button>
+
+    </div>
+
+
+
+    <!-- =====================================================
+         今日工作
+    ====================================================== -->
+
+    <section
+        id="page-work"
+        class="page-section active"
+    >
+
+
+        <!-- 人员 -->
+
+        <section class="card">
+
+            <div class="section-title">
+
+                <div>
+
+                    <h2>
+                        👷 当前人员
+                    </h2>
+
+                    <p>
+                        辅助车辆司机信息
+                    </p>
+
+                </div>
+
+
+                <span
+                    id="personStatusBadge"
+                    class="badge default"
+                >
+                    未识别
+                </span>
+
+            </div>
+
+
+            <div class="info-grid">
+
+                <div class="info-box">
+
+                    <span>
+                        姓名
+                    </span>
+
+                    <strong id="personName">
+                        -
+                    </strong>
+
+                </div>
+
+
+                <div class="info-box">
+
+                    <span>
+                        岗位
+                    </span>
+
+                    <strong id="personPosition">
+                        -
+                    </strong>
+
+                </div>
+
+
+                <div class="info-box">
+
+                    <span>
+                        部门 / 车队
+                    </span>
+
+                    <strong id="personDepartment">
+                        -
+                    </strong>
+
+                </div>
+
+
+                <div class="info-box">
+
+                    <span>
+                        人员编号
+                    </span>
+
+                    <strong id="personId">
+                        -
+                    </strong>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+
+        <!-- 当前设备 -->
+
+        <section class="card">
+
+            <div class="section-title">
+
+                <div>
+
+                    <h2>
+                        🚜 当前车辆 / 设备
+                    </h2>
+
+                    <p>
+                        当前阶段允许本机保存工作车辆
+                    </p>
+
+                </div>
+
+
+                <span
+                    id="vehicleStatusBadge"
+                    class="badge green"
+                >
+                    可作业
+                </span>
+
+            </div>
+
+
+            <div class="form-grid">
+
+                <div class="form-group">
+
+                    <label for="vehicleType">
+                        车辆 / 设备类型
+                    </label>
+
+                    <select
+                        id="vehicleType"
+                        onchange="saveVehicleProfile()"
+                    >
+
+                        <option value="">
+                            请选择
+                        </option>
+
+                        <option value="铲车">
+                            铲车
+                        </option>
+
+                        <option value="推土机">
+                            推土机
+                        </option>
+
+                        <option value="平路机">
+                            平路机
+                        </option>
+
+                        <option value="洒水车">
+                            洒水车
+                        </option>
+
+                        <option value="大巴">
+                            大巴
+                        </option>
+
+                        <option value="其他辅助车辆">
+                            其他辅助车辆
+                        </option>
+
+                    </select>
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label for="vehicleNumber">
+                        车辆 / 设备编号
+                    </label>
+
+                    <input
+                        id="vehicleNumber"
+                        type="text"
+                        placeholder="例如：L-01 / D-01 / W-01"
+                        oninput="saveVehicleProfile()"
+                    >
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+
+        <!-- 今日统计 -->
+
+        <section class="card">
+
+            <div class="section-title">
+
+                <div>
+
+                    <h2>
+                        📊 今日工作统计
+                    </h2>
+
+                </div>
+
+            </div>
+
+
+            <div class="summary-grid">
+
+                <div class="summary-card">
+
+                    <span>
+                        今日任务
+                    </span>
+
+                    <strong id="todayTaskCount">
+                        0
+                    </strong>
+
+                    <small>个</small>
+
+                </div>
+
+
+                <div class="summary-card">
+
+                    <span>
+                        已完成
+                    </span>
+
+                    <strong id="todayCompletedCount">
+                        0
+                    </strong>
+
+                    <small>个</small>
+
+                </div>
+
+
+                <div class="summary-card">
+
+                    <span>
+                        作业时长
+                    </span>
+
+                    <strong id="todayWorkHours">
+                        0.0
+                    </strong>
+
+                    <small>小时</small>
+
+                </div>
+
+
+                <div class="summary-card">
+
+                    <span>
+                        故障上报
+                    </span>
+
+                    <strong id="todayFaultCount">
+                        0
+                    </strong>
+
+                    <small>条</small>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+
+        <!-- 当前任务 -->
+
+        <section class="card">
+
+            <div class="section-title">
+
+                <div>
+
+                    <h2>
+                        📋 当前生产任务
+                    </h2>
+
+                    <p>
+                        兼容调度端辅助车辆任务
+                    </p>
+
+                </div>
+
+
+                <span
+                    id="taskStatusBadge"
+                    class="badge default"
+                >
+                    无任务
+                </span>
+
+            </div>
+
+
+            <div id="currentTaskArea">
+
+                <div class="empty">
+                    当前没有生产任务
+                </div>
+
+            </div>
+
+        </section>
+
+
+
+        <!-- 快捷功能 -->
+
+        <section class="card">
+
+            <div class="section-title">
+
+                <div>
+
+                    <h2>
+                        ⚡ 快捷功能
+                    </h2>
+
+                </div>
+
+            </div>
+
+
+            <div class="quick-grid">
+
+
+                <button
+                    class="quick-button"
+                    type="button"
+                    onclick="goFuelRequest()"
+                >
+
+                    <span class="quick-icon">
+                        ⛽
+                    </span>
+
+                    <span class="quick-title">
+                        加油申请
+                    </span>
+
+                    <span class="quick-sub">
+                        进入统一加油中心
+                    </span>
+
+                </button>
+
+
+                <button
+                    class="quick-button"
+                    type="button"
+                    onclick="openPage('service')"
+                >
+
+                    <span class="quick-icon">
+                        🛠
+                    </span>
+
+                    <span class="quick-title">
+                        故障上报
+                    </span>
+
+                    <span class="quick-sub">
+                        车辆设备异常
+                    </span>
+
+                </button>
+
+
+                <button
+                    class="quick-button"
+                    type="button"
+                    onclick="openPage('service')"
+                >
+
+                    <span class="quick-icon">
+                        📦
+                    </span>
+
+                    <span class="quick-title">
+                        物资申请
+                    </span>
+
+                    <span class="quick-sub">
+                        劳保及工作物资
+                    </span>
+
+                </button>
+
+
+                <button
+                    class="quick-button"
+                    type="button"
+                    onclick="openPage('leave')"
+                >
+
+                    <span class="quick-icon">
+                        📝
+                    </span>
+
+                    <span class="quick-title">
+                        请假申请
+                    </span>
+
+                    <span class="quick-sub">
+                        提交请假记录
+                    </span>
+
+                </button>
+
+
+                <button
+                    class="quick-button"
+                    type="button"
+                    onclick="openPage('history')"
+                >
+
+                    <span class="quick-icon">
+                        📚
+                    </span>
+
+                    <span class="quick-title">
+                        作业历史
+                    </span>
+
+                    <span class="quick-sub">
+                        查看历史任务
+                    </span>
+
+                </button>
+
+
+                <button
+                    class="quick-button"
+                    type="button"
+                    onclick="addDemoTask()"
+                >
+
+                    <span class="quick-icon">
+                        🧪
+                    </span>
+
+                    <span class="quick-title">
+                        测试任务
+                    </span>
+
+                    <span class="quick-sub">
+                        生成本地测试任务
+                    </span>
+
+                </button>
+
+
+            </div>
+
+        </section>
+
+    </section>
+
+
+
+    <!-- =====================================================
+         作业记录
+    ====================================================== -->
+
+    <section
+        id="page-history"
+        class="page-section"
+    >
+
+        <section class="card">
+
+            <div class="section-title">
+
+                <div>
+
+                    <h2>
+                        📚 作业历史
+                    </h2>
+
+                    <p>
+                        本机辅助车辆作业记录
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <div
+                id="workHistoryList"
+                class="record-list"
+            >
+            </div>
+
+        </section>
+
+    </section>
+
+
+
+    <!-- =====================================================
+         故障 + 物资
+    ====================================================== -->
+
+    <section
+        id="page-service"
+        class="page-section"
+    >
+
+
+        <!-- 故障 -->
+
+        <section class="card">
+
+            <div class="section-title">
+
+                <div>
+
+                    <h2>
+                        🛠 车辆 / 设备故障上报
+                    </h2>
+
+                    <p>
+                        当前阶段先保存本地故障记录
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <div class="form-grid">
+
+                <div class="form-group">
+
+                    <label for="faultType">
+                        故障类型
+                    </label>
+
+                    <select id="faultType">
+
+                        <option value="">
+                            请选择
+                        </option>
+
+                        <option value="发动机">
+                            发动机
+                        </option>
+
+                        <option value="液压系统">
+                            液压系统
+                        </option>
+
+                        <option value="轮胎">
+                            轮胎
+                        </option>
+
+                        <option value="电气系统">
+                            电气系统
+                        </option>
+
+                        <option value="制动系统">
+                            制动系统
+                        </option>
+
+                        <option value="转向系统">
+                            转向系统
+                        </option>
+
+                        <option value="其他">
+                            其他
+                        </option>
+
+                    </select>
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label for="faultLevel">
+                        故障等级
+                    </label>
+
+                    <select id="faultLevel">
+
+                        <option value="一般">
+                            一般
+                        </option>
+
+                        <option value="较严重">
+                            较严重
+                        </option>
+
+                        <option value="严重">
+                            严重 / 停车
+                        </option>
+
+                    </select>
+
+                </div>
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label for="faultDescription">
+                    故障说明
+                </label>
+
+                <textarea
+                    id="faultDescription"
+                    placeholder="请描述车辆或设备故障情况"
+                ></textarea>
+
+            </div>
+
+
+            <button
+                type="button"
+                class="danger-btn"
+                onclick="submitFault()"
+            >
+                提交故障上报
+            </button>
+
+        </section>
+
+
+
+        <!-- 物资 -->
+
+        <section class="card">
+
+            <div class="section-title">
+
+                <div>
+
+                    <h2>
+                        📦 物资领用申请
+                    </h2>
+
+                    <p>
+                        员工申请 → 后勤库管发放 → 确认
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <div class="form-grid">
+
+                <div class="form-group">
+
+                    <label for="materialName">
+                        物资名称
+                    </label>
+
+                    <input
+                        id="materialName"
+                        type="text"
+                        placeholder="例如：手套 / 反光衣 / 工具"
+                    >
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label for="materialQuantity">
+                        数量
+                    </label>
+
+                    <input
+                        id="materialQuantity"
+                        type="number"
+                        min="1"
+                        step="1"
+                        placeholder="请输入数量"
+                    >
+
+                </div>
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label for="materialReason">
+                    用途 / 申请原因
+                </label>
+
+                <textarea
+                    id="materialReason"
+                    placeholder="请填写物资用途"
+                ></textarea>
+
+            </div>
+
+
+            <button
+                type="button"
+                class="material-btn"
+                onclick="submitMaterialRequest()"
+            >
+                提交物资申请
+            </button>
+
+        </section>
+
+
+
+        <!-- 我的申请 -->
+
+        <section class="card">
+
+            <div class="section-title">
+
+                <div>
+
+                    <h2>
+                        我的申请记录
+                    </h2>
+
+                </div>
+
+            </div>
+
+
+            <div
+                id="serviceRecordList"
+                class="record-list"
+            >
+            </div>
+
+        </section>
+
+    </section>
+
+
+
+    <!-- =====================================================
+         请假
+    ====================================================== -->
+
+    <section
+        id="page-leave"
+        class="page-section"
+    >
+
+        <section class="card">
+
+            <div class="section-title">
+
+                <div>
+
+                    <h2>
+                        📝 请假申请
+                    </h2>
+
+                    <p>
+                        当前辅助车辆司机请假申请
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <div class="form-grid">
+
+                <div class="form-group">
+
+                    <label for="leaveType">
+                        请假类型
+                    </label>
+
+                    <select id="leaveType">
+
+                        <option value="事假">
+                            事假
+                        </option>
+
+                        <option value="病假">
+                            病假
+                        </option>
+
+                        <option value="休假">
+                            休假
+                        </option>
+
+                        <option value="其他">
+                            其他
+                        </option>
+
+                    </select>
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label for="leaveStart">
+                        开始时间
+                    </label>
+
+                    <input
+                        id="leaveStart"
+                        type="datetime-local"
+                    >
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label for="leaveEnd">
+                        结束时间
+                    </label>
+
+                    <input
+                        id="leaveEnd"
+                        type="datetime-local"
+                    >
+
+                </div>
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label for="leaveReason">
+                    请假原因
+                </label>
+
+                <textarea
+                    id="leaveReason"
+                    placeholder="请输入请假原因"
+                ></textarea>
+
+            </div>
+
+
+            <button
+                type="button"
+                class="primary-btn"
+                onclick="submitLeave()"
+            >
+                提交请假申请
+            </button>
+
+        </section>
+
+
+        <section class="card">
+
+            <div class="section-title">
+
+                <div>
+
+                    <h2>
+                        我的请假记录
+                    </h2>
+
+                </div>
+
+            </div>
+
+
+            <div
+                id="leaveRecordList"
+                class="record-list"
+            >
+            </div>
+
+        </section>
+
+    </section>
+
+
+</main>
+
+
+
+<footer>
+
+    矿山管理系统 · 辅助车辆司机端 V2.9.9D
+
+</footer>
+
+
+
+<script>
+
+"use strict";
+
+
+/* =========================================================
+   数据键
+========================================================= */
+
+const STORAGE = {
+
+    PERSONNEL:
+        "personnelRecords",
+
+    VEHICLE_PROFILE:
+        "auxiliaryVehicleProfile",
+
+    TASKS:
+        "dispatchPublishedTasks",
+
+    DEMO_TASKS:
+        "auxiliaryDemoTasks",
+
+    WORK_RECORDS:
+        "auxiliaryWorkRecords",
+
+    FAULTS:
+        "maintenanceReports",
+
+    MATERIALS:
+        "materialRequests",
+
+    LEAVES:
+        "leaveRequests"
+};
+
+
+
+let currentPerson =
+    null;
+
+
+let currentTask =
+    null;
+
+
+
+initialize();
+
+
+
+/* =========================================================
+   初始化
+========================================================= */
+
+function initialize() {
+
+    bindNavigation();
+
+    currentPerson =
+        getCurrentPerson();
+
+
+    renderPerson();
+
+
+    restoreVehicleProfile();
+
+
+    renderAll();
+
+
+    setInterval(
+        renderAll,
+        5000
+    );
+}
+
+
+
+/* =========================================================
+   导航
+========================================================= */
+
+function bindNavigation() {
+
+    document
+        .querySelectorAll(
+            "[data-page]"
+        )
+        .forEach(
+            button => {
+
+                button.addEventListener(
+                    "click",
+                    function () {
+
+                        openPage(
+                            button.dataset.page
+                        );
+                    }
+                );
+            }
+        );
+}
+
+
+
+function openPage(
+    page
+) {
+
+    document
+        .querySelectorAll(
+            ".nav-btn"
+        )
+        .forEach(
+            item => {
+
+                item.classList.toggle(
+                    "active",
+                    item.dataset.page ===
+                        page
+                );
+            }
+        );
+
+
+    document
+        .querySelectorAll(
+            ".page-section"
+        )
+        .forEach(
+            section => {
+
+                section.classList.remove(
+                    "active"
+                );
+            }
+        );
+
+
+    document
+        .getElementById(
+            "page-" +
+            page
+        )
+        ?.classList.add(
+            "active"
+        );
+
+
+    window.scrollTo({
+        top:
+            0,
+        behavior:
+            "smooth"
+    });
+
+
+    renderAll();
+}
+
+
+
+/* =========================================================
+   人员
+========================================================= */
+
+function getPersonnelRecords() {
+
+    return readArray(
+        STORAGE.PERSONNEL
+    );
+}
+
+
+
+function getPersonId(
+    person
+) {
+
+    return String(
+
+        person?.personId ||
+
+        person?.driverId ||
+
+        person?.employeeId ||
+
+        person?.id ||
+
+        ""
+
+    );
+}
+
+
+
+function getCurrentPerson() {
+
+    const records =
+        getPersonnelRecords();
+
+
+    const currentPersonId =
+        localStorage.getItem(
+            "currentPersonId"
+        );
+
+
+    if (
+        currentPersonId
+    ) {
+
+        const found =
+            records.find(
+                item =>
+                    getPersonId(
+                        item
+                    ) ===
+                    currentPersonId
+            );
+
+
+        if (
+            found
+        ) {
+
+            return found;
+        }
+    }
+
+
+    /*
+     * 当前测试阶段：
+     * 如果只有一名辅助车辆司机，自动识别。
+     */
+    const auxiliaryDrivers =
+        records.filter(
+            item =>
+                isAuxiliaryPosition(
+                    item.position
+                )
+        );
+
+
+    if (
+        auxiliaryDrivers.length ===
+        1
+    ) {
+
+        return auxiliaryDrivers[0];
+    }
+
+
+    return null;
+}
+
+
+
+function isAuxiliaryPosition(
+    position
+) {
+
+    return [
+
+        "铲车司机",
+
+        "装载机司机",
+
+        "推土机司机",
+
+        "平路机司机",
+
+        "洒水车司机",
+
+        "大巴司机",
+
+        "其他辅助车辆司机"
+
+    ].includes(
+        position
+    );
+}
+
+
+
+function renderPerson() {
+
+    const badge =
+        document.getElementById(
+            "personStatusBadge"
+        );
+
+
+    if (
+        !currentPerson
+    ) {
+
+        setText(
+            "personName",
+            "-"
+        );
+
+
+        setText(
+            "personPosition",
+            "-"
+        );
+
+
+        setText(
+            "personDepartment",
+            "-"
+        );
+
+
+        setText(
+            "personId",
+            "-"
+        );
+
+
+        badge.textContent =
+            "未识别";
+
+
+        badge.className =
+            "badge red";
+
+
+        return;
+    }
+
+
+    setText(
+        "personName",
+        currentPerson.name ||
+        "-"
+    );
+
+
+    setText(
+        "personPosition",
+        currentPerson.position ||
+        "-"
+    );
+
+
+    setText(
+        "personDepartment",
+        currentPerson.department ||
+        currentPerson.team ||
+        "-"
+    );
+
+
+    setText(
+        "personId",
+        getPersonId(
+            currentPerson
+        ) ||
+        "-"
+    );
+
+
+    badge.textContent =
+        "在职";
+
+
+    badge.className =
+        "badge green";
+}
+
+
+
+/* =========================================================
+   当前车辆
+========================================================= */
+
+function saveVehicleProfile() {
+
+    const profile = {
+
+        vehicleType:
+            document
+                .getElementById(
+                    "vehicleType"
+                )
+                .value,
+
+        vehicleNumber:
+            document
+                .getElementById(
+                    "vehicleNumber"
+                )
+                .value
+                .trim()
+    };
+
+
+    save(
+        STORAGE.VEHICLE_PROFILE,
+        profile
+    );
+
+
+    renderAll();
+}
+
+
+
+function restoreVehicleProfile() {
+
+    const profile =
+        readJson(
+            STORAGE.VEHICLE_PROFILE,
+            {}
+        );
+
+
+    document.getElementById(
+        "vehicleType"
+    ).value =
+        profile.vehicleType ||
+        getVehicleTypeFromPosition(
+            currentPerson?.position
+        ) ||
+        "";
+
+
+    document.getElementById(
+        "vehicleNumber"
+    ).value =
+        profile.vehicleNumber ||
+        "";
+}
+
+
+
+function getVehicleTypeFromPosition(
+    position
+) {
+
+    const map = {
+
+        "铲车司机":
+            "铲车",
+
+        "装载机司机":
+            "铲车",
+
+        "推土机司机":
+            "推土机",
+
+        "平路机司机":
+            "平路机",
+
+        "洒水车司机":
+            "洒水车",
+
+        "大巴司机":
+            "大巴",
+
+        "其他辅助车辆司机":
+            "其他辅助车辆"
+    };
+
+
+    return map[position] ||
+        "";
+}
+
+
+
+/* =========================================================
+   调度任务
+========================================================= */
+
+function getTasks() {
+
+    const normal =
+        readArray(
+            STORAGE.TASKS
+        );
+
+
+    const demo =
+        readArray(
+            STORAGE.DEMO_TASKS
+        );
+
+
+    return [
+        ...normal,
+        ...demo
+    ];
+}
+
+
+
+function findCurrentTask() {
+
+    currentTask =
+        null;
+
+
+    const vehicleNumber =
+        document
+            .getElementById(
+                "vehicleNumber"
+            )
+            .value
+            .trim();
+
+
+    if (
+        !vehicleNumber
+    ) {
+
+        return;
+    }
+
+
+    const tasks =
+        getTasks()
+            .filter(
+                task =>
+                    task.status ===
+                        "pending"
+
+                    ||
+
+                    task.status ===
+                        "active"
+            )
+            .sort(
+                (
+                    a,
+                    b
+                ) =>
+                    new Date(
+                        b.publishedAt ||
+                        b.createdAt ||
+                        0
+                    ) -
+                    new Date(
+                        a.publishedAt ||
+                        a.createdAt ||
+                        0
+                    )
+            );
+
+
+    for (
+        const task of
+        tasks
+    ) {
+
+        const auxiliary =
+            Array.isArray(
+                task.auxiliaryAssignments
+            )
+                ? task.auxiliaryAssignments
+                : [];
+
+
+        const matched =
+            auxiliary.find(
+                item =>
+                    String(
+                        item.vehicleId ||
+                        item.vehicleNumber ||
+                        ""
+                    ) ===
+                    vehicleNumber
+            );
+
+
+        if (
+            matched
+        ) {
+
+            currentTask = {
+
+                ...task,
+
+                auxiliaryItem:
+                    matched
+            };
+
+
+            return;
+        }
+
+
+        /*
+         * 测试任务兼容
+         */
+        if (
+            task.vehicleNumber ===
+            vehicleNumber
+        ) {
+
+            currentTask =
+                task;
+
+
+            return;
+        }
+    }
+}
+
+
+
+/* =========================================================
+   当前任务显示
+========================================================= */
+
+function renderCurrentTask() {
+
+    findCurrentTask();
+
+
+    const box =
+        document.getElementById(
+            "currentTaskArea"
+        );
+
+
+    const badge =
+        document.getElementById(
+            "taskStatusBadge"
+        );
+
+
+    if (
+        !currentTask
+    ) {
+
+        badge.textContent =
+            "无任务";
+
+
+        badge.className =
+            "badge default";
+
+
+        box.innerHTML = `
+            <div class="empty">
+
+                当前车辆暂无生产任务。
+
+                <br>
+
+                可以点击“测试任务”查看辅助车辆端工作流程。
+
+            </div>
+        `;
+
+
+        return;
+    }
+
+
+    const activeWork =
+        getActiveWorkRecord();
+
+
+    const workText =
+        currentTask.auxiliaryItem?.work ||
+        currentTask.work ||
+        currentTask.remark ||
+        "辅助作业";
+
+
+    if (
+        activeWork
+    ) {
+
+        badge.textContent =
+            "作业中";
+
+
+        badge.className =
+            "badge green";
+
+    } else {
+
+        badge.textContent =
+            "待执行";
+
+
+        badge.className =
+            "badge yellow";
+    }
+
+
+    box.innerHTML = `
+
+        <div class="task-card ${activeWork ? "active" : ""}">
+
+            <div class="info-grid">
+
+                <div class="info-box">
+
+                    <span>
+                        作业区域
+                    </span>
+
+                    <strong>
+                        ${escapeHtml(currentTask.area || "-")}
+                    </strong>
+
+                </div>
+
+
+                <div class="info-box">
+
+                    <span>
+                        班次
+                    </span>
+
+                    <strong>
+                        ${escapeHtml(currentTask.shift || "-")}
+                    </strong>
+
+                </div>
+
+
+                <div class="info-box">
+
+                    <span>
+                        当前设备
+                    </span>
+
+                    <strong>
+                        ${escapeHtml(
+                            document
+                                .getElementById(
+                                    "vehicleNumber"
+                                )
+                                .value ||
+                            "-"
+                        )}
+                    </strong>
+
+                </div>
+
+
+                <div class="info-box">
+
+                    <span>
+                        作业内容
+                    </span>
+
+                    <strong>
+                        ${escapeHtml(workText)}
+                    </strong>
+
+                </div>
+
+            </div>
+
+
+            <div class="task-route">
+
+                <strong>
+                    调度说明
+                </strong>
+
+                <br>
+
+                ${escapeHtml(currentTask.remark || workText)}
+
+            </div>
+
+
+            ${
+                activeWork
+
+                    ?
+
+                    `
+
+                    <div class="work-clock">
+
+                        <span>
+                            本次作业已开始
+                        </span>
+
+                        <strong>
+                            ${formatDuration(
+                                Date.now() -
+                                new Date(
+                                    activeWork.startedAt
+                                )
+                                    .getTime()
+                            )}
+                        </strong>
+
+                    </div>
+
+
+                    <div class="task-actions">
+
+                        <button
+                            type="button"
+                            class="danger-btn"
+                            onclick="finishCurrentWork()"
+                        >
+                            ■ 结束作业
+                        </button>
+
+                    </div>
+                    `
+
+                    :
+
+                    `
+
+                    <div class="task-actions">
+
+                        <button
+                            type="button"
+                            class="success-btn"
+                            onclick="startCurrentWork()"
+                        >
+                            ▶ 开始作业
+                        </button>
+
+                    </div>
+                    `
+            }
+
+        </div>
+    `;
+}
+
+
+
+/* =========================================================
+   作业记录
+========================================================= */
+
+function getWorkRecords() {
+
+    return readArray(
+        STORAGE.WORK_RECORDS
+    );
+}
+
+
+
+function getActiveWorkRecord() {
+
+    const vehicleNumber =
+        document
+            .getElementById(
+                "vehicleNumber"
+            )
+            .value
+            .trim();
+
+
+    return getWorkRecords()
+        .find(
+            item =>
+                item.vehicleNumber ===
+                    vehicleNumber
+
+                &&
+
+                item.status ===
+                    "working"
+        ) ||
+        null;
+}
+
+
+
+function startCurrentWork() {
+
+    if (
+        !currentTask
+    ) {
+
+        alert(
+            "当前没有生产任务。"
+        );
+
+        return;
+    }
+
+
+    if (
+        getActiveWorkRecord()
+    ) {
+
+        alert(
+            "当前已有正在进行的作业。"
+        );
+
+        return;
+    }
+
+
+    const vehicleNumber =
+        document
+            .getElementById(
+                "vehicleNumber"
+            )
+            .value
+            .trim();
+
+
+    const vehicleType =
+        document
+            .getElementById(
+                "vehicleType"
+            )
+            .value;
+
+
+    if (
+        !vehicleNumber ||
+        !vehicleType
+    ) {
+
+        alert(
+            "请先填写当前车辆或设备信息。"
+        );
+
+        return;
+    }
+
+
+    const records =
+        getWorkRecords();
+
+
+    records.push({
+
+        workRecordId:
+            createId(
+                "AUXWORK"
+            ),
+
+        taskId:
+            currentTask.taskId ||
+            currentTask.id ||
+            "",
+
+        personId:
+            getPersonId(
+                currentPerson
+            ),
+
+        personName:
+            currentPerson?.name ||
+            "",
+
+        position:
+            currentPerson?.position ||
+            "",
+
+        vehicleType,
+
+        vehicleNumber,
+
+        area:
+            currentTask.area ||
+            "",
+
+        shift:
+            currentTask.shift ||
+            "",
+
+        work:
+            currentTask.auxiliaryItem?.work ||
+            currentTask.work ||
+            currentTask.remark ||
+            "辅助作业",
+
+        status:
+            "working",
+
+        startedAt:
+            new Date()
+                .toISOString()
+    });
+
+
+    save(
+        STORAGE.WORK_RECORDS,
+        records
+    );
+
+
+    renderAll();
+}
+
+
+
+function finishCurrentWork() {
+
+    const records =
+        getWorkRecords();
+
+
+    const active =
+        getActiveWorkRecord();
+
+
+    if (
+        !active
+    ) {
+
+        return;
+    }
+
+
+    if (
+        !confirm(
+            "确认本次作业已经结束？"
+        )
+    ) {
+
+        return;
+    }
+
+
+    const item =
+        records.find(
+            record =>
+                record.workRecordId ===
+                active.workRecordId
+        );
+
+
+    if (
+        !item
+    ) {
+
+        return;
+    }
+
+
+    item.status =
+        "completed";
+
+
+    item.completedAt =
+        new Date()
+            .toISOString();
+
+
+    item.durationMinutes =
+        Math.max(
+            1,
+            Math.round(
+                (
+                    new Date(
+                        item.completedAt
+                    ) -
+                    new Date(
+                        item.startedAt
+                    )
+                ) /
+                60000
+            )
+        );
+
+
+    save(
+        STORAGE.WORK_RECORDS,
+        records
+    );
+
+
+    completeDemoTaskIfNeeded(
+        item.taskId
+    );
+
+
+    renderAll();
+
+
+    alert(
+        "本次作业已完成。"
+    );
+}
+
+
+
+function completeDemoTaskIfNeeded(
+    taskId
+) {
+
+    if (
+        !taskId
+    ) {
+
+        return;
+    }
+
+
+    const records =
+        readArray(
+            STORAGE.DEMO_TASKS
+        );
+
+
+    const task =
+        records.find(
+            item =>
+                item.taskId ===
+                taskId
+        );
+
+
+    if (
+        !task
+    ) {
+
+        return;
+    }
+
+
+    task.status =
+        "completed";
+
+
+    task.completedAt =
+        new Date()
+            .toISOString();
+
+
+    save(
+        STORAGE.DEMO_TASKS,
+        records
+    );
+}
+
+
+
+/* =========================================================
+   测试任务
+========================================================= */
+
+function addDemoTask() {
+
+    const vehicleNumber =
+        document
+            .getElementById(
+                "vehicleNumber"
+            )
+            .value
+            .trim();
+
+
+    const vehicleType =
+        document
+            .getElementById(
+                "vehicleType"
+            )
+            .value;
+
+
+    if (
+        !vehicleNumber ||
+        !vehicleType
+    ) {
+
+        alert(
+            "请先选择车辆类型并填写车辆编号。"
+        );
+
+        return;
+    }
+
+
+    const tasks =
+        readArray(
+            STORAGE.DEMO_TASKS
+        );
+
+
+    const existing =
+        tasks.find(
+            item =>
+                item.vehicleNumber ===
+                    vehicleNumber
+
+                &&
+
+                (
+                    item.status ===
+                        "pending"
+
+                    ||
+
+                    item.status ===
+                        "active"
+                )
+        );
+
+
+    if (
+        existing
+    ) {
+
+        alert(
+            "当前车辆已经有测试任务。"
+        );
+
+        return;
+    }
+
+
+    tasks.push({
+
+        taskId:
+            createId(
+                "AUXTASK"
+            ),
+
+        dateKey:
+            getDateKey(),
+
+        area:
+            "山二采区",
+
+        shift:
+            getCurrentShift(),
+
+        vehicleType,
+
+        vehicleNumber,
+
+        work:
+            getDemoWorkByType(
+                vehicleType
+            ),
+
+        remark:
+            "辅助车辆测试生产任务",
+
+        status:
+            "pending",
+
+        publishedAt:
+            new Date()
+                .toISOString()
+    });
+
+
+    save(
+        STORAGE.DEMO_TASKS,
+        tasks
+    );
+
+
+    renderAll();
+
+
+    alert(
+        "测试任务已生成。"
+    );
+}
+
+
+
+function getDemoWorkByType(
+    type
+) {
+
+    const map = {
+
+        "铲车":
+            "煤场及作业面辅助装载、清理",
+
+        "推土机":
+            "排土场及作业面推平作业",
+
+        "平路机":
+            "矿区运输道路平整维护",
+
+        "洒水车":
+            "运输道路洒水降尘",
+
+        "大巴":
+            "人员通勤运输",
+
+        "其他辅助车辆":
+            "现场辅助生产作业"
+    };
+
+
+    return map[type] ||
+        "辅助生产作业";
+}
+
+
+
+/* =========================================================
+   今日统计
+========================================================= */
+
+function renderStatistics() {
+
+    const today =
+        getDateKey();
+
+
+    const vehicleNumber =
+        document
+            .getElementById(
+                "vehicleNumber"
+            )
+            .value
+            .trim();
+
+
+    const records =
+        getWorkRecords()
+            .filter(
+                item =>
+                    item.vehicleNumber ===
+                        vehicleNumber
+
+                    &&
+
+                    getDateKey(
+                        item.startedAt
+                    ) ===
+                        today
+            );
+
+
+    const completed =
+        records.filter(
+            item =>
+                item.status ===
+                "completed"
+        );
+
+
+    const minutes =
+        completed.reduce(
+            (
+                sum,
+                item
+            ) =>
+                sum +
+                Number(
+                    item.durationMinutes ||
+                    0
+                ),
+            0
+        );
+
+
+    const active =
+        records.find(
+            item =>
+                item.status ===
+                "working"
+        );
+
+
+    const activeMinutes =
+        active
+            ? (
+                Date.now() -
+                new Date(
+                    active.startedAt
+                ).getTime()
+            ) /
+            60000
+            : 0;
+
+
+    const faults =
+        getFaultRecords()
+            .filter(
+                item =>
+                    item.vehicleNumber ===
+                        vehicleNumber
+
+                    &&
+
+                    getDateKey(
+                        item.createdAt
+                    ) ===
+                        today
+            );
+
+
+    setText(
+        "todayTaskCount",
+        records.length
+    );
+
+
+    setText(
+        "todayCompletedCount",
+        completed.length
+    );
+
+
+    setText(
+        "todayWorkHours",
+        (
+            (
+                minutes +
+                activeMinutes
+            ) /
+            60
+        )
+            .toFixed(
+                1
+            )
+    );
+
+
+    setText(
+        "todayFaultCount",
+        faults.length
+    );
+}
+
+
+
+/* =========================================================
+   历史
+========================================================= */
+
+function renderHistory() {
+
+    const vehicleNumber =
+        document
+            .getElementById(
+                "vehicleNumber"
+            )
+            .value
+            .trim();
+
+
+    const box =
+        document.getElementById(
+            "workHistoryList"
+        );
+
+
+    if (
+        !vehicleNumber
+    ) {
+
+        box.innerHTML = `
+            <div class="empty">
+                请先填写当前车辆编号
+            </div>
+        `;
+
+
+        return;
+    }
+
+
+    const records =
+        getWorkRecords()
+            .filter(
+                item =>
+                    item.vehicleNumber ===
+                        vehicleNumber
+
+                    &&
+
+                    item.status ===
+                        "completed"
+            )
+            .slice()
+            .reverse();
+
+
+    if (
+        !records.length
+    ) {
+
+        box.innerHTML = `
+            <div class="empty">
+                暂无已完成作业记录
+            </div>
+        `;
+
+
+        return;
+    }
+
+
+    box.innerHTML =
+        records
+            .map(
+                item => `
+
+                <div class="record-card">
+
+                    <div class="record-top">
+
+                        <strong>
+                            🚜
+                            ${escapeHtml(item.vehicleNumber)}
+                            ·
+                            ${escapeHtml(item.area || "-")}
+                        </strong>
+
+                        <span class="badge green">
+                            已完成
+                        </span>
+
+                    </div>
+
+
+                    <div class="record-info">
+
+                        作业内容：
+                        ${escapeHtml(item.work || "-")}
+
+                        <br>
+
+                        班次：
+                        ${escapeHtml(item.shift || "-")}
+
+                        <br>
+
+                        开始：
+                        ${formatDateTime(item.startedAt)}
+
+                        <br>
+
+                        结束：
+                        ${formatDateTime(item.completedAt)}
+
+                        <br>
+
+                        作业时长：
+                        ${Number(item.durationMinutes || 0)} 分钟
+
+                    </div>
+
+                </div>
+                `
+            )
+            .join(
+                ""
+            );
+}
+
+
+
+/* =========================================================
+   故障
+========================================================= */
+
+function getFaultRecords() {
+
+    return readArray(
+        STORAGE.FAULTS
+    );
+}
+
+
+
+function submitFault() {
+
+    const vehicleNumber =
+        document
+            .getElementById(
+                "vehicleNumber"
+            )
+            .value
+            .trim();
+
+
+    const vehicleType =
+        document
+            .getElementById(
+                "vehicleType"
+            )
+            .value;
+
+
+    const faultType =
+        document
+            .getElementById(
+                "faultType"
+            )
+            .value;
+
+
+    const level =
+        document
+            .getElementById(
+                "faultLevel"
+            )
+            .value;
+
+
+    const description =
+        document
+            .getElementById(
+                "faultDescription"
+            )
+            .value
+            .trim();
+
+
+    if (
+        !vehicleNumber ||
+        !vehicleType
+    ) {
+
+        alert(
+            "请先填写当前车辆信息。"
+        );
+
+        return;
+    }
+
+
+    if (
+        !faultType ||
+        !description
+    ) {
+
+        alert(
+            "请选择故障类型并填写故障说明。"
+        );
+
+        return;
+    }
+
+
+    const records =
+        getFaultRecords();
+
+
+    records.push({
+
+        reportId:
+            createId(
+                "FAULT"
+            ),
+
+        personId:
+            getPersonId(
+                currentPerson
+            ),
+
+        personName:
+            currentPerson?.name ||
+            "",
+
+        vehicleType,
+
+        vehicleNumber,
+
+        faultType,
+
+        level,
+
+        description,
+
+        status:
+            "待维修处理",
+
+        createdAt:
+            new Date()
+                .toISOString()
+    });
+
+
+    save(
+        STORAGE.FAULTS,
+        records
+    );
+
+
+    document.getElementById(
+        "faultType"
+    ).value =
+        "";
+
+
+    document.getElementById(
+        "faultDescription"
+    ).value =
+        "";
+
+
+    renderAll();
+
+
+    alert(
+        "故障已经上报。"
+    );
+}
+
+
+
+/* =========================================================
+   物资
+========================================================= */
+
+function getMaterialRequests() {
+
+    return readArray(
+        STORAGE.MATERIALS
+    );
+}
+
+
+
+function submitMaterialRequest() {
+
+    if (
+        !currentPerson
+    ) {
+
+        alert(
+            "当前没有识别到人员信息。"
+        );
+
+        return;
+    }
+
+
+    const name =
+        document
+            .getElementById(
+                "materialName"
+            )
+            .value
+            .trim();
+
+
+    const quantity =
+        Number(
+            document
+                .getElementById(
+                    "materialQuantity"
+                )
+                .value ||
+            0
+        );
+
+
+    const reason =
+        document
+            .getElementById(
+                "materialReason"
+            )
+            .value
+            .trim();
+
+
+    if (
+        !name ||
+        quantity <= 0 ||
+        !reason
+    ) {
+
+        alert(
+            "请完整填写物资申请。"
+        );
+
+        return;
+    }
+
+
+    const records =
+        getMaterialRequests();
+
+
+    records.push({
+
+        requestId:
+            createId(
+                "MATERIAL"
+            ),
+
+        applicantId:
+            getPersonId(
+                currentPerson
+            ),
+
+        applicantName:
+            currentPerson.name ||
+            "",
+
+        position:
+            currentPerson.position ||
+            "",
+
+        department:
+            currentPerson.department ||
+            currentPerson.team ||
+            "",
+
+        materialName:
+            name,
+
+        quantity,
+
+        reason,
+
+        status:
+            "待库管发放",
+
+        submittedAt:
+            new Date()
+                .toISOString()
+    });
+
+
+    save(
+        STORAGE.MATERIALS,
+        records
+    );
+
+
+    document.getElementById(
+        "materialName"
+    ).value =
+        "";
+
+
+    document.getElementById(
+        "materialQuantity"
+    ).value =
+        "";
+
+
+    document.getElementById(
+        "materialReason"
+    ).value =
+        "";
+
+
+    renderAll();
+
+
+    alert(
+        "物资申请已经提交。"
+    );
+}
+
+
+
+/* =========================================================
+   服务记录
+========================================================= */
+
+function renderServiceRecords() {
+
+    const box =
+        document.getElementById(
+            "serviceRecordList"
+        );
+
+
+    const personId =
+        getPersonId(
+            currentPerson
+        );
+
+
+    const vehicleNumber =
+        document
+            .getElementById(
+                "vehicleNumber"
+            )
+            .value
+            .trim();
+
+
+    const faults =
+        getFaultRecords()
+            .filter(
+                item =>
+                    item.vehicleNumber ===
+                    vehicleNumber
+            )
+            .map(
+                item => ({
+
+                    type:
+                        "fault",
+
+                    title:
+                        "故障：" +
+                        (
+                            item.faultType ||
+                            "-"
+                        ),
+
+                    status:
+                        item.status ||
+                        "待处理",
+
+                    detail:
+                        item.description ||
+                        "",
+
+                    time:
+                        item.createdAt
+                })
+            );
+
+
+    const materials =
+        getMaterialRequests()
+            .filter(
+                item =>
+                    (
+                        personId &&
+                        item.applicantId ===
+                        personId
+                    )
+
+                    ||
+
+                    (
+                        !personId &&
+                        item.applicantName ===
+                        currentPerson?.name
+                    )
+            )
+            .map(
+                item => ({
+
+                    type:
+                        "material",
+
+                    title:
+                        "物资：" +
+                        (
+                            item.materialName ||
+                            "-"
+                        ),
+
+                    status:
+                        item.status ||
+                        "待处理",
+
+                    detail:
+                        "数量：" +
+                        item.quantity,
+
+                    time:
+                        item.submittedAt
+                })
+            );
+
+
+    const records =
+        [
+            ...faults,
+            ...materials
+        ]
+            .sort(
+                (
+                    a,
+                    b
+                ) =>
+                    new Date(
+                        b.time ||
+                        0
+                    ) -
+                    new Date(
+                        a.time ||
+                        0
+                    )
+            );
+
+
+    if (
+        !records.length
+    ) {
+
+        box.innerHTML = `
+            <div class="empty">
+                暂无故障或物资申请记录
+            </div>
+        `;
+
+
+        return;
+    }
+
+
+    box.innerHTML =
+        records
+            .map(
+                item => `
+
+                <div class="record-card">
+
+                    <div class="record-top">
+
+                        <strong>
+                            ${
+                                item.type ===
+                                "fault"
+                                    ? "🛠"
+                                    : "📦"
+                            }
+
+                            ${escapeHtml(item.title)}
+                        </strong>
+
+
+                        <span
+                            class="badge ${
+                                item.type ===
+                                "fault"
+                                    ? "red"
+                                    : "purple"
+                            }"
+                        >
+                            ${escapeHtml(item.status)}
+                        </span>
+
+                    </div>
+
+
+                    <div class="record-info">
+
+                        ${escapeHtml(item.detail)}
+
+                        <br>
+
+                        ${formatDateTime(item.time)}
+
+                    </div>
+
+                </div>
+                `
+            )
+            .join(
+                ""
+            );
+}
+
+
+
+/* =========================================================
+   请假
+========================================================= */
+
+function getLeaves() {
+
+    return readArray(
+        STORAGE.LEAVES
+    );
+}
+
+
+
+function submitLeave() {
+
+    if (
+        !currentPerson
+    ) {
+
+        alert(
+            "当前没有识别到人员信息。"
+        );
+
+        return;
+    }
+
+
+    const type =
+        document
+            .getElementById(
+                "leaveType"
+            )
+            .value;
+
+
+    const start =
+        document
+            .getElementById(
+                "leaveStart"
+            )
+            .value;
+
+
+    const end =
+        document
+            .getElementById(
+                "leaveEnd"
+            )
+            .value;
+
+
+    const reason =
+        document
+            .getElementById(
+                "leaveReason"
+            )
+            .value
+            .trim();
+
+
+    if (
+        !start ||
+        !end ||
+        !reason
+    ) {
+
+        alert(
+            "请完整填写请假申请。"
+        );
+
+        return;
+    }
+
+
+    if (
+        new Date(
+            end
+        ) <=
+        new Date(
+            start
+        )
+    ) {
+
+        alert(
+            "结束时间必须晚于开始时间。"
+        );
+
+        return;
+    }
+
+
+    const records =
+        getLeaves();
+
+
+    records.push({
+
+        leaveId:
+            createId(
+                "LEAVE"
+            ),
+
+        applicantId:
+            getPersonId(
+                currentPerson
+            ),
+
+        applicantName:
+            currentPerson.name ||
+            "",
+
+        personName:
+            currentPerson.name ||
+            "",
+
+        position:
+            currentPerson.position ||
+            "",
+
+        role:
+            "driver",
+
+        leaveType:
+            type,
+
+        startTime:
+            new Date(
+                start
+            ).toISOString(),
+
+        endTime:
+            new Date(
+                end
+            ).toISOString(),
+
+        reason,
+
+        status:
+            "pending",
+
+        approverRole:
+            "dispatch",
+
+        submittedAt:
+            new Date()
+                .toISOString()
+    });
+
+
+    save(
+        STORAGE.LEAVES,
+        records
+    );
+
+
+    document.getElementById(
+        "leaveStart"
+    ).value =
+        "";
+
+
+    document.getElementById(
+        "leaveEnd"
+    ).value =
+        "";
+
+
+    document.getElementById(
+        "leaveReason"
+    ).value =
+        "";
+
+
+    renderAll();
+
+
+    alert(
+        "请假申请已经提交。"
+    );
+}
+
+
+
+function renderLeaveRecords() {
+
+    const box =
+        document.getElementById(
+            "leaveRecordList"
+        );
+
+
+    const personId =
+        getPersonId(
+            currentPerson
+        );
+
+
+    const records =
+        getLeaves()
+            .filter(
+                item =>
+                    (
+                        personId &&
+                        (
+                            item.applicantId ===
+                            personId
+
+                            ||
+
+                            item.personId ===
+                            personId
+                        )
+                    )
+
+                    ||
+
+                    (
+                        !personId &&
+                        (
+                            item.applicantName ===
+                            currentPerson?.name
+
+                            ||
+
+                            item.personName ===
+                            currentPerson?.name
+                        )
+                    )
+            )
+            .slice()
+            .reverse();
+
+
+    if (
+        !records.length
+    ) {
+
+        box.innerHTML = `
+            <div class="empty">
+                暂无请假记录
+            </div>
+        `;
+
+
+        return;
+    }
+
+
+    box.innerHTML =
+        records
+            .map(
+                item => {
+
+                    let text =
+                        "待审批";
+
+
+                    let color =
+                        "yellow";
+
+
+                    if (
+                        item.status ===
+                        "approved"
+                    ) {
+
+                        text =
+                            "已批准";
+
+                        color =
+                            "green";
+                    }
+
+
+                    if (
+                        item.status ===
+                        "rejected"
+                    ) {
+
+                        text =
+                            "已驳回";
+
+                        color =
+                            "red";
+                    }
+
+
+                    return `
+
+                    <div class="record-card">
+
+                        <div class="record-top">
+
+                            <strong>
+                                ${escapeHtml(item.leaveType || "请假")}
+                            </strong>
+
+
+                            <span class="badge ${color}">
+                                ${text}
+                            </span>
+
+                        </div>
+
+
+                        <div class="record-info">
+
+                            开始：
+                            ${formatDateTime(item.startTime)}
+
+                            <br>
+
+                            结束：
+                            ${formatDateTime(item.endTime)}
+
+                            <br>
+
+                            原因：
+                            ${escapeHtml(item.reason || "-")}
+
+                            ${
+                                item.approvalRemark
+                                    ? `<br>审批备注：${escapeHtml(item.approvalRemark)}`
+                                    : ""
+                            }
+
+                        </div>
+
+                    </div>
+                    `;
+                }
+            )
+            .join(
+                ""
+            );
+}
+
+
+
+/* =========================================================
+   加油申请
+========================================================= */
+
+function goFuelRequest() {
+
+    const vehicleType =
+        document
+            .getElementById(
+                "vehicleType"
+            )
+            .value;
+
+
+    const vehicleNumber =
+        document
+            .getElementById(
+                "vehicleNumber"
+            )
+            .value
+            .trim();
+
+
+    /*
+     * 顺手给 fuel-request.html 保存草稿，
+     * 进去以后可以直接显示当前设备。
+     */
+    if (
+        vehicleType ||
+        vehicleNumber
+    ) {
+
+        save(
+            "fuelRequestDraft",
+            {
+
+                equipmentType:
+                    vehicleType,
+
+                equipmentNumber:
+                    vehicleNumber,
+
+                remark:
+                    ""
+            }
+        );
+    }
+
+
+    location.href =
+        "fuel-request.html";
+}
+
+
+
+/* =========================================================
+   总刷新
+========================================================= */
+
+function renderAll() {
+
+    currentPerson =
+        getCurrentPerson();
+
+
+    renderPerson();
+
+
+    renderCurrentTask();
+
+
+    renderStatistics();
+
+
+    renderHistory();
+
+
+    renderServiceRecords();
+
+
+    renderLeaveRecords();
+}
+
+
+
+/* =========================================================
+   工具
+========================================================= */
+
+function readArray(
+    key
+) {
+
+    const data =
+        readJson(
+            key,
+            []
+        );
+
+
+    return Array.isArray(
+        data
+    )
+        ? data
+        : [];
+}
+
+
+
+function readJson(
+    key,
+    fallback
+) {
+
+    try {
+
+        const raw =
+            localStorage.getItem(
+                key
+            );
+
+
+        return raw
+            ? JSON.parse(
+                raw
+            )
+            : fallback;
+
+
+    } catch (
+        error
+    ) {
+
+        console.error(
+            "读取数据失败：",
+            key,
+            error
+        );
+
+
+        return fallback;
+    }
+}
+
+
+
+function save(
+    key,
+    data
+) {
+
+    try {
+
+        localStorage.setItem(
+            key,
+            JSON.stringify(
+                data
+            )
+        );
+
+
+    } catch (
+        error
+    ) {
+
+        console.error(
+            "保存数据失败：",
+            key,
+            error
+        );
+
+
+        alert(
+            "本地数据保存失败。"
+        );
+    }
+}
+
+
+
+function setText(
+    id,
+    value
+) {
+
+    const element =
+        document.getElementById(
+            id
+        );
+
+
+    if (
+        element
+    ) {
+
+        element.textContent =
+            value;
+    }
+}
+
+
+
+function createId(
+    prefix
+) {
+
+    return (
+        prefix +
+        "_" +
+        Date.now() +
+        "_" +
+        Math.random()
+            .toString(
+                36
+            )
+            .slice(
+                2,
+                7
+            )
+    );
+}
+
+
+
+function getDateKey(
+    value
+) {
+
+    const date =
+        value
+            ? new Date(
+                value
+            )
+            : new Date();
+
+
+    if (
+        Number.isNaN(
+            date.getTime()
+        )
+    ) {
+
+        return "";
+    }
+
+
+    return [
+
+        date.getFullYear(),
+
+        String(
+            date.getMonth() +
+            1
+        )
+            .padStart(
+                2,
+                "0"
+            ),
+
+        String(
+            date.getDate()
+        )
+            .padStart(
+                2,
+                "0"
+            )
+
+    ].join(
+        "-"
+    );
+}
+
+
+
+function getCurrentShift() {
+
+    const hour =
+        new Date()
+            .getHours();
+
+
+    return (
+        hour >= 8 &&
+        hour < 20
+    )
+        ? "白班"
+        : "夜班";
+}
+
+
+
+function formatDateTime(
+    value
+) {
+
+    if (
+        !value
+    ) {
+
+        return "-";
+    }
+
+
+    const date =
+        new Date(
+            value
+        );
+
+
+    if (
+        Number.isNaN(
+            date.getTime()
+        )
+    ) {
+
+        return "-";
+    }
+
+
+    return date
+        .toLocaleString(
+            "zh-CN",
+            {
+                month:
+                    "2-digit",
+
+                day:
+                    "2-digit",
+
+                hour:
+                    "2-digit",
+
+                minute:
+                    "2-digit"
+            }
+        );
+}
+
+
+
+function formatDuration(
+    milliseconds
+) {
+
+    if (
+        milliseconds < 0
+    ) {
+
+        milliseconds =
+            0;
+    }
+
+
+    const totalMinutes =
+        Math.floor(
+            milliseconds /
+            60000
+        );
+
+
+    const hours =
+        Math.floor(
+            totalMinutes /
+            60
+        );
+
+
+    const minutes =
+        totalMinutes %
+        60;
+
+
+    return (
+        hours +
+        "小时 " +
+        minutes +
+        "分钟"
+    );
+}
+
+
+
+function escapeHtml(
+    value
+) {
+
+    const div =
+        document.createElement(
+            "div"
+        );
+
+
+    div.textContent =
+        String(
+            value ??
+            ""
+        );
+
+
+    return div.innerHTML;
+}
+
+
+
+function goHome() {
+
+    location.href =
+        "index.html";
+}
+
+</script>
+
+
+</body>
+
+</html>
