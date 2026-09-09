@@ -1,1 +1,4192 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
 
+<head>
+
+<meta charset="UTF-8">
+
+<meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+>
+
+<meta
+    name="theme-color"
+    content="#0f172a"
+>
+
+<title>
+    修理厂维修管理 - 矿山管理系统
+</title>
+
+<style>
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    min-height: 100vh;
+    font-family:
+        Arial,
+        "Microsoft YaHei",
+        sans-serif;
+    background: #f1f5f9;
+    color: #0f172a;
+}
+
+header {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    padding: 16px 14px;
+    background: #0f172a;
+    color: #ffffff;
+    box-shadow:
+        0 4px 18px
+        rgba(15,23,42,.2);
+}
+
+.header-inner {
+    max-width: 1150px;
+    margin: 0 auto;
+}
+
+.header-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+header h1 {
+    margin: 0;
+    font-size: 22px;
+}
+
+header p {
+    margin: 5px 0 0;
+    color: #cbd5e1;
+    font-size: 12px;
+}
+
+main {
+    max-width: 1150px;
+    margin: 0 auto;
+    padding: 14px 14px 40px;
+}
+
+button {
+    border: 0;
+    border-radius: 10px;
+    padding: 12px 15px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+button:disabled {
+    opacity: .5;
+    cursor: not-allowed;
+}
+
+.header-btn {
+    background: #1e293b;
+    border: 1px solid #475569;
+    color: #fff;
+}
+
+.primary-btn {
+    background: #2563eb;
+    color: white;
+}
+
+.success-btn {
+    background: #16a34a;
+    color: white;
+}
+
+.warning-btn {
+    background: #f59e0b;
+    color: white;
+}
+
+.danger-btn {
+    background: #dc2626;
+    color: white;
+}
+
+.secondary-btn {
+    background: white;
+    color: #334155;
+    border: 1px solid #cbd5e1;
+}
+
+.purple-btn {
+    background: #7c3aed;
+    color: white;
+}
+
+.nav-grid {
+    display: grid;
+    grid-template-columns:
+        repeat(6,minmax(0,1fr));
+    gap: 8px;
+    margin-bottom: 14px;
+}
+
+.nav-btn {
+    min-height: 58px;
+    padding: 10px;
+    background: white;
+    color: #334155;
+    border: 1px solid #e2e8f0;
+}
+
+.nav-btn.active {
+    background: #0f172a;
+    color: white;
+}
+
+.page-section {
+    display: none;
+}
+
+.page-section.active {
+    display: block;
+}
+
+.card {
+    margin-bottom: 14px;
+    padding: 17px;
+    border-radius: 16px;
+    background: white;
+    box-shadow:
+        0 5px 20px
+        rgba(15,23,42,.06);
+}
+
+.section-title {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.section-title h2 {
+    margin: 0;
+    font-size: 18px;
+}
+
+.section-title p {
+    margin: 5px 0 0;
+    color: #64748b;
+    font-size: 12px;
+    line-height: 1.6;
+}
+
+.summary-grid {
+    display: grid;
+    grid-template-columns:
+        repeat(4,minmax(0,1fr));
+    gap: 10px;
+}
+
+.summary-card {
+    padding: 14px 12px;
+    border-radius: 13px;
+    background: #f8fafc;
+}
+
+.summary-card span {
+    display: block;
+    color: #64748b;
+    font-size: 12px;
+}
+
+.summary-card strong {
+    display: block;
+    margin-top: 7px;
+    font-size: 24px;
+}
+
+.badge {
+    display: inline-block;
+    padding: 5px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.badge.default {
+    background: #e2e8f0;
+    color: #475569;
+}
+
+.badge.green {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.badge.yellow {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.badge.red {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.badge.blue {
+    background: #dbeafe;
+    color: #1e40af;
+}
+
+.badge.purple {
+    background: #ede9fe;
+    color: #6d28d9;
+}
+
+.badge.orange {
+    background: #ffedd5;
+    color: #9a3412;
+}
+
+.workshop-grid {
+    display: grid;
+    grid-template-columns:
+        repeat(3,minmax(0,1fr));
+    gap: 12px;
+}
+
+.bay-card {
+    padding: 15px;
+    border: 2px solid #e2e8f0;
+    border-radius: 14px;
+    background: #f8fafc;
+    min-height: 170px;
+}
+
+.bay-card.free {
+    border-color: #86efac;
+    background: #f0fdf4;
+}
+
+.bay-card.busy {
+    border-color: #fdba74;
+    background: #fff7ed;
+}
+
+.bay-title {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    align-items: center;
+}
+
+.bay-title strong {
+    font-size: 16px;
+}
+
+.bay-info {
+    margin-top: 10px;
+    color: #475569;
+    font-size: 12px;
+    line-height: 1.8;
+}
+
+.record-list {
+    display: grid;
+    gap: 10px;
+}
+
+.record-card {
+    padding: 14px;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    background: #f8fafc;
+}
+
+.record-top {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    align-items: flex-start;
+}
+
+.record-info {
+    margin-top: 9px;
+    color: #64748b;
+    font-size: 12px;
+    line-height: 1.8;
+}
+
+.actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 11px;
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns:
+        repeat(2,minmax(0,1fr));
+    gap: 12px;
+}
+
+.form-group {
+    margin-bottom: 13px;
+}
+
+label {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+input,
+select,
+textarea {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #cbd5e1;
+    border-radius: 9px;
+    background: white;
+    font-size: 14px;
+    outline: none;
+}
+
+textarea {
+    min-height: 90px;
+    resize: vertical;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+    border-color: #2563eb;
+    box-shadow:
+        0 0 0 3px
+        rgba(37,99,235,.08);
+}
+
+.empty {
+    padding: 30px 12px;
+    color: #94a3b8;
+    text-align: center;
+    font-size: 14px;
+    line-height: 1.8;
+}
+
+.notice {
+    margin-bottom: 14px;
+    padding: 13px;
+    border: 1px solid #bfdbfe;
+    border-radius: 12px;
+    background: #eff6ff;
+    color: #1e40af;
+    font-size: 13px;
+    line-height: 1.7;
+}
+
+.warning-box {
+    padding: 12px;
+    border: 1px solid #fed7aa;
+    border-radius: 10px;
+    background: #fff7ed;
+    color: #9a3412;
+    font-size: 12px;
+    line-height: 1.7;
+}
+
+.modal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    padding: 20px;
+    background: rgba(15,23,42,.7);
+    align-items: center;
+    justify-content: center;
+}
+
+.modal.show {
+    display: flex;
+}
+
+.modal-card {
+    width: 100%;
+    max-width: 650px;
+    max-height: 90vh;
+    overflow-y: auto;
+    padding: 18px;
+    border-radius: 16px;
+    background: white;
+}
+
+.modal-title {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 15px;
+}
+
+.modal-title h3 {
+    margin: 0;
+}
+
+.photo-thumb {
+    width: 100px;
+    height: 78px;
+    border-radius: 8px;
+    object-fit: cover;
+    border: 1px solid #cbd5e1;
+}
+
+.cost-total {
+    padding: 18px;
+    border-radius: 14px;
+    background: #0f172a;
+    color: white;
+    text-align: center;
+}
+
+.cost-total span {
+    display: block;
+    color: #cbd5e1;
+    font-size: 12px;
+}
+
+.cost-total strong {
+    display: block;
+    margin-top: 7px;
+    font-size: 32px;
+}
+
+footer {
+    padding: 20px;
+    text-align: center;
+    color: #94a3b8;
+    font-size: 12px;
+}
+
+@media(max-width:850px) {
+
+    .nav-grid {
+        grid-template-columns:
+            repeat(3,minmax(0,1fr));
+    }
+
+    .workshop-grid {
+        grid-template-columns:
+            repeat(2,minmax(0,1fr));
+    }
+
+    .summary-grid {
+        grid-template-columns:
+            repeat(2,minmax(0,1fr));
+    }
+
+}
+
+@media(max-width:580px) {
+
+    .nav-grid {
+        grid-template-columns:
+            repeat(2,minmax(0,1fr));
+    }
+
+    .workshop-grid,
+    .form-grid {
+        grid-template-columns: 1fr;
+    }
+
+}
+
+</style>
+
+</head>
+
+
+<body>
+
+
+<header>
+
+<div class="header-inner">
+
+    <div class="header-row">
+
+        <div>
+
+            <h1>
+                🔧 修理厂维修管理
+            </h1>
+
+            <p>
+                Workshop Maintenance · V2.10.0A
+            </p>
+
+        </div>
+
+
+        <button
+            type="button"
+            class="header-btn"
+            onclick="goHome()"
+        >
+            返回首页
+        </button>
+
+    </div>
+
+</div>
+
+</header>
+
+
+<main>
+
+
+<div class="notice">
+
+    生产设备（汽车、挖机、辅助车辆等）维修申请需要先经过调度批准。
+
+    <br>
+
+    皮卡、管理车辆等非生产设备可以直接进入维修管理员待处理列表。
+
+</div>
+
+
+
+<div class="nav-grid">
+
+    <button
+        class="nav-btn active"
+        data-page="board"
+        type="button"
+    >
+        🏭 维修看板
+    </button>
+
+    <button
+        class="nav-btn"
+        data-page="waiting"
+        type="button"
+    >
+        🚚 待进厂
+    </button>
+
+    <button
+        class="nav-btn"
+        data-page="dispatch"
+        type="button"
+    >
+        👨‍🔧 派工
+    </button>
+
+    <button
+        class="nav-btn"
+        data-page="working"
+        type="button"
+    >
+        🔧 维修中
+    </button>
+
+    <button
+        class="nav-btn"
+        data-page="inspection"
+        type="button"
+    >
+        ✅ 待验收
+    </button>
+
+    <button
+        class="nav-btn"
+        data-page="history"
+        type="button"
+    >
+        📚 历史记录
+    </button>
+
+</div>
+
+
+
+<!-- =====================================================
+     维修看板
+====================================================== -->
+
+<section
+    id="page-board"
+    class="page-section active"
+>
+
+<section class="card">
+
+    <div class="section-title">
+
+        <div>
+
+            <h2>
+                📊 今日维修概况
+            </h2>
+
+        </div>
+
+
+        <button
+            type="button"
+            class="secondary-btn"
+            onclick="generateDemoMaintenance()"
+        >
+            🧪 测试数据
+        </button>
+
+    </div>
+
+
+    <div class="summary-grid">
+
+        <div class="summary-card">
+
+            <span>
+                等待进厂
+            </span>
+
+            <strong id="waitingCount">
+                0
+            </strong>
+
+        </div>
+
+
+        <div class="summary-card">
+
+            <span>
+                维修中
+            </span>
+
+            <strong id="workingCount">
+                0
+            </strong>
+
+        </div>
+
+
+        <div class="summary-card">
+
+            <span>
+                待验收
+            </span>
+
+            <strong id="inspectionCount">
+                0
+            </strong>
+
+        </div>
+
+
+        <div class="summary-card">
+
+            <span>
+                今日完成
+            </span>
+
+            <strong id="completedTodayCount">
+                0
+            </strong>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+
+<section class="card">
+
+    <div class="section-title">
+
+        <div>
+
+            <h2>
+                🏭 修理厂工位看板
+            </h2>
+
+            <p>
+                工位、车辆、维修工、维修项目及维修开始时间
+            </p>
+
+        </div>
+
+    </div>
+
+
+    <div
+        id="workshopBoard"
+        class="workshop-grid"
+    >
+    </div>
+
+</section>
+
+
+
+<section class="card">
+
+    <div class="section-title">
+
+        <div>
+
+            <h2>
+                ⏳ 等待调度批准
+            </h2>
+
+            <p>
+                仅显示生产设备维修申请，维修管理员暂不能派工
+            </p>
+
+        </div>
+
+    </div>
+
+
+    <div
+        id="pendingDispatchList"
+        class="record-list"
+    >
+    </div>
+
+</section>
+
+</section>
+
+
+
+<!-- =====================================================
+     待进厂
+====================================================== -->
+
+<section
+    id="page-waiting"
+    class="page-section"
+>
+
+<section class="card">
+
+    <div class="section-title">
+
+        <div>
+
+            <h2>
+                🚚 等待进入修理厂
+            </h2>
+
+            <p>
+                调度已批准或非生产车辆直接送修
+            </p>
+
+        </div>
+
+    </div>
+
+
+    <div
+        id="waitingWorkshopList"
+        class="record-list"
+    >
+    </div>
+
+</section>
+
+</section>
+
+
+
+<!-- =====================================================
+     派工
+====================================================== -->
+
+<section
+    id="page-dispatch"
+    class="page-section"
+>
+
+<section class="card">
+
+    <div class="section-title">
+
+        <div>
+
+            <h2>
+                👨‍🔧 待维修管理员派工
+            </h2>
+
+            <p>
+                选择维修工位、维修工和维修项目
+            </p>
+
+        </div>
+
+    </div>
+
+
+    <div
+        id="assignmentList"
+        class="record-list"
+    >
+    </div>
+
+</section>
+
+</section>
+
+
+
+<!-- =====================================================
+     维修中
+====================================================== -->
+
+<section
+    id="page-working"
+    class="page-section"
+>
+
+<section class="card">
+
+    <div class="section-title">
+
+        <div>
+
+            <h2>
+                🔧 正在维修
+            </h2>
+
+            <p>
+                修理工接车并开始维修后的车辆
+            </p>
+
+        </div>
+
+    </div>
+
+
+    <div
+        id="workingList"
+        class="record-list"
+    >
+    </div>
+
+</section>
+
+</section>
+
+
+
+<!-- =====================================================
+     待验收
+====================================================== -->
+
+<section
+    id="page-inspection"
+    class="page-section"
+>
+
+<section class="card">
+
+    <div class="section-title">
+
+        <div>
+
+            <h2>
+                ✅ 待维修管理员验收
+            </h2>
+
+            <p>
+                查看维修前后照片及维修结果
+            </p>
+
+        </div>
+
+    </div>
+
+
+    <div
+        id="inspectionList"
+        class="record-list"
+    >
+    </div>
+
+</section>
+
+</section>
+
+
+
+<!-- =====================================================
+     历史
+====================================================== -->
+
+<section
+    id="page-history"
+    class="page-section"
+>
+
+<section class="card">
+
+    <div class="section-title">
+
+        <div>
+
+            <h2>
+                📚 已完成维修记录
+            </h2>
+
+        </div>
+
+    </div>
+
+
+    <div
+        id="historyList"
+        class="record-list"
+    >
+    </div>
+
+</section>
+
+</section>
+
+
+</main>
+
+
+
+<footer>
+
+矿山管理系统 · 修理厂维修管理 V2.10.0A
+
+</footer>
+
+
+
+<!-- =====================================================
+     派工弹窗
+====================================================== -->
+
+<div
+    id="assignmentModal"
+    class="modal"
+>
+
+<div class="modal-card">
+
+    <div class="modal-title">
+
+        <h3>
+            维修派工
+        </h3>
+
+        <button
+            type="button"
+            class="secondary-btn"
+            onclick="closeModal('assignmentModal')"
+        >
+            关闭
+        </button>
+
+    </div>
+
+
+    <input
+        id="assignmentRequestId"
+        type="hidden"
+    >
+
+
+    <div class="form-grid">
+
+        <div class="form-group">
+
+            <label for="assignmentBay">
+                维修工位
+            </label>
+
+            <select id="assignmentBay">
+            </select>
+
+        </div>
+
+
+        <div class="form-group">
+
+            <label for="assignmentWorker">
+                主维修工
+            </label>
+
+            <select id="assignmentWorker">
+
+                <option value="">
+                    请选择维修工
+                </option>
+
+                <option value="维修工01">
+                    维修工01
+                </option>
+
+                <option value="维修工02">
+                    维修工02
+                </option>
+
+                <option value="维修工03">
+                    维修工03
+                </option>
+
+                <option value="维修工04">
+                    维修工04
+                </option>
+
+            </select>
+
+        </div>
+
+    </div>
+
+
+    <div class="form-group">
+
+        <label for="assignmentProject">
+            初步维修项目
+        </label>
+
+        <textarea
+            id="assignmentProject"
+            placeholder="例如：检查发动机漏油并更换损坏油管"
+        ></textarea>
+
+    </div>
+
+
+    <button
+        type="button"
+        class="primary-btn"
+        onclick="confirmAssignment()"
+    >
+        确认派工
+    </button>
+
+</div>
+
+</div>
+
+
+
+<!-- =====================================================
+     验收弹窗
+====================================================== -->
+
+<div
+    id="inspectionModal"
+    class="modal"
+>
+
+<div class="modal-card">
+
+    <div class="modal-title">
+
+        <h3>
+            维修结果验收
+        </h3>
+
+        <button
+            type="button"
+            class="secondary-btn"
+            onclick="closeModal('inspectionModal')"
+        >
+            关闭
+        </button>
+
+    </div>
+
+
+    <input
+        id="inspectionOrderId"
+        type="hidden"
+    >
+
+
+    <div
+        id="inspectionDetail"
+        class="record-card"
+    >
+    </div>
+
+
+    <div class="form-group" style="margin-top:15px;">
+
+        <label for="inspectionRemark">
+            验收意见
+        </label>
+
+        <textarea
+            id="inspectionRemark"
+            placeholder="填写验收情况"
+        ></textarea>
+
+    </div>
+
+
+    <div class="actions">
+
+        <button
+            type="button"
+            class="success-btn"
+            onclick="approveInspection()"
+        >
+            ✅ 验收通过
+        </button>
+
+
+        <button
+            type="button"
+            class="danger-btn"
+            onclick="rejectInspection()"
+        >
+            ❌ 返修
+        </button>
+
+    </div>
+
+</div>
+
+</div>
+
+
+
+<!-- =====================================================
+     费用单
+====================================================== -->
+
+<div
+    id="costModal"
+    class="modal"
+>
+
+<div class="modal-card">
+
+    <div class="modal-title">
+
+        <h3>
+            💰 维修费用单
+        </h3>
+
+        <button
+            type="button"
+            class="secondary-btn"
+            onclick="closeModal('costModal')"
+        >
+            关闭
+        </button>
+
+    </div>
+
+
+    <input
+        id="costOrderId"
+        type="hidden"
+    >
+
+
+    <div class="form-grid">
+
+        <div class="form-group">
+
+            <label for="laborCost">
+                人工费用
+            </label>
+
+            <input
+                id="laborCost"
+                type="number"
+                min="0"
+                step="0.01"
+                value="0"
+                oninput="calculateCostTotal()"
+            >
+
+        </div>
+
+
+        <div class="form-group">
+
+            <label for="partsCost">
+                配件费用
+            </label>
+
+            <input
+                id="partsCost"
+                type="number"
+                min="0"
+                step="0.01"
+                value="0"
+                oninput="calculateCostTotal()"
+            >
+
+        </div>
+
+
+        <div class="form-group">
+
+            <label for="externalCost">
+                外加工费用
+            </label>
+
+            <input
+                id="externalCost"
+                type="number"
+                min="0"
+                step="0.01"
+                value="0"
+                oninput="calculateCostTotal()"
+            >
+
+        </div>
+
+
+        <div class="form-group">
+
+            <label for="otherCost">
+                其他费用
+            </label>
+
+            <input
+                id="otherCost"
+                type="number"
+                min="0"
+                step="0.01"
+                value="0"
+                oninput="calculateCostTotal()"
+            >
+
+        </div>
+
+    </div>
+
+
+    <div class="form-group">
+
+        <label for="partsDescription">
+            配件 / 费用说明
+        </label>
+
+        <textarea
+            id="partsDescription"
+            placeholder="填写使用配件及其他费用说明"
+        ></textarea>
+
+    </div>
+
+
+    <div class="cost-total">
+
+        <span>
+            维修总费用
+        </span>
+
+        <strong id="costTotal">
+            ¥0.00
+        </strong>
+
+    </div>
+
+
+    <button
+        type="button"
+        class="purple-btn"
+        style="margin-top:15px;width:100%;"
+        onclick="saveCostSheet()"
+    >
+        保存维修费用单
+    </button>
+
+</div>
+
+</div>
+
+
+
+<script>
+
+"use strict";
+
+
+/* =========================================================
+   数据键
+========================================================= */
+
+const STORAGE = {
+
+    REQUESTS:
+        "maintenanceRequests",
+
+    LEGACY_REPORTS:
+        "maintenanceReports",
+
+    WORK_ORDERS:
+        "maintenanceWorkOrders",
+
+    BAYS:
+        "workshopBays",
+
+    COSTS:
+        "maintenanceCosts"
+
+};
+
+
+
+/* =========================================================
+   默认工位
+========================================================= */
+
+const DEFAULT_BAYS = [
+
+    {
+        bayId:
+            "BAY-01",
+
+        name:
+            "1号工位"
+    },
+
+    {
+        bayId:
+            "BAY-02",
+
+        name:
+            "2号工位"
+    },
+
+    {
+        bayId:
+            "BAY-03",
+
+        name:
+            "3号工位"
+    },
+
+    {
+        bayId:
+            "BAY-04",
+
+        name:
+            "4号工位"
+    },
+
+    {
+        bayId:
+            "BAY-05",
+
+        name:
+            "5号工位"
+    },
+
+    {
+        bayId:
+            "BAY-06",
+
+        name:
+            "6号工位"
+    }
+
+];
+
+
+
+initialize();
+
+
+
+/* =========================================================
+   初始化
+========================================================= */
+
+function initialize() {
+
+    bindNavigation();
+
+    initializeBays();
+
+    migrateLegacyReports();
+
+    renderAll();
+
+
+    setInterval(
+        renderAll,
+        5000
+    );
+}
+
+
+
+/* =========================================================
+   导航
+========================================================= */
+
+function bindNavigation() {
+
+    document
+        .querySelectorAll(
+            "[data-page]"
+        )
+        .forEach(
+            button => {
+
+                button.addEventListener(
+                    "click",
+                    function () {
+
+                        openPage(
+                            button.dataset.page
+                        );
+                    }
+                );
+            }
+        );
+}
+
+
+
+function openPage(
+    page
+) {
+
+    document
+        .querySelectorAll(
+            ".nav-btn"
+        )
+        .forEach(
+            item => {
+
+                item.classList.toggle(
+                    "active",
+                    item.dataset.page === page
+                );
+            }
+        );
+
+
+    document
+        .querySelectorAll(
+            ".page-section"
+        )
+        .forEach(
+            section => {
+
+                section.classList.remove(
+                    "active"
+                );
+            }
+        );
+
+
+    document
+        .getElementById(
+            "page-" + page
+        )
+        ?.classList.add(
+            "active"
+        );
+
+
+    window.scrollTo({
+        top:
+            0,
+
+        behavior:
+            "smooth"
+    });
+
+
+    renderAll();
+}
+
+
+
+/* =========================================================
+   工位初始化
+========================================================= */
+
+function initializeBays() {
+
+    const existing =
+        readArray(
+            STORAGE.BAYS
+        );
+
+
+    if (
+        existing.length
+    ) {
+
+        return;
+    }
+
+
+    const records =
+        DEFAULT_BAYS.map(
+            bay => ({
+
+                ...bay,
+
+                status:
+                    "free",
+
+                orderId:
+                    ""
+            })
+        );
+
+
+    save(
+        STORAGE.BAYS,
+        records
+    );
+}
+
+
+
+/* =========================================================
+   兼容辅助车辆端旧故障记录
+========================================================= */
+
+function migrateLegacyReports() {
+
+    const legacy =
+        readArray(
+            STORAGE.LEGACY_REPORTS
+        );
+
+
+    if (
+        !legacy.length
+    ) {
+
+        return;
+    }
+
+
+    const requests =
+        getRequests();
+
+
+    let changed =
+        false;
+
+
+    legacy.forEach(
+        report => {
+
+            const legacyId =
+                report.reportId ||
+                report.requestId ||
+                "";
+
+
+            const exists =
+                requests.some(
+                    item =>
+                        item.legacyId ===
+                        legacyId
+                );
+
+
+            if (
+                exists
+            ) {
+
+                return;
+            }
+
+
+            const production =
+                isProductionEquipment(
+                    report.vehicleType
+                );
+
+
+            requests.push({
+
+                requestId:
+                    createId(
+                        "MR"
+                    ),
+
+                legacyId,
+
+                applicantId:
+                    report.personId ||
+                    "",
+
+                applicantName:
+                    report.personName ||
+                    "",
+
+                equipmentType:
+                    report.vehicleType ||
+                    "其他设备",
+
+                equipmentNumber:
+                    report.vehicleNumber ||
+                    "",
+
+                faultType:
+                    report.faultType ||
+                    "其他",
+
+                severity:
+                    report.level ||
+                    "一般",
+
+                description:
+                    report.description ||
+                    "",
+
+                photoData:
+                    report.photoData ||
+                    "",
+
+                canMove:
+                    true,
+
+                productionEquipment:
+                    production,
+
+                dispatchRequired:
+                    production,
+
+                dispatchStatus:
+                    production
+                        ? "pending"
+                        : "not_required",
+
+                status:
+                    production
+                        ? "pending_dispatch"
+                        : "waiting_entry",
+
+                createdAt:
+                    report.createdAt ||
+                    new Date()
+                        .toISOString()
+            });
+
+
+            changed =
+                true;
+        }
+    );
+
+
+    if (
+        changed
+    ) {
+
+        save(
+            STORAGE.REQUESTS,
+            requests
+        );
+    }
+}
+
+
+
+/* =========================================================
+   是否生产设备
+========================================================= */
+
+function isProductionEquipment(
+    type
+) {
+
+    const productionTypes = [
+
+        "汽车",
+
+        "矿卡",
+
+        "卡车",
+
+        "挖机",
+
+        "挖掘机",
+
+        "铲车",
+
+        "装载机",
+
+        "推土机",
+
+        "平路机",
+
+        "洒水车",
+
+        "大巴",
+
+        "辅助车辆"
+
+    ];
+
+
+    return productionTypes.some(
+        item =>
+            String(
+                type ||
+                ""
+            ).includes(
+                item
+            )
+    );
+}
+
+
+
+/* =========================================================
+   总刷新
+========================================================= */
+
+function renderAll() {
+
+    renderStatistics();
+
+    renderWorkshopBoard();
+
+    renderPendingDispatch();
+
+    renderWaitingWorkshop();
+
+    renderAssignments();
+
+    renderWorking();
+
+    renderInspection();
+
+    renderHistory();
+}
+
+
+
+/* =========================================================
+   统计
+========================================================= */
+
+function renderStatistics() {
+
+    const requests =
+        getRequests();
+
+
+    const orders =
+        getOrders();
+
+
+    const today =
+        getDateKey();
+
+
+    const waiting =
+        requests.filter(
+            item =>
+                item.status ===
+                    "waiting_entry"
+
+                ||
+
+                item.status ===
+                    "waiting_assignment"
+        ).length;
+
+
+    const working =
+        orders.filter(
+            item =>
+                item.status ===
+                    "working"
+
+                ||
+
+                item.status ===
+                    "waiting_parts"
+
+                ||
+
+                item.status ===
+                    "rework"
+        ).length;
+
+
+    const inspection =
+        orders.filter(
+            item =>
+                item.status ===
+                "waiting_inspection"
+        ).length;
+
+
+    const completed =
+        orders.filter(
+            item =>
+                item.status ===
+                    "completed"
+
+                &&
+
+                getDateKey(
+                    item.completedAt
+                ) ===
+                    today
+        ).length;
+
+
+    setText(
+        "waitingCount",
+        waiting
+    );
+
+
+    setText(
+        "workingCount",
+        working
+    );
+
+
+    setText(
+        "inspectionCount",
+        inspection
+    );
+
+
+    setText(
+        "completedTodayCount",
+        completed
+    );
+}
+
+
+
+/* =========================================================
+   工位看板
+========================================================= */
+
+function renderWorkshopBoard() {
+
+    const bays =
+        getBays();
+
+
+    const orders =
+        getOrders();
+
+
+    const board =
+        document.getElementById(
+            "workshopBoard"
+        );
+
+
+    board.innerHTML =
+        bays
+            .map(
+                bay => {
+
+                    const order =
+                        orders.find(
+                            item =>
+                                item.orderId ===
+                                bay.orderId
+                        );
+
+
+                    if (
+                        !order ||
+                        bay.status ===
+                            "free"
+                    ) {
+
+                        return `
+
+                        <div class="bay-card free">
+
+                            <div class="bay-title">
+
+                                <strong>
+                                    🔧 ${escapeHtml(bay.name)}
+                                </strong>
+
+                                <span class="badge green">
+                                    空闲
+                                </span>
+
+                            </div>
+
+
+                            <div class="bay-info">
+
+                                当前工位可安排车辆进入维修。
+
+                            </div>
+
+                        </div>
+                        `;
+                    }
+
+
+                    return `
+
+                    <div class="bay-card busy">
+
+                        <div class="bay-title">
+
+                            <strong>
+                                🔧 ${escapeHtml(bay.name)}
+                            </strong>
+
+                            <span class="badge orange">
+                                ${getOrderStatusText(order.status)}
+                            </span>
+
+                        </div>
+
+
+                        <div class="bay-info">
+
+                            设备：
+                            <strong>
+                                ${escapeHtml(order.equipmentNumber || "-")}
+                            </strong>
+
+                            <br>
+
+                            类型：
+                            ${escapeHtml(order.equipmentType || "-")}
+
+                            <br>
+
+                            维修工：
+                            ${escapeHtml(order.workerName || "-")}
+
+                            <br>
+
+                            维修项目：
+                            ${escapeHtml(order.repairProject || "-")}
+
+                            <br>
+
+                            开始时间：
+                            ${formatDateTime(order.startedAt)}
+
+                            ${
+                                order.startedAt
+                                    ? `<br>已维修：${formatDuration(Date.now() - new Date(order.startedAt).getTime())}`
+                                    : ""
+                            }
+
+                        </div>
+
+                    </div>
+                    `;
+                }
+            )
+            .join(
+                ""
+            );
+}
+
+
+
+/* =========================================================
+   等调度批准
+========================================================= */
+
+function renderPendingDispatch() {
+
+    const records =
+        getRequests()
+            .filter(
+                item =>
+                    item.status ===
+                    "pending_dispatch"
+            )
+            .slice()
+            .reverse();
+
+
+    const box =
+        document.getElementById(
+            "pendingDispatchList"
+        );
+
+
+    if (
+        !records.length
+    ) {
+
+        box.innerHTML = `
+            <div class="empty">
+                当前没有等待调度批准的维修申请
+            </div>
+        `;
+
+        return;
+    }
+
+
+    box.innerHTML =
+        records
+            .map(
+                item => `
+
+                <div class="record-card">
+
+                    <div class="record-top">
+
+                        <strong>
+                            🚜
+                            ${escapeHtml(item.equipmentNumber || "-")}
+                        </strong>
+
+                        <span class="badge yellow">
+                            待调度批准
+                        </span>
+
+                    </div>
+
+
+                    <div class="record-info">
+
+                        设备类型：
+                        ${escapeHtml(item.equipmentType || "-")}
+
+                        <br>
+
+                        驾驶员：
+                        ${escapeHtml(item.applicantName || "-")}
+
+                        <br>
+
+                        故障：
+                        ${escapeHtml(item.faultType || "-")}
+
+                        <br>
+
+                        说明：
+                        ${escapeHtml(item.description || "-")}
+
+                        <br>
+
+                        上报时间：
+                        ${formatDateTime(item.createdAt)}
+
+                    </div>
+
+                </div>
+                `
+            )
+            .join(
+                ""
+            );
+}
+
+
+
+/* =========================================================
+   待进厂
+========================================================= */
+
+function renderWaitingWorkshop() {
+
+    const records =
+        getRequests()
+            .filter(
+                item =>
+                    item.status ===
+                    "waiting_entry"
+            )
+            .slice()
+            .reverse();
+
+
+    const box =
+        document.getElementById(
+            "waitingWorkshopList"
+        );
+
+
+    if (
+        !records.length
+    ) {
+
+        box.innerHTML = `
+            <div class="empty">
+                当前没有等待进厂车辆
+            </div>
+        `;
+
+        return;
+    }
+
+
+    box.innerHTML =
+        records
+            .map(
+                item => `
+
+                <div class="record-card">
+
+                    <div class="record-top">
+
+                        <strong>
+                            🚚
+                            ${escapeHtml(item.equipmentNumber || "-")}
+                        </strong>
+
+                        <span class="badge blue">
+                            等待进厂
+                        </span>
+
+                    </div>
+
+
+                    <div class="record-info">
+
+                        类型：
+                        ${escapeHtml(item.equipmentType || "-")}
+
+                        <br>
+
+                        驾驶员：
+                        ${escapeHtml(item.applicantName || "-")}
+
+                        <br>
+
+                        故障：
+                        ${escapeHtml(item.faultType || "-")}
+
+                        <br>
+
+                        严重程度：
+                        ${escapeHtml(item.severity || "-")}
+
+                        <br>
+
+                        是否可行驶：
+                        ${item.canMove === false ? "否" : "是"}
+
+                        <br>
+
+                        故障说明：
+                        ${escapeHtml(item.description || "-")}
+
+                    </div>
+
+
+                    <div class="actions">
+
+                        <button
+                            type="button"
+                            class="success-btn"
+                            onclick="receiveVehicle('${escapeJs(item.requestId)}')"
+                        >
+                            确认车辆已进厂
+                        </button>
+
+                    </div>
+
+                </div>
+                `
+            )
+            .join(
+                ""
+            );
+}
+
+
+
+/* =========================================================
+   接车
+========================================================= */
+
+function receiveVehicle(
+    requestId
+) {
+
+    const requests =
+        getRequests();
+
+
+    const item =
+        requests.find(
+            record =>
+                record.requestId ===
+                requestId
+        );
+
+
+    if (
+        !item
+    ) {
+
+        return;
+    }
+
+
+    item.status =
+        "waiting_assignment";
+
+
+    item.receivedAt =
+        new Date()
+            .toISOString();
+
+
+    item.receivedBy =
+        "维修管理员";
+
+
+    save(
+        STORAGE.REQUESTS,
+        requests
+    );
+
+
+    renderAll();
+
+
+    openPage(
+        "dispatch"
+    );
+}
+
+
+
+/* =========================================================
+   待派工
+========================================================= */
+
+function renderAssignments() {
+
+    const records =
+        getRequests()
+            .filter(
+                item =>
+                    item.status ===
+                    "waiting_assignment"
+            )
+            .slice()
+            .reverse();
+
+
+    const box =
+        document.getElementById(
+            "assignmentList"
+        );
+
+
+    if (
+        !records.length
+    ) {
+
+        box.innerHTML = `
+            <div class="empty">
+                当前没有待派工车辆
+            </div>
+        `;
+
+        return;
+    }
+
+
+    box.innerHTML =
+        records
+            .map(
+                item => `
+
+                <div class="record-card">
+
+                    <div class="record-top">
+
+                        <strong>
+                            🔧
+                            ${escapeHtml(item.equipmentNumber || "-")}
+                        </strong>
+
+                        <span class="badge blue">
+                            待派工
+                        </span>
+
+                    </div>
+
+
+                    <div class="record-info">
+
+                        故障：
+                        ${escapeHtml(item.faultType || "-")}
+
+                        <br>
+
+                        故障说明：
+                        ${escapeHtml(item.description || "-")}
+
+                        <br>
+
+                        进厂时间：
+                        ${formatDateTime(item.receivedAt)}
+
+                    </div>
+
+
+                    <div class="actions">
+
+                        <button
+                            type="button"
+                            class="primary-btn"
+                            onclick="openAssignment('${escapeJs(item.requestId)}')"
+                        >
+                            分配工位 / 维修工
+                        </button>
+
+                    </div>
+
+                </div>
+                `
+            )
+            .join(
+                ""
+            );
+}
+
+
+
+/* =========================================================
+   打开派工
+========================================================= */
+
+function openAssignment(
+    requestId
+) {
+
+    document.getElementById(
+        "assignmentRequestId"
+    ).value =
+        requestId;
+
+
+    document.getElementById(
+        "assignmentProject"
+    ).value =
+        "";
+
+
+    document.getElementById(
+        "assignmentWorker"
+    ).value =
+        "";
+
+
+    const select =
+        document.getElementById(
+            "assignmentBay"
+        );
+
+
+    const freeBays =
+        getBays()
+            .filter(
+                bay =>
+                    bay.status ===
+                    "free"
+            );
+
+
+    select.innerHTML =
+        '<option value="">请选择空闲工位</option>' +
+
+        freeBays
+            .map(
+                bay => `
+                    <option value="${escapeHtml(bay.bayId)}">
+                        ${escapeHtml(bay.name)}
+                    </option>
+                `
+            )
+            .join(
+                ""
+            );
+
+
+    openModal(
+        "assignmentModal"
+    );
+}
+
+
+
+/* =========================================================
+   确认派工
+========================================================= */
+
+function confirmAssignment() {
+
+    const requestId =
+        document.getElementById(
+            "assignmentRequestId"
+        ).value;
+
+
+    const bayId =
+        document.getElementById(
+            "assignmentBay"
+        ).value;
+
+
+    const workerName =
+        document.getElementById(
+            "assignmentWorker"
+        ).value;
+
+
+    const project =
+        document.getElementById(
+            "assignmentProject"
+        )
+            .value
+            .trim();
+
+
+    if (
+        !bayId ||
+        !workerName ||
+        !project
+    ) {
+
+        alert(
+            "请选择工位、维修工并填写维修项目。"
+        );
+
+        return;
+    }
+
+
+    const requests =
+        getRequests();
+
+
+    const request =
+        requests.find(
+            item =>
+                item.requestId ===
+                requestId
+        );
+
+
+    if (
+        !request
+    ) {
+
+        return;
+    }
+
+
+    const bays =
+        getBays();
+
+
+    const bay =
+        bays.find(
+            item =>
+                item.bayId ===
+                bayId
+        );
+
+
+    if (
+        !bay ||
+        bay.status !==
+            "free"
+    ) {
+
+        alert(
+            "该工位已经被占用，请重新选择。"
+        );
+
+        return;
+    }
+
+
+    const order = {
+
+        orderId:
+            createId(
+                "WO"
+            ),
+
+        requestId:
+            request.requestId,
+
+        equipmentType:
+            request.equipmentType,
+
+        equipmentNumber:
+            request.equipmentNumber,
+
+        applicantName:
+            request.applicantName,
+
+        faultType:
+            request.faultType,
+
+        faultDescription:
+            request.description,
+
+        bayId:
+
+            bay.bayId,
+
+        bayName:
+            bay.name,
+
+        workerName,
+
+        repairProject:
+            project,
+
+        status:
+            "assigned",
+
+        assignedBy:
+            "维修管理员",
+
+        assignedAt:
+            new Date()
+                .toISOString(),
+
+        beforePhotoData:
+            "",
+
+        afterPhotoData:
+            "",
+
+        repairResult:
+            "",
+
+        partsUsed:
+            []
+    };
+
+
+    const orders =
+        getOrders();
+
+
+    orders.push(
+        order
+    );
+
+
+    save(
+        STORAGE.WORK_ORDERS,
+        orders
+    );
+
+
+    bay.status =
+        "busy";
+
+
+    bay.orderId =
+        order.orderId;
+
+
+    save(
+        STORAGE.BAYS,
+        bays
+    );
+
+
+    request.status =
+        "assigned";
+
+
+    request.orderId =
+        order.orderId;
+
+
+    save(
+        STORAGE.REQUESTS,
+        requests
+    );
+
+
+    closeModal(
+        "assignmentModal"
+    );
+
+
+    renderAll();
+
+
+    alert(
+        "派工完成，维修工已收到维修任务。"
+    );
+}
+
+
+
+/* =========================================================
+   维修中
+========================================================= */
+
+function renderWorking() {
+
+    const records =
+        getOrders()
+            .filter(
+                item =>
+                    item.status ===
+                        "assigned"
+
+                    ||
+
+                    item.status ===
+                        "working"
+
+                    ||
+
+                    item.status ===
+                        "waiting_parts"
+
+                    ||
+
+                    item.status ===
+                        "rework"
+            )
+            .slice()
+            .reverse();
+
+
+    const box =
+        document.getElementById(
+            "workingList"
+        );
+
+
+    if (
+        !records.length
+    ) {
+
+        box.innerHTML = `
+            <div class="empty">
+                当前没有维修中的车辆
+            </div>
+        `;
+
+        return;
+    }
+
+
+    box.innerHTML =
+        records
+            .map(
+                item => `
+
+                <div class="record-card">
+
+                    <div class="record-top">
+
+                        <strong>
+                            🔧
+                            ${escapeHtml(item.equipmentNumber)}
+                        </strong>
+
+                        <span class="badge orange">
+                            ${getOrderStatusText(item.status)}
+                        </span>
+
+                    </div>
+
+
+                    <div class="record-info">
+
+                        工位：
+                        ${escapeHtml(item.bayName)}
+
+                        <br>
+
+                        维修工：
+                        ${escapeHtml(item.workerName)}
+
+                        <br>
+
+                        维修项目：
+                        ${escapeHtml(item.repairProject)}
+
+                        <br>
+
+                        派工时间：
+                        ${formatDateTime(item.assignedAt)}
+
+                        <br>
+
+                        开始维修：
+                        ${formatDateTime(item.startedAt)}
+
+                        ${
+                            item.startedAt
+                                ? `<br>当前维修时长：${formatDuration(Date.now() - new Date(item.startedAt).getTime())}`
+                                : ""
+                        }
+
+                    </div>
+
+
+                    ${
+                        item.status ===
+                        "assigned"
+
+                            ? `
+
+                            <div class="warning-box" style="margin-top:10px;">
+
+                                已派工，等待维修工接车、拍维修前照片并开始维修。
+
+                            </div>
+                            `
+
+                            : ""
+                    }
+
+                </div>
+                `
+            )
+            .join(
+                ""
+            );
+}
+
+
+
+/* =========================================================
+   待验收
+========================================================= */
+
+function renderInspection() {
+
+    const records =
+        getOrders()
+            .filter(
+                item =>
+                    item.status ===
+                    "waiting_inspection"
+            )
+            .slice()
+            .reverse();
+
+
+    const box =
+        document.getElementById(
+            "inspectionList"
+        );
+
+
+    if (
+        !records.length
+    ) {
+
+        box.innerHTML = `
+            <div class="empty">
+                当前没有待验收维修任务
+            </div>
+        `;
+
+        return;
+    }
+
+
+    box.innerHTML =
+        records
+            .map(
+                item => `
+
+                <div class="record-card">
+
+                    <div class="record-top">
+
+                        <strong>
+                            ✅
+                            ${escapeHtml(item.equipmentNumber)}
+                        </strong>
+
+                        <span class="badge purple">
+                            待验收
+                        </span>
+
+                    </div>
+
+
+                    <div class="record-info">
+
+                        工位：
+                        ${escapeHtml(item.bayName)}
+
+                        <br>
+
+                        维修工：
+                        ${escapeHtml(item.workerName)}
+
+                        <br>
+
+                        维修项目：
+                        ${escapeHtml(item.repairProject)}
+
+                        <br>
+
+                        维修结果：
+                        ${escapeHtml(item.repairResult || "-")}
+
+                        <br>
+
+                        维修完成：
+                        ${formatDateTime(item.repairFinishedAt)}
+
+                    </div>
+
+
+                    <div class="actions">
+
+                        <button
+                            type="button"
+                            class="success-btn"
+                            onclick="openInspection('${escapeJs(item.orderId)}')"
+                        >
+                            维修验收
+                        </button>
+
+                    </div>
+
+                </div>
+                `
+            )
+            .join(
+                ""
+            );
+}
+
+
+
+/* =========================================================
+   打开验收
+========================================================= */
+
+function openInspection(
+    orderId
+) {
+
+    const order =
+        getOrders()
+            .find(
+                item =>
+                    item.orderId ===
+                    orderId
+            );
+
+
+    if (
+        !order
+    ) {
+
+        return;
+    }
+
+
+    document.getElementById(
+        "inspectionOrderId"
+    ).value =
+        orderId;
+
+
+    document.getElementById(
+        "inspectionRemark"
+    ).value =
+        "";
+
+
+    document.getElementById(
+        "inspectionDetail"
+    ).innerHTML = `
+
+        <strong>
+            ${escapeHtml(order.equipmentNumber)}
+        </strong>
+
+        <div class="record-info">
+
+            维修工：
+            ${escapeHtml(order.workerName)}
+
+            <br>
+
+            维修项目：
+            ${escapeHtml(order.repairProject)}
+
+            <br>
+
+            维修结果：
+            ${escapeHtml(order.repairResult || "-")}
+
+            <br>
+
+            开始时间：
+            ${formatDateTime(order.startedAt)}
+
+            <br>
+
+            结束时间：
+            ${formatDateTime(order.repairFinishedAt)}
+
+        </div>
+
+
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px;">
+
+            ${
+                order.beforePhotoData
+                    ? `
+                    <div>
+                        <div style="font-size:12px;margin-bottom:5px;">
+                            维修前
+                        </div>
+                        <img
+                            class="photo-thumb"
+                            src="${order.beforePhotoData}"
+                        >
+                    </div>
+                    `
+                    : ""
+            }
+
+
+            ${
+                order.afterPhotoData
+                    ? `
+                    <div>
+                        <div style="font-size:12px;margin-bottom:5px;">
+                            维修后
+                        </div>
+                        <img
+                            class="photo-thumb"
+                            src="${order.afterPhotoData}"
+                        >
+                    </div>
+                    `
+                    : ""
+            }
+
+        </div>
+    `;
+
+
+    openModal(
+        "inspectionModal"
+    );
+}
+
+
+
+/* =========================================================
+   验收通过
+========================================================= */
+
+function approveInspection() {
+
+    const orderId =
+        document.getElementById(
+            "inspectionOrderId"
+        ).value;
+
+
+    const remark =
+        document.getElementById(
+            "inspectionRemark"
+        )
+            .value
+            .trim();
+
+
+    const orders =
+        getOrders();
+
+
+    const order =
+        orders.find(
+            item =>
+                item.orderId ===
+                orderId
+        );
+
+
+    if (
+        !order
+    ) {
+
+        return;
+    }
+
+
+    order.status =
+        "inspection_passed";
+
+
+    order.inspectionRemark =
+        remark;
+
+
+    order.inspectedBy =
+        "维修管理员";
+
+
+    order.inspectedAt =
+        new Date()
+            .toISOString();
+
+
+    save(
+        STORAGE.WORK_ORDERS,
+        orders
+    );
+
+
+    closeModal(
+        "inspectionModal"
+    );
+
+
+    renderAll();
+
+
+    openCostSheet(
+        orderId
+    );
+}
+
+
+
+/* =========================================================
+   返修
+========================================================= */
+
+function rejectInspection() {
+
+    const orderId =
+        document.getElementById(
+            "inspectionOrderId"
+        ).value;
+
+
+    const remark =
+        document.getElementById(
+            "inspectionRemark"
+        )
+            .value
+            .trim();
+
+
+    if (
+        !remark
+    ) {
+
+        alert(
+            "返修必须填写原因。"
+        );
+
+        return;
+    }
+
+
+    const orders =
+        getOrders();
+
+
+    const order =
+        orders.find(
+            item =>
+                item.orderId ===
+                orderId
+        );
+
+
+    if (
+        !order
+    ) {
+
+        return;
+    }
+
+
+    order.status =
+        "rework";
+
+
+    order.reworkReason =
+        remark;
+
+
+    order.reworkAt =
+        new Date()
+            .toISOString();
+
+
+    save(
+        STORAGE.WORK_ORDERS,
+        orders
+    );
+
+
+    closeModal(
+        "inspectionModal"
+    );
+
+
+    renderAll();
+
+
+    alert(
+        "该维修任务已退回返修。"
+    );
+}
+
+
+
+/* =========================================================
+   费用单
+========================================================= */
+
+function openCostSheet(
+    orderId
+) {
+
+    document.getElementById(
+        "costOrderId"
+    ).value =
+        orderId;
+
+
+    [
+        "laborCost",
+        "partsCost",
+        "externalCost",
+        "otherCost"
+    ]
+        .forEach(
+            id => {
+
+                document.getElementById(
+                    id
+                ).value =
+                    "0";
+            }
+        );
+
+
+    document.getElementById(
+        "partsDescription"
+    ).value =
+        "";
+
+
+    calculateCostTotal();
+
+
+    openModal(
+        "costModal"
+    );
+}
+
+
+
+function calculateCostTotal() {
+
+    const total =
+
+        Number(
+            document.getElementById(
+                "laborCost"
+            ).value || 0
+        )
+
+        +
+
+        Number(
+            document.getElementById(
+                "partsCost"
+            ).value || 0
+        )
+
+        +
+
+        Number(
+            document.getElementById(
+                "externalCost"
+            ).value || 0
+        )
+
+        +
+
+        Number(
+            document.getElementById(
+                "otherCost"
+            ).value || 0
+        );
+
+
+    setText(
+        "costTotal",
+        "¥" +
+        total.toFixed(
+            2
+        )
+    );
+}
+
+
+
+function saveCostSheet() {
+
+    const orderId =
+        document.getElementById(
+            "costOrderId"
+        ).value;
+
+
+    const order =
+        getOrders()
+            .find(
+                item =>
+                    item.orderId ===
+                    orderId
+            );
+
+
+    if (
+        !order
+    ) {
+
+        return;
+    }
+
+
+    const labor =
+        Number(
+            document.getElementById(
+                "laborCost"
+            ).value || 0
+        );
+
+
+    const parts =
+        Number(
+            document.getElementById(
+                "partsCost"
+            ).value || 0
+        );
+
+
+    const external =
+        Number(
+            document.getElementById(
+                "externalCost"
+            ).value || 0
+        );
+
+
+    const other =
+        Number(
+            document.getElementById(
+                "otherCost"
+            ).value || 0
+        );
+
+
+    const total =
+        labor +
+        parts +
+        external +
+        other;
+
+
+    const costs =
+        getCosts();
+
+
+    costs.push({
+
+        costId:
+            createId(
+                "COST"
+            ),
+
+        orderId,
+
+        equipmentType:
+            order.equipmentType,
+
+        equipmentNumber:
+            order.equipmentNumber,
+
+        laborCost:
+            labor,
+
+        partsCost:
+            parts,
+
+        externalCost:
+            external,
+
+        otherCost:
+            other,
+
+        totalCost:
+            total,
+
+        description:
+            document.getElementById(
+                "partsDescription"
+            )
+                .value
+                .trim(),
+
+        issuedBy:
+            "维修管理员",
+
+        issuedAt:
+            new Date()
+                .toISOString()
+    });
+
+
+    save(
+        STORAGE.COSTS,
+        costs
+    );
+
+
+    completeOrder(
+        orderId
+    );
+
+
+    closeModal(
+        "costModal"
+    );
+
+
+    renderAll();
+
+
+    alert(
+        "维修费用单已经保存，本次维修完成归档。"
+    );
+}
+
+
+
+/* =========================================================
+   维修完成
+========================================================= */
+
+function completeOrder(
+    orderId
+) {
+
+    const orders =
+        getOrders();
+
+
+    const order =
+        orders.find(
+            item =>
+                item.orderId ===
+                orderId
+        );
+
+
+    if (
+        !order
+    ) {
+
+        return;
+    }
+
+
+    order.status =
+        "completed";
+
+
+    order.completedAt =
+        new Date()
+            .toISOString();
+
+
+    save(
+        STORAGE.WORK_ORDERS,
+        orders
+    );
+
+
+    const requests =
+        getRequests();
+
+
+    const request =
+        requests.find(
+            item =>
+                item.requestId ===
+                order.requestId
+        );
+
+
+    if (
+        request
+    ) {
+
+        request.status =
+            "completed";
+
+
+        request.completedAt =
+            order.completedAt;
+
+
+        save(
+            STORAGE.REQUESTS,
+            requests
+        );
+    }
+
+
+    releaseBay(
+        order.bayId
+    );
+}
+
+
+
+/* =========================================================
+   释放工位
+========================================================= */
+
+function releaseBay(
+    bayId
+) {
+
+    const bays =
+        getBays();
+
+
+    const bay =
+        bays.find(
+            item =>
+                item.bayId ===
+                bayId
+        );
+
+
+    if (
+        !bay
+    ) {
+
+        return;
+    }
+
+
+    bay.status =
+        "free";
+
+
+    bay.orderId =
+        "";
+
+
+    save(
+        STORAGE.BAYS,
+        bays
+    );
+}
+
+
+
+/* =========================================================
+   历史
+========================================================= */
+
+function renderHistory() {
+
+    const records =
+        getOrders()
+            .filter(
+                item =>
+                    item.status ===
+                    "completed"
+            )
+            .slice()
+            .reverse();
+
+
+    const box =
+        document.getElementById(
+            "historyList"
+        );
+
+
+    if (
+        !records.length
+    ) {
+
+        box.innerHTML = `
+            <div class="empty">
+                暂无已完成维修记录
+            </div>
+        `;
+
+        return;
+    }
+
+
+    const costs =
+        getCosts();
+
+
+    box.innerHTML =
+        records
+            .map(
+                item => {
+
+                    const cost =
+                        costs.find(
+                            record =>
+                                record.orderId ===
+                                item.orderId
+                        );
+
+
+                    return `
+
+                    <div class="record-card">
+
+                        <div class="record-top">
+
+                            <strong>
+                                ✅
+                                ${escapeHtml(item.equipmentNumber)}
+                            </strong>
+
+                            <span class="badge green">
+                                已完成
+                            </span>
+
+                        </div>
+
+
+                        <div class="record-info">
+
+                            类型：
+                            ${escapeHtml(item.equipmentType || "-")}
+
+                            <br>
+
+                            维修工：
+                            ${escapeHtml(item.workerName || "-")}
+
+                            <br>
+
+                            维修项目：
+                            ${escapeHtml(item.repairProject || "-")}
+
+                            <br>
+
+                            开始：
+                            ${formatDateTime(item.startedAt)}
+
+                            <br>
+
+                            完成：
+                            ${formatDateTime(item.completedAt)}
+
+                            <br>
+
+                            总费用：
+                            ¥${Number(cost?.totalCost || 0).toFixed(2)}
+
+                        </div>
+
+                    </div>
+                    `;
+                }
+            )
+            .join(
+                ""
+            );
+}
+
+
+
+/* =========================================================
+   测试数据
+========================================================= */
+
+function generateDemoMaintenance() {
+
+    const requests =
+        getRequests();
+
+
+    requests.push({
+
+        requestId:
+            createId(
+                "MR"
+            ),
+
+        applicantName:
+            "张三",
+
+        equipmentType:
+            "矿卡",
+
+        equipmentNumber:
+            "T-021",
+
+        faultType:
+            "发动机",
+
+        severity:
+            "较严重",
+
+        description:
+            "发动机底部发现漏油，需要进厂检查。",
+
+        canMove:
+            true,
+
+        productionEquipment:
+            true,
+
+        dispatchRequired:
+            true,
+
+        dispatchStatus:
+            "pending",
+
+        status:
+            "pending_dispatch",
+
+        createdAt:
+            new Date()
+                .toISOString()
+    });
+
+
+    requests.push({
+
+        requestId:
+            createId(
+                "MR"
+            ),
+
+        applicantName:
+            "李四",
+
+        equipmentType:
+            "皮卡",
+
+        equipmentNumber:
+            "PK-003",
+
+        faultType:
+            "制动系统",
+
+        severity:
+            "一般",
+
+        description:
+            "刹车异响，申请检查。",
+
+        canMove:
+            true,
+
+        productionEquipment:
+            false,
+
+        dispatchRequired:
+            false,
+
+        dispatchStatus:
+            "not_required",
+
+        status:
+            "waiting_entry",
+
+        createdAt:
+            new Date()
+                .toISOString()
+    });
+
+
+    save(
+        STORAGE.REQUESTS,
+        requests
+    );
+
+
+    renderAll();
+
+
+    alert(
+        "已生成两条维修测试数据：\n\nT-021：等待调度批准\nPK-003：可直接进入修理厂"
+    );
+}
+
+
+
+/* =========================================================
+   数据
+========================================================= */
+
+function getRequests() {
+
+    return readArray(
+        STORAGE.REQUESTS
+    );
+}
+
+
+
+function getOrders() {
+
+    return readArray(
+        STORAGE.WORK_ORDERS
+    );
+}
+
+
+
+function getBays() {
+
+    return readArray(
+        STORAGE.BAYS
+    );
+}
+
+
+
+function getCosts() {
+
+    return readArray(
+        STORAGE.COSTS
+    );
+}
+
+
+
+/* =========================================================
+   状态文字
+========================================================= */
+
+function getOrderStatusText(
+    status
+) {
+
+    const map = {
+
+        assigned:
+            "待维修工接车",
+
+        working:
+            "维修中",
+
+        waiting_parts:
+            "等待配件",
+
+        waiting_inspection:
+            "待验收",
+
+        inspection_passed:
+            "验收通过",
+
+        rework:
+            "返修中",
+
+        completed:
+            "已完成"
+    };
+
+
+    return map[status] ||
+        status ||
+        "-";
+}
+
+
+
+/* =========================================================
+   弹窗
+========================================================= */
+
+function openModal(
+    id
+) {
+
+    document
+        .getElementById(
+            id
+        )
+        .classList.add(
+            "show"
+        );
+}
+
+
+
+function closeModal(
+    id
+) {
+
+    document
+        .getElementById(
+            id
+        )
+        .classList.remove(
+            "show"
+        );
+}
+
+
+
+/* =========================================================
+   工具
+========================================================= */
+
+function readArray(
+    key
+) {
+
+    const data =
+        readJson(
+            key,
+            []
+        );
+
+
+    return Array.isArray(
+        data
+    )
+        ? data
+        : [];
+}
+
+
+
+function readJson(
+    key,
+    fallback
+) {
+
+    try {
+
+        const raw =
+            localStorage.getItem(
+                key
+            );
+
+
+        return raw
+            ? JSON.parse(
+                raw
+            )
+            : fallback;
+
+
+    } catch (
+        error
+    ) {
+
+        console.error(
+            "读取失败：",
+            key,
+            error
+        );
+
+
+        return fallback;
+    }
+}
+
+
+
+function save(
+    key,
+    data
+) {
+
+    localStorage.setItem(
+        key,
+        JSON.stringify(
+            data
+        )
+    );
+}
+
+
+
+function setText(
+    id,
+    value
+) {
+
+    const element =
+        document.getElementById(
+            id
+        );
+
+
+    if (
+        element
+    ) {
+
+        element.textContent =
+            value;
+    }
+}
+
+
+
+function createId(
+    prefix
+) {
+
+    return (
+        prefix +
+        "_" +
+        Date.now() +
+        "_" +
+        Math.random()
+            .toString(
+                36
+            )
+            .slice(
+                2,
+                7
+            )
+    );
+}
+
+
+
+function getDateKey(
+    value
+) {
+
+    const date =
+        value
+            ? new Date(
+                value
+            )
+            : new Date();
+
+
+    if (
+        Number.isNaN(
+            date.getTime()
+        )
+    ) {
+
+        return "";
+    }
+
+
+    return [
+
+        date.getFullYear(),
+
+        String(
+            date.getMonth() + 1
+        ).padStart(
+            2,
+            "0"
+        ),
+
+        String(
+            date.getDate()
+        ).padStart(
+            2,
+            "0"
+        )
+
+    ].join(
+        "-"
+    );
+}
+
+
+
+function formatDateTime(
+    value
+) {
+
+    if (
+        !value
+    ) {
+
+        return "-";
+    }
+
+
+    const date =
+        new Date(
+            value
+        );
+
+
+    if (
+        Number.isNaN(
+            date.getTime()
+        )
+    ) {
+
+        return "-";
+    }
+
+
+    return date.toLocaleString(
+        "zh-CN",
+        {
+            month:
+                "2-digit",
+
+            day:
+                "2-digit",
+
+            hour:
+                "2-digit",
+
+            minute:
+                "2-digit"
+        }
+    );
+}
+
+
+
+function formatDuration(
+    milliseconds
+) {
+
+    if (
+        !milliseconds ||
+        milliseconds < 0
+    ) {
+
+        return "0小时 0分钟";
+    }
+
+
+    const minutes =
+        Math.floor(
+            milliseconds /
+            60000
+        );
+
+
+    const hours =
+        Math.floor(
+            minutes /
+            60
+        );
+
+
+    return (
+        hours +
+        "小时 " +
+        (
+            minutes %
+            60
+        ) +
+        "分钟"
+    );
+}
+
+
+
+function escapeHtml(
+    value
+) {
+
+    const div =
+        document.createElement(
+            "div"
+        );
+
+
+    div.textContent =
+        String(
+            value ??
+            ""
+        );
+
+
+    return div.innerHTML;
+}
+
+
+
+function escapeJs(
+    value
+) {
+
+    return String(
+        value ||
+        ""
+    )
+    .replace(
+        /\\/g,
+        "\\\\"
+    )
+    .replace(
+        /'/g,
+        "\\'"
+    );
+}
+
+
+
+function goHome() {
+
+    location.href =
+        "index.html";
+}
+
+</script>
+
+
+</body>
+
+</html>
