@@ -643,7 +643,7 @@
                 </h1>
 
                 <p>
-                    Fuel Truck Management · V2.9.9B
+                    Fuel Truck Management · V2.9.9B-1
                 </p>
 
             </div>
@@ -735,8 +735,6 @@
     </div>
 
 
-
-    <!-- 今日库存 -->
 
     <section
         id="page-dashboard"
@@ -891,8 +889,6 @@
 
 
 
-    <!-- 抽油入库 -->
-
     <section
         id="page-intake"
         class="page-section"
@@ -1003,8 +999,6 @@
 
 
 
-    <!-- 加油任务 -->
-
     <section
         id="page-fueling"
         class="page-section"
@@ -1093,8 +1087,6 @@
 
 
 
-    <!-- 加油记录 -->
-
     <section
         id="page-history"
         class="page-section"
@@ -1130,8 +1122,6 @@
     </section>
 
 
-
-    <!-- 日报 -->
 
     <section
         id="page-daily"
@@ -1185,8 +1175,6 @@
 
 
 
-    <!-- 月报 -->
-
     <section
         id="page-monthly"
         class="page-section"
@@ -1238,8 +1226,6 @@
     </section>
 
 
-
-    <!-- 库存清零 -->
 
     <section
         id="page-adjustment"
@@ -1372,13 +1358,11 @@
 
 <footer>
 
-    矿山管理系统 · 加油车司机端 V2.9.9B
+    矿山管理系统 · 加油车司机端 V2.9.9B-1
 
 </footer>
 
 
-
-<!-- 图片放大 -->
 
 <div
     id="photoModal"
@@ -1416,10 +1400,6 @@
 "use strict";
 
 
-/* =========================================================
-   数据键
-========================================================= */
-
 const STORAGE = {
 
     INTAKES:
@@ -1445,14 +1425,18 @@ let pendingFuelPhotoData =
     "";
 
 
+/*
+ * V2.9.9B-1
+ * 防止5秒刷新导致加油数量输入框清空
+ */
+let pendingFuelAmount =
+    "";
+
+
 
 initialize();
 
 
-
-/* =========================================================
-   初始化
-========================================================= */
 
 function initialize() {
 
@@ -1470,10 +1454,6 @@ function initialize() {
 }
 
 
-
-/* =========================================================
-   导航
-========================================================= */
 
 function bindNavigation() {
 
@@ -1539,10 +1519,6 @@ function bindNavigation() {
 
 
 
-/* =========================================================
-   默认日期
-========================================================= */
-
 function setDefaultDates() {
 
     const today =
@@ -1565,10 +1541,6 @@ function setDefaultDates() {
 }
 
 
-
-/* =========================================================
-   总刷新
-========================================================= */
 
 function renderAll() {
 
@@ -1602,10 +1574,6 @@ function renderAll() {
 }
 
 
-
-/* =========================================================
-   抽油入库
-========================================================= */
 
 function submitIntake() {
 
@@ -1711,10 +1679,6 @@ function submitIntake() {
 
 
 
-/* =========================================================
-   测试申请
-========================================================= */
-
 function addDemoFuelRequest() {
 
     const demoVehicles = [
@@ -1799,10 +1763,6 @@ function addDemoFuelRequest() {
 }
 
 
-
-/* =========================================================
-   一键测试数据
-========================================================= */
 
 function generateDemoFuelData() {
 
@@ -2067,10 +2027,6 @@ function generateDemoFuelData() {
 
 
 
-/* =========================================================
-   开始加油
-========================================================= */
-
 function startFueling(
     requestId
 ) {
@@ -2132,6 +2088,13 @@ function startFueling(
         "";
 
 
+    /*
+     * 新任务开始时清空旧的加油数量
+     */
+    pendingFuelAmount =
+        "";
+
+
     save(
         STORAGE.FUEL_REQUESTS,
         requests
@@ -2142,10 +2105,6 @@ function startFueling(
 }
 
 
-
-/* =========================================================
-   加油照片选择
-========================================================= */
 
 async function handleFuelPhoto(
     input
@@ -2234,10 +2193,6 @@ async function handleFuelPhoto(
 }
 
 
-
-/* =========================================================
-   图片压缩
-========================================================= */
 
 function compressImage(
     file,
@@ -2359,21 +2314,25 @@ function compressImage(
 
 
 
-/* =========================================================
-   加油完成
-========================================================= */
-
 function submitFuelCompletion(
     requestId
 ) {
 
+    /*
+     * 优先读取临时保存值，
+     * 防止5秒重绘之后input被重新创建
+     */
     const amount =
         Number(
+
+            pendingFuelAmount ||
+
             document
                 .getElementById(
                     "fuelCompleteAmount"
                 )
                 ?.value ||
+
             0
         );
 
@@ -2512,6 +2471,13 @@ function submitFuelCompletion(
         "";
 
 
+    /*
+     * 加油完成以后再清空数量
+     */
+    pendingFuelAmount =
+        "";
+
+
     renderAll();
 
 
@@ -2521,10 +2487,6 @@ function submitFuelCompletion(
 }
 
 
-
-/* =========================================================
-   司机确认 / 驳回
-========================================================= */
 
 function confirmFuelRecord(
     fuelId
@@ -2632,10 +2594,6 @@ function rejectFuelRecord(
 }
 
 
-
-/* =========================================================
-   库存调整
-========================================================= */
 
 function submitStockAdjustment() {
 
@@ -2751,10 +2709,6 @@ function submitStockAdjustment() {
 
 
 
-/* =========================================================
-   库存计算
-========================================================= */
-
 function calculateCurrentStock() {
 
     const intake =
@@ -2818,10 +2772,6 @@ function calculateCurrentStock() {
 }
 
 
-
-/* =========================================================
-   首页
-========================================================= */
 
 function renderDashboard() {
 
@@ -3010,10 +2960,6 @@ function renderDashboard() {
 
 
 
-/* =========================================================
-   抽油记录
-========================================================= */
-
 function renderIntakes() {
 
     const today =
@@ -3101,10 +3047,6 @@ function renderIntakes() {
 }
 
 
-
-/* =========================================================
-   加油队列
-========================================================= */
 
 function renderFuelQueue() {
 
@@ -3197,10 +3139,6 @@ function renderFuelQueue() {
 
 
 
-/* =========================================================
-   正在加油
-========================================================= */
-
 function renderActiveFuel() {
 
     const active =
@@ -3228,6 +3166,10 @@ function renderActiveFuel() {
     ) {
 
         pendingFuelPhotoData =
+            "";
+
+
+        pendingFuelAmount =
             "";
 
 
@@ -3279,7 +3221,9 @@ function renderActiveFuel() {
                     type="number"
                     min="0"
                     step="0.1"
+                    value="${escapeHtml(pendingFuelAmount)}"
                     placeholder="请输入加油数量"
+                    oninput="pendingFuelAmount=this.value"
                 >
 
             </div>
@@ -3378,10 +3322,6 @@ function renderActiveFuel() {
 }
 
 
-
-/* =========================================================
-   加油记录
-========================================================= */
 
 function renderFuelHistory() {
 
@@ -3564,10 +3504,6 @@ function renderFuelHistory() {
 }
 
 
-
-/* =========================================================
-   日报
-========================================================= */
 
 function renderDailyReport() {
 
@@ -3809,10 +3745,6 @@ function renderDailyReport() {
 }
 
 
-
-/* =========================================================
-   月报
-========================================================= */
 
 function renderMonthlyReport() {
 
@@ -4103,10 +4035,6 @@ function renderMonthlyReport() {
 
 
 
-/* =========================================================
-   库存调整记录
-========================================================= */
-
 function renderAdjustmentList() {
 
     const records =
@@ -4193,10 +4121,6 @@ function renderAdjustmentList() {
 
 
 
-/* =========================================================
-   图片查看
-========================================================= */
-
 function openPhotoModal(
     fuelId
 ) {
@@ -4255,10 +4179,6 @@ function closePhotoModal() {
 
 
 
-/* =========================================================
-   数据
-========================================================= */
-
 function getIntakes() {
 
     return readArray(
@@ -4294,10 +4214,6 @@ function getAdjustments() {
 }
 
 
-
-/* =========================================================
-   工具
-========================================================= */
 
 function readArray(
     key
