@@ -15,7 +15,9 @@
         content="#0f172a"
     >
 
-    <title>挖机司机工作端 - 矿山管理系统</title>
+    <title>
+        挖机司机工作端 - 矿山管理系统
+    </title>
 
 
     <style>
@@ -24,16 +26,18 @@
             box-sizing: border-box;
         }
 
+
         body {
             margin: 0;
             min-height: 100vh;
-            background: #f1f5f9;
-            color: #0f172a;
             font-family:
                 Arial,
                 "Microsoft YaHei",
                 sans-serif;
+            background: #f1f5f9;
+            color: #0f172a;
         }
+
 
         header {
             position: sticky;
@@ -47,11 +51,13 @@
                 rgba(15, 23, 42, .18);
         }
 
+
         .header-inner {
             width: 100%;
-            max-width: 780px;
+            max-width: 820px;
             margin: 0 auto;
         }
+
 
         .header-top {
             display: flex;
@@ -60,10 +66,12 @@
             gap: 12px;
         }
 
+
         header h1 {
             margin: 0;
             font-size: 22px;
         }
+
 
         header p {
             margin: 6px 0 0;
@@ -71,9 +79,11 @@
             font-size: 12px;
         }
 
+
         .header-button {
             flex-shrink: 0;
-            padding: 9px 12px;
+            min-height: 42px;
+            padding: 8px 13px;
             border: 1px solid #475569;
             border-radius: 9px;
             background: #1e293b;
@@ -83,23 +93,26 @@
             cursor: pointer;
         }
 
+
         main {
             width: 100%;
-            max-width: 780px;
+            max-width: 820px;
             margin: 0 auto;
             padding: 16px 14px 38px;
         }
 
+
         .notice {
             margin-bottom: 15px;
-            padding: 12px 14px;
+            padding: 13px 14px;
             border: 1px solid #bfdbfe;
-            border-radius: 11px;
+            border-radius: 12px;
             background: #eff6ff;
             color: #1e40af;
             font-size: 13px;
-            line-height: 1.65;
+            line-height: 1.7;
         }
+
 
         .card {
             margin-bottom: 15px;
@@ -111,6 +124,7 @@
                 rgba(15, 23, 42, .06);
         }
 
+
         .section-title {
             display: flex;
             align-items: flex-start;
@@ -119,10 +133,12 @@
             margin-bottom: 14px;
         }
 
+
         .section-title h2 {
             margin: 0;
             font-size: 18px;
         }
+
 
         .section-title p {
             margin: 5px 0 0;
@@ -131,41 +147,46 @@
             line-height: 1.5;
         }
 
+
         .badge {
             display: inline-block;
             flex-shrink: 0;
-            padding: 5px 9px;
+            padding: 5px 10px;
             border-radius: 999px;
-            background: #e2e8f0;
-            color: #475569;
             font-size: 12px;
             font-weight: 700;
         }
 
-        .badge.available {
-            background: #dcfce7;
-            color: #166534;
+
+        .badge.default {
+            background: #e2e8f0;
+            color: #475569;
         }
+
 
         .badge.pending {
             background: #fef3c7;
             color: #92400e;
         }
 
-        .badge.working {
-            background: #fee2e2;
-            color: #991b1b;
+
+        .badge.active {
+            background: #dcfce7;
+            color: #166534;
         }
 
-        .badge.paused {
-            background: #ffedd5;
-            color: #9a3412;
-        }
 
         .badge.completed {
             background: #dbeafe;
             color: #1e40af;
         }
+
+
+        .badge.disabled {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
 
         .info-grid {
             display: grid;
@@ -174,12 +195,14 @@
             gap: 10px;
         }
 
+
         .info-box {
             min-width: 0;
             padding: 12px;
             border-radius: 11px;
             background: #f8fafc;
         }
+
 
         .info-box span {
             display: block;
@@ -188,45 +211,93 @@
             font-size: 12px;
         }
 
+
         .info-box strong {
             display: block;
             font-size: 15px;
+            line-height: 1.45;
             word-break: break-word;
         }
 
+
+        .task-route {
+            margin-top: 12px;
+            padding: 12px;
+            border-radius: 11px;
+            background: #eff6ff;
+            color: #1e40af;
+            font-size: 13px;
+            line-height: 1.7;
+        }
+
+
+        .task-note {
+            margin-top: 10px;
+            padding: 12px;
+            border-radius: 11px;
+            background: #f8fafc;
+            color: #475569;
+            font-size: 13px;
+            line-height: 1.7;
+        }
+
+
+        .truck-tag-area {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 7px;
+            margin-top: 10px;
+        }
+
+
+        .truck-tag {
+            padding: 6px 9px;
+            border-radius: 999px;
+            background: #e2e8f0;
+            color: #334155;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+
         .trip-total {
-            padding: 20px 15px;
-            border-radius: 14px;
+            padding: 22px 15px;
+            border-radius: 15px;
             background: #0f172a;
             color: #ffffff;
             text-align: center;
         }
 
+
         .trip-total span {
             display: block;
-            margin-bottom: 6px;
+            margin-bottom: 7px;
             color: #cbd5e1;
             font-size: 13px;
         }
 
+
         .trip-total strong {
             display: block;
-            font-size: 40px;
+            font-size: 42px;
             line-height: 1;
         }
 
+
         .trip-total small {
             display: block;
-            margin-top: 7px;
+            margin-top: 8px;
             color: #cbd5e1;
             font-size: 12px;
         }
+
 
         .truck-list {
             display: grid;
             gap: 10px;
             margin-top: 14px;
         }
+
 
         .truck-row {
             display: flex;
@@ -239,10 +310,17 @@
             background: #f8fafc;
         }
 
+
+        .truck-info {
+            min-width: 0;
+        }
+
+
         .truck-info strong {
             display: block;
             font-size: 15px;
         }
+
 
         .truck-info span {
             display: block;
@@ -251,15 +329,18 @@
             font-size: 12px;
         }
 
+
         .truck-count {
             flex-shrink: 0;
-            min-width: 64px;
+            min-width: 70px;
             text-align: right;
         }
 
+
         .truck-count strong {
-            font-size: 24px;
+            font-size: 25px;
         }
+
 
         .truck-count span {
             margin-left: 3px;
@@ -267,120 +348,72 @@
             font-size: 12px;
         }
 
-        .route-box,
-        .remark-box {
-            margin-top: 12px;
-            padding: 12px;
-            border-radius: 10px;
-            font-size: 13px;
-            line-height: 1.65;
-        }
-
-        .route-box {
-            background: #eff6ff;
-            color: #1e40af;
-        }
-
-        .remark-box {
-            background: #f8fafc;
-            color: #475569;
-        }
-
-        .action-grid {
-            display: grid;
-            grid-template-columns:
-                repeat(2, minmax(0, 1fr));
-            gap: 10px;
-            margin-top: 15px;
-        }
-
-        button {
-            min-height: 47px;
-            padding: 10px 12px;
-            border: 0;
-            border-radius: 10px;
-            font-size: 15px;
-            font-weight: 700;
-            cursor: pointer;
-        }
-
-        button:disabled {
-            opacity: .5;
-            cursor: not-allowed;
-        }
-
-        .success-btn {
-            background: #16a34a;
-            color: #ffffff;
-        }
-
-        .warning-btn {
-            background: #f59e0b;
-            color: #ffffff;
-        }
-
-        .danger-btn {
-            background: #dc2626;
-            color: #ffffff;
-        }
-
-        .primary-btn {
-            background: #2563eb;
-            color: #ffffff;
-        }
-
-        .secondary-btn {
-            background: #ffffff;
-            color: #334155;
-            border: 1px solid #cbd5e1;
-        }
 
         .empty {
             padding: 30px 12px;
             text-align: center;
             color: #94a3b8;
             font-size: 14px;
-            line-height: 1.7;
+            line-height: 1.8;
         }
 
-        .fault-box {
-            margin-top: 12px;
-            padding: 12px;
-            border: 1px solid #fecaca;
-            border-radius: 10px;
-            background: #fef2f2;
-            color: #991b1b;
-            font-size: 13px;
-            line-height: 1.6;
+
+        .history-list {
+            display: grid;
+            gap: 10px;
         }
+
 
         .history-item {
-            margin-bottom: 10px;
-            padding: 12px;
+            padding: 13px;
             border: 1px solid #e2e8f0;
-            border-radius: 10px;
+            border-radius: 11px;
+            background: #ffffff;
         }
 
-        .history-item:last-child {
-            margin-bottom: 0;
-        }
 
         .history-top {
             display: flex;
+            align-items: flex-start;
             justify-content: space-between;
-            gap: 10px;
+            gap: 12px;
         }
+
 
         .history-top strong {
             font-size: 14px;
         }
 
+
         .history-detail {
-            margin-top: 7px;
+            margin-top: 8px;
             color: #64748b;
+            font-size: 12px;
+            line-height: 1.7;
+        }
+
+
+        .history-trucks {
+            margin-top: 8px;
+            padding: 9px;
+            border-radius: 9px;
+            background: #f8fafc;
+            color: #475569;
             font-size: 12px;
             line-height: 1.6;
         }
+
+
+        .warning-box {
+            padding: 13px;
+            border: 1px solid #fed7aa;
+            border-radius: 11px;
+            background: #fff7ed;
+            color: #9a3412;
+            font-size: 13px;
+            line-height: 1.7;
+        }
+
 
         footer {
             padding: 20px;
@@ -389,13 +422,14 @@
             font-size: 12px;
         }
 
-        @media (max-width: 560px) {
 
-            .info-grid,
-            .action-grid {
+        @media (
+            max-width: 560px
+        ) {
+
+            .info-grid {
                 grid-template-columns: 1fr;
             }
-
         }
 
     </style>
@@ -419,7 +453,7 @@
                 </h1>
 
                 <p>
-                    Excavator Operator · V2.9.8B-2
+                    Excavator Operator · V2.9.8B-3
                 </p>
 
             </div>
@@ -430,7 +464,7 @@
                 class="header-button"
                 onclick="goHome()"
             >
-                首页
+                返回首页
             </button>
 
         </div>
@@ -444,27 +478,44 @@
 
 
     <div class="notice">
-        挖机任务由调度统一分配。挖机车数不需要司机手工记录，
-        系统根据跟随本挖机汽车的有效运输趟数自动统计。
+
+        本页面不允许手工填写挖机车数。
+
+        <br>
+
+        挖机车数由跟随该挖机的汽车有效运输趟数自动汇总，
+        GPS 被调度判定无效的运输记录不会计入正式车数。
+
     </div>
 
 
-    <!-- 人员信息 -->
+
+    <!-- =====================================================
+         当前人员
+    ====================================================== -->
 
     <section class="card">
 
         <div class="section-title">
 
             <div>
-                <h2>👷 我的信息</h2>
-                <p>当前登录人员</p>
+
+                <h2>
+                    👷 当前人员
+                </h2>
+
+                <p>
+                    统一人员库
+                </p>
+
             </div>
 
+
             <span
-                id="personBadge"
-                class="badge available"
+                id="personStatusBadge"
+                class="badge default"
             >
-                在职
+                -
             </span>
 
         </div>
@@ -473,23 +524,54 @@
         <div class="info-grid">
 
             <div class="info-box">
-                <span>姓名</span>
-                <strong id="personName">-</strong>
+
+                <span>
+                    姓名
+                </span>
+
+                <strong id="personName">
+                    -
+                </strong>
+
             </div>
 
-            <div class="info-box">
-                <span>岗位</span>
-                <strong id="personPosition">挖机司机</strong>
-            </div>
 
             <div class="info-box">
-                <span>部门 / 车队</span>
-                <strong id="personDepartment">-</strong>
+
+                <span>
+                    岗位
+                </span>
+
+                <strong id="personPosition">
+                    挖机司机
+                </strong>
+
             </div>
 
+
             <div class="info-box">
-                <span>人员状态</span>
-                <strong id="personStatusText">-</strong>
+
+                <span>
+                    部门 / 车队
+                </span>
+
+                <strong id="personDepartment">
+                    -
+                </strong>
+
+            </div>
+
+
+            <div class="info-box">
+
+                <span>
+                    人员编号
+                </span>
+
+                <strong id="personId">
+                    -
+                </strong>
+
             </div>
 
         </div>
@@ -497,20 +579,31 @@
     </section>
 
 
-    <!-- 当前任务 -->
+
+    <!-- =====================================================
+         当前任务
+    ====================================================== -->
 
     <section class="card">
 
         <div class="section-title">
 
             <div>
-                <h2>📋 当前生产任务</h2>
-                <p>由调度端分配</p>
+
+                <h2>
+                    📋 当前生产任务
+                </h2>
+
+                <p>
+                    调度端统一分配
+                </p>
+
             </div>
+
 
             <span
                 id="taskStatusBadge"
-                class="badge"
+                class="badge default"
             >
                 无任务
             </span>
@@ -521,7 +614,7 @@
         <div id="currentTaskArea">
 
             <div class="empty">
-                当前没有调度分配的挖机任务
+                当前没有生产任务
             </div>
 
         </div>
@@ -529,22 +622,33 @@
     </section>
 
 
-    <!-- 实时车数 -->
+
+    <!-- =====================================================
+         自动车数
+    ====================================================== -->
 
     <section
         class="card"
-        id="tripStatisticsSection"
+        id="tripSection"
         style="display:none;"
     >
 
         <div class="section-title">
 
             <div>
-                <h2>🚚 本挖机实时车数</h2>
-                <p>自动汇总跟随汽车有效运输记录</p>
+
+                <h2>
+                    🚚 挖机自动车数
+                </h2>
+
+                <p>
+                    自动读取汽车有效运输趟数
+                </p>
+
             </div>
 
-            <span class="badge available">
+
+            <span class="badge active">
                 自动统计
             </span>
 
@@ -554,10 +658,10 @@
         <div class="trip-total">
 
             <span>
-                本任务挖机累计
+                当前任务累计
             </span>
 
-            <strong id="excavatorTotalTrips">
+            <strong id="totalTripCount">
                 0
             </strong>
 
@@ -577,24 +681,37 @@
     </section>
 
 
-    <!-- 历史 -->
+
+    <!-- =====================================================
+         历史任务
+    ====================================================== -->
 
     <section class="card">
 
         <div class="section-title">
 
             <div>
-                <h2>📚 我的历史作业</h2>
-                <p>最近完成的挖机任务</p>
+
+                <h2>
+                    📚 历史作业
+                </h2>
+
+                <p>
+                    最近完成的挖机任务
+                </p>
+
             </div>
 
         </div>
 
 
-        <div id="historyList">
+        <div
+            class="history-list"
+            id="historyList"
+        >
 
             <div class="empty">
-                暂无历史作业记录
+                暂无历史任务
             </div>
 
         </div>
@@ -606,7 +723,9 @@
 
 
 <footer>
-    矿山管理系统 · 挖机司机端 V2.9.8B-2
+
+    矿山管理系统 · 挖机司机端 V2.9.8B-3
+
 </footer>
 
 
@@ -624,23 +743,18 @@ const STORAGE = {
     PERSONNEL:
         "personnelRecords",
 
-    EQUIPMENT:
-        "equipmentRecords",
-
     TASKS:
         "dispatchPublishedTasks",
 
     TRIPS:
-        "driverTripRecords",
-
-    FAULTS:
-        "equipmentFaultRecords",
-
-    EXCAVATOR_WORK:
-        "excavatorWorkRecords"
-
+        "driverTripRecords"
 };
 
+
+
+/* =========================================================
+   当前状态
+========================================================= */
 
 let currentPerson =
     null;
@@ -650,13 +764,13 @@ let currentTask =
     null;
 
 
-let currentAssignment =
+let currentExcavatorAssignment =
     null;
 
 
 
 /* =========================================================
-   启动
+   页面启动
 ========================================================= */
 
 initialize();
@@ -668,32 +782,33 @@ function initialize() {
         getCurrentPerson();
 
 
-    if (!currentPerson) {
+    if (
+        !currentPerson
+    ) {
 
-        alert(
-            "没有找到当前已审核的挖机司机资料，请重新从系统首页进入。"
-        );
-
-
-        location.replace(
-            "index.html"
-        );
-
+        showNoPerson();
 
         return;
     }
 
 
-    renderProfile();
+    renderPerson();
+
 
     refreshAll();
 
 
+    /*
+     * 每5秒自动刷新：
+     * 1. 当前任务
+     * 2. 跟随汽车
+     * 3. 运输车数
+     * 4. 历史任务
+     */
     setInterval(
         refreshAll,
         5000
     );
-
 }
 
 
@@ -705,24 +820,18 @@ function initialize() {
 function refreshAll() {
 
     /*
-       每次刷新重新确认人员仍然有效。
-    */
-
+     * 每次刷新重新确认当前人员，
+     * 防止人员被停用或离职后仍继续工作。
+     */
     const latestPerson =
         getCurrentPerson();
 
 
-    if (!latestPerson) {
+    if (
+        !latestPerson
+    ) {
 
-        alert(
-            "当前人员账号已经不可使用。"
-        );
-
-
-        location.replace(
-            "index.html"
-        );
-
+        showNoPerson();
 
         return;
     }
@@ -732,14 +841,19 @@ function refreshAll() {
         latestPerson;
 
 
-    findAssignedTask();
+    renderPerson();
+
+
+    findCurrentTask();
+
 
     renderCurrentTask();
 
+
     renderTripStatistics();
 
-    renderHistory();
 
+    renderHistory();
 }
 
 
@@ -753,8 +867,8 @@ function getPersonnelRecords() {
     return readArray(
         STORAGE.PERSONNEL
     );
-
 }
+
 
 
 function getPersonId(
@@ -774,8 +888,8 @@ function getPersonId(
         ""
 
     );
-
 }
+
 
 
 function normalizePosition(
@@ -787,12 +901,11 @@ function normalizePosition(
         "挖掘机司机":
             "挖机司机",
 
-        "挖机操作手":
+        "挖掘机操作手":
             "挖机司机",
 
-        "挖掘机操作手":
+        "挖机操作手":
             "挖机司机"
-
     };
 
 
@@ -801,78 +914,111 @@ function normalizePosition(
         position ||
         ""
     );
-
 }
+
 
 
 function isApprovedPerson(
     person
 ) {
 
-    if (!person) {
+    if (
+        !person
+    ) {
 
         return false;
-
     }
 
 
+    /*
+     * 明确不可使用状态
+     */
     if (
-        person.enabled === false ||
+        person.enabled ===
+            false
+
+        ||
 
         person.status ===
-            "disabled" ||
+            "disabled"
+
+        ||
 
         person.status ===
-            "resigned" ||
+            "resigned"
+
+        ||
 
         person.status ===
-            "rejected" ||
+            "rejected"
+
+        ||
 
         person.approvalStatus ===
-            "rejected" ||
+            "rejected"
+
+        ||
 
         person.personnelStatus ===
-            "停用" ||
+            "停用"
+
+        ||
 
         person.personnelStatus ===
             "离职"
     ) {
 
         return false;
-
     }
 
 
     return (
 
         person.status ===
-            "approved" ||
+            "approved"
+
+        ||
 
         person.status ===
-            "active" ||
+            "active"
+
+        ||
 
         person.status ===
-            "working" ||
+            "working"
+
+        ||
 
         person.status ===
-            "leave" ||
+            "leave"
+
+        ||
 
         person.approvalStatus ===
-            "approved" ||
+            "approved"
+
+        ||
 
         person.personnelStatus ===
-            "在职可用" ||
+            "在职可用"
+
+        ||
 
         person.personnelStatus ===
-            "作业中" ||
+            "作业中"
+
+        ||
 
         person.personnelStatus ===
             "请假"
-
     );
-
 }
 
+
+
+/* =========================================================
+   当前挖机司机识别
+========================================================= */
 
 function getCurrentPerson() {
 
@@ -886,6 +1032,10 @@ function getCurrentPerson() {
         );
 
 
+    /*
+     * 第一优先级：
+     * currentPersonId
+     */
     if (
         currentPersonId
     ) {
@@ -897,12 +1047,16 @@ function getCurrentPerson() {
                     getPersonId(
                         item
                     ) ===
-                        currentPersonId &&
+                        currentPersonId
+
+                    &&
 
                     normalizePosition(
                         item.position
                     ) ===
-                        "挖机司机" &&
+                        "挖机司机"
+
+                    &&
 
                     isApprovedPerson(
                         item
@@ -910,29 +1064,30 @@ function getCurrentPerson() {
             );
 
 
-        if (person) {
+        if (
+            person
+        ) {
 
             return person;
-
         }
-
     }
 
 
     /*
-       测试阶段兼容：
-       如果系统只有一个已审核挖机司机，
-       自动识别。
-    */
-
-    const drivers =
+     * 测试阶段兼容：
+     * 如果浏览器内只有一个已审核挖机司机，
+     * 自动识别。
+     */
+    const excavatorDrivers =
         records.filter(
             item =>
 
                 normalizePosition(
                     item.position
                 ) ===
-                    "挖机司机" &&
+                    "挖机司机"
+
+                &&
 
                 isApprovedPerson(
                     item
@@ -941,24 +1096,27 @@ function getCurrentPerson() {
 
 
     if (
-        drivers.length === 1
+        excavatorDrivers.length ===
+        1
     ) {
+
+        const person =
+            excavatorDrivers[0];
+
 
         localStorage.setItem(
             "currentPersonId",
             getPersonId(
-                drivers[0]
+                person
             )
         );
 
 
-        return drivers[0];
-
+        return person;
     }
 
 
     return null;
-
 }
 
 
@@ -967,7 +1125,15 @@ function getCurrentPerson() {
    人员显示
 ========================================================= */
 
-function renderProfile() {
+function renderPerson() {
+
+    if (
+        !currentPerson
+    ) {
+
+        return;
+    }
+
 
     setText(
         "personName",
@@ -978,6 +1144,9 @@ function renderProfile() {
 
     setText(
         "personPosition",
+        normalizePosition(
+            currentPerson.position
+        ) ||
         "挖机司机"
     );
 
@@ -991,11 +1160,113 @@ function renderProfile() {
 
 
     setText(
-        "personStatusText",
-        currentPerson.personnelStatus ||
-        "在职可用"
+        "personId",
+        getPersonId(
+            currentPerson
+        ) ||
+        "-"
     );
 
+
+    const badge =
+        document.getElementById(
+            "personStatusBadge"
+        );
+
+
+    const personnelStatus =
+        currentPerson.personnelStatus ||
+        currentPerson.status ||
+        "在职可用";
+
+
+    if (
+        badge
+    ) {
+
+        badge.textContent =
+            personnelStatus;
+
+
+        badge.className =
+            "badge active";
+    }
+}
+
+
+
+/* =========================================================
+   未找到人员
+========================================================= */
+
+function showNoPerson() {
+
+    setText(
+        "personName",
+        "-"
+    );
+
+
+    setText(
+        "personId",
+        "-"
+    );
+
+
+    setText(
+        "personDepartment",
+        "-"
+    );
+
+
+    const badge =
+        document.getElementById(
+            "personStatusBadge"
+        );
+
+
+    if (
+        badge
+    ) {
+
+        badge.textContent =
+            "不可使用";
+
+
+        badge.className =
+            "badge disabled";
+    }
+
+
+    const taskArea =
+        document.getElementById(
+            "currentTaskArea"
+        );
+
+
+    if (
+        taskArea
+    ) {
+
+        taskArea.innerHTML = `
+
+            <div class="warning-box">
+
+                当前没有找到已通过管理员审核的挖机司机资料。
+
+                <br>
+
+                请返回系统首页重新进入。
+
+            </div>
+        `;
+    }
+
+
+    document.getElementById(
+        "tripSection"
+    ).style.display =
+        "none";
 }
 
 
@@ -1009,11 +1280,34 @@ function getTasks() {
     return readArray(
         STORAGE.TASKS
     );
-
 }
 
 
-function findAssignedTask() {
+
+/* =========================================================
+   找当前任务
+
+   调度端保存：
+   task.excavatorDriverAssignments
+========================================================= */
+
+function findCurrentTask() {
+
+    currentTask =
+        null;
+
+
+    currentExcavatorAssignment =
+        null;
+
+
+    if (
+        !currentPerson
+    ) {
+
+        return;
+    }
+
 
     const personId =
         getPersonId(
@@ -1021,12 +1315,11 @@ function findAssignedTask() {
         );
 
 
-    currentTask =
-        null;
-
-
-    currentAssignment =
-        null;
+    const personName =
+        String(
+            currentPerson.name ||
+            ""
+        ).trim();
 
 
     const tasks =
@@ -1035,7 +1328,9 @@ function findAssignedTask() {
                 task =>
 
                     task.status ===
-                        "pending" ||
+                        "pending"
+
+                    ||
 
                     task.status ===
                         "active"
@@ -1057,40 +1352,89 @@ function findAssignedTask() {
 
 
     for (
-        const task of tasks
+        const task of
+        tasks
     ) {
 
-        const assignment =
-            (
-                task.excavatorDriverAssignments ||
-                []
+        const assignments =
+            Array.isArray(
+                task.excavatorDriverAssignments
             )
-                .find(
-                    item =>
+                ? task.excavatorDriverAssignments
+                : [];
+
+
+        const assignment =
+            assignments.find(
+                item => {
+
+                    const assignmentId =
                         String(
                             item.driverId ||
+                            item.personId ||
                             ""
-                        ) ===
-                            personId
-                );
+                        );
 
 
-        if (assignment) {
+                    const assignmentName =
+                        String(
+                            item.driverName ||
+                            item.personName ||
+                            ""
+                        ).trim();
+
+
+                    /*
+                     * 优先人员ID
+                     */
+                    if (
+                        personId &&
+                        assignmentId
+                    ) {
+
+                        return (
+                            personId ===
+                            assignmentId
+                        );
+                    }
+
+
+                    /*
+                     * 老数据兼容：
+                     * ID缺失时按姓名
+                     */
+                    if (
+                        personName &&
+                        assignmentName
+                    ) {
+
+                        return (
+                            personName ===
+                            assignmentName
+                        );
+                    }
+
+
+                    return false;
+                }
+            );
+
+
+        if (
+            assignment
+        ) {
 
             currentTask =
                 task;
 
 
-            currentAssignment =
+            currentExcavatorAssignment =
                 assignment;
 
 
             return;
-
         }
-
     }
-
 }
 
 
@@ -1101,7 +1445,7 @@ function findAssignedTask() {
 
 function renderCurrentTask() {
 
-    const box =
+    const area =
         document.getElementById(
             "currentTaskArea"
         );
@@ -1115,104 +1459,63 @@ function renderCurrentTask() {
 
     if (
         !currentTask ||
-        !currentAssignment
+        !currentExcavatorAssignment
     ) {
 
-        badge.textContent =
-            "无任务";
+        if (
+            badge
+        ) {
+
+            badge.textContent =
+                "无任务";
 
 
-        badge.className =
-            "badge";
+            badge.className =
+                "badge default";
+        }
 
 
-        box.innerHTML =
-            `
-            <div class="empty">
-                当前没有调度分配的挖机任务。
-                <br>
-                调度发布并指定挖机司机后，
-                任务会自动出现在这里。
-            </div>
+        if (
+            area
+        ) {
+
+            area.innerHTML = `
+
+                <div class="empty">
+
+                    当前没有调度分配的挖机任务。
+
+                    <br>
+
+                    调度发布任务并指定挖机司机后，
+                    本页面会自动显示任务。
+
+                </div>
             `;
+        }
 
 
         document.getElementById(
-            "tripStatisticsSection"
+            "tripSection"
         ).style.display =
             "none";
 
 
         return;
-
     }
-
-
-    const workRecord =
-        getCurrentWorkRecord();
-
-
-    let status =
-        workRecord?.status ||
-        "assigned";
-
-
-    let statusText =
-        "已分配";
-
-
-    let badgeClass =
-        "pending";
-
-
-    if (
-        status ===
-        "working"
-    ) {
-
-        statusText =
-            "作业中";
-
-        badgeClass =
-            "working";
-
-    } else if (
-        status ===
-        "paused"
-    ) {
-
-        statusText =
-            "已暂停";
-
-        badgeClass =
-            "paused";
-
-    }
-
-
-    badge.textContent =
-        statusText;
-
-
-    badge.className =
-        "badge " +
-        badgeClass;
 
 
     const excavatorId =
-        currentAssignment.excavatorId;
+        currentExcavatorAssignment.excavatorId ||
+        currentExcavatorAssignment.excavatorNumber ||
+        "";
 
 
     const binding =
-        (
-            currentTask.bindings ||
-            []
-        )
-            .find(
-                item =>
-                    item.excavatorId ===
-                    excavatorId
-            );
+        findExcavatorBinding(
+            currentTask,
+            excavatorId
+        );
 
 
     const trucks =
@@ -1220,875 +1523,219 @@ function renderCurrentTask() {
         [];
 
 
-    let actionHtml =
-        "";
-
-
     if (
-        status ===
-        "assigned"
+        badge
     ) {
 
-        actionHtml = `
+        if (
+            currentTask.status ===
+            "active"
+        ) {
 
-            <div class="action-grid">
+            badge.textContent =
+                "执行中";
 
-                <button
-                    type="button"
-                    class="success-btn"
-                    onclick="startWork()"
-                >
-                    ▶ 开始作业
-                </button>
 
-                <button
-                    type="button"
-                    class="danger-btn"
-                    onclick="reportFault()"
-                >
-                    ⚠ 故障上报
-                </button>
+            badge.className =
+                "badge active";
 
-            </div>
-        `;
+        } else {
 
-    } else if (
-        status ===
-        "working"
-    ) {
+            badge.textContent =
+                "待执行";
 
-        actionHtml = `
 
-            <div class="action-grid">
-
-                <button
-                    type="button"
-                    class="warning-btn"
-                    onclick="pauseWork()"
-                >
-                    ⏸ 暂停作业
-                </button>
-
-                <button
-                    type="button"
-                    class="danger-btn"
-                    onclick="reportFault()"
-                >
-                    ⚠ 故障上报
-                </button>
-
-                <button
-                    type="button"
-                    class="primary-btn"
-                    onclick="completeMyWork()"
-                >
-                    ✅ 完成本人作业
-                </button>
-
-            </div>
-        `;
-
-    } else if (
-        status ===
-        "paused"
-    ) {
-
-        actionHtml = `
-
-            <div class="action-grid">
-
-                <button
-                    type="button"
-                    class="success-btn"
-                    onclick="resumeWork()"
-                >
-                    ▶ 恢复作业
-                </button>
-
-                <button
-                    type="button"
-                    class="danger-btn"
-                    onclick="reportFault()"
-                >
-                    ⚠ 故障上报
-                </button>
-
-                <button
-                    type="button"
-                    class="primary-btn"
-                    onclick="completeMyWork()"
-                >
-                    ✅ 完成本人作业
-                </button>
-
-            </div>
-        `;
-
+            badge.className =
+                "badge pending";
+        }
     }
 
 
-    const faultHtml =
-        workRecord?.lastFault
-            ? `
+    if (
+        area
+    ) {
 
-            <div class="fault-box">
+        area.innerHTML = `
+
+            <div class="info-grid">
+
+                <div class="info-box">
+
+                    <span>
+                        作业区域
+                    </span>
+
+                    <strong>
+                        ${escapeHtml(currentTask.area || "-")}
+                    </strong>
+
+                </div>
+
+
+                <div class="info-box">
+
+                    <span>
+                        班次
+                    </span>
+
+                    <strong>
+                        ${escapeHtml(currentTask.shift || "-")}
+                    </strong>
+
+                </div>
+
+
+                <div class="info-box">
+
+                    <span>
+                        当前挖机
+                    </span>
+
+                    <strong>
+                        🚜 ${escapeHtml(excavatorId || "-")}
+                    </strong>
+
+                </div>
+
+
+                <div class="info-box">
+
+                    <span>
+                        当前跟随汽车
+                    </span>
+
+                    <strong>
+                        ${trucks.length} 台
+                    </strong>
+
+                </div>
+
+            </div>
+
+
+            <div class="task-route">
 
                 <strong>
-                    ⚠ 最近故障
+                    运输路线
                 </strong>
 
                 <br>
 
-                ${escapeHtml(
-                    workRecord.lastFault
-                )}
+                ${escapeHtml(currentTask.loadingPoint || "-")}
+
+                →
+
+                ${escapeHtml(currentTask.unloadingPoint || "-")}
 
             </div>
-            `
-            : "";
 
 
-    box.innerHTML = `
-
-        <div class="info-grid">
-
-            <div class="info-box">
-
-                <span>
-                    当前挖机
-                </span>
+            <div class="task-note">
 
                 <strong>
-                    🚜
-                    ${escapeHtml(excavatorId || "-")}
-                </strong>
-
-            </div>
-
-
-            <div class="info-box">
-
-                <span>
-                    作业区域
-                </span>
-
-                <strong>
-                    ${escapeHtml(currentTask.area || "-")}
-                </strong>
-
-            </div>
-
-
-            <div class="info-box">
-
-                <span>
-                    班次
-                </span>
-
-                <strong>
-                    ${escapeHtml(currentTask.shift || "-")}
-                </strong>
-
-            </div>
-
-
-            <div class="info-box">
-
-                <span>
                     跟随汽车
-                </span>
-
-                <strong>
-                    ${trucks.length} 台
                 </strong>
 
-            </div>
 
-        </div>
+                <div class="truck-tag-area">
 
+                    ${
+                        trucks.length
 
-        <div class="route-box">
+                            ?
 
-            <strong>
-                运输路线
-            </strong>
-
-            <br>
-
-            ${escapeHtml(
-                currentTask.loadingPoint ||
-                "-"
-            )}
-
-            →
-
-            ${escapeHtml(
-                currentTask.unloadingPoint ||
-                "-"
-            )}
-
-        </div>
-
-
-        <div class="remark-box">
-
-            <strong>
-                当前跟随车辆
-            </strong>
-
-            <br>
-
-            ${
-                trucks.length
-                    ?
-                    trucks
-                        .map(
-                            item =>
-                                "🚚 " +
-                                escapeHtml(
-                                    item
+                            trucks
+                                .map(
+                                    truckId => `
+                                        <span class="truck-tag">
+                                            🚚 ${escapeHtml(truckId)}
+                                        </span>
+                                    `
                                 )
-                        )
-                        .join(
-                            "　"
-                        )
-                    :
-                    "当前没有跟随汽车"
-            }
+                                .join(
+                                    ""
+                                )
 
-        </div>
+                            :
 
-
-        ${
-            currentTask.remark
-                ? `
-
-                <div class="remark-box">
-
-                    <strong>
-                        调度说明
-                    </strong>
-
-                    <br>
-
-                    ${escapeHtml(
-                        currentTask.remark
-                    )}
+                            '<span class="truck-tag">暂无汽车</span>'
+                    }
 
                 </div>
-                `
-                :
-                ""
-        }
+
+            </div>
 
 
-        ${faultHtml}
+            ${
+                currentTask.remark
 
-        ${actionHtml}
-    `;
+                    ?
+
+                    `
+
+                    <div class="task-note">
+
+                        <strong>
+                            调度备注
+                        </strong>
+
+                        <br>
+
+                        ${escapeHtml(currentTask.remark)}
+
+                    </div>
+                    `
+
+                    :
+
+                    ""
+            }
+        `;
+    }
 
 
     document.getElementById(
-        "tripStatisticsSection"
+        "tripSection"
     ).style.display =
         "block";
-
 }
 
 
 
 /* =========================================================
-   挖机工作记录
+   查找当前挖机绑定
 ========================================================= */
 
-function getWorkRecords() {
-
-    return readArray(
-        STORAGE.EXCAVATOR_WORK
-    );
-
-}
-
-
-function saveWorkRecords(
-    records
+function findExcavatorBinding(
+    task,
+    excavatorId
 ) {
-
-    localStorage.setItem(
-        STORAGE.EXCAVATOR_WORK,
-        JSON.stringify(
-            records
-        )
-    );
-
-}
-
-
-function getCurrentWorkRecord() {
-
-    if (
-        !currentTask ||
-        !currentAssignment
-    ) {
-
-        return null;
-
-    }
-
-
-    const personId =
-        getPersonId(
-            currentPerson
-        );
-
 
     return (
-        getWorkRecords()
+        (
+            task.bindings ||
+            []
+        )
             .find(
                 item =>
-
-                    item.taskId ===
-                        currentTask.taskId &&
-
-                    item.personId ===
-                        personId &&
-
-                    item.excavatorId ===
-                        currentAssignment.excavatorId &&
-
-                    item.status !==
-                        "completed"
-            ) ||
+                    String(
+                        item.excavatorId ||
+                        ""
+                    ) ===
+                    String(
+                        excavatorId ||
+                        ""
+                    )
+            )
+        ||
         null
     );
-
-}
-
-
-function ensureWorkRecord() {
-
-    let record =
-        getCurrentWorkRecord();
-
-
-    if (record) {
-
-        return record;
-
-    }
-
-
-    if (
-        !currentTask ||
-        !currentAssignment
-    ) {
-
-        return null;
-
-    }
-
-
-    const records =
-        getWorkRecords();
-
-
-    record = {
-
-        workId:
-            "EXWORK_" +
-            Date.now(),
-
-        taskId:
-            currentTask.taskId,
-
-        personId:
-            getPersonId(
-                currentPerson
-            ),
-
-        personName:
-            currentPerson.name ||
-            "",
-
-        excavatorId:
-            currentAssignment.excavatorId,
-
-        status:
-            "assigned",
-
-        assignedAt:
-            currentTask.publishedAt ||
-            new Date()
-                .toISOString(),
-
-        createdAt:
-            new Date()
-                .toISOString(),
-
-        updatedAt:
-            new Date()
-                .toISOString()
-
-    };
-
-
-    records.push(
-        record
-    );
-
-
-    saveWorkRecords(
-        records
-    );
-
-
-    return record;
-
-}
-
-
-function updateCurrentWorkRecord(
-    callback
-) {
-
-    if (
-        !currentTask ||
-        !currentAssignment
-    ) {
-
-        return;
-    }
-
-
-    const records =
-        getWorkRecords();
-
-
-    const personId =
-        getPersonId(
-            currentPerson
-        );
-
-
-    let record =
-        records.find(
-            item =>
-
-                item.taskId ===
-                    currentTask.taskId &&
-
-                item.personId ===
-                    personId &&
-
-                item.excavatorId ===
-                    currentAssignment.excavatorId &&
-
-                item.status !==
-                    "completed"
-        );
-
-
-    if (!record) {
-
-        record =
-            ensureWorkRecord();
-
-
-        if (!record) {
-
-            return;
-
-        }
-
-
-        /*
-           重新读取，
-           因为 ensureWorkRecord 已经保存。
-        */
-
-        return updateCurrentWorkRecord(
-            callback
-        );
-
-    }
-
-
-    callback(
-        record
-    );
-
-
-    record.updatedAt =
-        new Date()
-            .toISOString();
-
-
-    saveWorkRecords(
-        records
-    );
-
 }
 
 
 
 /* =========================================================
-   开始作业
-========================================================= */
-
-function startWork() {
-
-    if (
-        !currentTask ||
-        !currentAssignment
-    ) {
-
-        return;
-    }
-
-
-    const device =
-        getEquipmentById(
-            currentAssignment.excavatorId
-        );
-
-
-    if (
-        device &&
-        isEquipmentUnavailable(
-            device
-        )
-    ) {
-
-        alert(
-            "该挖机当前处于维修、保养或停用状态，不能开始作业。"
-        );
-
-
-        return;
-    }
-
-
-    ensureWorkRecord();
-
-
-    updateCurrentWorkRecord(
-        record => {
-
-            record.status =
-                "working";
-
-
-            record.startedAt =
-                record.startedAt ||
-                new Date()
-                    .toISOString();
-
-        }
-    );
-
-
-    setEquipmentStatus(
-        currentAssignment.excavatorId,
-        "working",
-        "作业中"
-    );
-
-
-    refreshAll();
-
-}
-
-
-
-/* =========================================================
-   暂停
-========================================================= */
-
-function pauseWork() {
-
-    const reason =
-        prompt(
-            "请输入暂停原因："
-        );
-
-
-    if (
-        reason ===
-        null
-    ) {
-
-        return;
-    }
-
-
-    updateCurrentWorkRecord(
-        record => {
-
-            record.status =
-                "paused";
-
-
-            record.pauseReason =
-                reason.trim();
-
-
-            record.pausedAt =
-                new Date()
-                    .toISOString();
-
-        }
-    );
-
-
-    refreshAll();
-
-}
-
-
-
-/* =========================================================
-   恢复
-========================================================= */
-
-function resumeWork() {
-
-    updateCurrentWorkRecord(
-        record => {
-
-            record.status =
-                "working";
-
-
-            record.resumedAt =
-                new Date()
-                    .toISOString();
-
-        }
-    );
-
-
-    refreshAll();
-
-}
-
-
-
-/* =========================================================
-   故障上报
-========================================================= */
-
-function reportFault() {
-
-    if (
-        !currentTask ||
-        !currentAssignment
-    ) {
-
-        return;
-    }
-
-
-    const description =
-        prompt(
-            "请输入挖机故障情况："
-        );
-
-
-    if (
-        description ===
-            null ||
-        !description.trim()
-    ) {
-
-        return;
-    }
-
-
-    const now =
-        new Date()
-            .toISOString();
-
-
-    const faults =
-        readArray(
-            STORAGE.FAULTS
-        );
-
-
-    faults.push({
-
-        faultId:
-            "FAULT_" +
-            Date.now(),
-
-        taskId:
-            currentTask.taskId,
-
-        equipmentNumber:
-            currentAssignment.excavatorId,
-
-        equipmentId:
-            currentAssignment.excavatorId,
-
-        equipmentType:
-            "挖掘机",
-
-        reportedById:
-            getPersonId(
-                currentPerson
-            ),
-
-        reportedByName:
-            currentPerson.name ||
-            "",
-
-        description:
-            description.trim(),
-
-        status:
-            "pending",
-
-        reportedAt:
-            now
-
-    });
-
-
-    localStorage.setItem(
-        STORAGE.FAULTS,
-        JSON.stringify(
-            faults
-        )
-    );
-
-
-    ensureWorkRecord();
-
-
-    updateCurrentWorkRecord(
-        record => {
-
-            record.status =
-                "paused";
-
-
-            record.lastFault =
-                description.trim();
-
-
-            record.lastFaultAt =
-                now;
-
-        }
-    );
-
-
-    setEquipmentStatus(
-        currentAssignment.excavatorId,
-        "maintenance",
-        "维修中",
-        description.trim()
-    );
-
-
-    refreshAll();
-
-
-    alert(
-        "故障已经上报，当前挖机已转为维修状态。"
-    );
-
-}
-
-
-
-/* =========================================================
-   完成本人作业
-========================================================= */
-
-function completeMyWork() {
-
-    if (
-        !currentTask ||
-        !currentAssignment
-    ) {
-
-        return;
-    }
-
-
-    const confirmed =
-        confirm(
-            "确认本次挖机作业已经完成吗？\n\n这只完成你的挖机作业，不会直接结束整个生产任务。"
-        );
-
-
-    if (!confirmed) {
-
-        return;
-    }
-
-
-    ensureWorkRecord();
-
-
-    updateCurrentWorkRecord(
-        record => {
-
-            record.status =
-                "completed";
-
-
-            record.completedAt =
-                new Date()
-                    .toISOString();
-
-
-            record.finalTripCount =
-                getExcavatorTripStats(
-                    currentTask,
-                    currentAssignment.excavatorId
-                ).total;
-
-        }
-    );
-
-
-    const device =
-        getEquipmentById(
-            currentAssignment.excavatorId
-        );
-
-
-    if (
-        device &&
-        !isMaintenanceStatus(
-            device
-        )
-    ) {
-
-        setEquipmentStatus(
-            currentAssignment.excavatorId,
-            "available",
-            "可用"
-        );
-
-    }
-
-
-    refreshAll();
-
-
-    alert(
-        "你的本次挖机作业已经完成。\n整个生产任务由调度端统一结束。"
-    );
-
-}
-
-
-
-/* =========================================================
-   运输趟数
+   运输记录
 ========================================================= */
 
 function getTrips() {
@@ -2096,8 +1743,8 @@ function getTrips() {
     return readArray(
         STORAGE.TRIPS
     );
-
 }
+
 
 
 function getTaskTrips(
@@ -2109,14 +1756,24 @@ function getTaskTrips(
             trip =>
 
                 trip.taskId ===
-                    task.taskId ||
+                    task.taskId
+
+                ||
 
                 trip.dispatchTaskId ===
                     task.taskId
         );
-
 }
 
+
+
+/* =========================================================
+   有效运输记录
+
+   排除：
+   1. 调度明确 rejected
+   2. officialCountEligible === false
+========================================================= */
 
 function getValidTaskTrips(
     task
@@ -2129,14 +1786,20 @@ function getValidTaskTrips(
             trip =>
 
                 trip.dispatchConfirmation !==
-                    "rejected" &&
+                    "rejected"
+
+                &&
 
                 trip.officialCountEligible !==
                     false
         );
-
 }
 
+
+
+/* =========================================================
+   运输车辆编号
+========================================================= */
 
 function getTripVehicleNumber(
     trip
@@ -2155,9 +1818,13 @@ function getTripVehicleNumber(
         ""
 
     );
-
 }
 
+
+
+/* =========================================================
+   运输发生时间
+========================================================= */
 
 function getTripTime(
     trip
@@ -2182,10 +1849,11 @@ function getTripTime(
         trip.timestamp;
 
 
-    if (!value) {
+    if (
+        !value
+    ) {
 
         return null;
-
     }
 
 
@@ -2195,26 +1863,29 @@ function getTripTime(
         );
 
 
-    return Number.isNaN(
-        date.getTime()
-    )
-        ?
-        null
-        :
-        date;
+    if (
+        Number.isNaN(
+            date.getTime()
+        )
+    ) {
 
+        return null;
+    }
+
+
+    return date;
 }
 
 
 
 /* =========================================================
-   挖机车数
+   挖机自动车数核心
 
-   优先：
-   运输记录直接带 excavatorId
+   优先级：
 
-   其次：
-   根据 truckBindingHistory 判断车辆当时属于哪台挖机
+   1. 运输记录本身有 excavatorId
+   2. truckBindingHistory 时间段匹配
+   3. 老任务没有绑定历史时，按当前 bindings 兼容
 ========================================================= */
 
 function getExcavatorTripStats(
@@ -2222,32 +1893,25 @@ function getExcavatorTripStats(
     excavatorId
 ) {
 
-    const trips =
+    const validTrips =
         getValidTaskTrips(
             task
         );
 
 
-    const history =
+    const bindingHistory =
         Array.isArray(
             task.truckBindingHistory
         )
-            ?
-            task.truckBindingHistory
-            :
-            [];
+            ? task.truckBindingHistory
+            : [];
 
 
     const currentBinding =
-        (
-            task.bindings ||
-            []
-        )
-            .find(
-                item =>
-                    item.excavatorId ===
-                    excavatorId
-            );
+        findExcavatorBinding(
+            task,
+            excavatorId
+        );
 
 
     const currentTruckIds =
@@ -2255,7 +1919,7 @@ function getExcavatorTripStats(
         [];
 
 
-    const counts =
+    const truckCounts =
         new Map();
 
 
@@ -2263,7 +1927,30 @@ function getExcavatorTripStats(
         0;
 
 
-    trips.forEach(
+
+    function addTrip(
+        truckId
+    ) {
+
+        total +=
+            1;
+
+
+        truckCounts.set(
+            truckId,
+            (
+                truckCounts.get(
+                    truckId
+                ) ||
+                0
+            ) +
+            1
+        );
+    }
+
+
+
+    validTrips.forEach(
         trip => {
 
             const truckId =
@@ -2272,12 +1959,18 @@ function getExcavatorTripStats(
                 );
 
 
-            if (!truckId) {
+            if (
+                !truckId
+            ) {
 
                 return;
             }
 
 
+            /*
+             * 第一优先：
+             * 运输记录直接保存了挖机编号
+             */
             const directExcavatorId =
                 String(
 
@@ -2290,39 +1983,32 @@ function getExcavatorTripStats(
                 );
 
 
-            /*
-               新记录：
-               汽车端已经写入挖机编号。
-            */
-
             if (
                 directExcavatorId
             ) {
 
                 if (
-                    directExcavatorId !==
+                    directExcavatorId ===
                     String(
                         excavatorId
                     )
                 ) {
 
-                    return;
+                    addTrip(
+                        truckId
+                    );
                 }
-
-
-                addTrip(
-                    truckId
-                );
 
 
                 return;
             }
 
 
-            /*
-               使用绑定历史。
-            */
 
+            /*
+             * 第二优先：
+             * 根据绑定历史判断当时跟随哪台挖机
+             */
             const tripTime =
                 getTripTime(
                     trip
@@ -2331,19 +2017,21 @@ function getExcavatorTripStats(
 
             if (
                 tripTime &&
-                history.length
+                bindingHistory.length
             ) {
 
                 const matched =
-                    history.some(
-                        item => {
+                    bindingHistory.some(
+                        record => {
 
                             if (
                                 String(
-                                    item.excavatorId
+                                    record.excavatorId ||
+                                    ""
                                 ) !==
                                 String(
-                                    excavatorId
+                                    excavatorId ||
+                                    ""
                                 )
                             ) {
 
@@ -2353,11 +2041,10 @@ function getExcavatorTripStats(
 
                             if (
                                 String(
-                                    item.truckId
+                                    record.truckId ||
+                                    ""
                                 ) !==
-                                String(
-                                    truckId
-                                )
+                                truckId
                             ) {
 
                                 return false;
@@ -2366,7 +2053,7 @@ function getExcavatorTripStats(
 
                             const start =
                                 new Date(
-                                    item.startAt ||
+                                    record.startAt ||
                                     0
                                 );
 
@@ -2386,12 +2073,12 @@ function getExcavatorTripStats(
 
 
                             if (
-                                item.endAt
+                                record.endAt
                             ) {
 
                                 end =
                                     new Date(
-                                        item.endAt
+                                        record.endAt
                                     );
 
 
@@ -2410,22 +2097,26 @@ function getExcavatorTripStats(
                             return (
 
                                 tripTime >=
-                                    start &&
+                                    start
+
+                                &&
 
                                 (
-                                    !end ||
+                                    !end
+
+                                    ||
 
                                     tripTime <=
                                         end
                                 )
-
                             );
-
                         }
                     );
 
 
-                if (matched) {
+                if (
+                    matched
+                ) {
 
                     addTrip(
                         truckId
@@ -2437,48 +2128,23 @@ function getExcavatorTripStats(
             }
 
 
-            /*
-               兼容旧任务：
-               没有挖机编号，也没有绑定历史时，
-               按当前绑定汽车统计。
-            */
 
+            /*
+             * 第三优先：
+             * 兼容老任务
+             */
             if (
-                currentTruckIds
-                    .includes(
-                        truckId
-                    )
+                currentTruckIds.includes(
+                    truckId
+                )
             ) {
 
                 addTrip(
                     truckId
                 );
             }
-
         }
     );
-
-
-    function addTrip(
-        truckId
-    ) {
-
-        total +=
-            1;
-
-
-        counts.set(
-            truckId,
-            (
-                counts.get(
-                    truckId
-                ) ||
-                0
-            ) +
-            1
-        );
-
-    }
 
 
     return {
@@ -2487,7 +2153,7 @@ function getExcavatorTripStats(
 
         trucks:
             [
-                ...counts.entries()
+                ...truckCounts.entries()
             ]
                 .map(
                     (
@@ -2500,7 +2166,6 @@ function getExcavatorTripStats(
                         truckId,
 
                         count
-
                     })
                 )
                 .sort(
@@ -2522,28 +2187,26 @@ function getExcavatorTripStats(
                                 }
                             )
                 )
-
     };
-
 }
 
 
 
 /* =========================================================
-   实时统计显示
+   当前任务车数显示
 ========================================================= */
 
 function renderTripStatistics() {
 
     const section =
         document.getElementById(
-            "tripStatisticsSection"
+            "tripSection"
         );
 
 
     if (
         !currentTask ||
-        !currentAssignment
+        !currentExcavatorAssignment
     ) {
 
         section.style.display =
@@ -2554,53 +2217,89 @@ function renderTripStatistics() {
     }
 
 
-    section.style.display =
-        "block";
+    const excavatorId =
+        currentExcavatorAssignment.excavatorId ||
+        currentExcavatorAssignment.excavatorNumber ||
+        "";
 
 
     const stats =
         getExcavatorTripStats(
             currentTask,
-            currentAssignment.excavatorId
+            excavatorId
         );
 
 
     setText(
-        "excavatorTotalTrips",
+        "totalTripCount",
         stats.total
     );
 
 
-    const binding =
-        (
-            currentTask.bindings ||
-            []
-        )
-            .find(
-                item =>
-                    item.excavatorId ===
-                    currentAssignment.excavatorId
-            );
+    const currentBinding =
+        findExcavatorBinding(
+            currentTask,
+            excavatorId
+        );
 
 
-    const currentTrucks =
-        binding?.truckIds ||
+    const currentTruckIds =
+        currentBinding?.truckIds ||
         [];
 
 
-    const knownTruckIds =
-        new Set(
+    /*
+     * 历史跟随车辆 + 当前跟随车辆
+     */
+    const allTruckIds =
+        new Set();
 
-            [
-                ...currentTrucks,
 
-                ...stats.trucks
-                    .map(
-                        item =>
-                            item.truckId
-                    )
-            ]
+    currentTruckIds.forEach(
+        id =>
+            allTruckIds.add(
+                id
+            )
+    );
 
+
+    stats.trucks.forEach(
+        item =>
+            allTruckIds.add(
+                item.truckId
+            )
+    );
+
+
+    /*
+     * truckBindingHistory 中可能有换掉的旧车辆
+     */
+    (
+        currentTask.truckBindingHistory ||
+        []
+    )
+        .filter(
+            item =>
+                String(
+                    item.excavatorId ||
+                    ""
+                ) ===
+                String(
+                    excavatorId
+                )
+        )
+        .forEach(
+            item => {
+
+                if (
+                    item.truckId
+                ) {
+
+                    allTruckIds.add(
+                        item.truckId
+                    );
+                }
+            }
         );
 
 
@@ -2611,15 +2310,15 @@ function renderTripStatistics() {
 
 
     if (
-        !knownTruckIds.size
+        !allTruckIds.size
     ) {
 
-        box.innerHTML =
-            `
+        box.innerHTML = `
+
             <div class="empty">
                 当前没有跟随汽车
             </div>
-            `;
+        `;
 
 
         return;
@@ -2628,16 +2327,20 @@ function renderTripStatistics() {
 
     box.innerHTML =
         [
-            ...knownTruckIds
+            ...allTruckIds
         ]
             .sort(
                 (
                     a,
                     b
                 ) =>
-                    String(a)
+                    String(
+                        a
+                    )
                         .localeCompare(
-                            String(b),
+                            String(
+                                b
+                            ),
                             "zh-CN",
                             {
                                 numeric:
@@ -2648,21 +2351,25 @@ function renderTripStatistics() {
             .map(
                 truckId => {
 
-                    const record =
+                    const stat =
                         stats.trucks.find(
                             item =>
-                                item.truckId ===
-                                truckId
+                                String(
+                                    item.truckId
+                                ) ===
+                                String(
+                                    truckId
+                                )
                         );
 
 
                     const count =
-                        record?.count ||
+                        stat?.count ||
                         0;
 
 
-                    const current =
-                        currentTrucks.includes(
+                    const isCurrent =
+                        currentTruckIds.includes(
                             truckId
                         );
 
@@ -2674,17 +2381,14 @@ function renderTripStatistics() {
                         <div class="truck-info">
 
                             <strong>
-                                🚚
-                                ${escapeHtml(truckId)}
+                                🚚 ${escapeHtml(truckId)}
                             </strong>
 
                             <span>
                                 ${
-                                    current
-                                        ?
-                                        "当前跟随"
-                                        :
-                                        "历史跟随"
+                                    isCurrent
+                                        ? "当前跟随车辆"
+                                        : "历史跟随车辆"
                                 }
                             </span>
 
@@ -2705,22 +2409,30 @@ function renderTripStatistics() {
 
                     </div>
                     `;
-
                 }
             )
             .join(
                 ""
             );
-
 }
 
 
 
 /* =========================================================
    历史作业
+
+   直接读取 completed 生产任务
 ========================================================= */
 
 function renderHistory() {
+
+    if (
+        !currentPerson
+    ) {
+
+        return;
+    }
+
 
     const personId =
         getPersonId(
@@ -2728,16 +2440,68 @@ function renderHistory() {
         );
 
 
-    const records =
-        getWorkRecords()
+    const personName =
+        String(
+            currentPerson.name ||
+            ""
+        ).trim();
+
+
+    const tasks =
+        getTasks()
             .filter(
-                item =>
+                task =>
+                    task.status ===
+                    "completed"
+            )
+            .filter(
+                task => {
 
-                    item.personId ===
-                        personId &&
+                    const assignments =
+                        task.excavatorDriverAssignments ||
+                        [];
 
-                    item.status ===
-                        "completed"
+
+                    return assignments.some(
+                        item => {
+
+                            const assignmentId =
+                                String(
+                                    item.driverId ||
+                                    item.personId ||
+                                    ""
+                                );
+
+
+                            const assignmentName =
+                                String(
+                                    item.driverName ||
+                                    item.personName ||
+                                    ""
+                                ).trim();
+
+
+                            if (
+                                personId &&
+                                assignmentId
+                            ) {
+
+                                return (
+                                    personId ===
+                                    assignmentId
+                                );
+                            }
+
+
+                            return (
+                                personName &&
+                                assignmentName &&
+                                personName ===
+                                    assignmentName
+                            );
+                        }
+                    );
+                }
             )
             .sort(
                 (
@@ -2746,10 +2510,12 @@ function renderHistory() {
                 ) =>
                     new Date(
                         b.completedAt ||
+                        b.publishedAt ||
                         0
                     ) -
                     new Date(
                         a.completedAt ||
+                        a.publishedAt ||
                         0
                     )
             )
@@ -2766,34 +2532,81 @@ function renderHistory() {
 
 
     if (
-        !records.length
+        !tasks.length
     ) {
 
-        box.innerHTML =
-            `
+        box.innerHTML = `
+
             <div class="empty">
-                暂无历史作业记录
+                暂无历史任务
             </div>
-            `;
+        `;
 
 
         return;
     }
 
 
-    const tasks =
-        getTasks();
-
-
     box.innerHTML =
-        records.map(
-            record => {
+        tasks.map(
+            task => {
 
-                const task =
-                    tasks.find(
-                        item =>
-                            item.taskId ===
-                            record.taskId
+                const assignment =
+                    (
+                        task.excavatorDriverAssignments ||
+                        []
+                    )
+                        .find(
+                            item => {
+
+                                const assignmentId =
+                                    String(
+                                        item.driverId ||
+                                        item.personId ||
+                                        ""
+                                    );
+
+
+                                const assignmentName =
+                                    String(
+                                        item.driverName ||
+                                        item.personName ||
+                                        ""
+                                    ).trim();
+
+
+                                if (
+                                    personId &&
+                                    assignmentId
+                                ) {
+
+                                    return (
+                                        personId ===
+                                        assignmentId
+                                    );
+                                }
+
+
+                                return (
+                                    personName &&
+                                    assignmentName &&
+                                    personName ===
+                                        assignmentName
+                                );
+                            }
+                        );
+
+
+                const excavatorId =
+                    assignment?.excavatorId ||
+                    assignment?.excavatorNumber ||
+                    "";
+
+
+                const stats =
+                    getExcavatorTripStats(
+                        task,
+                        excavatorId
                     );
 
 
@@ -2804,14 +2617,20 @@ function renderHistory() {
                     <div class="history-top">
 
                         <strong>
-                            🚜
-                            ${escapeHtml(record.excavatorId || "-")}
+
+                            🚜 ${escapeHtml(excavatorId || "-")}
+
                             ·
-                            ${escapeHtml(task?.area || "历史任务")}
+
+                            ${escapeHtml(task.area || "-")}
+
                         </strong>
 
+
                         <span class="badge completed">
-                            ${Number(record.finalTripCount || 0)}车
+
+                            ${stats.total}车
+
                         </span>
 
                     </div>
@@ -2820,242 +2639,63 @@ function renderHistory() {
                     <div class="history-detail">
 
                         班次：
-                        ${escapeHtml(task?.shift || "-")}
+                        ${escapeHtml(task.shift || "-")}
+
+                        <br>
+
+                        路线：
+                        ${escapeHtml(task.loadingPoint || "-")}
+                        →
+                        ${escapeHtml(task.unloadingPoint || "-")}
 
                         <br>
 
                         完成时间：
                         ${escapeHtml(
                             formatDateTime(
-                                record.completedAt
+                                task.completedAt
                             )
                         )}
 
                     </div>
 
+
+                    <div class="history-trucks">
+
+                        ${
+                            stats.trucks.length
+
+                                ?
+
+                                stats.trucks
+                                    .map(
+                                        item =>
+                                            `🚚 ${escapeHtml(item.truckId)}：${item.count}车`
+                                    )
+                                    .join(
+                                        "　"
+                                    )
+
+                                :
+
+                                "暂无有效运输记录"
+                        }
+
+                    </div>
+
                 </div>
                 `;
-
             }
-        ).join(
-            ""
-        );
-
-}
-
-
-
-/* =========================================================
-   设备库
-========================================================= */
-
-function getEquipmentRecords() {
-
-    return readArray(
-        STORAGE.EQUIPMENT
-    );
-
-}
-
-
-function getEquipmentNumber(
-    device
-) {
-
-    return String(
-
-        device?.equipmentNumber ||
-
-        device?.equipmentNo ||
-
-        device?.vehicleNumber ||
-
-        device?.number ||
-
-        device?.code ||
-
-        device?.equipmentId ||
-
-        device?.id ||
-
-        ""
-
-    );
-
-}
-
-
-function getEquipmentById(
-    equipmentId
-) {
-
-    return (
-        getEquipmentRecords()
-            .find(
-                item =>
-                    getEquipmentNumber(
-                        item
-                    ) ===
-                    String(
-                        equipmentId
-                    )
-            ) ||
-        null
-    );
-
-}
-
-
-function getEquipmentStatus(
-    device
-) {
-
-    return String(
-
-        device?.currentStatus ||
-
-        device?.equipmentStatus ||
-
-        device?.status ||
-
-        ""
-
-    )
-        .trim()
-        .toLowerCase();
-
-}
-
-
-function isEquipmentUnavailable(
-    device
-) {
-
-    const status =
-        getEquipmentStatus(
-            device
-        );
-
-
-    return (
-
-        status === "maintenance" ||
-
-        status === "维修" ||
-
-        status === "维修中" ||
-
-        status === "service" ||
-
-        status === "保养" ||
-
-        status === "保养中" ||
-
-        status === "disabled" ||
-
-        status === "停用" ||
-
-        status === "报废"
-
-    );
-
-}
-
-
-function isMaintenanceStatus(
-    device
-) {
-
-    const status =
-        getEquipmentStatus(
-            device
-        );
-
-
-    return (
-
-        status ===
-            "maintenance" ||
-
-        status ===
-            "维修" ||
-
-        status ===
-            "维修中"
-    );
-
-}
-
-
-function setEquipmentStatus(
-    equipmentId,
-    status,
-    chineseStatus,
-    reason = ""
-) {
-
-    const records =
-        getEquipmentRecords();
-
-
-    const device =
-        records.find(
-            item =>
-                getEquipmentNumber(
-                    item
-                ) ===
-                String(
-                    equipmentId
-                )
-        );
-
-
-    if (!device) {
-
-        return;
-    }
-
-
-    device.status =
-        status;
-
-
-    device.currentStatus =
-        chineseStatus;
-
-
-    device.equipmentStatus =
-        chineseStatus;
-
-
-    if (
-        reason
-    ) {
-
-        device.maintenanceReason =
-            reason;
-
-    }
-
-
-    device.updatedAt =
-        new Date()
-            .toISOString();
-
-
-    localStorage.setItem(
-        STORAGE.EQUIPMENT,
-        JSON.stringify(
-            records
         )
-    );
-
+            .join(
+                ""
+            );
 }
 
 
 
 /* =========================================================
-   工具
+   工具：读取数组
 ========================================================= */
 
 function readArray(
@@ -3064,21 +2704,31 @@ function readArray(
 
     try {
 
+        const raw =
+            localStorage.getItem(
+                key
+            );
+
+
+        if (
+            !raw
+        ) {
+
+            return [];
+        }
+
+
         const data =
             JSON.parse(
-                localStorage.getItem(
-                    key
-                )
+                raw
             );
 
 
         return Array.isArray(
             data
         )
-            ?
-            data
-            :
-            [];
+            ? data
+            : [];
 
 
     } catch (
@@ -3093,11 +2743,14 @@ function readArray(
 
 
         return [];
-
     }
-
 }
 
+
+
+/* =========================================================
+   工具：设置文本
+========================================================= */
 
 function setText(
     id,
@@ -3110,24 +2763,30 @@ function setText(
         );
 
 
-    if (element) {
+    if (
+        element
+    ) {
 
         element.textContent =
             value;
-
     }
-
 }
 
+
+
+/* =========================================================
+   工具：日期时间
+========================================================= */
 
 function formatDateTime(
     value
 ) {
 
-    if (!value) {
+    if (
+        !value
+    ) {
 
         return "-";
-
     }
 
 
@@ -3144,7 +2803,6 @@ function formatDateTime(
     ) {
 
         return "-";
-
     }
 
 
@@ -3152,6 +2810,9 @@ function formatDateTime(
         .toLocaleString(
             "zh-CN",
             {
+
+                year:
+                    "numeric",
 
                 month:
                     "2-digit",
@@ -3164,12 +2825,15 @@ function formatDateTime(
 
                 minute:
                     "2-digit"
-
             }
         );
-
 }
 
+
+
+/* =========================================================
+   工具：HTML转义
+========================================================= */
 
 function escapeHtml(
     value
@@ -3189,15 +2853,18 @@ function escapeHtml(
 
 
     return div.innerHTML;
-
 }
 
+
+
+/* =========================================================
+   返回首页
+========================================================= */
 
 function goHome() {
 
     location.href =
         "index.html";
-
 }
 
 </script>
