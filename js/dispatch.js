@@ -1,10 +1,12 @@
 /*
 ========================================================
 矿山管理系统
-调度端 V2.9.8B-1
-生产统计闭环 · 修复整合版
+调度端 V2.9.8B-2
+生产统计闭环 · 设备状态自动修复版
+========================================================
 
 主要功能：
+
 1. 统一人员库 personnelRecords
 2. 统一设备库 equipmentRecords
 3. 挖机 + 跟随汽车绑定
@@ -18,6 +20,8 @@
 11. 罚单
 12. 历史任务
 13. 撤销任务自动释放设备
+14. 完成任务自动释放设备
+15. 自动清理残留“作业中”设备
 ========================================================
 */
 
@@ -74,8 +78,9 @@ document.addEventListener(
                 document.getElementById(id);
 
 
+
         /* =====================================================
-           当前数据
+           当前运行数据
         ===================================================== */
 
         let equipment =
@@ -126,6 +131,8 @@ document.addEventListener(
 
             migrateTasks();
 
+            reconcileEquipmentWorkingStatus();
+
             refreshEquipmentCatalog();
 
             setAutomaticShift();
@@ -146,7 +153,7 @@ document.addEventListener(
 
 
         /* =====================================================
-           事件
+           事件绑定
         ===================================================== */
 
         function bindEvents() {
@@ -219,17 +226,29 @@ document.addEventListener(
                     "click",
                     function () {
 
-                        if ($("historyDateFilter")) {
-                            $("historyDateFilter").value = "";
+                        if (
+                            $("historyDateFilter")
+                        ) {
+                            $("historyDateFilter").value =
+                                "";
                         }
 
-                        if ($("historyShiftFilter")) {
-                            $("historyShiftFilter").value = "";
+
+                        if (
+                            $("historyShiftFilter")
+                        ) {
+                            $("historyShiftFilter").value =
+                                "";
                         }
 
-                        if ($("historyAreaFilter")) {
-                            $("historyAreaFilter").value = "";
+
+                        if (
+                            $("historyAreaFilter")
+                        ) {
+                            $("historyAreaFilter").value =
+                                "";
                         }
+
 
                         renderHistory();
                     }
@@ -394,48 +413,280 @@ document.addEventListener(
 
         /* =====================================================
            总刷新
+
+           V2.9.8B-2：
+           每次刷新首先检查幽灵“作业中”状态
         ===================================================== */
-function refreshAll() {
 
-    reconcileEquipmentWorkingStatus();
+        function refreshAll() {
 
-    refreshEquipmentCatalog();
+            reconcileEquipmentWorkingStatus();
 
-    synchronizeTaskStatus();
+            refreshEquipmentCatalog();
 
-    renderProductionBoard();
+            synchronizeTaskStatus();
 
-    renderHistory();
+            renderProductionBoard();
 
-    renderPersonnelStatusBoard();
+            renderHistory();
 
-    renderTodoCounts();
+            renderPersonnelStatusBoard();
 
-    populatePenaltyPersonnel();
+            renderTodoCounts();
+
+            populatePenaltyPersonnel();
 
 
-    if (currentDraft) {
+            if (
+                currentDraft
+            ) {
 
-        renderExcavators();
+                renderExcavators();
 
-        renderTrucks();
+                renderTrucks();
 
-        renderBindings();
+                renderBindings();
 
-        renderDriverAssignments();
+                renderDriverAssignments();
 
-        renderExcavatorDriverAssignments();
+                renderExcavatorDriverAssignments();
 
-        renderAuxiliaryVehicles();
+                renderAuxiliaryVehicles();
 
-        renderAuxiliaryAssignments();
-    }
-}
-       
+                renderAuxiliaryAssignments();
+            }
+        }
+
 
 
         /* =====================================================
-           新建任务
+           V2.9.8B-2
+           自动清理幽灵“作业中”设备状态
+
+           规则：
+
+           设备状态 = 作业中 / working
+           但是已经没有任何 pending / active 任务占用
+
+           => 自动恢复：
+              status = available
+              currentStatus = 可用
+              equipmentStatus = 可用
+
+           维修 / 保养 / 停用设备绝不修改
+        ===================================================== */
+
+        function reconcileEquipmentWorkingStatus() {
+
+            const records =
+                getEquipmentRecords();
+
+
+            if (
+                !records.length
+            ) {
+
+                return;
+            }
+
+
+            /*
+             * 当前真正被生产任务占用的全部设备
+             */
+            const occupiedIds =
+                new Set();
+
+
+            getTasks()
+                .filter(
+                    task =>
+
+                        task.status ===
+                            "pending"
+
+                        ||
+
+                        task.status ===
+                            "active"
+                )
+                .forEach(
+                    task => {
+
+                        /*
+                         * 挖机 + 汽车
+                         */
+                        (
+                            task.bindings ||
+                            []
+                        )
+                            .forEach(
+                                binding => {
+
+                                    if (
+                                        binding.excavatorId
+                                    ) {
+
+                                        occupiedIds.add(
+                                            String(
+                                                binding.excavatorId
+                                            )
+                                        );
+                                    }
+
+
+                                    (
+                                        binding.truckIds ||
+                                        []
+                                    )
+                                        .forEach(
+                                            truckId => {
+
+                                                if (
+                                                    truckId
+                                                ) {
+
+                                                    occupiedIds.add(
+                                                        String(
+                                                            truckId
+                                                        )
+                                                    );
+                                                }
+                                            }
+                                        );
+                                }
+                            );
+
+
+                        /*
+                         * 辅助车辆
+                         */
+                        (
+                            task.auxiliaryAssignments ||
+                            []
+                        )
+                            .forEach(
+                                item => {
+
+                                    if (
+                                        item.vehicleId
+                                    ) {
+
+                                        occupiedIds.add(
+                                            String(
+                                                item.vehicleId
+                                            )
+                                        );
+                                    }
+                                }
+                            );
+                    }
+                );
+
+
+            let changed =
+                false;
+
+
+            records.forEach(
+                device => {
+
+                    const normalized =
+                        normalizeEquipmentRecord(
+                            device
+                        );
+
+
+                    if (
+                        !normalized.id
+                    ) {
+
+                        return;
+                    }
+
+
+                    /*
+                     * 维修、保养、停用绝不修改
+                     */
+                    if (
+                        normalized.status ===
+                            "maintenance"
+
+                        ||
+
+                        normalized.status ===
+                            "service"
+
+                        ||
+
+                        normalized.status ===
+                            "disabled"
+                    ) {
+
+                        return;
+                    }
+
+
+                    /*
+                     * 真正仍被任务占用
+                     */
+                    if (
+                        occupiedIds.has(
+                            String(
+                                normalized.id
+                            )
+                        )
+                    ) {
+
+                        return;
+                    }
+
+
+                    /*
+                     * 没任务占用，但仍显示作业中
+                     */
+                    if (
+                        normalized.status ===
+                            "working"
+                    ) {
+
+                        device.status =
+                            "available";
+
+
+                        device.currentStatus =
+                            "可用";
+
+
+                        device.equipmentStatus =
+                            "可用";
+
+
+                        device.updatedAt =
+                            new Date()
+                                .toISOString();
+
+
+                        changed =
+                            true;
+                    }
+                }
+            );
+
+
+            if (
+                changed
+            ) {
+
+                saveEquipmentRecords(
+                    records
+                );
+            }
+        }
+
+
+
+        /* =====================================================
+           新建生产任务
         ===================================================== */
 
         function openTaskCreate() {
@@ -453,6 +704,7 @@ function refreshAll() {
                         "smooth"
                 });
         }
+
 
 
         function setAutomaticShift() {
@@ -477,6 +729,7 @@ function refreshAll() {
         }
 
 
+
         function generateDraft() {
 
             const area =
@@ -486,7 +739,9 @@ function refreshAll() {
                 "";
 
 
-            if (!area) {
+            if (
+                !area
+            ) {
 
                 alert(
                     "请输入作业区域。"
@@ -684,165 +939,41 @@ function refreshAll() {
 
 
         /* =====================================================
-           统一设备库
+           设备库
         ===================================================== */
 
         function emptyEquipmentCatalog() {
 
             return {
 
-                excavators: [],
+                excavators:
+                    [],
 
-                trucks: [],
+                trucks:
+                    [],
 
-                loader: [],
+                loader:
+                    [],
 
-                water: [],
+                water:
+                    [],
 
-                fuel: [],
+                fuel:
+                    [],
 
-                grader: [],
+                grader:
+                    [],
 
-                dozer: [],
+                dozer:
+                    [],
 
-                bus: []
+                bus:
+                    []
             };
         }
 
-function reconcileEquipmentWorkingStatus() {
-
-    const records =
-        getEquipmentRecords();
 
 
-    if (!records.length) {
-
-        return;
-    }
-
-
-    const occupiedIds =
-        new Set();
-
-
-    getTasks()
-        .filter(
-            task =>
-                task.status === "pending" ||
-                task.status === "active"
-        )
-        .forEach(
-            task => {
-
-                (task.bindings || [])
-                    .forEach(
-                        binding => {
-
-                            if (binding.excavatorId) {
-
-                                occupiedIds.add(
-                                    String(binding.excavatorId)
-                                );
-                            }
-
-
-                            (binding.truckIds || [])
-                                .forEach(
-                                    truckId => {
-
-                                        if (truckId) {
-
-                                            occupiedIds.add(
-                                                String(truckId)
-                                            );
-                                        }
-                                    }
-                                );
-                        }
-                    );
-
-
-                (task.auxiliaryAssignments || [])
-                    .forEach(
-                        item => {
-
-                            if (item.vehicleId) {
-
-                                occupiedIds.add(
-                                    String(item.vehicleId)
-                                );
-                            }
-                        }
-                    );
-            }
-        );
-
-
-    let changed =
-        false;
-
-
-    records.forEach(
-        device => {
-
-            const normalized =
-                normalizeEquipmentRecord(device);
-
-
-            if (!normalized.id) {
-
-                return;
-            }
-
-
-            if (
-                normalized.status === "maintenance" ||
-                normalized.status === "service" ||
-                normalized.status === "disabled"
-            ) {
-
-                return;
-            }
-
-
-            if (
-                occupiedIds.has(
-                    String(normalized.id)
-                )
-            ) {
-
-                return;
-            }
-
-
-            if (
-                normalized.status === "working"
-            ) {
-
-                device.status =
-                    "available";
-
-                device.currentStatus =
-                    "可用";
-
-                device.equipmentStatus =
-                    "可用";
-
-                device.updatedAt =
-                    new Date().toISOString();
-
-                changed =
-                    true;
-            }
-        }
-    );
-
-
-    if (changed) {
-
-        saveEquipmentRecords(records);
-    }
-}
         function getEquipmentRecords() {
 
             const records =
@@ -860,6 +991,7 @@ function reconcileEquipmentWorkingStatus() {
         }
 
 
+
         function saveEquipmentRecords(
             records
         ) {
@@ -871,6 +1003,7 @@ function reconcileEquipmentWorkingStatus() {
                 )
             );
         }
+
 
 
         function refreshEquipmentCatalog() {
@@ -900,9 +1033,10 @@ function reconcileEquipmentWorkingStatus() {
 
                         catalog[
                             device.group
-                        ].push(
-                            device
-                        );
+                        ]
+                            .push(
+                                device
+                            );
                     }
                 );
 
@@ -1051,7 +1185,10 @@ function reconcileEquipmentWorkingStatus() {
             if (
                 value.includes(
                     "挖掘机"
-                ) ||
+                )
+
+                ||
+
                 value.includes(
                     "挖机"
                 )
@@ -1064,15 +1201,30 @@ function reconcileEquipmentWorkingStatus() {
             if (
                 value.includes(
                     "卡车"
-                ) ||
+                )
+
+                ||
+
                 value.includes(
                     "矿卡"
-                ) ||
+                )
+
+                ||
+
                 value.includes(
                     "自卸车"
-                ) ||
+                )
+
+                ||
+
                 value.includes(
                     "运输车"
+                )
+
+                ||
+
+                value.includes(
+                    "汽车"
                 )
             ) {
 
@@ -1083,7 +1235,10 @@ function reconcileEquipmentWorkingStatus() {
             if (
                 value.includes(
                     "装载机"
-                ) ||
+                )
+
+                ||
+
                 value.includes(
                     "铲车"
                 )
@@ -1106,7 +1261,10 @@ function reconcileEquipmentWorkingStatus() {
             if (
                 value.includes(
                     "加油车"
-                ) ||
+                )
+
+                ||
+
                 value.includes(
                     "油罐车"
                 )
@@ -1119,7 +1277,10 @@ function reconcileEquipmentWorkingStatus() {
             if (
                 value.includes(
                     "平路机"
-                ) ||
+                )
+
+                ||
+
                 value.includes(
                     "平地机"
                 )
@@ -1142,7 +1303,10 @@ function reconcileEquipmentWorkingStatus() {
             if (
                 value.includes(
                     "大巴"
-                ) ||
+                )
+
+                ||
+
                 value.includes(
                     "客车"
                 )
@@ -1171,9 +1335,18 @@ function reconcileEquipmentWorkingStatus() {
 
 
             if (
-                value === "maintenance" ||
-                value === "维修" ||
-                value === "维修中"
+                value ===
+                    "maintenance"
+
+                ||
+
+                value ===
+                    "维修"
+
+                ||
+
+                value ===
+                    "维修中"
             ) {
 
                 return "maintenance";
@@ -1181,9 +1354,18 @@ function reconcileEquipmentWorkingStatus() {
 
 
             if (
-                value === "service" ||
-                value === "保养" ||
-                value === "保养中"
+                value ===
+                    "service"
+
+                ||
+
+                value ===
+                    "保养"
+
+                ||
+
+                value ===
+                    "保养中"
             ) {
 
                 return "service";
@@ -1191,9 +1373,18 @@ function reconcileEquipmentWorkingStatus() {
 
 
             if (
-                value === "disabled" ||
-                value === "停用" ||
-                value === "报废"
+                value ===
+                    "disabled"
+
+                ||
+
+                value ===
+                    "停用"
+
+                ||
+
+                value ===
+                    "报废"
             ) {
 
                 return "disabled";
@@ -1201,11 +1392,28 @@ function reconcileEquipmentWorkingStatus() {
 
 
             if (
-                value === "working" ||
-                value === "active" ||
-                value === "作业中" ||
-                value === "运行中" ||
-                value === "使用中"
+                value ===
+                    "working"
+
+                ||
+
+                value ===
+                    "active"
+
+                ||
+
+                value ===
+                    "作业中"
+
+                ||
+
+                value ===
+                    "运行中"
+
+                ||
+
+                value ===
+                    "使用中"
             ) {
 
                 return "working";
@@ -1228,14 +1436,18 @@ function reconcileEquipmentWorkingStatus() {
                 case "maintenance":
                     return "维修中";
 
+
                 case "service":
                     return "保养中";
+
 
                 case "disabled":
                     return "停用";
 
+
                 case "working":
                     return "作业中";
+
 
                 default:
                     return "可调配";
@@ -1280,7 +1492,9 @@ function reconcileEquipmentWorkingStatus() {
                     );
 
 
-                if (result) {
+                if (
+                    result
+                ) {
 
                     return result;
                 }
@@ -1309,11 +1523,15 @@ function reconcileEquipmentWorkingStatus() {
                     task =>
 
                         task.taskId !==
-                            ignoreTaskId &&
+                            ignoreTaskId
+
+                        &&
 
                         (
                             task.status ===
-                                "pending" ||
+                                "pending"
+
+                            ||
 
                             task.status ===
                                 "active"
@@ -1385,7 +1603,10 @@ function reconcileEquipmentWorkingStatus() {
 
         function renderExcavators() {
 
-            if (!currentDraft) {
+            if (
+                !currentDraft
+            ) {
+
                 return;
             }
 
@@ -1394,7 +1615,10 @@ function reconcileEquipmentWorkingStatus() {
                 $("excavatorBoard");
 
 
-            if (!board) {
+            if (
+                !board
+            ) {
+
                 return;
             }
 
@@ -1460,12 +1684,16 @@ function reconcileEquipmentWorkingStatus() {
                             );
 
 
-                        if (draftUsed) {
+                        if (
+                            draftUsed
+                        ) {
 
                             label =
                                 "本任务已用";
 
-                        } else if (selected) {
+                        } else if (
+                            selected
+                        ) {
 
                             label =
                                 "已选择";
@@ -1481,8 +1709,8 @@ function reconcileEquipmentWorkingStatus() {
                         }
 
 
-                        button.innerHTML =
-                            `
+                        button.innerHTML = `
+
                             <strong>
                                 ${escapeHtml(device.id)}
                             </strong>
@@ -1490,7 +1718,7 @@ function reconcileEquipmentWorkingStatus() {
                             <span>
                                 ${escapeHtml(label)}
                             </span>
-                            `;
+                        `;
 
 
                         button.disabled =
@@ -1562,7 +1790,10 @@ function reconcileEquipmentWorkingStatus() {
 
         function renderTrucks() {
 
-            if (!currentDraft) {
+            if (
+                !currentDraft
+            ) {
+
                 return;
             }
 
@@ -1571,7 +1802,10 @@ function reconcileEquipmentWorkingStatus() {
                 $("truckBoard");
 
 
-            if (!board) {
+            if (
+                !board
+            ) {
+
                 return;
             }
 
@@ -1648,12 +1882,16 @@ function reconcileEquipmentWorkingStatus() {
                             );
 
 
-                        if (used) {
+                        if (
+                            used
+                        ) {
 
                             label =
                                 "本任务已用";
 
-                        } else if (selected) {
+                        } else if (
+                            selected
+                        ) {
 
                             label =
                                 "已选择";
@@ -1669,15 +1907,16 @@ function reconcileEquipmentWorkingStatus() {
                         }
 
 
-                        button.innerHTML =
-                            `
+                        button.innerHTML = `
+
                             <strong>
                                 ${escapeHtml(device.id)}
                             </strong>
+
                             <span>
                                 ${escapeHtml(label)}
                             </span>
-                            `;
+                        `;
 
 
                         button.disabled =
@@ -1730,10 +1969,9 @@ function reconcileEquipmentWorkingStatus() {
 
 
                                 if (
-                                    selectedTruckIds
-                                        .includes(
-                                            device.id
-                                        )
+                                    selectedTruckIds.includes(
+                                        device.id
+                                    )
                                 ) {
 
                                     selectedTruckIds =
@@ -1746,10 +1984,9 @@ function reconcileEquipmentWorkingStatus() {
 
                                 } else {
 
-                                    selectedTruckIds
-                                        .push(
-                                            device.id
-                                        );
+                                    selectedTruckIds.push(
+                                        device.id
+                                    );
                                 }
 
 
@@ -1771,7 +2008,7 @@ function reconcileEquipmentWorkingStatus() {
 
                 setText(
                     "selectedExcavatorInfo",
-                    `当前挖机：${selectedExcavatorId} · 已选${selectedTruckIds.length}台卡车`
+                    `当前挖机：${selectedExcavatorId} · 已选${selectedTruckIds.length}台汽车`
                 );
 
 
@@ -1869,7 +2106,10 @@ function reconcileEquipmentWorkingStatus() {
                 $("bindingList");
 
 
-            if (!box) {
+            if (
+                !box
+            ) {
+
                 return;
             }
 
@@ -1976,7 +2216,7 @@ function reconcileEquipmentWorkingStatus() {
 
 
         /* =====================================================
-           统一人员库
+           人员库
         ===================================================== */
 
         function getPersonnelRecords() {
@@ -2060,29 +2300,44 @@ function reconcileEquipmentWorkingStatus() {
             person
         ) {
 
-            if (!person) {
+            if (
+                !person
+            ) {
+
                 return false;
             }
 
 
             if (
                 person.enabled ===
-                    false ||
+                    false
+
+                ||
 
                 person.status ===
-                    "rejected" ||
+                    "rejected"
+
+                ||
 
                 person.status ===
-                    "disabled" ||
+                    "disabled"
+
+                ||
 
                 person.status ===
-                    "resigned" ||
+                    "resigned"
+
+                ||
 
                 person.approvalStatus ===
-                    "rejected" ||
+                    "rejected"
+
+                ||
 
                 person.personnelStatus ===
-                    "停用" ||
+                    "停用"
+
+                ||
 
                 person.personnelStatus ===
                     "离职"
@@ -2095,25 +2350,39 @@ function reconcileEquipmentWorkingStatus() {
             return (
 
                 person.status ===
-                    "approved" ||
+                    "approved"
+
+                ||
 
                 person.status ===
-                    "active" ||
+                    "active"
+
+                ||
 
                 person.status ===
-                    "working" ||
+                    "working"
+
+                ||
 
                 person.status ===
-                    "leave" ||
+                    "leave"
+
+                ||
 
                 person.approvalStatus ===
-                    "approved" ||
+                    "approved"
+
+                ||
 
                 person.personnelStatus ===
-                    "在职可用" ||
+                    "在职可用"
+
+                ||
 
                 person.personnelStatus ===
-                    "作业中" ||
+                    "作业中"
+
+                ||
 
                 person.personnelStatus ===
                     "请假"
@@ -2131,7 +2400,9 @@ function reconcileEquipmentWorkingStatus() {
                         normalizePosition(
                             person.position
                         ) ===
-                            "汽车司机" &&
+                            "汽车司机"
+
+                        &&
 
                         isApprovedPerson(
                             person
@@ -2171,7 +2442,9 @@ function reconcileEquipmentWorkingStatus() {
                         normalizePosition(
                             person.position
                         ) ===
-                            "挖机司机" &&
+                            "挖机司机"
+
+                        &&
 
                         isApprovedPerson(
                             person
@@ -2247,7 +2520,9 @@ function reconcileEquipmentWorkingStatus() {
                             );
 
 
-                        if (old) {
+                        if (
+                            old
+                        ) {
 
                             return {
 
@@ -2299,7 +2574,10 @@ function reconcileEquipmentWorkingStatus() {
 
         function renderDriverAssignments() {
 
-            if (!currentDraft) {
+            if (
+                !currentDraft
+            ) {
+
                 return;
             }
 
@@ -2311,7 +2589,10 @@ function reconcileEquipmentWorkingStatus() {
                 $("driverAssignmentList");
 
 
-            if (!box) {
+            if (
+                !box
+            ) {
+
                 return;
             }
 
@@ -2335,7 +2616,9 @@ function reconcileEquipmentWorkingStatus() {
             );
 
 
-            if (!total) {
+            if (
+                !total
+            ) {
 
                 box.innerHTML =
                     '<div class="empty-placeholder">请先绑定挖机和汽车</div>';
@@ -2367,7 +2650,9 @@ function reconcileEquipmentWorkingStatus() {
                                             item =>
 
                                                 item.driverId ===
-                                                    person.driverId &&
+                                                    person.driverId
+
+                                                &&
 
                                                 item.vehicleNumber !==
                                                     assignment.vehicleNumber
@@ -2377,13 +2662,19 @@ function reconcileEquipmentWorkingStatus() {
                                     const disabled =
 
                                         state.code ===
-                                            "leave" ||
+                                            "leave"
+
+                                        ||
 
                                         state.code ===
-                                            "working" ||
+                                            "working"
+
+                                        ||
 
                                         state.code ===
-                                            "disabled" ||
+                                            "disabled"
+
+                                        ||
 
                                         alreadyUsed;
 
@@ -2392,12 +2683,14 @@ function reconcileEquipmentWorkingStatus() {
 
                                     <option
                                         value="${escapeHtml(person.driverId)}"
+
                                         ${
                                             assignment.driverId ===
                                             person.driverId
                                                 ? "selected"
                                                 : ""
                                         }
+
                                         ${
                                             disabled
                                                 ? "disabled"
@@ -2406,9 +2699,13 @@ function reconcileEquipmentWorkingStatus() {
                                     >
 
                                         ${escapeHtml(person.name || "-")}
+
                                         ·
+
                                         ${escapeHtml(person.team || "-")}
+
                                         ·
+
                                         ${
                                             alreadyUsed
                                                 ? "本任务已分配"
@@ -2498,12 +2795,17 @@ function reconcileEquipmentWorkingStatus() {
                 );
 
 
-            if (!assignment) {
+            if (
+                !assignment
+            ) {
+
                 return;
             }
 
 
-            if (!driverId) {
+            if (
+                !driverId
+            ) {
 
                 assignment.driverId =
                     "";
@@ -2530,7 +2832,10 @@ function reconcileEquipmentWorkingStatus() {
                     );
 
 
-            if (!person) {
+            if (
+                !person
+            ) {
+
                 return;
             }
 
@@ -2543,13 +2848,14 @@ function reconcileEquipmentWorkingStatus() {
 
             if (
                 state.code ===
-                "leave"
+                    "leave"
             ) {
 
                 alert(
                     person.name +
                     " 本班请假，不能安排任务。"
                 );
+
 
                 renderDriverAssignments();
 
@@ -2559,13 +2865,14 @@ function reconcileEquipmentWorkingStatus() {
 
             if (
                 state.code ===
-                "working"
+                    "working"
             ) {
 
                 alert(
                     person.name +
                     " 已在其他任务中。"
                 );
+
 
                 renderDriverAssignments();
 
@@ -2610,7 +2917,9 @@ function reconcileEquipmentWorkingStatus() {
                 $("driverAssignmentSection");
 
 
-            if (!driverSection) {
+            if (
+                !driverSection
+            ) {
 
                 return;
             }
@@ -2726,7 +3035,10 @@ function reconcileEquipmentWorkingStatus() {
 
         function renderExcavatorDriverAssignments() {
 
-            if (!currentDraft) {
+            if (
+                !currentDraft
+            ) {
+
                 return;
             }
 
@@ -2740,7 +3052,10 @@ function reconcileEquipmentWorkingStatus() {
                 $("excavatorDriverAssignmentList");
 
 
-            if (!box) {
+            if (
+                !box
+            ) {
+
                 return;
             }
 
@@ -2771,7 +3086,9 @@ function reconcileEquipmentWorkingStatus() {
             );
 
 
-            if (!total) {
+            if (
+                !total
+            ) {
 
                 box.innerHTML =
                     '<div class="empty-placeholder">请先绑定挖机和汽车</div>';
@@ -2805,7 +3122,9 @@ function reconcileEquipmentWorkingStatus() {
                                                     item =>
 
                                                         item.driverId ===
-                                                            person.driverId &&
+                                                            person.driverId
+
+                                                        &&
 
                                                         item.excavatorId !==
                                                             assignment.excavatorId
@@ -2815,13 +3134,19 @@ function reconcileEquipmentWorkingStatus() {
                                         const disabled =
 
                                             state.code ===
-                                                "leave" ||
+                                                "leave"
+
+                                            ||
 
                                             state.code ===
-                                                "working" ||
+                                                "working"
+
+                                            ||
 
                                             state.code ===
-                                                "disabled" ||
+                                                "disabled"
+
+                                            ||
 
                                             alreadyUsed;
 
@@ -2846,9 +3171,13 @@ function reconcileEquipmentWorkingStatus() {
                                         >
 
                                             ${escapeHtml(person.name || "-")}
+
                                             ·
+
                                             ${escapeHtml(person.team || "-")}
+
                                             ·
+
                                             ${
                                                 alreadyUsed
                                                     ? "本任务已分配"
@@ -2939,12 +3268,17 @@ function reconcileEquipmentWorkingStatus() {
                     );
 
 
-            if (!assignment) {
+            if (
+                !assignment
+            ) {
+
                 return;
             }
 
 
-            if (!driverId) {
+            if (
+                !driverId
+            ) {
 
                 assignment.driverId =
                     "";
@@ -2971,7 +3305,10 @@ function reconcileEquipmentWorkingStatus() {
                     );
 
 
-            if (!person) {
+            if (
+                !person
+            ) {
+
                 return;
             }
 
@@ -2981,18 +3318,23 @@ function reconcileEquipmentWorkingStatus() {
                     item =>
 
                         item.driverId ===
-                            driverId &&
+                            driverId
+
+                        &&
 
                         item.excavatorId !==
                             excavatorId
                 );
 
 
-            if (duplicate) {
+            if (
+                duplicate
+            ) {
 
                 alert(
                     "同一名挖机司机不能同时操作两台挖机。"
                 );
+
 
                 renderExcavatorDriverAssignments();
 
@@ -3008,13 +3350,14 @@ function reconcileEquipmentWorkingStatus() {
 
             if (
                 state.code ===
-                "leave"
+                    "leave"
             ) {
 
                 alert(
                     person.name +
                     " 本班请假。"
                 );
+
 
                 renderExcavatorDriverAssignments();
 
@@ -3024,13 +3367,14 @@ function reconcileEquipmentWorkingStatus() {
 
             if (
                 state.code ===
-                "working"
+                    "working"
             ) {
 
                 alert(
                     person.name +
                     " 已在其他生产任务中。"
                 );
+
 
                 renderExcavatorDriverAssignments();
 
@@ -3077,11 +3421,15 @@ function reconcileEquipmentWorkingStatus() {
 
                         (
                             task.status ===
-                                "pending" ||
+                                "pending"
+
+                            ||
 
                             task.status ===
                                 "active"
-                        ) &&
+                        )
+
+                        &&
 
                         (
                             (
@@ -3096,6 +3444,7 @@ function reconcileEquipmentWorkingStatus() {
                                         ) ===
                                         id
                                 )
+
                             ||
 
                             (
@@ -3212,7 +3561,9 @@ function reconcileEquipmentWorkingStatus() {
             person
         ) {
 
-            if (!currentDraft) {
+            if (
+                !currentDraft
+            ) {
 
                 return getCurrentPersonStatus(
                     person
@@ -3342,7 +3693,10 @@ function reconcileEquipmentWorkingStatus() {
                 $("personnelStatusBoard");
 
 
-            if (!box) {
+            if (
+                !box
+            ) {
+
                 return;
             }
 
@@ -3418,7 +3772,10 @@ function reconcileEquipmentWorkingStatus() {
                 $("auxiliaryVehicleSelect");
 
 
-            if (!select) {
+            if (
+                !select
+            ) {
+
                 return;
             }
 
@@ -3467,11 +3824,15 @@ function reconcileEquipmentWorkingStatus() {
 
                             !isEquipmentDispatchable(
                                 vehicle
-                            ) ||
+                            )
+
+                            ||
 
                             occupied.has(
                                 vehicle.id
-                            ) ||
+                            )
+
+                            ||
 
                             draftUsed;
 
@@ -3565,7 +3926,10 @@ function reconcileEquipmentWorkingStatus() {
                 $("auxiliaryAssignmentList");
 
 
-            if (!box) {
+            if (
+                !box
+            ) {
+
                 return;
             }
 
@@ -3650,7 +4014,7 @@ function reconcileEquipmentWorkingStatus() {
 
 
         /* =====================================================
-           车辆绑定历史
+           车辆跟随历史
         ===================================================== */
 
         function createTruckBindingHistory(
@@ -3736,7 +4100,9 @@ function reconcileEquipmentWorkingStatus() {
                         ) ===
                             String(
                                 truckId
-                            ) &&
+                            )
+
+                        &&
 
                         !item.endAt
                 )
@@ -3800,10 +4166,15 @@ function reconcileEquipmentWorkingStatus() {
 
         function publishTask() {
 
-            if (!currentDraft) {
+            if (
+                !currentDraft
+            ) {
+
                 return;
             }
 
+
+            reconcileEquipmentWorkingStatus();
 
             refreshEquipmentCatalog();
 
@@ -4025,7 +4396,7 @@ function reconcileEquipmentWorkingStatus() {
                     [],
 
                 productionStatisticsVersion:
-                    "V2.9.8B",
+                    "V2.9.8B-2",
 
                 publishedAt:
                     new Date()
@@ -4083,7 +4454,7 @@ function reconcileEquipmentWorkingStatus() {
 
 
         /* =====================================================
-           同浏览器汽车司机任务兼容
+           同浏览器汽车司机兼容
         ===================================================== */
 
         function syncTaskToLocalDriver(
@@ -4117,7 +4488,9 @@ function reconcileEquipmentWorkingStatus() {
             }
 
 
-            if (!localDriver) {
+            if (
+                !localDriver
+            ) {
 
                 localDriver =
                     readJson(
@@ -4127,7 +4500,10 @@ function reconcileEquipmentWorkingStatus() {
             }
 
 
-            if (!localDriver) {
+            if (
+                !localDriver
+            ) {
+
                 return;
             }
 
@@ -4147,7 +4523,10 @@ function reconcileEquipmentWorkingStatus() {
                     );
 
 
-            if (!assignment) {
+            if (
+                !assignment
+            ) {
+
                 return;
             }
 
@@ -4228,7 +4607,10 @@ function reconcileEquipmentWorkingStatus() {
 
                     if (
                         task.status !==
-                            "pending" &&
+                            "pending"
+
+                        &&
+
                         task.status !==
                             "active"
                     ) {
@@ -4245,7 +4627,10 @@ function reconcileEquipmentWorkingStatus() {
 
                     if (
                         task.status ===
-                            "pending" &&
+                            "pending"
+
+                        &&
+
                         trips.length
                     ) {
 
@@ -4266,7 +4651,9 @@ function reconcileEquipmentWorkingStatus() {
             );
 
 
-            if (changed) {
+            if (
+                changed
+            ) {
 
                 saveTasks(
                     tasks
@@ -4277,7 +4664,7 @@ function reconcileEquipmentWorkingStatus() {
 
 
         /* =====================================================
-           挖机车数
+           挖机车数统计
         ===================================================== */
 
         function getValidTaskTrips(
@@ -4291,7 +4678,9 @@ function reconcileEquipmentWorkingStatus() {
                     trip =>
 
                         trip.dispatchConfirmation !==
-                            "rejected" &&
+                            "rejected"
+
+                        &&
 
                         trip.officialCountEligible !==
                             false
@@ -4344,7 +4733,10 @@ function reconcileEquipmentWorkingStatus() {
                 trip.timestamp;
 
 
-            if (!value) {
+            if (
+                !value
+            ) {
+
                 return null;
             }
 
@@ -4412,7 +4804,8 @@ function reconcileEquipmentWorkingStatus() {
                 truckId
             ) {
 
-                total += 1;
+                total +=
+                    1;
 
 
                 map.set(
@@ -4437,7 +4830,10 @@ function reconcileEquipmentWorkingStatus() {
                         );
 
 
-                    if (!truckId) {
+                    if (
+                        !truckId
+                    ) {
+
                         return;
                     }
 
@@ -4498,6 +4894,7 @@ function reconcileEquipmentWorkingStatus() {
                                             excavatorId
                                         )
                                     ) {
+
                                         return false;
                                     }
 
@@ -4510,6 +4907,7 @@ function reconcileEquipmentWorkingStatus() {
                                             truckId
                                         )
                                     ) {
+
                                         return false;
                                     }
 
@@ -4526,6 +4924,7 @@ function reconcileEquipmentWorkingStatus() {
                                             start.getTime()
                                         )
                                     ) {
+
                                         return false;
                                     }
 
@@ -4548,10 +4947,15 @@ function reconcileEquipmentWorkingStatus() {
                                     return (
 
                                         tripTime >=
-                                            start &&
+                                            start
+
+                                        &&
 
                                         (
-                                            !end ||
+                                            !end
+
+                                            ||
+
                                             tripTime <=
                                                 end
                                         )
@@ -4560,7 +4964,9 @@ function reconcileEquipmentWorkingStatus() {
                             );
 
 
-                        if (matched) {
+                        if (
+                            matched
+                        ) {
 
                             add(
                                 truckId
@@ -4572,6 +4978,9 @@ function reconcileEquipmentWorkingStatus() {
                     }
 
 
+                    /*
+                     * 老任务兼容
+                     */
                     if (
                         currentTrucks.includes(
                             truckId
@@ -4624,7 +5033,9 @@ function reconcileEquipmentWorkingStatus() {
                         task =>
 
                             task.status ===
-                                "pending" ||
+                                "pending"
+
+                            ||
 
                             task.status ===
                                 "active"
@@ -4655,7 +5066,10 @@ function reconcileEquipmentWorkingStatus() {
                 $("productionTaskBoard");
 
 
-            if (!board) {
+            if (
+                !board
+            ) {
+
                 return;
             }
 
@@ -4723,34 +5137,57 @@ function reconcileEquipmentWorkingStatus() {
                             <div class="task-stat-grid">
 
                                 <div>
-                                    <span>挖机</span>
+
+                                    <span>
+                                        挖机
+                                    </span>
+
                                     <strong>
                                         ${(task.bindings || []).length}
                                     </strong>
+
                                 </div>
 
+
                                 <div>
-                                    <span>汽车</span>
+
+                                    <span>
+                                        汽车
+                                    </span>
+
                                     <strong>
                                         ${(task.driverAssignments || []).length}
                                     </strong>
+
                                 </div>
 
+
                                 <div>
-                                    <span>司机</span>
+
+                                    <span>
+                                        司机
+                                    </span>
+
                                     <strong>
                                         ${
                                             (task.driverAssignments || []).length +
                                             (task.excavatorDriverAssignments || []).length
                                         }
                                     </strong>
+
                                 </div>
 
+
                                 <div>
-                                    <span>趟数</span>
+
+                                    <span>
+                                        趟数
+                                    </span>
+
                                     <strong>
                                         ${trips.length}
                                     </strong>
+
                                 </div>
 
                             </div>
@@ -4797,7 +5234,10 @@ function reconcileEquipmentWorkingStatus() {
                 );
 
 
-            if (!task) {
+            if (
+                !task
+            ) {
+
                 return;
             }
 
@@ -4947,23 +5387,54 @@ function reconcileEquipmentWorkingStatus() {
                     <div class="detail-summary-grid">
 
                         <div>
-                            <span>任务编号</span>
-                            <strong>${escapeHtml(task.taskId)}</strong>
+
+                            <span>
+                                任务编号
+                            </span>
+
+                            <strong>
+                                ${escapeHtml(task.taskId)}
+                            </strong>
+
                         </div>
 
-                        <div>
-                            <span>班次</span>
-                            <strong>${escapeHtml(task.shift || "-")}</strong>
-                        </div>
 
                         <div>
-                            <span>区域</span>
-                            <strong>${escapeHtml(task.area || "-")}</strong>
+
+                            <span>
+                                班次
+                            </span>
+
+                            <strong>
+                                ${escapeHtml(task.shift || "-")}
+                            </strong>
+
                         </div>
 
+
                         <div>
-                            <span>有效趟数</span>
-                            <strong>${getValidTaskTrips(task).length}</strong>
+
+                            <span>
+                                区域
+                            </span>
+
+                            <strong>
+                                ${escapeHtml(task.area || "-")}
+                            </strong>
+
+                        </div>
+
+
+                        <div>
+
+                            <span>
+                                有效趟数
+                            </span>
+
+                            <strong>
+                                ${getValidTaskTrips(task).length}
+                            </strong>
+
                         </div>
 
                     </div>
@@ -4994,9 +5465,13 @@ function reconcileEquipmentWorkingStatus() {
                     </h4>
 
                     <div class="detail-note">
+
                         ${escapeHtml(task.loadingPoint || "-")}
+
                         →
+
                         ${escapeHtml(task.unloadingPoint || "-")}
+
                     </div>
 
 
@@ -5037,8 +5512,10 @@ function reconcileEquipmentWorkingStatus() {
 
 
         /* =====================================================
-           ★ 撤销任务
-           修复：撤销以后释放设备
+           撤销任务
+
+           V2.9.8B-2：
+           撤销后释放设备
         ===================================================== */
 
         function withdrawOpenedTask() {
@@ -5052,7 +5529,7 @@ function reconcileEquipmentWorkingStatus() {
             if (
                 !task ||
                 task.status !==
-                "pending"
+                    "pending"
             ) {
 
                 return;
@@ -5084,13 +5561,16 @@ function reconcileEquipmentWorkingStatus() {
 
 
             /*
-             * 先释放设备。
+             * 先释放设备
              */
             releaseTaskEquipment(
                 task
             );
 
 
+            /*
+             * 删除任务
+             */
             const tasks =
                 getTasks()
                     .filter(
@@ -5119,6 +5599,12 @@ function reconcileEquipmentWorkingStatus() {
                 null;
 
 
+            /*
+             * 再执行一次自动校正
+             */
+            reconcileEquipmentWorkingStatus();
+
+
             refreshAll();
 
 
@@ -5130,14 +5616,19 @@ function reconcileEquipmentWorkingStatus() {
 
 
         /* =====================================================
-           ★ 释放任务设备
+           释放任务设备
+
+           维修 / 保养 / 停用不释放为可用
         ===================================================== */
 
         function releaseTaskEquipment(
             task
         ) {
 
-            if (!task) {
+            if (
+                !task
+            ) {
+
                 return;
             }
 
@@ -5149,6 +5640,7 @@ function reconcileEquipmentWorkingStatus() {
             if (
                 !records.length
             ) {
+
                 return;
             }
 
@@ -5158,7 +5650,7 @@ function reconcileEquipmentWorkingStatus() {
 
 
             /*
-             * 挖机 + 卡车。
+             * 挖机 + 汽车
              */
             (
                 task.bindings ||
@@ -5203,7 +5695,7 @@ function reconcileEquipmentWorkingStatus() {
 
 
             /*
-             * 辅助设备。
+             * 辅助车辆
              */
             (
                 task.auxiliaryAssignments ||
@@ -5224,6 +5716,10 @@ function reconcileEquipmentWorkingStatus() {
                         }
                     }
                 );
+
+
+            let changed =
+                false;
 
 
             records.forEach(
@@ -5248,14 +5744,18 @@ function reconcileEquipmentWorkingStatus() {
 
 
                     /*
-                     * 维修、保养、停用不能恢复可用。
+                     * 维修 / 保养 / 停用不改
                      */
                     if (
                         normalized.status ===
-                            "maintenance" ||
+                            "maintenance"
+
+                        ||
 
                         normalized.status ===
-                            "service" ||
+                            "service"
+
+                        ||
 
                         normalized.status ===
                             "disabled"
@@ -5280,13 +5780,22 @@ function reconcileEquipmentWorkingStatus() {
                     device.updatedAt =
                         new Date()
                             .toISOString();
+
+
+                    changed =
+                        true;
                 }
             );
 
 
-            saveEquipmentRecords(
-                records
-            );
+            if (
+                changed
+            ) {
+
+                saveEquipmentRecords(
+                    records
+                );
+            }
 
 
             refreshEquipmentCatalog();
@@ -5312,14 +5821,17 @@ function reconcileEquipmentWorkingStatus() {
                 );
 
 
-            if (!task) {
+            if (
+                !task
+            ) {
+
                 return;
             }
 
 
             if (
                 task.status !==
-                "active"
+                    "active"
             ) {
 
                 alert(
@@ -5350,7 +5862,7 @@ function reconcileEquipmentWorkingStatus() {
 
 
             /*
-             * 结束全部仍然开启的跟随关系。
+             * 关闭全部车辆跟随关系
              */
             (
                 task.truckBindingHistory ||
@@ -5379,9 +5891,6 @@ function reconcileEquipmentWorkingStatus() {
             );
 
 
-            /*
-             * 完成以后同样释放正常设备。
-             */
             releaseTaskEquipment(
                 task
             );
@@ -5400,6 +5909,8 @@ function reconcileEquipmentWorkingStatus() {
             openedTaskId =
                 null;
 
+
+            reconcileEquipmentWorkingStatus();
 
             refreshAll();
         }
@@ -5467,7 +5978,10 @@ function reconcileEquipmentWorkingStatus() {
                 $("historyTaskBoard");
 
 
-            if (!board) {
+            if (
+                !board
+            ) {
+
                 return;
             }
 
@@ -5501,7 +6015,9 @@ function reconcileEquipmentWorkingStatus() {
                 "";
 
 
-            if (date) {
+            if (
+                date
+            ) {
 
                 tasks =
                     tasks.filter(
@@ -5512,7 +6028,9 @@ function reconcileEquipmentWorkingStatus() {
             }
 
 
-            if (shift) {
+            if (
+                shift
+            ) {
 
                 tasks =
                     tasks.filter(
@@ -5523,7 +6041,9 @@ function reconcileEquipmentWorkingStatus() {
             }
 
 
-            if (area) {
+            if (
+                area
+            ) {
 
                 tasks =
                     tasks.filter(
@@ -5546,7 +6066,9 @@ function reconcileEquipmentWorkingStatus() {
             );
 
 
-            if (!tasks.length) {
+            if (
+                !tasks.length
+            ) {
 
                 board.innerHTML =
                     '<div class="empty-placeholder">暂无历史任务</div>';
@@ -5608,20 +6130,31 @@ function reconcileEquipmentWorkingStatus() {
                         <div class="task-stat-grid">
 
                             <div>
-                                <span>司机</span>
+
+                                <span>
+                                    司机
+                                </span>
+
                                 <strong>
                                     ${
                                         (task.driverAssignments || []).length +
                                         (task.excavatorDriverAssignments || []).length
                                     }
                                 </strong>
+
                             </div>
 
+
                             <div>
-                                <span>趟数</span>
+
+                                <span>
+                                    趟数
+                                </span>
+
                                 <strong>
                                     ${getValidTaskTrips(task).length}
                                 </strong>
+
                             </div>
 
                         </div>
@@ -5685,12 +6218,17 @@ function reconcileEquipmentWorkingStatus() {
                 $("vehicleChangeRequestList");
 
 
-            if (!box) {
+            if (
+                !box
+            ) {
+
                 return;
             }
 
 
-            if (!records.length) {
+            if (
+                !records.length
+            ) {
 
                 box.innerHTML =
                     '<div class="empty-placeholder">暂无待审批换车申请</div>';
@@ -5827,6 +6365,8 @@ function reconcileEquipmentWorkingStatus() {
             taskId
         ) {
 
+            reconcileEquipmentWorkingStatus();
+
             refreshEquipmentCatalog();
 
 
@@ -5842,7 +6382,9 @@ function reconcileEquipmentWorkingStatus() {
 
                         isEquipmentDispatchable(
                             truck
-                        ) &&
+                        )
+
+                        &&
 
                         !occupied.has(
                             truck.id
@@ -5867,7 +6409,9 @@ function reconcileEquipmentWorkingStatus() {
                 "";
 
 
-            if (!newVehicle) {
+            if (
+                !newVehicle
+            ) {
 
                 alert(
                     "请选择替换车辆。"
@@ -5889,7 +6433,10 @@ function reconcileEquipmentWorkingStatus() {
                 );
 
 
-            if (!request) {
+            if (
+                !request
+            ) {
+
                 return;
             }
 
@@ -5968,7 +6515,10 @@ function reconcileEquipmentWorkingStatus() {
                 );
 
 
-            if (!task) {
+            if (
+                !task
+            ) {
+
                 return;
             }
 
@@ -6039,7 +6589,9 @@ function reconcileEquipmentWorkingStatus() {
                     );
 
 
-            if (assignment) {
+            if (
+                assignment
+            ) {
 
                 assignment.vehicleId =
                     newVehicle;
@@ -6167,7 +6719,10 @@ function reconcileEquipmentWorkingStatus() {
                 );
 
 
-            if (!record) {
+            if (
+                !record
+            ) {
+
                 return;
             }
 
@@ -6202,7 +6757,7 @@ function reconcileEquipmentWorkingStatus() {
 
 
         /* =====================================================
-           GPS审核
+           GPS 审核
         ===================================================== */
 
         function openGpsReview() {
@@ -6225,13 +6780,19 @@ function reconcileEquipmentWorkingStatus() {
                         trip =>
 
                             trip.gpsStatus !==
-                                "正常" &&
+                                "正常"
+
+                            &&
 
                             trip.gpsStatus !==
-                                "normal" &&
+                                "normal"
+
+                            &&
 
                             trip.dispatchConfirmation !==
-                                "confirmed" &&
+                                "confirmed"
+
+                            &&
 
                             trip.dispatchConfirmation !==
                                 "rejected"
@@ -6242,12 +6803,17 @@ function reconcileEquipmentWorkingStatus() {
                 $("gpsReviewList");
 
 
-            if (!box) {
+            if (
+                !box
+            ) {
+
                 return;
             }
 
 
-            if (!records.length) {
+            if (
+                !records.length
+            ) {
 
                 box.innerHTML =
                     '<div class="empty-placeholder">暂无GPS异常待审核</div>';
@@ -6397,7 +6963,10 @@ function reconcileEquipmentWorkingStatus() {
                 );
 
 
-            if (!record) {
+            if (
+                !record
+            ) {
+
                 return;
             }
 
@@ -6438,7 +7007,7 @@ function reconcileEquipmentWorkingStatus() {
 
 
         /* =====================================================
-           请假
+           司机请假审批
         ===================================================== */
 
         function openLeaveReview() {
@@ -6461,7 +7030,9 @@ function reconcileEquipmentWorkingStatus() {
                         item =>
 
                             item.status ===
-                                "pending" &&
+                                "pending"
+
+                            &&
 
                             item.approverRole ===
                                 "dispatch"
@@ -6472,12 +7043,17 @@ function reconcileEquipmentWorkingStatus() {
                 $("leaveReviewList");
 
 
-            if (!box) {
+            if (
+                !box
+            ) {
+
                 return;
             }
 
 
-            if (!requests.length) {
+            if (
+                !requests.length
+            ) {
 
                 box.innerHTML =
                     '<div class="empty-placeholder">暂无司机请假待审批</div>';
@@ -6508,7 +7084,9 @@ function reconcileEquipmentWorkingStatus() {
                         <div class="approval-note">
 
                             ${formatDateTime(item.startTime || item.startAt)}
+
                             →
+
                             ${formatDateTime(item.endTime || item.endAt)}
 
                             <br>
@@ -6620,7 +7198,10 @@ function reconcileEquipmentWorkingStatus() {
                 );
 
 
-            if (!item) {
+            if (
+                !item
+            ) {
+
                 return;
             }
 
@@ -6668,6 +7249,10 @@ function reconcileEquipmentWorkingStatus() {
 
 
 
+        /* =====================================================
+           调度本人请假
+        ===================================================== */
+
         function openMyLeave() {
 
             const currentId =
@@ -6684,7 +7269,9 @@ function reconcileEquipmentWorkingStatus() {
                             getPersonId(
                                 item
                             ) ===
-                                currentId &&
+                                currentId
+
+                            &&
 
                             normalizePosition(
                                 item.position
@@ -6701,7 +7288,9 @@ function reconcileEquipmentWorkingStatus() {
                 );
 
 
-            if (profile) {
+            if (
+                profile
+            ) {
 
                 if (
                     $("leaveApplicantName")
@@ -6784,8 +7373,12 @@ function reconcileEquipmentWorkingStatus() {
 
 
             if (
-                new Date(end) <=
-                new Date(start)
+                new Date(
+                    end
+                ) <=
+                new Date(
+                    start
+                )
             ) {
 
                 alert(
@@ -6832,7 +7425,6 @@ function reconcileEquipmentWorkingStatus() {
                     "management",
 
                 position:
-
                     normalizePosition(
                         position
                     ),
@@ -6846,11 +7438,15 @@ function reconcileEquipmentWorkingStatus() {
                     "事假",
 
                 startTime:
-                    new Date(start)
+                    new Date(
+                        start
+                    )
                         .toISOString(),
 
                 endTime:
-                    new Date(end)
+                    new Date(
+                        end
+                    )
                         .toISOString(),
 
                 reason,
@@ -6878,6 +7474,27 @@ function reconcileEquipmentWorkingStatus() {
             hideModal(
                 "myLeaveModal"
             );
+
+
+            if (
+                $("leaveStart")
+            ) {
+                $("leaveStart").value = "";
+            }
+
+
+            if (
+                $("leaveEnd")
+            ) {
+                $("leaveEnd").value = "";
+            }
+
+
+            if (
+                $("leaveReason")
+            ) {
+                $("leaveReason").value = "";
+            }
 
 
             alert(
@@ -6909,7 +7526,10 @@ function reconcileEquipmentWorkingStatus() {
                 $("penaltyPerson");
 
 
-            if (!select) {
+            if (
+                !select
+            ) {
+
                 return;
             }
 
@@ -6990,7 +7610,9 @@ function reconcileEquipmentWorkingStatus() {
                 "";
 
 
-            if (!description) {
+            if (
+                !description
+            ) {
 
                 alert(
                     "请输入违规说明。"
@@ -7071,6 +7693,34 @@ function reconcileEquipmentWorkingStatus() {
             );
 
 
+            if (
+                $("penaltyVehicle")
+            ) {
+                $("penaltyVehicle").value = "";
+            }
+
+
+            if (
+                $("penaltyAmount")
+            ) {
+                $("penaltyAmount").value = "";
+            }
+
+
+            if (
+                $("penaltyPoints")
+            ) {
+                $("penaltyPoints").value = "";
+            }
+
+
+            if (
+                $("penaltyDescription")
+            ) {
+                $("penaltyDescription").value = "";
+            }
+
+
             refreshAll();
 
 
@@ -7105,12 +7755,17 @@ function reconcileEquipmentWorkingStatus() {
                 $("penaltyManagerList");
 
 
-            if (!box) {
+            if (
+                !box
+            ) {
+
                 return;
             }
 
 
-            if (!records.length) {
+            if (
+                !records.length
+            ) {
 
                 box.innerHTML =
                     '<div class="empty-placeholder">暂无罚单记录</div>';
@@ -7147,9 +7802,43 @@ function reconcileEquipmentWorkingStatus() {
 
 
                         <div class="approval-note">
+
                             ${escapeHtml(item.violationType || "-")}
+
                             ·
+
                             ${escapeHtml(item.description || "-")}
+
+                        </div>
+
+
+                        <div class="approval-detail-grid">
+
+                            <div>
+
+                                <span>
+                                    金额
+                                </span>
+
+                                <strong>
+                                    ¥${Number(item.amount || 0)}
+                                </strong>
+
+                            </div>
+
+
+                            <div>
+
+                                <span>
+                                    扣分
+                                </span>
+
+                                <strong>
+                                    ${Number(item.points || 0)}
+                                </strong>
+
+                            </div>
+
                         </div>
 
                     </div>
@@ -7163,7 +7852,7 @@ function reconcileEquipmentWorkingStatus() {
 
 
         /* =====================================================
-           待办
+           待办数量
         ===================================================== */
 
         function renderTodoCounts() {
@@ -7187,13 +7876,19 @@ function reconcileEquipmentWorkingStatus() {
                         item =>
 
                             item.gpsStatus !==
-                                "正常" &&
+                                "正常"
+
+                            &&
 
                             item.gpsStatus !==
-                                "normal" &&
+                                "normal"
+
+                            &&
 
                             item.dispatchConfirmation !==
-                                "confirmed" &&
+                                "confirmed"
+
+                            &&
 
                             item.dispatchConfirmation !==
                                 "rejected"
@@ -7209,7 +7904,9 @@ function reconcileEquipmentWorkingStatus() {
                         item =>
 
                             item.status ===
-                                "pending" &&
+                                "pending"
+
+                            &&
 
                             item.approverRole ===
                                 "dispatch"
@@ -7250,6 +7947,7 @@ function reconcileEquipmentWorkingStatus() {
                             leave.status !==
                             "approved"
                         ) {
+
                             return false;
                         }
 
@@ -7260,6 +7958,7 @@ function reconcileEquipmentWorkingStatus() {
                                 person
                             )
                         ) {
+
                             return false;
                         }
 
@@ -7279,8 +7978,13 @@ function reconcileEquipmentWorkingStatus() {
 
 
                         return (
-                            from <= end &&
-                            to >= start
+                            from <=
+                                end
+
+                            &&
+
+                            to >=
+                                start
                         );
                     }
                 );
@@ -7302,6 +8006,7 @@ function reconcileEquipmentWorkingStatus() {
                             leave.status !==
                             "pending"
                         ) {
+
                             return false;
                         }
 
@@ -7312,6 +8017,7 @@ function reconcileEquipmentWorkingStatus() {
                                 person
                             )
                         ) {
+
                             return false;
                         }
 
@@ -7331,8 +8037,13 @@ function reconcileEquipmentWorkingStatus() {
 
 
                         return (
-                            from < end &&
-                            to > start
+                            from <
+                                end
+
+                            &&
+
+                            to >
+                                start
                         );
                     }
                 );
@@ -7443,7 +8154,7 @@ function reconcileEquipmentWorkingStatus() {
 
             if (
                 task.shift ===
-                "夜班"
+                    "夜班"
             ) {
 
                 end.setDate(
@@ -7481,7 +8192,7 @@ function reconcileEquipmentWorkingStatus() {
 
 
         /* =====================================================
-           数据读写
+           数据迁移
         ===================================================== */
 
         function migrateTasks() {
@@ -7554,6 +8265,10 @@ function reconcileEquipmentWorkingStatus() {
         }
 
 
+
+        /* =====================================================
+           数据读写
+        ===================================================== */
 
         function getTasks() {
 
@@ -7643,7 +8358,9 @@ function reconcileEquipmentWorkingStatus() {
                     trip =>
 
                         trip.taskId ===
-                            task.taskId ||
+                            task.taskId
+
+                        ||
 
                         trip.dispatchTaskId ===
                             task.taskId
@@ -7759,13 +8476,17 @@ function reconcileEquipmentWorkingStatus() {
             draftUsed
         ) {
 
-            if (draftUsed) {
+            if (
+                draftUsed
+            ) {
 
                 return "device-card draft-used";
             }
 
 
-            if (selected) {
+            if (
+                selected
+            ) {
 
                 return "device-card selected";
             }
@@ -7773,13 +8494,19 @@ function reconcileEquipmentWorkingStatus() {
 
             if (
                 device.status ===
-                    "maintenance" ||
+                    "maintenance"
+
+                ||
 
                 device.status ===
-                    "service" ||
+                    "service"
+
+                ||
 
                 device.status ===
-                    "disabled" ||
+                    "disabled"
+
+                ||
 
                 device.status ===
                     "working"
@@ -7868,6 +8595,7 @@ function reconcileEquipmentWorkingStatus() {
                     if (
                         !item.driverId
                     ) {
+
                         return;
                     }
 
@@ -7927,41 +8655,63 @@ function reconcileEquipmentWorkingStatus() {
                 String(
                     date.getMonth() +
                     1
-                ).padStart(
-                    2,
-                    "0"
-                ),
+                )
+                    .padStart(
+                        2,
+                        "0"
+                    ),
 
                 String(
                     date.getDate()
-                ).padStart(
-                    2,
-                    "0"
                 )
+                    .padStart(
+                        2,
+                        "0"
+                    )
 
-            ].join(
-                "-"
-            );
+            ]
+                .join(
+                    "-"
+                );
         }
 
 
 
         function clearTaskInputs() {
 
-            if ($("taskArea")) {
-                $("taskArea").value = "";
+            if (
+                $("taskArea")
+            ) {
+
+                $("taskArea").value =
+                    "";
             }
 
-            if ($("taskLoadingPoint")) {
-                $("taskLoadingPoint").value = "";
+
+            if (
+                $("taskLoadingPoint")
+            ) {
+
+                $("taskLoadingPoint").value =
+                    "";
             }
 
-            if ($("taskUnloadingPoint")) {
-                $("taskUnloadingPoint").value = "";
+
+            if (
+                $("taskUnloadingPoint")
+            ) {
+
+                $("taskUnloadingPoint").value =
+                    "";
             }
 
-            if ($("taskRemark")) {
-                $("taskRemark").value = "";
+
+            if (
+                $("taskRemark")
+            ) {
+
+                $("taskRemark").value =
+                    "";
             }
         }
 
@@ -8016,7 +8766,9 @@ function reconcileEquipmentWorkingStatus() {
                 $(id);
 
 
-            if (element) {
+            if (
+                element
+            ) {
 
                 element.textContent =
                     value;
@@ -8029,7 +8781,9 @@ function reconcileEquipmentWorkingStatus() {
             value
         ) {
 
-            if (!value) {
+            if (
+                !value
+            ) {
 
                 return "-";
             }
@@ -8185,7 +8939,9 @@ function reconcileEquipmentWorkingStatus() {
                 Date.now() +
                 "_" +
                 Math.random()
-                    .toString(36)
+                    .toString(
+                        36
+                    )
                     .slice(
                         2,
                         8
