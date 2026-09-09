@@ -7158,7 +7158,2145 @@ document.addEventListener("DOMContentLoaded", function () {
 
         return div.innerHTML;
     }
+/* =========================================================
+   V2.9.8B-1
+   挖机司机 + 跟随车辆 + 挖机车数统计
+========================================================= */
 
+
+/* =========================================================
+   当前草稿挖机司机分配
+========================================================= */
+
+let excavatorDriverAssignments =
+    [];
+
+
+/* =========================================================
+   挖机司机人员库
+========================================================= */
+
+function getApprovedExcavatorDrivers() {
+
+    let records =
+        readJson(
+            STORAGE.PERSONNEL,
+            []
+        );
+
+
+    if (
+        !Array.isArray(
+            records
+        )
+    ) {
+
+        records =
+            [];
+
+    }
+
+
+    const map =
+        new Map();
+
+
+    records.forEach(
+        person => {
+
+            const position =
+                normalizeDispatchPosition(
+                    person.position
+                );
+
+
+            if (
+                position !==
+                "挖机司机"
+            ) {
+
+                return;
+
+            }
+
+
+            if (
+                !isDispatchApprovedPerson(
+                    person
+                )
+            ) {
+
+                return;
+
+            }
+
+
+            const personId =
+                getDispatchPersonId(
+                    person
+                );
+
+
+            if (!personId) {
+
+                return;
+
+            }
+
+
+            map.set(
+                personId,
+                {
+
+                    ...person,
+
+                    personId,
+
+                    driverId:
+                        personId,
+
+                    name:
+                        person.name ||
+                        "",
+
+                    team:
+                        person.team ||
+                        person.department ||
+                        "",
+
+                    position:
+                        "挖机司机"
+                }
+            );
+
+        }
+    );
+
+
+    return [
+        ...map.values()
+    ];
+
+}
+
+
+/* =========================================================
+   岗位兼容
+========================================================= */
+
+function normalizeDispatchPosition(
+    position
+) {
+
+    const map = {
+
+        "卡车司机":
+            "汽车司机",
+
+        "运输司机":
+            "汽车司机",
+
+        "矿卡司机":
+            "汽车司机",
+
+        "挖掘机司机":
+            "挖机司机",
+
+        "挖机操作手":
+            "挖机司机",
+
+        "挖掘机操作手":
+            "挖机司机",
+
+        "调度员":
+            "车队长"
+
+    };
+
+
+    return (
+        map[position] ||
+        position ||
+        ""
+    );
+
+}
+
+
+/* =========================================================
+   人员ID
+========================================================= */
+
+function getDispatchPersonId(
+    person
+) {
+
+    return String(
+
+        person?.personId ||
+
+        person?.driverId ||
+
+        person?.employeeId ||
+
+        person?.id ||
+
+        ""
+
+    );
+
+}
+
+
+/* =========================================================
+   人员审核状态
+========================================================= */
+
+function isDispatchApprovedPerson(
+    person
+) {
+
+    if (!person) {
+
+        return false;
+
+    }
+
+
+    if (
+        person.enabled === false ||
+
+        person.status ===
+            "rejected" ||
+
+        person.status ===
+            "disabled" ||
+
+        person.status ===
+            "resigned" ||
+
+        person.approvalStatus ===
+            "rejected" ||
+
+        person.personnelStatus ===
+            "停用" ||
+
+        person.personnelStatus ===
+            "离职"
+    ) {
+
+        return false;
+
+    }
+
+
+    return (
+
+        person.status ===
+            "approved" ||
+
+        person.status ===
+            "active" ||
+
+        person.status ===
+            "working" ||
+
+        person.status ===
+            "leave" ||
+
+        person.approvalStatus ===
+            "approved" ||
+
+        person.personnelStatus ===
+            "在职可用" ||
+
+        person.personnelStatus ===
+            "作业中" ||
+
+        person.personnelStatus ===
+            "请假"
+
+    );
+
+}
+
+
+/* =========================================================
+   根据当前挖机绑定生成挖机司机分配
+========================================================= */
+
+function synchronizeExcavatorDriverAssignments() {
+
+    const excavatorIds =
+        bindings
+            .map(
+                item =>
+                    item.excavatorId
+            )
+            .filter(
+                Boolean
+            );
+
+
+    excavatorDriverAssignments =
+        excavatorIds.map(
+            excavatorId => {
+
+                const old =
+                    excavatorDriverAssignments
+                        .find(
+                            item =>
+                                item.excavatorId ===
+                                excavatorId
+                        );
+
+
+                if (old) {
+
+                    return old;
+
+                }
+
+
+                return {
+
+                    excavatorId,
+
+                    driverId:
+                        "",
+
+                    driverName:
+                        "",
+
+                    team:
+                        ""
+                };
+
+            }
+        );
+
+}
+
+
+/* =========================================================
+   自动创建挖机司机分配区域
+
+   不需要修改 dispatch.html
+========================================================= */
+
+function ensureExcavatorDriverSection() {
+
+    if (
+        document.getElementById(
+            "excavatorDriverSection"
+        )
+    ) {
+
+        return;
+
+    }
+
+
+    const driverSection =
+        document.getElementById(
+            "driverAssignmentSection"
+        );
+
+
+    if (!driverSection) {
+
+        return;
+
+    }
+
+
+    const section =
+        document.createElement(
+            "section"
+        );
+
+
+    section.id =
+        "excavatorDriverSection";
+
+
+    section.className =
+        "dispatch-card hidden";
+
+
+    section.innerHTML = `
+
+        <div class="section-title">
+
+            <div>
+
+                <h2>
+                    🚜 挖机司机分配
+                </h2>
+
+                <p>
+                    为每台挖机指定一名挖机司机
+                </p>
+
+            </div>
+
+
+            <span
+                id="excavatorDriverStatus"
+                class="count-badge"
+            >
+                0 / 0
+            </span>
+
+        </div>
+
+
+        <div
+            id="excavatorDriverAssignmentList"
+        >
+
+            <div class="empty-placeholder">
+                请先绑定挖机和卡车
+            </div>
+
+        </div>
+
+    `;
+
+
+    driverSection.parentNode
+        .insertBefore(
+            section,
+            driverSection
+        );
+
+}
+
+
+/* =========================================================
+   显示挖机司机分配
+========================================================= */
+
+function renderExcavatorDriverAssignments() {
+
+    ensureExcavatorDriverSection();
+
+
+    if (!currentDraft) {
+
+        return;
+
+    }
+
+
+    synchronizeExcavatorDriverAssignments();
+
+
+    const section =
+        document.getElementById(
+            "excavatorDriverSection"
+        );
+
+
+    const box =
+        document.getElementById(
+            "excavatorDriverAssignmentList"
+        );
+
+
+    if (
+        !section ||
+        !box
+    ) {
+
+        return;
+
+    }
+
+
+    section.classList.remove(
+        "hidden"
+    );
+
+
+    const total =
+        excavatorDriverAssignments
+            .length;
+
+
+    const completed =
+        excavatorDriverAssignments
+            .filter(
+                item =>
+                    item.driverId
+            )
+            .length;
+
+
+    setText(
+        "excavatorDriverStatus",
+        `${completed} / ${total}`
+    );
+
+
+    if (!total) {
+
+        box.innerHTML =
+            '<div class="empty-placeholder">请先绑定挖机和卡车</div>';
+
+        return;
+
+    }
+
+
+    const people =
+        getApprovedExcavatorDrivers();
+
+
+    box.innerHTML =
+        excavatorDriverAssignments
+            .map(
+                assignment => {
+
+                    const options =
+                        people.map(
+                            person => {
+
+                                const state =
+                                    getExcavatorDriverDraftStatus(
+                                        person
+                                    );
+
+
+                                const alreadyUsed =
+                                    excavatorDriverAssignments
+                                        .some(
+                                            item =>
+
+                                                item.driverId ===
+                                                    person.driverId &&
+
+                                                item.excavatorId !==
+                                                    assignment.excavatorId
+                                        );
+
+
+                                const disabled =
+                                    state.code ===
+                                        "leave" ||
+
+                                    state.code ===
+                                        "working" ||
+
+                                    state.code ===
+                                        "disabled" ||
+
+                                    alreadyUsed;
+
+
+                                let suffix =
+                                    state.label;
+
+
+                                if (
+                                    alreadyUsed
+                                ) {
+
+                                    suffix =
+                                        "本任务已分配";
+
+                                }
+
+
+                                return `
+
+                                    <option
+                                        value="${escapeHtml(person.driverId)}"
+
+                                        ${
+                                            assignment.driverId ===
+                                            person.driverId
+                                                ?
+                                                "selected"
+                                                :
+                                                ""
+                                        }
+
+                                        ${
+                                            disabled
+                                                ?
+                                                "disabled"
+                                                :
+                                                ""
+                                        }
+                                    >
+
+                                        ${escapeHtml(person.name || "-")}
+
+                                        ·
+
+                                        ${escapeHtml(person.team || "-")}
+
+                                        ·
+
+                                        ${escapeHtml(suffix)}
+
+                                    </option>
+
+                                `;
+
+                            }
+                        )
+                        .join(
+                            ""
+                        );
+
+
+                    return `
+
+                        <div class="driver-assignment-row">
+
+                            <div class="assignment-equipment">
+
+                                <strong>
+                                    🚜
+                                    ${escapeHtml(
+                                        assignment.excavatorId
+                                    )}
+                                </strong>
+
+                                <span>
+                                    指定挖机司机
+                                </span>
+
+                            </div>
+
+
+                            <select
+                                data-excavator-driver="${escapeHtml(
+                                    assignment.excavatorId
+                                )}"
+                            >
+
+                                <option value="">
+                                    请选择挖机司机
+                                </option>
+
+                                ${options}
+
+                            </select>
+
+                        </div>
+
+                    `;
+
+                }
+            )
+            .join(
+                ""
+            );
+
+
+    box.querySelectorAll(
+        "[data-excavator-driver]"
+    )
+        .forEach(
+            select => {
+
+                select.addEventListener(
+                    "change",
+                    function () {
+
+                        assignExcavatorDriver(
+                            select.dataset
+                                .excavatorDriver,
+                            select.value
+                        );
+
+                    }
+                );
+
+            }
+        );
+
+}
+
+
+/* =========================================================
+   分配挖机司机
+========================================================= */
+
+function assignExcavatorDriver(
+    excavatorId,
+    driverId
+) {
+
+    const assignment =
+        excavatorDriverAssignments
+            .find(
+                item =>
+                    item.excavatorId ===
+                    excavatorId
+            );
+
+
+    if (!assignment) {
+
+        return;
+
+    }
+
+
+    if (!driverId) {
+
+        assignment.driverId =
+            "";
+
+        assignment.driverName =
+            "";
+
+        assignment.team =
+            "";
+
+
+        renderExcavatorDriverAssignments();
+
+        return;
+
+    }
+
+
+    const person =
+        getApprovedExcavatorDrivers()
+            .find(
+                item =>
+                    item.driverId ===
+                    driverId
+            );
+
+
+    if (!person) {
+
+        renderExcavatorDriverAssignments();
+
+        return;
+
+    }
+
+
+    const state =
+        getExcavatorDriverDraftStatus(
+            person
+        );
+
+
+    if (
+        state.code ===
+            "leave"
+    ) {
+
+        alert(
+            `${person.name} 本班处于请假状态，不能安排挖机任务。`
+        );
+
+
+        renderExcavatorDriverAssignments();
+
+        return;
+
+    }
+
+
+    if (
+        state.code ===
+            "working"
+    ) {
+
+        alert(
+            `${person.name} 已在其他生产任务中。`
+        );
+
+
+        renderExcavatorDriverAssignments();
+
+        return;
+
+    }
+
+
+    const duplicate =
+        excavatorDriverAssignments
+            .some(
+                item =>
+
+                    item.driverId ===
+                        driverId &&
+
+                    item.excavatorId !==
+                        excavatorId
+            );
+
+
+    if (duplicate) {
+
+        alert(
+            "同一名挖机司机不能同时驾驶两台挖机。"
+        );
+
+
+        renderExcavatorDriverAssignments();
+
+        return;
+
+    }
+
+
+    assignment.driverId =
+        person.driverId;
+
+
+    assignment.driverName =
+        person.name ||
+        "";
+
+
+    assignment.team =
+        person.team ||
+        "";
+
+
+    renderExcavatorDriverAssignments();
+
+}
+
+
+/* =========================================================
+   挖机司机任务状态
+========================================================= */
+
+function getExcavatorDriverDraftStatus(
+    person
+) {
+
+    if (
+        !isDispatchApprovedPerson(
+            person
+        )
+    ) {
+
+        return {
+
+            code:
+                "disabled",
+
+            label:
+                "⚫ 不可用"
+        };
+
+    }
+
+
+    const now =
+        new Date();
+
+
+    if (
+        typeof hasApprovedLeaveOverlap ===
+            "function" &&
+
+        hasApprovedLeaveOverlap(
+            person,
+            now,
+            now
+        )
+    ) {
+
+        return {
+
+            code:
+                "leave",
+
+            label:
+                "🟣 请假"
+        };
+
+    }
+
+
+    const personId =
+        getDispatchPersonId(
+            person
+        );
+
+
+    const task =
+        getTasks()
+            .find(
+                item =>
+
+                    (
+                        item.status ===
+                            "pending" ||
+
+                        item.status ===
+                            "active"
+                    ) &&
+
+                    (
+                        item.excavatorDriverAssignments ||
+                        []
+                    )
+                        .some(
+                            driver =>
+                                String(
+                                    driver.driverId ||
+                                    ""
+                                ) ===
+                                personId
+                        )
+            );
+
+
+    if (task) {
+
+        return {
+
+            code:
+                "working",
+
+            label:
+                "🔴 作业中"
+        };
+
+    }
+
+
+    return {
+
+        code:
+            "available",
+
+        label:
+            "🟢 可调度"
+    };
+
+}
+
+
+/* =========================================================
+   建立车辆跟随历史
+
+   每台汽车什么时候开始跟随哪台挖机，
+   都记录下来。
+
+   后续中途增减车就靠这个统计。
+========================================================= */
+
+function createTruckBindingHistory(
+    task
+) {
+
+    const now =
+        task.publishedAt ||
+        new Date()
+            .toISOString();
+
+
+    const history =
+        [];
+
+
+    (
+        task.bindings ||
+        []
+    )
+        .forEach(
+            binding => {
+
+                (
+                    binding.truckIds ||
+                    []
+                )
+                    .forEach(
+                        truckId => {
+
+                            history.push({
+
+                                bindingId:
+                                    "BIND_" +
+                                    Date.now() +
+                                    "_" +
+                                    Math.random()
+                                        .toString(36)
+                                        .slice(2, 8),
+
+                                excavatorId:
+                                    binding.excavatorId,
+
+                                truckId,
+
+                                startAt:
+                                    now,
+
+                                endAt:
+                                    null,
+
+                                reason:
+                                    "任务发布"
+
+                            });
+
+                        }
+                    );
+
+            }
+        );
+
+
+    return history;
+
+}
+
+
+/* =========================================================
+   获取有效运输记录
+
+   GPS被调度判定无效的趟数不统计
+========================================================= */
+
+function getValidTaskTrips(
+    task
+) {
+
+    return getTaskTrips(
+        task
+    )
+        .filter(
+            trip =>
+
+                trip.dispatchConfirmation !==
+                    "rejected" &&
+
+                trip.officialCountEligible !==
+                    false
+        );
+
+}
+
+
+/* =========================================================
+   获取运输记录时间
+========================================================= */
+
+function getTripRecordTime(
+    trip
+) {
+
+    const value =
+
+        trip.completedAt ||
+
+        trip.unloadedAt ||
+
+        trip.unloadTime ||
+
+        trip.endTime ||
+
+        trip.recordedAt ||
+
+        trip.createdAt ||
+
+        trip.time ||
+
+        trip.timestamp;
+
+
+    const date =
+        new Date(
+            value ||
+            0
+        );
+
+
+    if (
+        Number.isNaN(
+            date.getTime()
+        )
+    ) {
+
+        return null;
+
+    }
+
+
+    return date;
+
+}
+
+
+/* =========================================================
+   获取运输车辆编号
+========================================================= */
+
+function getTripVehicleNumber(
+    trip
+) {
+
+    return String(
+
+        trip.vehicleNumber ||
+
+        trip.vehicleId ||
+
+        trip.truckNumber ||
+
+        trip.truckId ||
+
+        ""
+
+    );
+
+}
+
+
+/* =========================================================
+   挖机车数自动统计
+========================================================= */
+
+function getExcavatorTripStats(
+    task,
+    excavatorId
+) {
+
+    const validTrips =
+        getValidTaskTrips(
+            task
+        );
+
+
+    const history =
+        Array.isArray(
+            task.truckBindingHistory
+        )
+            ?
+            task.truckBindingHistory
+            :
+            [];
+
+
+    const truckMap =
+        new Map();
+
+
+    let total =
+        0;
+
+
+    validTrips.forEach(
+        trip => {
+
+            /*
+            如果汽车端本身已经记录了挖机编号，
+            优先直接使用。
+            */
+
+            const tripExcavatorId =
+                String(
+
+                    trip.excavatorId ||
+
+                    trip.excavatorNumber ||
+
+                    ""
+
+                );
+
+
+            if (
+                tripExcavatorId
+            ) {
+
+                if (
+                    tripExcavatorId !==
+                    String(
+                        excavatorId
+                    )
+                ) {
+
+                    return;
+
+                }
+
+
+                const truckId =
+                    getTripVehicleNumber(
+                        trip
+                    ) ||
+                    "未知车辆";
+
+
+                total +=
+                    1;
+
+
+                truckMap.set(
+                    truckId,
+                    (
+                        truckMap.get(
+                            truckId
+                        ) ||
+                        0
+                    ) +
+                    1
+                );
+
+
+                return;
+
+            }
+
+
+            /*
+            老运输记录没有挖机编号时，
+            根据车辆跟随时间段判断。
+            */
+
+            const truckId =
+                getTripVehicleNumber(
+                    trip
+                );
+
+
+            if (!truckId) {
+
+                return;
+
+            }
+
+
+            const tripTime =
+                getTripRecordTime(
+                    trip
+                );
+
+
+            if (!tripTime) {
+
+                return;
+
+            }
+
+
+            const matched =
+                history.some(
+                    record => {
+
+                        if (
+                            String(
+                                record.excavatorId
+                            ) !==
+                            String(
+                                excavatorId
+                            )
+                        ) {
+
+                            return false;
+
+                        }
+
+
+                        if (
+                            String(
+                                record.truckId
+                            ) !==
+                            String(
+                                truckId
+                            )
+                        ) {
+
+                            return false;
+
+                        }
+
+
+                        const start =
+                            new Date(
+                                record.startAt ||
+                                0
+                            );
+
+
+                        const end =
+                            record.endAt
+                                ?
+                                new Date(
+                                    record.endAt
+                                )
+                                :
+                                null;
+
+
+                        if (
+                            Number.isNaN(
+                                start.getTime()
+                            )
+                        ) {
+
+                            return false;
+
+                        }
+
+
+                        return (
+
+                            tripTime >=
+                                start &&
+
+                            (
+                                !end ||
+
+                                tripTime <=
+                                    end
+                            )
+
+                        );
+
+                    }
+                );
+
+
+            if (!matched) {
+
+                return;
+
+            }
+
+
+            total +=
+                1;
+
+
+            truckMap.set(
+                truckId,
+                (
+                    truckMap.get(
+                        truckId
+                    ) ||
+                    0
+                ) +
+                1
+            );
+
+        }
+    );
+
+
+    return {
+
+        total,
+
+        trucks:
+            [
+                ...truckMap.entries()
+            ]
+                .map(
+                    (
+                        [
+                            truckId,
+                            count
+                        ]
+                    ) => ({
+
+                        truckId,
+
+                        count
+                    })
+                )
+                .sort(
+                    (
+                        a,
+                        b
+                    ) =>
+                        String(
+                            a.truckId
+                        )
+                            .localeCompare(
+                                String(
+                                    b.truckId
+                                ),
+                                "zh-CN",
+                                {
+                                    numeric:
+                                        true
+                                }
+                            )
+                )
+
+    };
+
+}
+
+
+/* =========================================================
+   任务全部挖机车数
+========================================================= */
+
+function getTaskExcavatorStatistics(
+    task
+) {
+
+    return (
+        task.bindings ||
+        []
+    )
+        .map(
+            binding => {
+
+                const stats =
+                    getExcavatorTripStats(
+                        task,
+                        binding.excavatorId
+                    );
+
+
+                const driver =
+                    (
+                        task.excavatorDriverAssignments ||
+                        []
+                    )
+                        .find(
+                            item =>
+                                item.excavatorId ===
+                                binding.excavatorId
+                        );
+
+
+                return {
+
+                    excavatorId:
+                        binding.excavatorId,
+
+                    driverId:
+                        driver?.driverId ||
+                        "",
+
+                    driverName:
+                        driver?.driverName ||
+                        "",
+
+                    total:
+                        stats.total,
+
+                    trucks:
+                        stats.trucks
+                };
+
+            }
+        );
+
+}
+
+
+/* =========================================================
+   生产任务详情增加挖机统计
+========================================================= */
+
+function buildExcavatorStatisticsHtml(
+    task
+) {
+
+    const records =
+        getTaskExcavatorStatistics(
+            task
+        );
+
+
+    if (!records.length) {
+
+        return `
+            <div class="empty-placeholder">
+                暂无挖机统计
+            </div>
+        `;
+
+    }
+
+
+    return records
+        .map(
+            item => `
+
+                <div class="approval-card">
+
+                    <div class="approval-title">
+
+                        <strong>
+                            🚜
+                            ${escapeHtml(
+                                item.excavatorId
+                            )}
+                        </strong>
+
+                        <span>
+                            ${escapeHtml(
+                                item.driverName ||
+                                "未分配司机"
+                            )}
+                        </span>
+
+                    </div>
+
+
+                    <div class="approval-detail-grid">
+
+                        <div>
+
+                            <span>
+                                挖机总车数
+                            </span>
+
+                            <strong>
+                                ${item.total}
+                            </strong>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="approval-note">
+
+                        ${
+                            item.trucks.length
+                                ?
+                                item.trucks
+                                    .map(
+                                        truck =>
+
+                                            `🚚 ${escapeHtml(
+                                                truck.truckId
+                                            )}：${truck.count}车`
+
+                                    )
+                                    .join(
+                                        "　"
+                                    )
+                                :
+                                "当前暂无有效运输车数"
+                        }
+
+                    </div>
+
+                </div>
+
+            `
+        )
+        .join(
+            ""
+        );
+
+}
+
+
+/* =========================================================
+   修改任务详情弹窗
+
+   在原详情下面追加“挖机车数统计”
+========================================================= */
+
+function appendExcavatorStatisticsToTaskDetail(
+    task
+) {
+
+    const content =
+        document.getElementById(
+            "publishedTaskModalContent"
+        );
+
+
+    if (!content) {
+
+        return;
+
+    }
+
+
+    const old =
+        content.querySelector(
+            "#excavatorStatisticsArea"
+        );
+
+
+    if (old) {
+
+        old.remove();
+
+    }
+
+
+    const section =
+        document.createElement(
+            "div"
+        );
+
+
+    section.id =
+        "excavatorStatisticsArea";
+
+
+    section.innerHTML = `
+
+        <h4>
+            🚜 挖机车数统计
+        </h4>
+
+        ${buildExcavatorStatisticsHtml(task)}
+
+    `;
+
+
+    content.appendChild(
+        section
+    );
+
+}
+
+
+/* =========================================================
+   发布前检查挖机司机
+========================================================= */
+
+function validateExcavatorDriversBeforePublish() {
+
+    synchronizeExcavatorDriverAssignments();
+
+
+    const incomplete =
+        excavatorDriverAssignments
+            .filter(
+                item =>
+                    !item.driverId
+            );
+
+
+    if (
+        incomplete.length
+    ) {
+
+        alert(
+            "以下挖机尚未分配挖机司机：\n\n" +
+
+            incomplete
+                .map(
+                    item =>
+                        item.excavatorId
+                )
+                .join(
+                    "、"
+                )
+        );
+
+
+        return false;
+
+    }
+
+
+    return true;
+
+}
+
+
+/* =========================================================
+   给任务补充 V2.9.8B 字段
+========================================================= */
+
+function applyProductionStatisticsToTask(
+    task
+) {
+
+    task.excavatorDriverAssignments =
+        clone(
+            excavatorDriverAssignments
+        );
+
+
+    task.truckBindingHistory =
+        createTruckBindingHistory(
+            task
+        );
+
+
+    task.productionStatisticsVersion =
+        "V2.9.8B";
+
+
+    return task;
+
+}
+
+
+/* =========================================================
+   中途减少汽车
+
+   后续调度中途调整车辆时调用：
+   closeTruckBinding(task, truckId)
+========================================================= */
+
+function closeTruckBinding(
+    task,
+    truckId,
+    reason = "调度减少车辆"
+) {
+
+    if (
+        !Array.isArray(
+            task.truckBindingHistory
+        )
+    ) {
+
+        task.truckBindingHistory =
+            [];
+
+    }
+
+
+    const now =
+        new Date()
+            .toISOString();
+
+
+    task.truckBindingHistory
+        .filter(
+            item =>
+
+                String(
+                    item.truckId
+                ) ===
+                    String(
+                        truckId
+                    ) &&
+
+                !item.endAt
+        )
+        .forEach(
+            item => {
+
+                item.endAt =
+                    now;
+
+
+                item.endReason =
+                    reason;
+
+            }
+        );
+
+}
+
+
+/* =========================================================
+   中途增加汽车
+
+   后续调度增加车辆时调用：
+   openTruckBinding(task, excavatorId, truckId)
+========================================================= */
+
+function openTruckBinding(
+    task,
+    excavatorId,
+    truckId,
+    reason = "调度增加车辆"
+) {
+
+    if (
+        !Array.isArray(
+            task.truckBindingHistory
+        )
+    ) {
+
+        task.truckBindingHistory =
+            [];
+
+    }
+
+
+    task.truckBindingHistory
+        .push({
+
+            bindingId:
+                "BIND_" +
+                Date.now() +
+                "_" +
+                Math.random()
+                    .toString(36)
+                    .slice(2, 8),
+
+            excavatorId,
+
+            truckId,
+
+            startAt:
+                new Date()
+                    .toISOString(),
+
+            endAt:
+                null,
+
+            reason
+
+        });
+
+}
+
+
+/* =========================================================
+   故障换车时同步跟随历史
+========================================================= */
+
+function recordTruckReplacementBinding(
+    task,
+    oldVehicle,
+    newVehicle
+) {
+
+    const activeOld =
+        (
+            task.truckBindingHistory ||
+            []
+        )
+            .find(
+                item =>
+
+                    String(
+                        item.truckId
+                    ) ===
+                        String(
+                            oldVehicle
+                        ) &&
+
+                    !item.endAt
+            );
+
+
+    if (!activeOld) {
+
+        return;
+
+    }
+
+
+    const excavatorId =
+        activeOld.excavatorId;
+
+
+    closeTruckBinding(
+        task,
+        oldVehicle,
+        "车辆故障换车"
+    );
+
+
+    openTruckBinding(
+        task,
+        excavatorId,
+        newVehicle,
+        "故障替换车辆"
+    );
+
+}
+
+
+/* =========================================================
+   对原函数进行安全增强
+========================================================= */
+
+
+/*
+   1.
+   generateDraft()执行以后，
+   自动显示挖机司机分配。
+*/
+
+const originalGenerateDraft =
+    generateDraft;
+
+
+generateDraft =
+    function () {
+
+        originalGenerateDraft();
+
+
+        if (!currentDraft) {
+
+            return;
+
+        }
+
+
+        excavatorDriverAssignments =
+            [];
+
+
+        renderExcavatorDriverAssignments();
+
+    };
+
+
+/*
+   2.
+   每次绑定/删除挖机卡车后，
+   同步挖机司机。
+*/
+
+const originalBindSelectedTrucks =
+    bindSelectedTrucks;
+
+
+bindSelectedTrucks =
+    function () {
+
+        originalBindSelectedTrucks();
+
+
+        synchronizeExcavatorDriverAssignments();
+
+        renderExcavatorDriverAssignments();
+
+    };
+
+
+/*
+   3.
+   每次刷新时刷新挖机司机区域。
+*/
+
+const originalRefreshAll =
+    refreshAll;
+
+
+refreshAll =
+    function () {
+
+        originalRefreshAll();
+
+
+        if (currentDraft) {
+
+            renderExcavatorDriverAssignments();
+
+        }
+
+    };
+
+
+/*
+   4.
+   发布任务之前必须完成挖机司机分配。
+
+   同时给即将发布的task增加统计字段。
+*/
+
+const originalPublishTask =
+    publishTask;
+
+
+publishTask =
+    function () {
+
+        if (
+            !validateExcavatorDriversBeforePublish()
+        ) {
+
+            return;
+
+        }
+
+
+        /*
+        临时拦截saveTasks，
+        给刚发布的task增加新字段。
+        */
+
+        const oldSaveTasks =
+            saveTasks;
+
+
+        let intercepted =
+            false;
+
+
+        saveTasks =
+            function (
+                tasks
+            ) {
+
+                if (
+                    !intercepted &&
+                    Array.isArray(
+                        tasks
+                    ) &&
+                    currentDraft
+                ) {
+
+                    const task =
+                        tasks.find(
+                            item =>
+                                item.taskId ===
+                                currentDraft.taskId
+                        );
+
+
+                    if (task) {
+
+                        applyProductionStatisticsToTask(
+                            task
+                        );
+
+
+                        intercepted =
+                            true;
+
+                    }
+
+                }
+
+
+                oldSaveTasks(
+                    tasks
+                );
+
+            };
+
+
+        try {
+
+            originalPublishTask();
+
+        } finally {
+
+            saveTasks =
+                oldSaveTasks;
+
+        }
+
+    };
+
+
+/*
+   5.
+   打开任务详情后，
+   自动追加挖机车数统计。
+*/
+
+const originalOpenTaskDetail =
+    openTaskDetail;
+
+
+openTaskDetail =
+    function (
+        taskId
+    ) {
+
+        originalOpenTaskDetail(
+            taskId
+        );
+
+
+        const task =
+            getTaskById(
+                taskId
+            );
+
+
+        if (task) {
+
+            appendExcavatorStatisticsToTaskDetail(
+                task
+            );
+
+        }
+
+    };
+
+
+/*
+   6.
+   故障换车后，
+   自动关闭旧车跟随时间，
+   打开新车跟随时间。
+*/
+
+const originalUpdateTaskVehicleAfterChange =
+    updateTaskVehicleAfterChange;
+
+
+updateTaskVehicleAfterChange =
+    function (
+        taskId,
+        driverId,
+        driverName,
+        oldVehicle,
+        newVehicle
+    ) {
+
+        originalUpdateTaskVehicleAfterChange(
+            taskId,
+            driverId,
+            driverName,
+            oldVehicle,
+            newVehicle
+        );
+
+
+        const tasks =
+            getTasks();
+
+
+        const task =
+            tasks.find(
+                item =>
+                    item.taskId ===
+                    taskId
+            );
+
+
+        if (!task) {
+
+            return;
+
+        }
+
+
+        recordTruckReplacementBinding(
+            task,
+            oldVehicle,
+            newVehicle
+        );
+
+
+        saveTasks(
+            tasks
+        );
+
+    };
+
+
+/* =========================================================
+   初始化升级模块
+========================================================= */
+
+ensureExcavatorDriverSection();
+
+
+if (
+    currentDraft
+) {
+
+    renderExcavatorDriverAssignments();
+
+}
 
 
     function cssEscape(
