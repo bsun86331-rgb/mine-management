@@ -42,18 +42,18 @@
         header {
             position: sticky;
             top: 0;
-            z-index: 30;
-            padding: 17px 14px;
+            z-index: 50;
+            padding: 16px 14px;
             background: #0f172a;
-            color: white;
+            color: #ffffff;
             box-shadow:
                 0 4px 18px
-                rgba(15, 23, 42, .2);
+                rgba(15, 23, 42, .22);
         }
 
 
         .header-inner {
-            max-width: 1000px;
+            max-width: 1050px;
             margin: 0 auto;
         }
 
@@ -79,6 +79,13 @@
         }
 
 
+        main {
+            max-width: 1050px;
+            margin: 0 auto;
+            padding: 14px 14px 40px;
+        }
+
+
         button {
             border: 0;
             border-radius: 10px;
@@ -89,48 +96,47 @@
         }
 
 
+        button:disabled {
+            opacity: .5;
+            cursor: not-allowed;
+        }
+
+
         .header-btn {
             background: #1e293b;
             border: 1px solid #475569;
-            color: white;
+            color: #ffffff;
         }
 
 
         .primary-btn {
             background: #2563eb;
-            color: white;
+            color: #ffffff;
         }
 
 
         .success-btn {
             background: #16a34a;
-            color: white;
+            color: #ffffff;
         }
 
 
         .warning-btn {
             background: #f59e0b;
-            color: white;
+            color: #ffffff;
         }
 
 
         .danger-btn {
             background: #dc2626;
-            color: white;
+            color: #ffffff;
         }
 
 
         .secondary-btn {
-            background: white;
+            background: #ffffff;
             color: #334155;
             border: 1px solid #cbd5e1;
-        }
-
-
-        main {
-            max-width: 1000px;
-            margin: 0 auto;
-            padding: 15px 14px 40px;
         }
 
 
@@ -139,13 +145,13 @@
             grid-template-columns:
                 repeat(4, minmax(0, 1fr));
             gap: 8px;
-            margin-bottom: 15px;
+            margin-bottom: 14px;
         }
 
 
         .nav-btn {
             min-height: 58px;
-            background: white;
+            background: #ffffff;
             color: #334155;
             border: 1px solid #e2e8f0;
         }
@@ -153,7 +159,7 @@
 
         .nav-btn.active {
             background: #0f172a;
-            color: white;
+            color: #ffffff;
         }
 
 
@@ -168,10 +174,10 @@
 
 
         .card {
-            margin-bottom: 15px;
+            margin-bottom: 14px;
             padding: 17px;
-            background: white;
             border-radius: 16px;
+            background: #ffffff;
             box-shadow:
                 0 5px 20px
                 rgba(15, 23, 42, .06);
@@ -203,6 +209,7 @@
 
         .badge {
             flex-shrink: 0;
+            display: inline-block;
             padding: 5px 10px;
             border-radius: 999px;
             font-size: 12px;
@@ -243,7 +250,7 @@
 
 
         .summary-card {
-            padding: 15px 12px;
+            padding: 14px 12px;
             border-radius: 13px;
             background: #f8fafc;
         }
@@ -258,13 +265,14 @@
 
         .summary-card strong {
             display: block;
-            margin-top: 8px;
+            margin-top: 7px;
             font-size: 24px;
         }
 
 
         .summary-card small {
             color: #64748b;
+            font-size: 12px;
         }
 
 
@@ -273,7 +281,7 @@
             padding: 22px 15px;
             border-radius: 16px;
             background: #0f172a;
-            color: white;
+            color: #ffffff;
             text-align: center;
         }
 
@@ -320,7 +328,7 @@
             padding: 12px;
             border: 1px solid #cbd5e1;
             border-radius: 9px;
-            background: white;
+            background: #ffffff;
             font-size: 14px;
             outline: none;
         }
@@ -364,11 +372,6 @@
         }
 
 
-        .record-top strong {
-            font-size: 15px;
-        }
-
-
         .record-info {
             margin-top: 8px;
             color: #64748b;
@@ -404,6 +407,44 @@
 
         .active-fueling h3 {
             margin: 0 0 10px;
+        }
+
+
+        .photo-box {
+            margin-top: 12px;
+            padding: 13px;
+            border: 1px dashed #94a3b8;
+            border-radius: 12px;
+            background: #f8fafc;
+        }
+
+
+        .photo-preview {
+            display: none;
+            width: 100%;
+            max-height: 320px;
+            margin-top: 10px;
+            border-radius: 10px;
+            object-fit: contain;
+            background: #0f172a;
+        }
+
+
+        .photo-thumb {
+            width: 92px;
+            height: 72px;
+            border-radius: 8px;
+            object-fit: cover;
+            border: 1px solid #cbd5e1;
+            cursor: pointer;
+        }
+
+
+        .photo-tip {
+            margin-top: 7px;
+            color: #64748b;
+            font-size: 12px;
+            line-height: 1.5;
         }
 
 
@@ -457,7 +498,7 @@
 
         table {
             width: 100%;
-            min-width: 700px;
+            min-width: 780px;
             border-collapse: collapse;
             font-size: 13px;
         }
@@ -486,6 +527,68 @@
             color: #9a3412;
             font-size: 13px;
             line-height: 1.7;
+        }
+
+
+        .info-box {
+            margin-top: 12px;
+            padding: 13px;
+            border: 1px solid #bfdbfe;
+            border-radius: 11px;
+            background: #eff6ff;
+            color: #1e40af;
+            font-size: 13px;
+            line-height: 1.7;
+        }
+
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 100;
+            inset: 0;
+            padding: 20px;
+            background:
+                rgba(15, 23, 42, .85);
+            align-items: center;
+            justify-content: center;
+        }
+
+
+        .modal.show {
+            display: flex;
+        }
+
+
+        .modal-content {
+            position: relative;
+            width: 100%;
+            max-width: 900px;
+            max-height: 90vh;
+        }
+
+
+        .modal-content img {
+            display: block;
+            width: 100%;
+            max-height: 85vh;
+            object-fit: contain;
+            border-radius: 12px;
+            background: #000000;
+        }
+
+
+        .modal-close {
+            position: absolute;
+            top: -12px;
+            right: -12px;
+            width: 42px;
+            height: 42px;
+            padding: 0;
+            border-radius: 50%;
+            background: #ffffff;
+            color: #0f172a;
+            font-size: 22px;
         }
 
 
@@ -519,17 +622,6 @@
             }
         }
 
-
-        @media (
-            max-width: 480px
-        ) {
-
-            .summary-grid,
-            .report-summary {
-                grid-template-columns: 1fr 1fr;
-            }
-        }
-
     </style>
 
 </head>
@@ -551,7 +643,7 @@
                 </h1>
 
                 <p>
-                    Fuel Truck Management · V2.9.9A
+                    Fuel Truck Management · V2.9.9B
                 </p>
 
             </div>
@@ -575,10 +667,6 @@
 
 <main>
 
-
-    <!-- =====================================================
-         导航
-    ====================================================== -->
 
     <div class="nav-grid">
 
@@ -648,9 +736,7 @@
 
 
 
-    <!-- =====================================================
-         首页 / 库存
-    ====================================================== -->
+    <!-- 今日库存 -->
 
     <section
         id="page-dashboard"
@@ -668,7 +754,7 @@
                     </h2>
 
                     <p>
-                        自动根据抽油入库、确认加油和库存调整计算
+                        抽油入库、加油记录、库存调整自动汇总
                     </p>
 
                 </div>
@@ -775,7 +861,7 @@
                     </h2>
 
                     <p>
-                        车辆进入加油范围并提交申请后进入队列
+                        当前阶段先使用本地测试申请
                     </p>
 
                 </div>
@@ -805,9 +891,7 @@
 
 
 
-    <!-- =====================================================
-         抽油入库
-    ====================================================== -->
+    <!-- 抽油入库 -->
 
     <section
         id="page-intake"
@@ -825,7 +909,7 @@
                     </h2>
 
                     <p>
-                        记录从固定油罐或其他油源抽入加油车的油量
+                        记录加油车当天抽入的柴油
                     </p>
 
                 </div>
@@ -877,7 +961,7 @@
 
                 <textarea
                     id="intakeRemark"
-                    placeholder="可填写油罐编号、交接情况等"
+                    placeholder="油罐编号、交接情况等"
                 ></textarea>
 
             </div>
@@ -899,11 +983,9 @@
             <div class="section-title">
 
                 <div>
-
                     <h2>
                         今日抽油记录
                     </h2>
-
                 </div>
 
             </div>
@@ -921,9 +1003,7 @@
 
 
 
-    <!-- =====================================================
-         加油任务
-    ====================================================== -->
+    <!-- 加油任务 -->
 
     <section
         id="page-fueling"
@@ -941,19 +1021,32 @@
                     </h2>
 
                     <p>
-                        正式版由司机进入GPS加油区域后发起申请
+                        后续由车辆司机GPS进入范围后自动申请
                     </p>
 
                 </div>
 
 
-                <button
-                    class="secondary-btn"
-                    type="button"
-                    onclick="addDemoFuelRequest()"
-                >
-                    + 测试申请
-                </button>
+                <div class="task-actions">
+
+                    <button
+                        class="secondary-btn"
+                        type="button"
+                        onclick="addDemoFuelRequest()"
+                    >
+                        + 测试申请
+                    </button>
+
+
+                    <button
+                        class="warning-btn"
+                        type="button"
+                        onclick="generateDemoFuelData()"
+                    >
+                        🧪 一键测试数据
+                    </button>
+
+                </div>
 
             </div>
 
@@ -977,6 +1070,10 @@
                         正在加油
                     </h2>
 
+                    <p>
+                        完成后必须上传加油机照片
+                    </p>
+
                 </div>
 
             </div>
@@ -996,9 +1093,7 @@
 
 
 
-    <!-- =====================================================
-         加油历史
-    ====================================================== -->
+    <!-- 加油记录 -->
 
     <section
         id="page-history"
@@ -1016,7 +1111,7 @@
                     </h2>
 
                     <p>
-                        包括待司机确认、已确认及被驳回记录
+                        保存数量、时间、司机确认状态和加油机凭证
                     </p>
 
                 </div>
@@ -1036,9 +1131,7 @@
 
 
 
-    <!-- =====================================================
-         日报
-    ====================================================== -->
+    <!-- 日报 -->
 
     <section
         id="page-daily"
@@ -1056,7 +1149,7 @@
                     </h2>
 
                     <p>
-                        自动汇总当天抽油、加油及库存变化
+                        抽油、加油、库存调整及加油凭证
                     </p>
 
                 </div>
@@ -1083,9 +1176,7 @@
             </div>
 
 
-            <div
-                id="dailyReportContent"
-            >
+            <div id="dailyReportContent">
             </div>
 
         </div>
@@ -1094,9 +1185,7 @@
 
 
 
-    <!-- =====================================================
-         月报
-    ====================================================== -->
+    <!-- 月报 -->
 
     <section
         id="page-monthly"
@@ -1114,7 +1203,7 @@
                     </h2>
 
                     <p>
-                        自动生成月度抽油、加油及车辆油耗汇总
+                        月度抽油、加油量及车辆用油汇总
                     </p>
 
                 </div>
@@ -1141,9 +1230,7 @@
             </div>
 
 
-            <div
-                id="monthlyReportContent"
-            >
+            <div id="monthlyReportContent">
             </div>
 
         </div>
@@ -1152,9 +1239,7 @@
 
 
 
-    <!-- =====================================================
-         库存清零
-    ====================================================== -->
+    <!-- 库存清零 -->
 
     <section
         id="page-adjustment"
@@ -1172,14 +1257,14 @@
                     </h2>
 
                     <p>
-                        实际油量为0但理论库存仍有余额时使用
+                        理论库存与实际库存不一致时使用
                     </p>
 
                 </div>
 
 
                 <span class="badge red">
-                    自动形成报告
+                    报告总经理
                 </span>
 
             </div>
@@ -1187,12 +1272,11 @@
 
             <div class="warning-box">
 
-                库存清零不会删除历史加油记录。
+                库存调整不会删除历史数据。
 
                 <br>
 
-                系统会自动记录清零前理论库存、实际库存和差异值，
-                后续提交总经理查看。
+                系统会保留清零前理论库存、实际库存、差异值和原因。
 
             </div>
 
@@ -1241,7 +1325,7 @@
 
                 <textarea
                     id="adjustReason"
-                    placeholder="例如：油管残留、流量表累计误差等"
+                    placeholder="例如：油管残留、流量表误差等"
                 ></textarea>
 
             </div>
@@ -1263,11 +1347,9 @@
             <div class="section-title">
 
                 <div>
-
                     <h2>
                         库存误差报告
                     </h2>
-
                 </div>
 
             </div>
@@ -1290,9 +1372,42 @@
 
 <footer>
 
-    矿山管理系统 · 加油车司机端 V2.9.9A
+    矿山管理系统 · 加油车司机端 V2.9.9B
 
 </footer>
+
+
+
+<!-- 图片放大 -->
+
+<div
+    id="photoModal"
+    class="modal"
+    onclick="closePhotoModal()"
+>
+
+    <div
+        class="modal-content"
+        onclick="event.stopPropagation()"
+    >
+
+        <button
+            class="modal-close"
+            type="button"
+            onclick="closePhotoModal()"
+        >
+            ×
+        </button>
+
+
+        <img
+            id="photoModalImage"
+            alt="加油凭证"
+        >
+
+    </div>
+
+</div>
 
 
 
@@ -1302,7 +1417,7 @@
 
 
 /* =========================================================
-   localStorage
+   数据键
 ========================================================= */
 
 const STORAGE = {
@@ -1324,6 +1439,10 @@ const STORAGE = {
 
 let activeFuelRequestId =
     null;
+
+
+let pendingFuelPhotoData =
+    "";
 
 
 
@@ -1470,19 +1589,22 @@ function renderAll() {
     renderMonthlyReport();
 
 
+    const stock =
+        calculateCurrentStock();
+
+
     document.getElementById(
         "adjustTheoryStock"
     ).value =
-        calculateCurrentStock()
-            .toFixed(
-                1
-            );
+        stock.toFixed(
+            1
+        );
 }
 
 
 
 /* =========================================================
-   抽油
+   抽油入库
 ========================================================= */
 
 function submitIntake() {
@@ -1590,45 +1712,56 @@ function submitIntake() {
 
 
 /* =========================================================
-   测试加油申请
-
-   当前阶段先用来完善加油车端界面
+   测试申请
 ========================================================= */
 
 function addDemoFuelRequest() {
 
-    const number =
-        prompt(
-            "请输入车辆编号：",
-            "T-001"
-        );
+    const demoVehicles = [
 
+        {
+            vehicleNumber:
+                "T-001",
 
-    if (
-        !number
-    ) {
+            driverName:
+                "张三"
+        },
 
-        return;
-    }
+        {
+            vehicleNumber:
+                "T-002",
 
+            driverName:
+                "李四"
+        },
 
-    const driver =
-        prompt(
-            "请输入司机姓名：",
-            "测试司机"
-        );
+        {
+            vehicleNumber:
+                "T-003",
 
-
-    if (
-        !driver
-    ) {
-
-        return;
-    }
+            driverName:
+                "王五"
+        }
+    ];
 
 
     const records =
         getFuelRequests();
+
+
+    const waitingCount =
+        records.filter(
+            item =>
+                item.status ===
+                "waiting"
+        ).length;
+
+
+    const demo =
+        demoVehicles[
+            waitingCount %
+            demoVehicles.length
+        ];
 
 
     records.push({
@@ -1639,10 +1772,10 @@ function addDemoFuelRequest() {
             ),
 
         vehicleNumber:
-            number.trim(),
+            demo.vehicleNumber,
 
         driverName:
-            driver.trim(),
+            demo.driverName,
 
         gpsStatus:
             "范围内",
@@ -1668,6 +1801,273 @@ function addDemoFuelRequest() {
 
 
 /* =========================================================
+   一键测试数据
+========================================================= */
+
+function generateDemoFuelData() {
+
+    const now =
+        new Date();
+
+
+    const intakes =
+        getIntakes();
+
+
+    const requests =
+        getFuelRequests();
+
+
+    const fuelRecords =
+        getFuelRecords();
+
+
+    intakes.push({
+
+        intakeId:
+            createId(
+                "INTAKE"
+            ),
+
+        source:
+            "1号柴油罐",
+
+        oilType:
+            "柴油",
+
+        amount:
+            8000,
+
+        remark:
+            "测试抽油入库",
+
+        createdAt:
+            new Date(
+                now.getTime() -
+                6 *
+                60 *
+                60 *
+                1000
+            ).toISOString()
+    });
+
+
+    [
+        ["T-001", "张三"],
+        ["T-002", "李四"],
+        ["T-003", "王五"]
+    ]
+        .forEach(
+            (
+                item,
+                index
+            ) => {
+
+                requests.push({
+
+                    requestId:
+                        createId(
+                            "FUELREQ"
+                        ),
+
+                    vehicleNumber:
+                        item[0],
+
+                    driverName:
+                        item[1],
+
+                    gpsStatus:
+                        "范围内",
+
+                    status:
+                        "waiting",
+
+                    requestedAt:
+                        new Date(
+                            now.getTime() -
+                            (
+                                30 -
+                                index * 5
+                            ) *
+                            60 *
+                            1000
+                        ).toISOString()
+                });
+            }
+        );
+
+
+    [
+        ["T-010", "赵六", 420],
+        ["T-011", "孙七", 380]
+    ]
+        .forEach(
+            (
+                item,
+                index
+            ) => {
+
+                const completed =
+                    new Date(
+                        now.getTime() -
+                        (
+                            3 -
+                            index
+                        ) *
+                        60 *
+                        60 *
+                        1000
+                    );
+
+
+                fuelRecords.push({
+
+                    fuelId:
+                        createId(
+                            "FUEL"
+                        ),
+
+                    requestId:
+                        createId(
+                            "TESTREQ"
+                        ),
+
+                    vehicleNumber:
+                        item[0],
+
+                    driverName:
+                        item[1],
+
+                    amount:
+                        item[2],
+
+                    photoData:
+                        "",
+
+                    photoName:
+                        "测试记录无照片",
+
+                    startedAt:
+                        new Date(
+                            completed.getTime() -
+                            10 *
+                            60 *
+                            1000
+                        ).toISOString(),
+
+                    completedAt:
+                        completed.toISOString(),
+
+                    confirmationStatus:
+                        "confirmed",
+
+                    confirmedAt:
+                        new Date(
+                            completed.getTime() +
+                            5 *
+                            60 *
+                            1000
+                        ).toISOString(),
+
+                    createdAt:
+                        completed.toISOString()
+                });
+            }
+        );
+
+
+    fuelRecords.push({
+
+        fuelId:
+            createId(
+                "FUEL"
+            ),
+
+        requestId:
+            createId(
+                "TESTREQ"
+            ),
+
+        vehicleNumber:
+            "T-012",
+
+        driverName:
+            "周八",
+
+        amount:
+            450,
+
+        photoData:
+            "",
+
+        photoName:
+            "测试记录无照片",
+
+        startedAt:
+            new Date(
+                now.getTime() -
+                70 *
+                60 *
+                1000
+            ).toISOString(),
+
+        completedAt:
+            new Date(
+                now.getTime() -
+                60 *
+                60 *
+                1000
+            ).toISOString(),
+
+        confirmationStatus:
+            "rejected",
+
+        rejectReason:
+            "司机认为实际加油量与记录不一致",
+
+        rejectedAt:
+            new Date()
+                .toISOString(),
+
+        createdAt:
+            new Date(
+                now.getTime() -
+                60 *
+                60 *
+                1000
+            ).toISOString()
+    });
+
+
+    save(
+        STORAGE.INTAKES,
+        intakes
+    );
+
+
+    save(
+        STORAGE.FUEL_REQUESTS,
+        requests
+    );
+
+
+    save(
+        STORAGE.FUEL_RECORDS,
+        fuelRecords
+    );
+
+
+    renderAll();
+
+
+    alert(
+        "测试数据已生成。"
+    );
+}
+
+
+
+/* =========================================================
    开始加油
 ========================================================= */
 
@@ -1677,6 +2077,26 @@ function startFueling(
 
     const requests =
         getFuelRequests();
+
+
+    const active =
+        requests.find(
+            item =>
+                item.status ===
+                "fueling"
+        );
+
+
+    if (
+        active
+    ) {
+
+        alert(
+            "当前已有车辆正在加油。"
+        );
+
+        return;
+    }
 
 
     const item =
@@ -1690,18 +2110,6 @@ function startFueling(
     if (
         !item
     ) {
-
-        return;
-    }
-
-
-    if (
-        activeFuelRequestId
-    ) {
-
-        alert(
-            "当前已有车辆正在加油。"
-        );
 
         return;
     }
@@ -1720,6 +2128,10 @@ function startFueling(
         requestId;
 
 
+    pendingFuelPhotoData =
+        "";
+
+
     save(
         STORAGE.FUEL_REQUESTS,
         requests
@@ -1732,38 +2144,236 @@ function startFueling(
 
 
 /* =========================================================
-   加油完成
+   加油照片选择
 ========================================================= */
 
-function finishFueling(
-    requestId
+async function handleFuelPhoto(
+    input
 ) {
 
-    const requests =
-        getFuelRequests();
-
-
-    const item =
-        requests.find(
-            record =>
-                record.requestId ===
-                requestId
-        );
+    const file =
+        input.files?.[0];
 
 
     if (
-        !item
+        !file
     ) {
+
+        pendingFuelPhotoData =
+            "";
 
         return;
     }
 
 
+    if (
+        !file.type.startsWith(
+            "image/"
+        )
+    ) {
+
+        alert(
+            "请选择图片文件。"
+        );
+
+
+        input.value =
+            "";
+
+
+        return;
+    }
+
+
+    try {
+
+        pendingFuelPhotoData =
+            await compressImage(
+                file,
+                1280,
+                .72
+            );
+
+
+        const preview =
+            document.getElementById(
+                "fuelPhotoPreview"
+            );
+
+
+        if (
+            preview
+        ) {
+
+            preview.src =
+                pendingFuelPhotoData;
+
+
+            preview.style.display =
+                "block";
+        }
+
+
+    } catch (
+        error
+    ) {
+
+        console.error(
+            error
+        );
+
+
+        alert(
+            "照片处理失败，请重新拍摄。"
+        );
+
+
+        pendingFuelPhotoData =
+            "";
+    }
+}
+
+
+
+/* =========================================================
+   图片压缩
+========================================================= */
+
+function compressImage(
+    file,
+    maxWidth,
+    quality
+) {
+
+    return new Promise(
+        (
+            resolve,
+            reject
+        ) => {
+
+            const reader =
+                new FileReader();
+
+
+            reader.onload =
+                function () {
+
+                    const image =
+                        new Image();
+
+
+                    image.onload =
+                        function () {
+
+                            let width =
+                                image.width;
+
+
+                            let height =
+                                image.height;
+
+
+                            if (
+                                width >
+                                maxWidth
+                            ) {
+
+                                const ratio =
+                                    maxWidth /
+                                    width;
+
+
+                                width =
+                                    maxWidth;
+
+
+                                height =
+                                    Math.round(
+                                        height *
+                                        ratio
+                                    );
+                            }
+
+
+                            const canvas =
+                                document.createElement(
+                                    "canvas"
+                                );
+
+
+                            canvas.width =
+                                width;
+
+
+                            canvas.height =
+                                height;
+
+
+                            const ctx =
+                                canvas.getContext(
+                                    "2d"
+                                );
+
+
+                            ctx.drawImage(
+                                image,
+                                0,
+                                0,
+                                width,
+                                height
+                            );
+
+
+                            const dataUrl =
+                                canvas.toDataURL(
+                                    "image/jpeg",
+                                    quality
+                                );
+
+
+                            resolve(
+                                dataUrl
+                            );
+                        };
+
+
+                    image.onerror =
+                        reject;
+
+
+                    image.src =
+                        reader.result;
+                };
+
+
+            reader.onerror =
+                reject;
+
+
+            reader.readAsDataURL(
+                file
+            );
+        }
+    );
+}
+
+
+
+/* =========================================================
+   加油完成
+========================================================= */
+
+function submitFuelCompletion(
+    requestId
+) {
+
     const amount =
         Number(
-            prompt(
-                "请输入本次实际加油数量 / L："
-            ) ||
+            document
+                .getElementById(
+                    "fuelCompleteAmount"
+                )
+                ?.value ||
             0
         );
 
@@ -1774,6 +2384,18 @@ function finishFueling(
 
         alert(
             "请输入正确的加油数量。"
+        );
+
+        return;
+    }
+
+
+    if (
+        !pendingFuelPhotoData
+    ) {
+
+        alert(
+            "必须拍摄或上传加油机照片后才能提交。"
         );
 
         return;
@@ -1797,16 +2419,20 @@ function finishFueling(
     }
 
 
-    const photoNote =
-        prompt(
-            "当前演示版请输入加油机照片说明：",
-            "加油机照片已拍摄"
+    const requests =
+        getFuelRequests();
+
+
+    const item =
+        requests.find(
+            record =>
+                record.requestId ===
+                requestId
         );
 
 
     if (
-        photoNote ===
-        null
+        !item
     ) {
 
         return;
@@ -1825,7 +2451,7 @@ function finishFueling(
             ),
 
         requestId:
-            requestId,
+            item.requestId,
 
         vehicleNumber:
             item.vehicleNumber,
@@ -1835,8 +2461,11 @@ function finishFueling(
 
         amount,
 
-        photoNote:
-            photoNote.trim(),
+        photoData:
+            pendingFuelPhotoData,
+
+        photoName:
+            "加油机现场照片",
 
         startedAt:
             item.startedAt,
@@ -1845,10 +2474,6 @@ function finishFueling(
             new Date()
                 .toISOString(),
 
-        /*
-         * 当前界面阶段默认模拟
-         * 司机尚未确认
-         */
         confirmationStatus:
             "pending",
 
@@ -1883,18 +2508,22 @@ function finishFueling(
         null;
 
 
+    pendingFuelPhotoData =
+        "";
+
+
     renderAll();
 
 
     alert(
-        "加油任务完成，已生成待司机确认的加油清单。"
+        "加油任务已完成，凭证已保存，等待司机确认。"
     );
 }
 
 
 
 /* =========================================================
-   测试司机确认 / 驳回
+   司机确认 / 驳回
 ========================================================= */
 
 function confirmFuelRecord(
@@ -2005,7 +2634,7 @@ function rejectFuelRecord(
 
 
 /* =========================================================
-   库存清零 / 调整
+   库存调整
 ========================================================= */
 
 function submitStockAdjustment() {
@@ -2116,7 +2745,7 @@ function submitStockAdjustment() {
 
 
     alert(
-        "库存调整完成，差异报告已生成。"
+        "库存调整已保存，并生成总经理误差报告。"
     );
 }
 
@@ -2124,11 +2753,6 @@ function submitStockAdjustment() {
 
 /* =========================================================
    库存计算
-
-   当前库存 =
-   所有抽油
-   - 所有未被驳回的加油记录
-   + 所有库存调整差额
 ========================================================= */
 
 function calculateCurrentStock() {
@@ -2196,7 +2820,7 @@ function calculateCurrentStock() {
 
 
 /* =========================================================
-   今日库存
+   首页
 ========================================================= */
 
 function renderDashboard() {
@@ -2216,7 +2840,7 @@ function renderDashboard() {
             );
 
 
-    const todayFuelRecords =
+    const todayFuel =
         getFuelRecords()
             .filter(
                 item =>
@@ -2224,11 +2848,7 @@ function renderDashboard() {
                         item.createdAt
                     ) ===
                     today
-            );
-
-
-    const confirmedFuel =
-        todayFuelRecords
+            )
             .filter(
                 item =>
                     item.confirmationStatus !==
@@ -2260,7 +2880,7 @@ function renderDashboard() {
     setText(
         "todayFuel",
         sumAmounts(
-            confirmedFuel
+            todayFuel
         ).toFixed(
             1
         )
@@ -2269,7 +2889,7 @@ function renderDashboard() {
 
     setText(
         "todayFuelCount",
-        confirmedFuel.length
+        todayFuel.length
     );
 
 
@@ -2330,7 +2950,6 @@ function renderDashboard() {
     ) {
 
         box.innerHTML = `
-
             <div class="empty">
                 当前没有待加油车辆
             </div>
@@ -2425,7 +3044,6 @@ function renderIntakes() {
     ) {
 
         box.innerHTML = `
-
             <div class="empty">
                 今日暂无抽油记录
             </div>
@@ -2436,49 +3054,50 @@ function renderIntakes() {
 
 
     box.innerHTML =
-        records.map(
-            item => `
+        records
+            .map(
+                item => `
 
-            <div class="record-card">
+                <div class="record-card">
 
-                <div class="record-top">
+                    <div class="record-top">
 
-                    <strong>
-                        🛢
-                        ${Number(item.amount).toFixed(1)} L
-                    </strong>
+                        <strong>
+                            🛢
+                            ${Number(item.amount).toFixed(1)} L
+                        </strong>
 
-                    <span class="badge blue">
-                        已入库
-                    </span>
+                        <span class="badge blue">
+                            已入库
+                        </span>
+
+                    </div>
+
+
+                    <div class="record-info">
+
+                        来源：
+                        ${escapeHtml(item.source)}
+
+                        <br>
+
+                        时间：
+                        ${formatDateTime(item.createdAt)}
+
+                        ${
+                            item.remark
+                                ? `<br>备注：${escapeHtml(item.remark)}`
+                                : ""
+                        }
+
+                    </div>
 
                 </div>
-
-
-                <div class="record-info">
-
-                    来源：
-                    ${escapeHtml(item.source)}
-
-                    <br>
-
-                    时间：
-                    ${formatDateTime(item.createdAt)}
-
-                    ${
-                        item.remark
-                            ? `<br>备注：${escapeHtml(item.remark)}`
-                            : ""
-                    }
-
-                </div>
-
-            </div>
-            `
-        )
-        .join(
-            ""
-        );
+                `
+            )
+            .join(
+                ""
+            );
 }
 
 
@@ -2509,7 +3128,6 @@ function renderFuelQueue() {
     ) {
 
         box.innerHTML = `
-
             <div class="empty">
                 当前没有待加油任务
             </div>
@@ -2520,59 +3138,61 @@ function renderFuelQueue() {
 
 
     box.innerHTML =
-        records.map(
-            (
-                item,
-                index
-            ) => `
+        records
+            .map(
+                (
+                    item,
+                    index
+                ) => `
 
-            <div class="record-card">
+                <div class="record-card">
 
-                <div class="record-top">
+                    <div class="record-top">
 
-                    <strong>
-                        ${index + 1}.
-                        🚚 ${escapeHtml(item.vehicleNumber)}
-                    </strong>
+                        <strong>
+                            ${index + 1}.
+                            🚚
+                            ${escapeHtml(item.vehicleNumber)}
+                        </strong>
 
-                    <span class="badge green">
-                        GPS ${escapeHtml(item.gpsStatus || "-")}
-                    </span>
+                        <span class="badge green">
+                            GPS ${escapeHtml(item.gpsStatus || "-")}
+                        </span>
+
+                    </div>
+
+
+                    <div class="record-info">
+
+                        司机：
+                        ${escapeHtml(item.driverName)}
+
+                        <br>
+
+                        申请时间：
+                        ${formatDateTime(item.requestedAt)}
+
+                    </div>
+
+
+                    <div class="task-actions">
+
+                        <button
+                            class="success-btn"
+                            type="button"
+                            onclick="startFueling('${escapeJs(item.requestId)}')"
+                        >
+                            开始加油
+                        </button>
+
+                    </div>
 
                 </div>
-
-
-                <div class="record-info">
-
-                    司机：
-                    ${escapeHtml(item.driverName)}
-
-                    <br>
-
-                    申请时间：
-                    ${formatDateTime(item.requestedAt)}
-
-                </div>
-
-
-                <div class="task-actions">
-
-                    <button
-                        class="success-btn"
-                        type="button"
-                        onclick="startFueling('${escapeJs(item.requestId)}')"
-                    >
-                        开始加油
-                    </button>
-
-                </div>
-
-            </div>
-            `
-        )
-        .join(
-            ""
-        );
+                `
+            )
+            .join(
+                ""
+            );
 }
 
 
@@ -2607,8 +3227,11 @@ function renderActiveFuel() {
         !active
     ) {
 
-        box.innerHTML = `
+        pendingFuelPhotoData =
+            "";
 
+
+        box.innerHTML = `
             <div class="empty">
                 当前没有正在加油的车辆
             </div>
@@ -2645,20 +3268,113 @@ function renderActiveFuel() {
             </div>
 
 
+            <div class="form-group" style="margin-top:15px;">
+
+                <label for="fuelCompleteAmount">
+                    实际加油数量 / L
+                </label>
+
+                <input
+                    id="fuelCompleteAmount"
+                    type="number"
+                    min="0"
+                    step="0.1"
+                    placeholder="请输入加油数量"
+                >
+
+            </div>
+
+
+            <div class="photo-box">
+
+                <strong>
+                    📷 加油机照片
+                </strong>
+
+
+                <div class="photo-tip">
+
+                    手机端点击下面按钮可直接调用相机。
+
+                    <br>
+
+                    系统会自动压缩照片后保存。
+
+                </div>
+
+
+                <input
+                    id="fuelPhotoInput"
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    onchange="handleFuelPhoto(this)"
+                    style="margin-top:10px;"
+                >
+
+
+                <img
+                    id="fuelPhotoPreview"
+                    class="photo-preview"
+                    alt="加油机照片预览"
+                >
+
+            </div>
+
+
+            <div class="info-box">
+
+                加油完成必须同时满足：
+
+                <br>
+
+                1. 填写实际加油数量
+
+                <br>
+
+                2. 拍摄或上传加油机照片
+
+            </div>
+
+
             <div class="task-actions">
 
                 <button
                     class="primary-btn"
                     type="button"
-                    onclick="finishFueling('${escapeJs(active.requestId)}')"
+                    onclick="submitFuelCompletion('${escapeJs(active.requestId)}')"
                 >
-                    加油完成
+                    提交加油完成
                 </button>
 
             </div>
 
         </div>
     `;
+
+
+    if (
+        pendingFuelPhotoData
+    ) {
+
+        const preview =
+            document.getElementById(
+                "fuelPhotoPreview"
+            );
+
+
+        if (
+            preview
+        ) {
+
+            preview.src =
+                pendingFuelPhotoData;
+
+
+            preview.style.display =
+                "block";
+        }
+    }
 }
 
 
@@ -2686,7 +3402,6 @@ function renderFuelHistory() {
     ) {
 
         box.innerHTML = `
-
             <div class="empty">
                 暂无加油记录
             </div>
@@ -2697,134 +3412,155 @@ function renderFuelHistory() {
 
 
     box.innerHTML =
-        records.map(
-            item => {
+        records
+            .map(
+                item => {
 
-                let statusText =
-                    "待司机确认";
-
-
-                let badgeClass =
-                    "yellow";
+                    let statusText =
+                        "待司机确认";
 
 
-                if (
-                    item.confirmationStatus ===
-                    "confirmed"
-                ) {
-
-                    statusText =
-                        "司机已确认";
-
-                    badgeClass =
-                        "green";
-                }
+                    let badgeClass =
+                        "yellow";
 
 
-                if (
-                    item.confirmationStatus ===
-                    "rejected"
-                ) {
+                    if (
+                        item.confirmationStatus ===
+                        "confirmed"
+                    ) {
 
-                    statusText =
-                        "司机驳回";
+                        statusText =
+                            "司机已确认";
 
-                    badgeClass =
-                        "red";
-                }
-
-
-                return `
-
-                <div class="record-card">
-
-                    <div class="record-top">
-
-                        <strong>
-                            🚚 ${escapeHtml(item.vehicleNumber)}
-                            ·
-                            ${Number(item.amount).toFixed(1)} L
-                        </strong>
+                        badgeClass =
+                            "green";
+                    }
 
 
-                        <span class="badge ${badgeClass}">
-                            ${statusText}
-                        </span>
+                    if (
+                        item.confirmationStatus ===
+                        "rejected"
+                    ) {
 
-                    </div>
+                        statusText =
+                            "司机驳回";
+
+                        badgeClass =
+                            "red";
+                    }
 
 
-                    <div class="record-info">
+                    const photoHtml =
+                        item.photoData
+                            ? `
 
-                        司机：
-                        ${escapeHtml(item.driverName)}
+                            <div style="margin-top:10px;">
 
-                        <br>
+                                <img
+                                    src="${item.photoData}"
+                                    class="photo-thumb"
+                                    alt="加油凭证"
+                                    onclick="openPhotoModal('${escapeJs(item.fuelId)}')"
+                                >
 
-                        开始：
-                        ${formatDateTime(item.startedAt)}
+                                <div class="photo-tip">
+                                    点击照片查看大图
+                                </div>
 
-                        <br>
+                            </div>
+                            `
+                            : `
 
-                        完成：
-                        ${formatDateTime(item.completedAt)}
+                            <div class="photo-tip">
+                                无照片凭证
+                            </div>
+                            `;
 
-                        <br>
 
-                        照片：
-                        ${escapeHtml(item.photoNote || "未记录")}
+                    return `
+
+                    <div class="record-card">
+
+                        <div class="record-top">
+
+                            <strong>
+                                🚚 ${escapeHtml(item.vehicleNumber)}
+                                ·
+                                ${Number(item.amount).toFixed(1)} L
+                            </strong>
+
+
+                            <span class="badge ${badgeClass}">
+                                ${statusText}
+                            </span>
+
+                        </div>
+
+
+                        <div class="record-info">
+
+                            司机：
+                            ${escapeHtml(item.driverName)}
+
+                            <br>
+
+                            开始：
+                            ${formatDateTime(item.startedAt)}
+
+                            <br>
+
+                            完成：
+                            ${formatDateTime(item.completedAt)}
+
+                            ${
+                                item.rejectReason
+                                    ? `<br>驳回原因：${escapeHtml(item.rejectReason)}`
+                                    : ""
+                            }
+
+                        </div>
+
+
+                        ${photoHtml}
+
 
                         ${
-                            item.rejectReason
-                                ? `<br>驳回原因：${escapeHtml(item.rejectReason)}`
+                            item.confirmationStatus ===
+                            "pending"
+
+                                ? `
+
+                                <div class="task-actions">
+
+                                    <button
+                                        class="success-btn"
+                                        type="button"
+                                        onclick="confirmFuelRecord('${escapeJs(item.fuelId)}')"
+                                    >
+                                        模拟司机确认
+                                    </button>
+
+
+                                    <button
+                                        class="danger-btn"
+                                        type="button"
+                                        onclick="rejectFuelRecord('${escapeJs(item.fuelId)}')"
+                                    >
+                                        模拟司机驳回
+                                    </button>
+
+                                </div>
+                                `
                                 : ""
                         }
 
                     </div>
-
-
-                    ${
-                        item.confirmationStatus ===
-                        "pending"
-
-                            ?
-
-                            `
-
-                            <div class="task-actions">
-
-                                <button
-                                    class="success-btn"
-                                    onclick="confirmFuelRecord('${escapeJs(item.fuelId)}')"
-                                    type="button"
-                                >
-                                    模拟司机确认
-                                </button>
-
-
-                                <button
-                                    class="danger-btn"
-                                    onclick="rejectFuelRecord('${escapeJs(item.fuelId)}')"
-                                    type="button"
-                                >
-                                    模拟司机驳回
-                                </button>
-
-                            </div>
-                            `
-
-                            :
-
-                            ""
-                    }
-
-                </div>
-                `;
-            }
-        )
-        .join(
-            ""
-        );
+                    `;
+                }
+            )
+            .join(
+                ""
+            );
 }
 
 
@@ -2944,7 +3680,7 @@ function renderDailyReport() {
             </div>
 
             <div class="report-box">
-                <span>加油车次</span>
+                <span>正式加油车次</span>
                 <strong>${officialFuel.length}</strong>
             </div>
 
@@ -2986,19 +3722,19 @@ function renderDailyReport() {
 
                     ${
                         intakes.length
-                            ?
-                            intakes.map(
-                                item => `
-                                <tr>
-                                    <td>${formatTime(item.createdAt)}</td>
-                                    <td>${escapeHtml(item.source)}</td>
-                                    <td>${Number(item.amount).toFixed(1)}</td>
-                                    <td>${escapeHtml(item.remark || "-")}</td>
-                                </tr>
-                                `
-                            ).join("")
-                            :
-                            `<tr><td colspan="4">无记录</td></tr>`
+                            ? intakes
+                                .map(
+                                    item => `
+                                    <tr>
+                                        <td>${formatTime(item.createdAt)}</td>
+                                        <td>${escapeHtml(item.source)}</td>
+                                        <td>${Number(item.amount).toFixed(1)}</td>
+                                        <td>${escapeHtml(item.remark || "-")}</td>
+                                    </tr>
+                                    `
+                                )
+                                .join("")
+                            : `<tr><td colspan="4">无记录</td></tr>`
                     }
 
                 </tbody>
@@ -3025,6 +3761,7 @@ function renderDailyReport() {
                         <th>司机</th>
                         <th>数量/L</th>
                         <th>状态</th>
+                        <th>凭证</th>
                     </tr>
 
                 </thead>
@@ -3034,20 +3771,33 @@ function renderDailyReport() {
 
                     ${
                         fuelRecords.length
-                            ?
-                            fuelRecords.map(
-                                item => `
-                                <tr>
-                                    <td>${formatTime(item.completedAt)}</td>
-                                    <td>${escapeHtml(item.vehicleNumber)}</td>
-                                    <td>${escapeHtml(item.driverName)}</td>
-                                    <td>${Number(item.amount).toFixed(1)}</td>
-                                    <td>${getConfirmationText(item.confirmationStatus)}</td>
-                                </tr>
-                                `
-                            ).join("")
-                            :
-                            `<tr><td colspan="5">无记录</td></tr>`
+                            ? fuelRecords
+                                .map(
+                                    item => `
+                                    <tr>
+                                        <td>${formatTime(item.completedAt)}</td>
+                                        <td>${escapeHtml(item.vehicleNumber)}</td>
+                                        <td>${escapeHtml(item.driverName)}</td>
+                                        <td>${Number(item.amount).toFixed(1)}</td>
+                                        <td>${getConfirmationText(item.confirmationStatus)}</td>
+                                        <td>
+                                            ${
+                                                item.photoData
+                                                    ? `<button
+                                                        class="secondary-btn"
+                                                        type="button"
+                                                        onclick="openPhotoModal('${escapeJs(item.fuelId)}')"
+                                                    >
+                                                        查看
+                                                    </button>`
+                                                    : "无"
+                                            }
+                                        </td>
+                                    </tr>
+                                    `
+                                )
+                                .join("")
+                            : `<tr><td colspan="6">无记录</td></tr>`
                     }
 
                 </tbody>
@@ -3086,9 +3836,9 @@ function renderMonthlyReport() {
                     getDateKey(
                         item.createdAt
                     )
-                    .startsWith(
-                        month
-                    )
+                        .startsWith(
+                            month
+                        )
             );
 
 
@@ -3099,9 +3849,9 @@ function renderMonthlyReport() {
                     getDateKey(
                         item.createdAt
                     )
-                    .startsWith(
-                        month
-                    )
+                        .startsWith(
+                            month
+                        )
             )
             .filter(
                 item =>
@@ -3117,9 +3867,9 @@ function renderMonthlyReport() {
                     getDateKey(
                         item.createdAt
                     )
-                    .startsWith(
-                        month
-                    )
+                        .startsWith(
+                            month
+                        )
             );
 
 
@@ -3167,8 +3917,10 @@ function renderMonthlyReport() {
                 vehicleMap.get(
                     key
                 ) || {
+
                     count:
                         0,
+
                     amount:
                         0
                 };
@@ -3225,21 +3977,17 @@ function renderMonthlyReport() {
 
     const maxDay =
         dateMap.size
-            ?
-            Math.max(
+            ? Math.max(
                 ...dateMap.values()
             )
-            :
-            0;
+            : 0;
 
 
     const average =
         dateMap.size
-            ?
-            fuelAmount /
-            dateMap.size
-            :
-            0;
+            ? fuelAmount /
+                dateMap.size
+            : 0;
 
 
     const content =
@@ -3295,53 +4043,54 @@ function renderMonthlyReport() {
             <table>
 
                 <thead>
+
                     <tr>
                         <th>车辆编号</th>
                         <th>加油次数</th>
                         <th>累计加油量/L</th>
                     </tr>
+
                 </thead>
+
 
                 <tbody>
 
                     ${
                         vehicleMap.size
-                            ?
-                            [
+                            ? [
                                 ...vehicleMap.entries()
                             ]
-                            .sort(
-                                (
-                                    a,
-                                    b
-                                ) =>
-                                    String(a[0])
-                                    .localeCompare(
-                                        String(b[0]),
-                                        "zh-CN",
-                                        {
-                                            numeric:
-                                                true
-                                        }
-                                    )
-                            )
-                            .map(
-                                (
-                                    [
-                                        vehicle,
-                                        value
-                                    ]
-                                ) => `
-                                <tr>
-                                    <td>${escapeHtml(vehicle)}</td>
-                                    <td>${value.count}</td>
-                                    <td>${value.amount.toFixed(1)}</td>
-                                </tr>
-                                `
-                            )
-                            .join("")
-                            :
-                            `<tr><td colspan="3">无记录</td></tr>`
+                                .sort(
+                                    (
+                                        a,
+                                        b
+                                    ) =>
+                                        String(a[0])
+                                            .localeCompare(
+                                                String(b[0]),
+                                                "zh-CN",
+                                                {
+                                                    numeric:
+                                                        true
+                                                }
+                                            )
+                                )
+                                .map(
+                                    (
+                                        [
+                                            vehicle,
+                                            value
+                                        ]
+                                    ) => `
+                                    <tr>
+                                        <td>${escapeHtml(vehicle)}</td>
+                                        <td>${value.count}</td>
+                                        <td>${value.amount.toFixed(1)}</td>
+                                    </tr>
+                                    `
+                                )
+                                .join("")
+                            : `<tr><td colspan="3">无记录</td></tr>`
                     }
 
                 </tbody>
@@ -3377,7 +4126,6 @@ function renderAdjustmentList() {
     ) {
 
         box.innerHTML = `
-
             <div class="empty">
                 暂无库存误差报告
             </div>
@@ -3388,58 +4136,121 @@ function renderAdjustmentList() {
 
 
     box.innerHTML =
-        records.map(
-            item => `
+        records
+            .map(
+                item => `
 
-            <div class="record-card">
+                <div class="record-card">
 
-                <div class="record-top">
+                    <div class="record-top">
 
-                    <strong>
-                        差异：
-                        ${Number(item.difference).toFixed(1)} L
-                    </strong>
+                        <strong>
+                            差异：
+                            ${Number(item.difference).toFixed(1)} L
+                        </strong>
 
-                    <span class="badge red">
-                        ${escapeHtml(item.status)}
-                    </span>
+                        <span class="badge red">
+                            ${escapeHtml(item.status)}
+                        </span>
+
+                    </div>
+
+
+                    <div class="record-info">
+
+                        调整前理论库存：
+                        ${Number(item.theoryStock).toFixed(1)} L
+
+                        <br>
+
+                        实际库存：
+                        ${Number(item.actualStock).toFixed(1)} L
+
+                        <br>
+
+                        原因：
+                        ${escapeHtml(item.reason)}
+
+                        <br>
+
+                        时间：
+                        ${formatDateTime(item.createdAt)}
+
+                        <br>
+
+                        报告对象：
+                        ${escapeHtml(item.reportTo)}
+
+                    </div>
 
                 </div>
+                `
+            )
+            .join(
+                ""
+            );
+}
 
 
-                <div class="record-info">
 
-                    调整前理论库存：
-                    ${Number(item.theoryStock).toFixed(1)} L
+/* =========================================================
+   图片查看
+========================================================= */
 
-                    <br>
+function openPhotoModal(
+    fuelId
+) {
 
-                    实际库存：
-                    ${Number(item.actualStock).toFixed(1)} L
+    const record =
+        getFuelRecords()
+            .find(
+                item =>
+                    item.fuelId ===
+                    fuelId
+            );
 
-                    <br>
 
-                    原因：
-                    ${escapeHtml(item.reason)}
+    if (
+        !record ||
+        !record.photoData
+    ) {
 
-                    <br>
-
-                    时间：
-                    ${formatDateTime(item.createdAt)}
-
-                    <br>
-
-                    报告对象：
-                    ${escapeHtml(item.reportTo)}
-
-                </div>
-
-            </div>
-            `
-        )
-        .join(
-            ""
+        alert(
+            "该记录没有照片凭证。"
         );
+
+        return;
+    }
+
+
+    document.getElementById(
+        "photoModalImage"
+    ).src =
+        record.photoData;
+
+
+    document.getElementById(
+        "photoModal"
+    ).classList.add(
+        "show"
+    );
+}
+
+
+
+function closePhotoModal() {
+
+    document.getElementById(
+        "photoModal"
+    ).classList.remove(
+        "show"
+    );
+
+
+    document.getElementById(
+        "photoModalImage"
+    ).src =
+        "";
 }
 
 
@@ -3543,12 +4354,29 @@ function save(
     data
 ) {
 
-    localStorage.setItem(
-        key,
-        JSON.stringify(
-            data
-        )
-    );
+    try {
+
+        localStorage.setItem(
+            key,
+            JSON.stringify(
+                data
+            )
+        );
+
+
+    } catch (
+        error
+    ) {
+
+        console.error(
+            error
+        );
+
+
+        alert(
+            "本地存储空间不足。\n\n照片测试数据过多时，请删除部分旧记录。"
+        );
+    }
 }
 
 
@@ -3601,12 +4429,10 @@ function getDateKey(
 
     const date =
         value
-            ?
-            new Date(
+            ? new Date(
                 value
             )
-            :
-            new Date();
+            : new Date();
 
 
     if (
@@ -3627,23 +4453,23 @@ function getDateKey(
             date.getMonth() +
             1
         )
-        .padStart(
-            2,
-            "0"
-        ),
+            .padStart(
+                2,
+                "0"
+            ),
 
         String(
             date.getDate()
         )
-        .padStart(
-            2,
-            "0"
-        )
+            .padStart(
+                2,
+                "0"
+            )
 
     ]
-    .join(
-        "-"
-    );
+        .join(
+            "-"
+        );
 }
 
 
@@ -3706,6 +4532,7 @@ function formatTime(
         .toLocaleTimeString(
             "zh-CN",
             {
+
                 hour:
                     "2-digit",
 
@@ -3796,14 +4623,14 @@ function escapeJs(
         value ||
         ""
     )
-    .replace(
-        /\\/g,
-        "\\\\"
-    )
-    .replace(
-        /'/g,
-        "\\'"
-    );
+        .replace(
+            /\\/g,
+            "\\\\"
+        )
+        .replace(
+            /'/g,
+            "\\'"
+        );
 }
 
 
