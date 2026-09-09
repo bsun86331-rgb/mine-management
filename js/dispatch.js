@@ -9298,7 +9298,95 @@ if (
 
 }
 
+/* =========================================================
+   V2.9.8B-1
+   按钮重新绑定修复
+========================================================= */
 
+/*
+   页面启动时 bindEvents() 已经把旧函数绑定到按钮。
+   升级模块是在后面重新包装函数，
+   所以必须把旧监听取消，再绑定升级后的函数。
+*/
+
+
+$("generateTaskButton")
+    ?.removeEventListener(
+        "click",
+        originalGenerateDraft
+    );
+
+$("generateTaskButton")
+    ?.addEventListener(
+        "click",
+        generateDraft
+    );
+
+
+$("bindTrucksButton")
+    ?.removeEventListener(
+        "click",
+        originalBindSelectedTrucks
+    );
+
+$("bindTrucksButton")
+    ?.addEventListener(
+        "click",
+        bindSelectedTrucks
+    );
+
+
+$("publishTaskButton")
+    ?.removeEventListener(
+        "click",
+        originalPublishTask
+    );
+
+$("publishTaskButton")
+    ?.addEventListener(
+        "click",
+        publishTask
+    );
+
+
+/*
+   任务详情按钮同样重新绑定升级后的函数。
+*/
+
+document.querySelectorAll(
+    "[data-task]"
+).forEach(
+    button => {
+
+        button.onclick =
+            function () {
+
+                openTaskDetail(
+                    button.dataset.task
+                );
+
+            };
+
+    }
+);
+
+
+/*
+   草稿存在时持续刷新挖机司机分配区域。
+*/
+
+setInterval(
+    function () {
+
+        if (currentDraft) {
+
+            renderExcavatorDriverAssignments();
+
+        }
+
+    },
+    5000
+);
     function cssEscape(
         value
     ) {
