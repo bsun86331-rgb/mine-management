@@ -9325,5 +9325,69 @@ if (
                 "\\$&"
             );
     }
+/* =========================================================
+   V2.9.8B-1 按钮重新绑定修复
+========================================================= */
 
+/*
+   页面初始化时，按钮已经绑定了旧函数。
+   这里取消旧绑定，再绑定升级后的新函数。
+*/
+
+$("generateTaskButton")
+    ?.removeEventListener(
+        "click",
+        originalGenerateDraft
+    );
+
+$("generateTaskButton")
+    ?.addEventListener(
+        "click",
+        generateDraft
+    );
+
+
+$("bindTrucksButton")
+    ?.removeEventListener(
+        "click",
+        originalBindSelectedTrucks
+    );
+
+$("bindTrucksButton")
+    ?.addEventListener(
+        "click",
+        bindSelectedTrucks
+    );
+
+
+$("publishTaskButton")
+    ?.removeEventListener(
+        "click",
+        originalPublishTask
+    );
+
+$("publishTaskButton")
+    ?.addEventListener(
+        "click",
+        publishTask
+    );
+
+
+/*
+   原来的5秒刷新也绑定的是旧 refreshAll。
+   再增加一个升级版刷新。
+*/
+
+setInterval(
+    function () {
+
+        if (currentDraft) {
+
+            renderExcavatorDriverAssignments();
+
+        }
+
+    },
+    5000
+);
 });
