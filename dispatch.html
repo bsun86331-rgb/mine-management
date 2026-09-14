@@ -8,6 +8,69 @@
 
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/dispatch.css?v=2.9.3">
+
+    <style>
+        .maintenance-review-card {
+            margin-bottom: 12px;
+            padding: 14px;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            background: #f8fafc;
+        }
+
+        .maintenance-review-top {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .maintenance-review-top strong {
+            font-size: 15px;
+        }
+
+        .maintenance-review-info {
+            color: #475569;
+            font-size: 13px;
+            line-height: 1.8;
+        }
+
+        .maintenance-review-photo {
+            display: block;
+            width: 100%;
+            max-width: 360px;
+            max-height: 260px;
+            margin-top: 10px;
+            border-radius: 10px;
+            object-fit: contain;
+            background: #0f172a;
+        }
+
+        .maintenance-review-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .maintenance-review-empty {
+            padding: 26px 12px;
+            text-align: center;
+            color: #94a3b8;
+            line-height: 1.7;
+        }
+
+        .maintenance-status-badge {
+            flex-shrink: 0;
+            padding: 5px 9px;
+            border-radius: 999px;
+            background: #fef3c7;
+            color: #92400e;
+            font-size: 12px;
+            font-weight: 700;
+        }
+    </style>
 </head>
 
 <body class="dispatch-body">
@@ -20,7 +83,7 @@
         </div>
 
         <div class="dispatch-header-badge">
-            📋 调度端 V2.9.3
+            📋 调度端 V2.10.0O
         </div>
     </div>
 </header>
@@ -34,11 +97,19 @@
         <div class="dispatch-section-title">
             <div>
                 <h2>🔔 调度待办中心</h2>
-                <p>换车、GPS、司机请假及罚单统一处理</p>
+                <p>维修、换车、GPS、司机请假及罚单统一处理</p>
             </div>
         </div>
 
         <div class="todo-grid">
+
+            <button id="openMaintenanceReviewButton" class="todo-card" type="button">
+                <span class="todo-icon">🛠</span>
+                <div>
+                    <strong id="maintenanceReviewTodoCount">0</strong>
+                    <span>维修待审批</span>
+                </div>
+            </button>
 
             <button id="openVehicleChangeButton" class="todo-card" type="button">
                 <span class="todo-icon">🔧</span>
@@ -457,6 +528,31 @@
 </div>
 
 
+<!-- 维修审批 -->
+<div id="maintenanceReviewModal" class="dispatch-modal hidden">
+    <div class="dispatch-modal-card large-modal">
+
+        <h3>🛠 生产设备维修审批</h3>
+
+        <div class="approval-notice">
+            汽车、挖机及辅助生产车辆的维修申请必须先由调度审批。
+            批准后进入“待进厂”，再由维修管理接车并派工给维修员。
+        </div>
+
+        <div id="maintenanceReviewList"></div>
+
+        <button
+            id="closeMaintenanceReviewModal"
+            class="secondary-button full-button"
+            type="button"
+        >
+            关闭
+        </button>
+
+    </div>
+</div>
+
+
 <!-- 换车审批 -->
 <div id="vehicleChangeModal" class="dispatch-modal hidden">
     <div class="dispatch-modal-card large-modal">
@@ -621,10 +717,787 @@
 
 
 <footer>
-    矿山管理系统 · 调度端 V2.9.3
+    矿山管理系统 · 调度端 V2.10.0O
 </footer>
 
 <script src="js/dispatch.js?v=2.9.3"></script>
+
+<script>
+"use strict";
+
+/* =========================================================
+   V2.10.0O
+   调度端维修审批接入
+   本段独立于现有 js/dispatch.js，
+   不影响原生产调度、换车、GPS、请假、罚单逻辑。
+========================================================= */
+
+const MAINTENANCE_REQUEST_KEY =
+    "maintenanceRequests";
+
+
+function getMaintenanceRequestsForDispatch() {
+
+    try {
+
+        const raw =
+            localStorage.getItem(
+                MAINTENANCE_REQUEST_KEY
+            );
+
+
+        if (
+            !raw
+        ) {
+
+            return [];
+        }
+
+
+        const data =
+            JSON.parse(
+                raw
+            );
+
+
+        return Array.isArray(
+            data
+        )
+            ? data
+            : [];
+
+    } catch (
+        error
+    ) {
+
+        console.error(
+            "读取维修申请失败：",
+            error
+        );
+
+
+        return [];
+    }
+}
+
+
+
+function saveMaintenanceRequestsForDispatch(
+    records
+) {
+
+    localStorage.setItem(
+        MAINTENANCE_REQUEST_KEY,
+        JSON.stringify(
+            records
+        )
+    );
+}
+
+
+
+function getMaintenanceRequestIdForDispatch(
+    item
+) {
+
+    return String(
+
+        item?.requestId ||
+
+        item?.maintenanceRequestId ||
+
+        item?.reportId ||
+
+        item?.id ||
+
+        ""
+    );
+}
+
+
+
+function isPendingMaintenanceDispatch(
+    item
+) {
+
+    return (
+
+        item?.dispatchRequired !==
+            false
+
+        &&
+
+        (
+            item?.dispatchStatus ===
+                "pending"
+
+            ||
+
+            item?.status ===
+                "pending_dispatch"
+        )
+    );
+}
+
+
+
+function getPendingMaintenanceRequests() {
+
+    return getMaintenanceRequestsForDispatch()
+        .filter(
+            isPendingMaintenanceDispatch
+        )
+        .sort(
+            (
+                a,
+                b
+            ) =>
+
+                new Date(
+                    a.createdAt ||
+                    a.reportedAt ||
+                    0
+                ) -
+
+                new Date(
+                    b.createdAt ||
+                    b.reportedAt ||
+                    0
+                )
+        );
+}
+
+
+
+function refreshMaintenanceReviewTodo() {
+
+    const count =
+        getPendingMaintenanceRequests()
+            .length;
+
+
+    const element =
+        document.getElementById(
+            "maintenanceReviewTodoCount"
+        );
+
+
+    if (
+        element
+    ) {
+
+        element.textContent =
+            String(
+                count
+            );
+    }
+}
+
+
+
+function openMaintenanceReviewModal() {
+
+    renderMaintenanceReviewList();
+
+
+    document
+        .getElementById(
+            "maintenanceReviewModal"
+        )
+        ?.classList
+        .remove(
+            "hidden"
+        );
+}
+
+
+
+function closeMaintenanceReviewModal() {
+
+    document
+        .getElementById(
+            "maintenanceReviewModal"
+        )
+        ?.classList
+        .add(
+            "hidden"
+        );
+}
+
+
+
+function renderMaintenanceReviewList() {
+
+    const box =
+        document.getElementById(
+            "maintenanceReviewList"
+        );
+
+
+    if (
+        !box
+    ) {
+
+        return;
+    }
+
+
+    const records =
+        getPendingMaintenanceRequests();
+
+
+    if (
+        !records.length
+    ) {
+
+        box.innerHTML = `
+
+            <div class="maintenance-review-empty">
+
+                当前没有待调度审批的维修申请。
+
+            </div>
+        `;
+
+
+        refreshMaintenanceReviewTodo();
+
+
+        return;
+    }
+
+
+    box.innerHTML =
+        records
+            .map(
+                item => {
+
+                    const requestId =
+                        getMaintenanceRequestIdForDispatch(
+                            item
+                        );
+
+
+                    const equipmentType =
+                        item.equipmentType ||
+                        item.vehicleType ||
+                        "生产设备";
+
+
+                    const equipmentNumber =
+                        item.equipmentNumber ||
+                        item.vehicleNumber ||
+                        item.equipmentId ||
+                        "-";
+
+
+                    const applicantName =
+                        item.applicantName ||
+                        item.personName ||
+                        item.driverName ||
+                        "-";
+
+
+                    const applicantPosition =
+                        item.applicantPosition ||
+                        item.position ||
+                        "-";
+
+
+                    const faultType =
+                        item.faultType ||
+                        "未填写";
+
+
+                    const severity =
+                        item.severity ||
+                        item.faultLevel ||
+                        item.level ||
+                        "未填写";
+
+
+                    const description =
+                        item.description ||
+                        item.faultDescription ||
+                        item.remark ||
+                        "未填写故障说明";
+
+
+                    const canMove =
+                        item.canMove;
+
+
+                    const canMoveText =
+                        canMove === true
+                            ? "可以自行移动"
+                            : (
+                                canMove === false
+                                    ? "不能自行移动"
+                                    : "未填写"
+                            );
+
+
+                    const photo =
+                        item.photoData ||
+                        item.photo ||
+                        item.imageData ||
+                        "";
+
+
+                    return `
+
+                        <div class="maintenance-review-card">
+
+                            <div class="maintenance-review-top">
+
+                                <strong>
+                                    ${escapeMaintenanceHtml(equipmentType)}
+                                    ·
+                                    ${escapeMaintenanceHtml(equipmentNumber)}
+                                </strong>
+
+
+                                <span class="maintenance-status-badge">
+                                    待调度审批
+                                </span>
+
+                            </div>
+
+
+                            <div class="maintenance-review-info">
+
+                                申请人：
+                                ${escapeMaintenanceHtml(applicantName)}
+                                （${escapeMaintenanceHtml(applicantPosition)}）
+
+                                <br>
+
+                                故障类型：
+                                ${escapeMaintenanceHtml(faultType)}
+
+                                <br>
+
+                                故障等级：
+                                ${escapeMaintenanceHtml(severity)}
+
+                                <br>
+
+                                车辆状态：
+                                ${escapeMaintenanceHtml(canMoveText)}
+
+                                <br>
+
+                                故障说明：
+                                ${escapeMaintenanceHtml(description)}
+
+                                <br>
+
+                                申请时间：
+                                ${escapeMaintenanceHtml(
+                                    formatMaintenanceDateTime(
+                                        item.createdAt ||
+                                        item.reportedAt
+                                    )
+                                )}
+
+                            </div>
+
+
+                            ${
+                                photo
+                                    ? `
+                                        <img
+                                            class="maintenance-review-photo"
+                                            src="${escapeMaintenanceAttribute(photo)}"
+                                            alt="故障现场照片"
+                                        >
+                                    `
+                                    : ""
+                            }
+
+
+                            <div class="maintenance-review-actions">
+
+                                <button
+                                    type="button"
+                                    class="success-button"
+                                    onclick="approveMaintenanceEntry('${escapeMaintenanceJs(requestId)}')"
+                                >
+                                    ✅ 批准进厂
+                                </button>
+
+
+                                <button
+                                    type="button"
+                                    class="danger-button"
+                                    onclick="rejectMaintenanceEntry('${escapeMaintenanceJs(requestId)}')"
+                                >
+                                    ❌ 驳回申请
+                                </button>
+
+                            </div>
+
+                        </div>
+                    `;
+                }
+            )
+            .join(
+                ""
+            );
+
+
+    refreshMaintenanceReviewTodo();
+}
+
+
+
+function approveMaintenanceEntry(
+    requestId
+) {
+
+    const records =
+        getMaintenanceRequestsForDispatch();
+
+
+    const item =
+        records.find(
+            record =>
+                getMaintenanceRequestIdForDispatch(
+                    record
+                ) ===
+                String(
+                    requestId
+                )
+        );
+
+
+    if (
+        !item
+    ) {
+
+        alert(
+            "没有找到该维修申请。"
+        );
+
+        return;
+    }
+
+
+    if (
+        !confirm(
+            "确认批准该设备进入修理厂？"
+        )
+    ) {
+
+        return;
+    }
+
+
+    const now =
+        new Date()
+            .toISOString();
+
+
+    item.dispatchRequired =
+        true;
+
+
+    item.dispatchStatus =
+        "approved";
+
+
+    item.status =
+        "waiting_entry";
+
+
+    item.dispatchApprovedAt =
+        now;
+
+
+    item.updatedAt =
+        now;
+
+
+    /*
+     * 当前 V2.x 本机版暂不强制识别调度本人姓名。
+     * 后续 Supabase V3.0 再写入真实审批人员账号。
+     */
+    item.dispatchApprovedBy =
+        "车队长 / 调度";
+
+
+    saveMaintenanceRequestsForDispatch(
+        records
+    );
+
+
+    renderMaintenanceReviewList();
+
+
+    alert(
+        "已批准进厂。该申请现在进入“待进厂”，维修管理可以接车。"
+    );
+}
+
+
+
+function rejectMaintenanceEntry(
+    requestId
+) {
+
+    const reason =
+        prompt(
+            "请输入驳回原因："
+        );
+
+
+    if (
+        reason ===
+        null
+    ) {
+
+        return;
+    }
+
+
+    if (
+        !reason.trim()
+    ) {
+
+        alert(
+            "请填写驳回原因。"
+        );
+
+        return;
+    }
+
+
+    const records =
+        getMaintenanceRequestsForDispatch();
+
+
+    const item =
+        records.find(
+            record =>
+                getMaintenanceRequestIdForDispatch(
+                    record
+                ) ===
+                String(
+                    requestId
+                )
+        );
+
+
+    if (
+        !item
+    ) {
+
+        alert(
+            "没有找到该维修申请。"
+        );
+
+        return;
+    }
+
+
+    const now =
+        new Date()
+            .toISOString();
+
+
+    item.dispatchRequired =
+        true;
+
+
+    item.dispatchStatus =
+        "rejected";
+
+
+    item.status =
+        "rejected";
+
+
+    item.dispatchRejectReason =
+        reason.trim();
+
+
+    item.dispatchRejectedAt =
+        now;
+
+
+    item.dispatchRejectedBy =
+        "车队长 / 调度";
+
+
+    item.updatedAt =
+        now;
+
+
+    saveMaintenanceRequestsForDispatch(
+        records
+    );
+
+
+    renderMaintenanceReviewList();
+
+
+    alert(
+        "该维修申请已驳回。"
+    );
+}
+
+
+
+function formatMaintenanceDateTime(
+    value
+) {
+
+    if (
+        !value
+    ) {
+
+        return "-";
+    }
+
+
+    const date =
+        new Date(
+            value
+        );
+
+
+    if (
+        Number.isNaN(
+            date.getTime()
+        )
+    ) {
+
+        return "-";
+    }
+
+
+    return date.toLocaleString(
+        "zh-CN"
+    );
+}
+
+
+
+function escapeMaintenanceHtml(
+    value
+) {
+
+    const div =
+        document.createElement(
+            "div"
+        );
+
+
+    div.textContent =
+        String(
+            value ??
+            ""
+        );
+
+
+    return div.innerHTML;
+}
+
+
+
+function escapeMaintenanceAttribute(
+    value
+) {
+
+    return escapeMaintenanceHtml(
+        value
+    )
+        .replaceAll(
+            '"',
+            "&quot;"
+        );
+}
+
+
+
+function escapeMaintenanceJs(
+    value
+) {
+
+    return String(
+        value ??
+        ""
+    )
+        .replaceAll(
+            "\\",
+            "\\\\"
+        )
+        .replaceAll(
+            "'",
+            "\\'"
+        )
+        .replaceAll(
+            "\n",
+            "\\n"
+        )
+        .replaceAll(
+            "\r",
+            "\\r"
+        );
+}
+
+
+
+document
+    .getElementById(
+        "openMaintenanceReviewButton"
+    )
+    ?.addEventListener(
+        "click",
+        openMaintenanceReviewModal
+    );
+
+
+document
+    .getElementById(
+        "closeMaintenanceReviewModal"
+    )
+    ?.addEventListener(
+        "click",
+        closeMaintenanceReviewModal
+    );
+
+
+document
+    .getElementById(
+        "maintenanceReviewModal"
+    )
+    ?.addEventListener(
+        "click",
+        function (
+            event
+        ) {
+
+            if (
+                event.target ===
+                this
+            ) {
+
+                closeMaintenanceReviewModal();
+            }
+        }
+    );
+
+
+refreshMaintenanceReviewTodo();
+
+
+setInterval(
+    refreshMaintenanceReviewTodo,
+    5000
+);
+
+</script>
 
 </body>
 </html>
