@@ -1,1 +1,3865 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
 
+<head>
+
+<meta charset="UTF-8">
+
+<meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+>
+
+<meta
+    name="theme-color"
+    content="#0f172a"
+>
+
+<title>
+    修理工工作端 - 矿山管理系统
+</title>
+
+<style>
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    min-height: 100vh;
+    font-family:
+        Arial,
+        "Microsoft YaHei",
+        sans-serif;
+    background: #f1f5f9;
+    color: #0f172a;
+}
+
+header {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    padding: 16px 14px;
+    background: #0f172a;
+    color: #ffffff;
+    box-shadow:
+        0 4px 18px
+        rgba(15,23,42,.2);
+}
+
+.header-inner {
+    max-width: 1000px;
+    margin: 0 auto;
+}
+
+.header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+}
+
+header h1 {
+    margin: 0;
+    font-size: 22px;
+}
+
+header p {
+    margin: 5px 0 0;
+    color: #cbd5e1;
+    font-size: 12px;
+}
+
+main {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 14px 14px 40px;
+}
+
+button {
+    border: 0;
+    border-radius: 10px;
+    padding: 12px 15px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+button:disabled {
+    opacity: .5;
+    cursor: not-allowed;
+}
+
+.header-btn {
+    background: #1e293b;
+    border: 1px solid #475569;
+    color: #fff;
+}
+
+.primary-btn {
+    background: #2563eb;
+    color: white;
+}
+
+.success-btn {
+    background: #16a34a;
+    color: white;
+}
+
+.warning-btn {
+    background: #f59e0b;
+    color: white;
+}
+
+.danger-btn {
+    background: #dc2626;
+    color: white;
+}
+
+.secondary-btn {
+    background: white;
+    color: #334155;
+    border: 1px solid #cbd5e1;
+}
+
+.purple-btn {
+    background: #7c3aed;
+    color: white;
+}
+
+.card {
+    margin-bottom: 14px;
+    padding: 17px;
+    border-radius: 16px;
+    background: #ffffff;
+    box-shadow:
+        0 5px 20px
+        rgba(15,23,42,.06);
+}
+
+.section-title {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.section-title h2 {
+    margin: 0;
+    font-size: 18px;
+}
+
+.section-title p {
+    margin: 5px 0 0;
+    color: #64748b;
+    font-size: 12px;
+    line-height: 1.6;
+}
+
+.badge {
+    display: inline-block;
+    padding: 5px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.badge.default {
+    background: #e2e8f0;
+    color: #475569;
+}
+
+.badge.green {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.badge.yellow {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.badge.red {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.badge.blue {
+    background: #dbeafe;
+    color: #1e40af;
+}
+
+.badge.purple {
+    background: #ede9fe;
+    color: #6d28d9;
+}
+
+.badge.orange {
+    background: #ffedd5;
+    color: #9a3412;
+}
+
+.info-grid {
+    display: grid;
+    grid-template-columns:
+        repeat(2,minmax(0,1fr));
+    gap: 10px;
+}
+
+.info-box {
+    padding: 12px;
+    border-radius: 11px;
+    background: #f8fafc;
+}
+
+.info-box span {
+    display: block;
+    margin-bottom: 5px;
+    color: #64748b;
+    font-size: 12px;
+}
+
+.info-box strong {
+    display: block;
+    font-size: 15px;
+    word-break: break-word;
+}
+
+.summary-grid {
+    display: grid;
+    grid-template-columns:
+        repeat(4,minmax(0,1fr));
+    gap: 10px;
+}
+
+.summary-card {
+    padding: 14px 12px;
+    border-radius: 13px;
+    background: #f8fafc;
+}
+
+.summary-card span {
+    display: block;
+    color: #64748b;
+    font-size: 12px;
+}
+
+.summary-card strong {
+    display: block;
+    margin-top: 7px;
+    font-size: 24px;
+}
+
+.nav-grid {
+    display: grid;
+    grid-template-columns:
+        repeat(4,minmax(0,1fr));
+    gap: 8px;
+    margin-bottom: 14px;
+}
+
+.nav-btn {
+    min-height: 58px;
+    padding: 10px;
+    background: white;
+    color: #334155;
+    border: 1px solid #e2e8f0;
+}
+
+.nav-btn.active {
+    background: #0f172a;
+    color: white;
+}
+
+.page-section {
+    display: none;
+}
+
+.page-section.active {
+    display: block;
+}
+
+.record-list {
+    display: grid;
+    gap: 10px;
+}
+
+.record-card {
+    padding: 14px;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    background: #f8fafc;
+}
+
+.record-top {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    align-items: flex-start;
+}
+
+.record-info {
+    margin-top: 9px;
+    color: #64748b;
+    font-size: 12px;
+    line-height: 1.8;
+}
+
+.actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 11px;
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns:
+        repeat(2,minmax(0,1fr));
+    gap: 12px;
+}
+
+.form-group {
+    margin-bottom: 13px;
+}
+
+label {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+input,
+select,
+textarea {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #cbd5e1;
+    border-radius: 9px;
+    background: white;
+    font-size: 14px;
+    outline: none;
+}
+
+textarea {
+    min-height: 90px;
+    resize: vertical;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+    border-color: #2563eb;
+    box-shadow:
+        0 0 0 3px
+        rgba(37,99,235,.08);
+}
+
+.photo-box {
+    margin-top: 12px;
+    padding: 13px;
+    border: 1px dashed #94a3b8;
+    border-radius: 12px;
+    background: #f8fafc;
+}
+
+.photo-preview {
+    display: none;
+    width: 100%;
+    max-height: 320px;
+    margin-top: 10px;
+    border-radius: 10px;
+    object-fit: contain;
+    background: #0f172a;
+}
+
+.photo-thumb {
+    width: 100px;
+    height: 78px;
+    border-radius: 8px;
+    object-fit: cover;
+    border: 1px solid #cbd5e1;
+}
+
+.notice {
+    margin-bottom: 14px;
+    padding: 13px;
+    border: 1px solid #bfdbfe;
+    border-radius: 12px;
+    background: #eff6ff;
+    color: #1e40af;
+    font-size: 13px;
+    line-height: 1.7;
+}
+
+.warning-box {
+    margin-top: 10px;
+    padding: 12px;
+    border: 1px solid #fed7aa;
+    border-radius: 10px;
+    background: #fff7ed;
+    color: #9a3412;
+    font-size: 12px;
+    line-height: 1.7;
+}
+
+.empty {
+    padding: 30px 12px;
+    text-align: center;
+    color: #94a3b8;
+    font-size: 14px;
+    line-height: 1.8;
+}
+
+.work-clock {
+    margin-top: 12px;
+    padding: 18px 14px;
+    border-radius: 13px;
+    background: #0f172a;
+    color: white;
+    text-align: center;
+}
+
+.work-clock span {
+    display: block;
+    color: #cbd5e1;
+    font-size: 12px;
+}
+
+.work-clock strong {
+    display: block;
+    margin-top: 7px;
+    font-size: 30px;
+}
+
+footer {
+    padding: 20px;
+    text-align: center;
+    color: #94a3b8;
+    font-size: 12px;
+}
+
+@media(max-width:720px) {
+
+    .nav-grid,
+    .summary-grid {
+        grid-template-columns:
+            repeat(2,minmax(0,1fr));
+    }
+
+    .info-grid,
+    .form-grid {
+        grid-template-columns: 1fr;
+    }
+
+}
+
+</style>
+
+</head>
+
+
+<body>
+
+
+<header>
+
+<div class="header-inner">
+
+    <div class="header-row">
+
+        <div>
+
+            <h1>
+                👨‍🔧 修理工工作端
+            </h1>
+
+            <p>
+                Maintenance Worker · V2.10.0B
+            </p>
+
+        </div>
+
+        <button
+            type="button"
+            class="header-btn"
+            onclick="goHome()"
+        >
+            返回首页
+        </button>
+
+    </div>
+
+</div>
+
+</header>
+
+
+
+<main>
+
+
+<div class="notice">
+
+    维修任务由维修管理员派工。
+
+    <br>
+
+    开始维修前必须拍摄维修前照片，维修结束前必须拍摄维修后照片。
+
+</div>
+
+
+
+<div class="nav-grid">
+
+    <button
+        type="button"
+        class="nav-btn active"
+        data-page="tasks"
+    >
+        🔧 我的任务
+    </button>
+
+    <button
+        type="button"
+        class="nav-btn"
+        data-page="working"
+    >
+        🚧 维修中
+    </button>
+
+    <button
+        type="button"
+        class="nav-btn"
+        data-page="waiting"
+    >
+        📦 等待配件
+    </button>
+
+    <button
+        type="button"
+        class="nav-btn"
+        data-page="history"
+    >
+        📚 历史
+    </button>
+
+</div>
+
+
+
+<!-- 当前人员 -->
+
+<section class="card">
+
+    <div class="section-title">
+
+        <div>
+
+            <h2>
+                👷 当前修理工
+            </h2>
+
+        </div>
+
+        <span
+            id="workerBadge"
+            class="badge default"
+        >
+            未识别
+        </span>
+
+    </div>
+
+
+    <div class="info-grid">
+
+        <div class="info-box">
+
+            <span>
+                姓名
+            </span>
+
+            <strong id="workerName">
+                -
+            </strong>
+
+        </div>
+
+
+        <div class="info-box">
+
+            <span>
+                岗位
+            </span>
+
+            <strong id="workerPosition">
+                -
+            </strong>
+
+        </div>
+
+
+        <div class="info-box">
+
+            <span>
+                部门
+            </span>
+
+            <strong id="workerDepartment">
+                -
+            </strong>
+
+        </div>
+
+
+        <div class="info-box">
+
+            <span>
+                人员编号
+            </span>
+
+            <strong id="workerId">
+                -
+            </strong>
+
+        </div>
+
+    </div>
+
+
+    <div
+        id="manualWorkerArea"
+        class="warning-box"
+        style="display:none;"
+    >
+
+        <strong>
+            测试模式
+        </strong>
+
+        <div class="form-grid" style="margin-top:10px;">
+
+            <div class="form-group">
+
+                <label>
+                    修理工姓名
+                </label>
+
+                <input
+                    id="manualWorkerName"
+                    type="text"
+                    placeholder="例如：维修工01"
+                >
+
+            </div>
+
+            <div class="form-group">
+
+                <label>
+                    岗位
+                </label>
+
+                <input
+                    id="manualWorkerPosition"
+                    type="text"
+                    value="修理工"
+                >
+
+            </div>
+
+        </div>
+
+        <button
+            type="button"
+            class="secondary-btn"
+            onclick="saveManualWorker()"
+        >
+            使用测试身份
+        </button>
+
+    </div>
+
+</section>
+
+
+
+<!-- 统计 -->
+
+<section class="card">
+
+    <div class="section-title">
+
+        <div>
+
+            <h2>
+                📊 我的维修统计
+            </h2>
+
+        </div>
+
+
+        <button
+            type="button"
+            class="secondary-btn"
+            onclick="generateDemoWorkerTask()"
+        >
+            🧪 测试任务
+        </button>
+
+    </div>
+
+
+    <div class="summary-grid">
+
+        <div class="summary-card">
+
+            <span>
+                待接车
+            </span>
+
+            <strong id="assignedCount">
+                0
+            </strong>
+
+        </div>
+
+
+        <div class="summary-card">
+
+            <span>
+                维修中
+            </span>
+
+            <strong id="workingCount">
+                0
+            </strong>
+
+        </div>
+
+
+        <div class="summary-card">
+
+            <span>
+                等待配件
+            </span>
+
+            <strong id="waitingPartsCount">
+                0
+            </strong>
+
+        </div>
+
+
+        <div class="summary-card">
+
+            <span>
+                已完成
+            </span>
+
+            <strong id="completedCount">
+                0
+            </strong>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+
+<!-- 我的任务 -->
+
+<section
+    id="page-tasks"
+    class="page-section active"
+>
+
+<section class="card">
+
+    <div class="section-title">
+
+        <div>
+
+            <h2>
+                🔧 待接车维修任务
+            </h2>
+
+            <p>
+                维修管理员已经完成工位和人员派工
+            </p>
+
+        </div>
+
+    </div>
+
+
+    <div
+        id="assignedTaskList"
+        class="record-list"
+    >
+    </div>
+
+</section>
+
+</section>
+
+
+
+<!-- 维修中 -->
+
+<section
+    id="page-working"
+    class="page-section"
+>
+
+<section class="card">
+
+    <div class="section-title">
+
+        <div>
+
+            <h2>
+                🚧 正在维修
+            </h2>
+
+        </div>
+
+    </div>
+
+
+    <div
+        id="workingTaskList"
+        class="record-list"
+    >
+    </div>
+
+</section>
+
+</section>
+
+
+
+<!-- 等待配件 -->
+
+<section
+    id="page-waiting"
+    class="page-section"
+>
+
+<section class="card">
+
+    <div class="section-title">
+
+        <div>
+
+            <h2>
+                📦 等待配件
+            </h2>
+
+        </div>
+
+    </div>
+
+
+    <div
+        id="waitingPartsList"
+        class="record-list"
+    >
+    </div>
+
+</section>
+
+</section>
+
+
+
+<!-- 历史 -->
+
+<section
+    id="page-history"
+    class="page-section"
+>
+
+<section class="card">
+
+    <div class="section-title">
+
+        <div>
+
+            <h2>
+                📚 历史维修任务
+            </h2>
+
+        </div>
+
+    </div>
+
+
+    <div
+        id="historyList"
+        class="record-list"
+    >
+    </div>
+
+</section>
+
+</section>
+
+
+
+<!-- 维修操作区域 -->
+
+<section
+    id="repairOperationArea"
+    class="card"
+    style="display:none;"
+>
+
+    <div class="section-title">
+
+        <div>
+
+            <h2 id="repairOperationTitle">
+                维修操作
+            </h2>
+
+            <p id="repairOperationSubtitle">
+                -
+            </p>
+
+        </div>
+
+        <button
+            type="button"
+            class="secondary-btn"
+            onclick="closeRepairOperation()"
+        >
+            收起
+        </button>
+
+    </div>
+
+
+    <input
+        id="activeOrderId"
+        type="hidden"
+    >
+
+
+    <div
+        id="repairOrderSummary"
+        class="record-card"
+    >
+    </div>
+
+
+    <div class="photo-box">
+
+        <strong>
+            📷 维修前照片
+        </strong>
+
+        <input
+            id="beforePhotoInput"
+            type="file"
+            accept="image/*"
+            capture="environment"
+            onchange="handleBeforePhoto(this)"
+            style="margin-top:10px;"
+        >
+
+        <img
+            id="beforePhotoPreview"
+            class="photo-preview"
+            alt="维修前照片"
+        >
+
+    </div>
+
+
+    <div class="form-group" style="margin-top:15px;">
+
+        <label for="faultCause">
+            故障原因
+        </label>
+
+        <textarea
+            id="faultCause"
+            placeholder="维修检查后填写实际故障原因"
+            oninput="saveRepairDraft()"
+        ></textarea>
+
+    </div>
+
+
+    <div class="form-group">
+
+        <label for="repairProcess">
+            维修过程记录
+        </label>
+
+        <textarea
+            id="repairProcess"
+            placeholder="例如：检查液压系统，更换油管，试车..."
+            oninput="saveRepairDraft()"
+        ></textarea>
+
+    </div>
+
+
+    <div class="form-group">
+
+        <label for="actualRepairContent">
+            实际维修内容
+        </label>
+
+        <textarea
+            id="actualRepairContent"
+            placeholder="填写本次实际完成的维修项目"
+            oninput="saveRepairDraft()"
+        ></textarea>
+
+    </div>
+
+
+    <div class="form-group">
+
+        <label for="partsUsed">
+            使用配件
+        </label>
+
+        <textarea
+            id="partsUsed"
+            placeholder="例如：液压油管1根、滤芯1个；无配件可填写“无”"
+            oninput="saveRepairDraft()"
+        ></textarea>
+
+    </div>
+
+
+    <div class="photo-box">
+
+        <strong>
+            📷 维修后照片
+        </strong>
+
+        <input
+            id="afterPhotoInput"
+            type="file"
+            accept="image/*"
+            capture="environment"
+            onchange="handleAfterPhoto(this)"
+            style="margin-top:10px;"
+        >
+
+        <img
+            id="afterPhotoPreview"
+            class="photo-preview"
+            alt="维修后照片"
+        >
+
+    </div>
+
+
+    <div
+        id="repairActionButtons"
+        class="actions"
+    >
+    </div>
+
+</section>
+
+
+</main>
+
+
+
+<footer>
+
+矿山管理系统 · 修理工工作端 V2.10.0B
+
+</footer>
+
+
+
+<script>
+
+"use strict";
+
+
+/* =========================================================
+   数据键
+========================================================= */
+
+const STORAGE = {
+
+    PERSONNEL:
+        "personnelRecords",
+
+    WORK_ORDERS:
+        "maintenanceWorkOrders",
+
+    BAYS:
+        "workshopBays",
+
+    MANUAL_WORKER:
+        "maintenanceManualWorker",
+
+    DRAFTS:
+        "maintenanceWorkerDrafts"
+
+};
+
+
+
+let currentWorker =
+    null;
+
+
+let currentOrder =
+    null;
+
+
+let pendingBeforePhoto =
+    "";
+
+
+let pendingAfterPhoto =
+    "";
+
+
+
+initialize();
+
+
+
+/* =========================================================
+   初始化
+========================================================= */
+
+function initialize() {
+
+    bindNavigation();
+
+
+    currentWorker =
+        getCurrentWorker();
+
+
+    renderWorker();
+
+
+    renderAll();
+
+
+    setInterval(
+        renderAll,
+        5000
+    );
+}
+
+
+
+/* =========================================================
+   导航
+========================================================= */
+
+function bindNavigation() {
+
+    document
+        .querySelectorAll(
+            "[data-page]"
+        )
+        .forEach(
+            button => {
+
+                button.addEventListener(
+                    "click",
+                    function () {
+
+                        openPage(
+                            button.dataset.page
+                        );
+                    }
+                );
+            }
+        );
+}
+
+
+
+function openPage(
+    page
+) {
+
+    document
+        .querySelectorAll(
+            ".nav-btn"
+        )
+        .forEach(
+            item => {
+
+                item.classList.toggle(
+                    "active",
+                    item.dataset.page ===
+                        page
+                );
+            }
+        );
+
+
+    document
+        .querySelectorAll(
+            ".page-section"
+        )
+        .forEach(
+            section => {
+
+                section.classList.remove(
+                    "active"
+                );
+            }
+        );
+
+
+    document
+        .getElementById(
+            "page-" +
+            page
+        )
+        ?.classList.add(
+            "active"
+        );
+
+
+    renderAll();
+}
+
+
+
+/* =========================================================
+   人员
+========================================================= */
+
+function getPersonnelRecords() {
+
+    return readArray(
+        STORAGE.PERSONNEL
+    );
+}
+
+
+
+function getPersonId(
+    person
+) {
+
+    return String(
+
+        person?.personId ||
+
+        person?.employeeId ||
+
+        person?.driverId ||
+
+        person?.id ||
+
+        ""
+
+    );
+}
+
+
+
+function getCurrentWorker() {
+
+    const records =
+        getPersonnelRecords();
+
+
+    const currentPersonId =
+        localStorage.getItem(
+            "currentPersonId"
+        );
+
+
+    if (
+        currentPersonId
+    ) {
+
+        const found =
+            records.find(
+                item =>
+                    getPersonId(
+                        item
+                    ) ===
+                    currentPersonId
+            );
+
+
+        if (
+            found
+        ) {
+
+            return found;
+        }
+    }
+
+
+    const manual =
+        readJson(
+            STORAGE.MANUAL_WORKER,
+            null
+        );
+
+
+    if (
+        manual
+    ) {
+
+        return manual;
+    }
+
+
+    return null;
+}
+
+
+
+function renderWorker() {
+
+    const badge =
+        document.getElementById(
+            "workerBadge"
+        );
+
+
+    const manualArea =
+        document.getElementById(
+            "manualWorkerArea"
+        );
+
+
+    if (
+        !currentWorker
+    ) {
+
+        setText(
+            "workerName",
+            "-"
+        );
+
+        setText(
+            "workerPosition",
+            "-"
+        );
+
+        setText(
+            "workerDepartment",
+            "-"
+        );
+
+        setText(
+            "workerId",
+            "-"
+        );
+
+
+        badge.textContent =
+            "未识别";
+
+
+        badge.className =
+            "badge red";
+
+
+        manualArea.style.display =
+            "block";
+
+
+        return;
+    }
+
+
+    setText(
+        "workerName",
+        currentWorker.name ||
+        "-"
+    );
+
+
+    setText(
+        "workerPosition",
+        currentWorker.position ||
+        "修理工"
+    );
+
+
+    setText(
+        "workerDepartment",
+        currentWorker.department ||
+        currentWorker.team ||
+        "维修"
+    );
+
+
+    setText(
+        "workerId",
+        getPersonId(
+            currentWorker
+        ) ||
+        "测试身份"
+    );
+
+
+    badge.textContent =
+        "在职";
+
+
+    badge.className =
+        "badge green";
+
+
+    manualArea.style.display =
+        "none";
+}
+
+
+
+function saveManualWorker() {
+
+    const name =
+        document
+            .getElementById(
+                "manualWorkerName"
+            )
+            .value
+            .trim();
+
+
+    const position =
+        document
+            .getElementById(
+                "manualWorkerPosition"
+            )
+            .value
+            .trim();
+
+
+    if (
+        !name
+    ) {
+
+        alert(
+            "请输入修理工姓名。"
+        );
+
+        return;
+    }
+
+
+    const worker = {
+
+        personId:
+            "MW_" +
+            Date.now(),
+
+        name,
+
+        position:
+            position ||
+            "修理工",
+
+        department:
+            "维修"
+    };
+
+
+    save(
+        STORAGE.MANUAL_WORKER,
+        worker
+    );
+
+
+    currentWorker =
+        worker;
+
+
+    renderWorker();
+
+
+    renderAll();
+}
+
+
+
+/* =========================================================
+   工单
+========================================================= */
+
+function getOrders() {
+
+    return readArray(
+        STORAGE.WORK_ORDERS
+    );
+}
+
+
+
+function saveOrders(
+    records
+) {
+
+    save(
+        STORAGE.WORK_ORDERS,
+        records
+    );
+}
+
+
+
+function getMyOrders() {
+
+    if (
+        !currentWorker
+    ) {
+
+        return [];
+    }
+
+
+    return getOrders()
+        .filter(
+            item =>
+                String(
+                    item.workerName ||
+                    ""
+                )
+                    .trim() ===
+                String(
+                    currentWorker.name ||
+                    ""
+                )
+                    .trim()
+        );
+}
+
+
+
+/* =========================================================
+   统计
+========================================================= */
+
+function renderStatistics() {
+
+    const orders =
+        getMyOrders();
+
+
+    setText(
+        "assignedCount",
+        orders.filter(
+            item =>
+                item.status ===
+                "assigned"
+        ).length
+    );
+
+
+    setText(
+        "workingCount",
+        orders.filter(
+            item =>
+                item.status ===
+                    "working"
+
+                ||
+
+                item.status ===
+                    "rework"
+        ).length
+    );
+
+
+    setText(
+        "waitingPartsCount",
+        orders.filter(
+            item =>
+                item.status ===
+                "waiting_parts"
+        ).length
+    );
+
+
+    setText(
+        "completedCount",
+        orders.filter(
+            item =>
+                item.status ===
+                    "waiting_inspection"
+
+                ||
+
+                item.status ===
+                    "inspection_passed"
+
+                ||
+
+                item.status ===
+                    "completed"
+        ).length
+    );
+}
+
+
+
+/* =========================================================
+   待接车
+========================================================= */
+
+function renderAssignedTasks() {
+
+    const records =
+        getMyOrders()
+            .filter(
+                item =>
+                    item.status ===
+                    "assigned"
+            )
+            .slice()
+            .reverse();
+
+
+    const box =
+        document.getElementById(
+            "assignedTaskList"
+        );
+
+
+    if (
+        !records.length
+    ) {
+
+        box.innerHTML = `
+            <div class="empty">
+                当前没有待接车维修任务
+            </div>
+        `;
+
+        return;
+    }
+
+
+    box.innerHTML =
+        records
+            .map(
+                item => `
+
+                <div class="record-card">
+
+                    <div class="record-top">
+
+                        <strong>
+                            🔧
+                            ${escapeHtml(item.equipmentNumber || "-")}
+                        </strong>
+
+                        <span class="badge yellow">
+                            待接车
+                        </span>
+
+                    </div>
+
+
+                    <div class="record-info">
+
+                        工位：
+                        ${escapeHtml(item.bayName || "-")}
+
+                        <br>
+
+                        设备类型：
+                        ${escapeHtml(item.equipmentType || "-")}
+
+                        <br>
+
+                        故障：
+                        ${escapeHtml(item.faultType || "-")}
+
+                        <br>
+
+                        故障说明：
+                        ${escapeHtml(item.faultDescription || "-")}
+
+                        <br>
+
+                        维修项目：
+                        ${escapeHtml(item.repairProject || "-")}
+
+                        <br>
+
+                        派工时间：
+                        ${formatDateTime(item.assignedAt)}
+
+                    </div>
+
+
+                    <div class="actions">
+
+                        <button
+                            type="button"
+                            class="primary-btn"
+                            onclick="openRepairOrder('${escapeJs(item.orderId)}')"
+                        >
+                            接车 / 开始维修
+                        </button>
+
+                    </div>
+
+                </div>
+                `
+            )
+            .join(
+                ""
+            );
+}
+
+
+
+/* =========================================================
+   维修中
+========================================================= */
+
+function renderWorkingTasks() {
+
+    const records =
+        getMyOrders()
+            .filter(
+                item =>
+                    item.status ===
+                        "working"
+
+                    ||
+
+                    item.status ===
+                        "rework"
+            )
+            .slice()
+            .reverse();
+
+
+    const box =
+        document.getElementById(
+            "workingTaskList"
+        );
+
+
+    if (
+        !records.length
+    ) {
+
+        box.innerHTML = `
+            <div class="empty">
+                当前没有正在维修的任务
+            </div>
+        `;
+
+        return;
+    }
+
+
+    box.innerHTML =
+        records
+            .map(
+                item => `
+
+                <div class="record-card">
+
+                    <div class="record-top">
+
+                        <strong>
+                            🚧
+                            ${escapeHtml(item.equipmentNumber)}
+                        </strong>
+
+                        <span class="badge orange">
+                            ${
+                                item.status ===
+                                "rework"
+                                    ? "返修中"
+                                    : "维修中"
+                            }
+                        </span>
+
+                    </div>
+
+
+                    <div class="record-info">
+
+                        工位：
+                        ${escapeHtml(item.bayName)}
+
+                        <br>
+
+                        维修项目：
+                        ${escapeHtml(item.repairProject)}
+
+                        <br>
+
+                        开始时间：
+                        ${formatDateTime(item.startedAt)}
+
+                        <br>
+
+                        已维修：
+                        ${formatDuration(
+                            Date.now() -
+                            new Date(
+                                item.startedAt
+                            ).getTime()
+                        )}
+
+                        ${
+                            item.reworkReason
+                                ? `<br>返修原因：${escapeHtml(item.reworkReason)}`
+                                : ""
+                        }
+
+                    </div>
+
+
+                    <div class="actions">
+
+                        <button
+                            type="button"
+                            class="primary-btn"
+                            onclick="openRepairOrder('${escapeJs(item.orderId)}')"
+                        >
+                            打开维修记录
+                        </button>
+
+                    </div>
+
+                </div>
+                `
+            )
+            .join(
+                ""
+            );
+}
+
+
+
+/* =========================================================
+   等待配件
+========================================================= */
+
+function renderWaitingParts() {
+
+    const records =
+        getMyOrders()
+            .filter(
+                item =>
+                    item.status ===
+                    "waiting_parts"
+            )
+            .slice()
+            .reverse();
+
+
+    const box =
+        document.getElementById(
+            "waitingPartsList"
+        );
+
+
+    if (
+        !records.length
+    ) {
+
+        box.innerHTML = `
+            <div class="empty">
+                当前没有等待配件的维修任务
+            </div>
+        `;
+
+        return;
+    }
+
+
+    box.innerHTML =
+        records
+            .map(
+                item => `
+
+                <div class="record-card">
+
+                    <div class="record-top">
+
+                        <strong>
+                            📦
+                            ${escapeHtml(item.equipmentNumber)}
+                        </strong>
+
+                        <span class="badge purple">
+                            等待配件
+                        </span>
+
+                    </div>
+
+
+                    <div class="record-info">
+
+                        工位：
+                        ${escapeHtml(item.bayName)}
+
+                        <br>
+
+                        维修项目：
+                        ${escapeHtml(item.repairProject)}
+
+                        <br>
+
+                        等待说明：
+                        ${escapeHtml(item.waitingPartsNote || "-")}
+
+                    </div>
+
+
+                    <div class="actions">
+
+                        <button
+                            type="button"
+                            class="success-btn"
+                            onclick="resumeRepair('${escapeJs(item.orderId)}')"
+                        >
+                            配件已到 / 继续维修
+                        </button>
+
+
+                        <button
+                            type="button"
+                            class="secondary-btn"
+                            onclick="openRepairOrder('${escapeJs(item.orderId)}')"
+                        >
+                            查看维修记录
+                        </button>
+
+                    </div>
+
+                </div>
+                `
+            )
+            .join(
+                ""
+            );
+}
+
+
+
+/* =========================================================
+   历史
+========================================================= */
+
+function renderHistory() {
+
+    const records =
+        getMyOrders()
+            .filter(
+                item =>
+                    item.status ===
+                        "waiting_inspection"
+
+                    ||
+
+                    item.status ===
+                        "inspection_passed"
+
+                    ||
+
+                    item.status ===
+                        "completed"
+            )
+            .slice()
+            .reverse();
+
+
+    const box =
+        document.getElementById(
+            "historyList"
+        );
+
+
+    if (
+        !records.length
+    ) {
+
+        box.innerHTML = `
+            <div class="empty">
+                暂无历史维修任务
+            </div>
+        `;
+
+        return;
+    }
+
+
+    box.innerHTML =
+        records
+            .map(
+                item => {
+
+                    let statusText =
+                        "待验收";
+
+
+                    let badgeClass =
+                        "yellow";
+
+
+                    if (
+                        item.status ===
+                        "inspection_passed"
+                    ) {
+
+                        statusText =
+                            "验收通过";
+
+                        badgeClass =
+                            "blue";
+                    }
+
+
+                    if (
+                        item.status ===
+                        "completed"
+                    ) {
+
+                        statusText =
+                            "已完成";
+
+                        badgeClass =
+                            "green";
+                    }
+
+
+                    return `
+
+                    <div class="record-card">
+
+                        <div class="record-top">
+
+                            <strong>
+                                ${escapeHtml(item.equipmentNumber)}
+                            </strong>
+
+                            <span class="badge ${badgeClass}">
+                                ${statusText}
+                            </span>
+
+                        </div>
+
+
+                        <div class="record-info">
+
+                            工位：
+                            ${escapeHtml(item.bayName)}
+
+                            <br>
+
+                            维修项目：
+                            ${escapeHtml(item.repairProject)}
+
+                            <br>
+
+                            实际维修：
+                            ${escapeHtml(item.actualRepairContent || item.repairResult || "-")}
+
+                            <br>
+
+                            开始：
+                            ${formatDateTime(item.startedAt)}
+
+                            <br>
+
+                            维修结束：
+                            ${formatDateTime(item.repairFinishedAt)}
+
+                        </div>
+
+                    </div>
+                    `;
+                }
+            )
+            .join(
+                ""
+            );
+}
+
+
+
+/* =========================================================
+   打开维修工单
+========================================================= */
+
+function openRepairOrder(
+    orderId
+) {
+
+    const order =
+        getOrders()
+            .find(
+                item =>
+                    item.orderId ===
+                    orderId
+            );
+
+
+    if (
+        !order
+    ) {
+
+        return;
+    }
+
+
+    currentOrder =
+        order;
+
+
+    document.getElementById(
+        "activeOrderId"
+    ).value =
+        orderId;
+
+
+    document.getElementById(
+        "repairOperationTitle"
+    ).textContent =
+        "🔧 " +
+        (
+            order.equipmentNumber ||
+            "维修任务"
+        );
+
+
+    document.getElementById(
+        "repairOperationSubtitle"
+    ).textContent =
+        (
+            order.bayName ||
+            "-"
+        ) +
+        " · " +
+        (
+            order.repairProject ||
+            "-"
+        );
+
+
+    document.getElementById(
+        "repairOrderSummary"
+    ).innerHTML = `
+
+        <strong>
+            ${escapeHtml(order.equipmentNumber || "-")}
+        </strong>
+
+        <div class="record-info">
+
+            类型：
+            ${escapeHtml(order.equipmentType || "-")}
+
+            <br>
+
+            工位：
+            ${escapeHtml(order.bayName || "-")}
+
+            <br>
+
+            原故障：
+            ${escapeHtml(order.faultType || "-")}
+
+            <br>
+
+            故障说明：
+            ${escapeHtml(order.faultDescription || "-")}
+
+            <br>
+
+            维修项目：
+            ${escapeHtml(order.repairProject || "-")}
+
+            <br>
+
+            当前状态：
+            ${getStatusText(order.status)}
+
+        </div>
+
+        ${
+            order.startedAt
+
+                ? `
+
+                <div class="work-clock">
+
+                    <span>
+                        当前维修时长
+                    </span>
+
+                    <strong>
+                        ${formatDuration(
+                            Date.now() -
+                            new Date(
+                                order.startedAt
+                            ).getTime()
+                        )}
+                    </strong>
+
+                </div>
+                `
+
+                : ""
+        }
+    `;
+
+
+    restoreRepairDraft(
+        order
+    );
+
+
+    pendingBeforePhoto =
+        order.beforePhotoData ||
+        pendingBeforePhoto ||
+        "";
+
+
+    pendingAfterPhoto =
+        order.afterPhotoData ||
+        pendingAfterPhoto ||
+        "";
+
+
+    renderPhotoPreviews();
+
+
+    renderRepairActionButtons(
+        order
+    );
+
+
+    document.getElementById(
+        "repairOperationArea"
+    ).style.display =
+        "block";
+
+
+    document.getElementById(
+        "repairOperationArea"
+    ).scrollIntoView({
+        behavior:
+            "smooth"
+    });
+}
+
+
+
+/* =========================================================
+   草稿
+========================================================= */
+
+function getDrafts() {
+
+    return readJson(
+        STORAGE.DRAFTS,
+        {}
+    );
+}
+
+
+
+function saveRepairDraft() {
+
+    const orderId =
+        document.getElementById(
+            "activeOrderId"
+        ).value;
+
+
+    if (
+        !orderId
+    ) {
+
+        return;
+    }
+
+
+    const drafts =
+        getDrafts();
+
+
+    drafts[orderId] = {
+
+        faultCause:
+            document.getElementById(
+                "faultCause"
+            ).value,
+
+        repairProcess:
+            document.getElementById(
+                "repairProcess"
+            ).value,
+
+        actualRepairContent:
+            document.getElementById(
+                "actualRepairContent"
+            ).value,
+
+        partsUsed:
+            document.getElementById(
+                "partsUsed"
+            ).value,
+
+        beforePhotoData:
+            pendingBeforePhoto,
+
+        afterPhotoData:
+            pendingAfterPhoto
+    };
+
+
+    save(
+        STORAGE.DRAFTS,
+        drafts
+    );
+}
+
+
+
+function restoreRepairDraft(
+    order
+) {
+
+    const drafts =
+        getDrafts();
+
+
+    const draft =
+        drafts[
+            order.orderId
+        ] ||
+        {};
+
+
+    document.getElementById(
+        "faultCause"
+    ).value =
+        draft.faultCause ??
+        order.faultCause ??
+        "";
+
+
+    document.getElementById(
+        "repairProcess"
+    ).value =
+        draft.repairProcess ??
+        order.repairProcess ??
+        "";
+
+
+    document.getElementById(
+        "actualRepairContent"
+    ).value =
+        draft.actualRepairContent ??
+        order.actualRepairContent ??
+        "";
+
+
+    document.getElementById(
+        "partsUsed"
+    ).value =
+        draft.partsUsed ??
+        (
+            Array.isArray(
+                order.partsUsed
+            )
+                ? order.partsUsed.join(
+                    "、"
+                )
+                : order.partsUsed ||
+                ""
+        );
+
+
+    pendingBeforePhoto =
+        draft.beforePhotoData ||
+        order.beforePhotoData ||
+        "";
+
+
+    pendingAfterPhoto =
+        draft.afterPhotoData ||
+        order.afterPhotoData ||
+        "";
+}
+
+
+
+/* =========================================================
+   照片
+========================================================= */
+
+async function handleBeforePhoto(
+    input
+) {
+
+    const file =
+        input.files?.[0];
+
+
+    if (
+        !file
+    ) {
+
+        return;
+    }
+
+
+    pendingBeforePhoto =
+        await compressImage(
+            file,
+            1280,
+            .72
+        );
+
+
+    renderPhotoPreviews();
+
+
+    saveRepairDraft();
+}
+
+
+
+async function handleAfterPhoto(
+    input
+) {
+
+    const file =
+        input.files?.[0];
+
+
+    if (
+        !file
+    ) {
+
+        return;
+    }
+
+
+    pendingAfterPhoto =
+        await compressImage(
+            file,
+            1280,
+            .72
+        );
+
+
+    renderPhotoPreviews();
+
+
+    saveRepairDraft();
+}
+
+
+
+function renderPhotoPreviews() {
+
+    const before =
+        document.getElementById(
+            "beforePhotoPreview"
+        );
+
+
+    if (
+        pendingBeforePhoto
+    ) {
+
+        before.src =
+            pendingBeforePhoto;
+
+
+        before.style.display =
+            "block";
+
+    } else {
+
+        before.style.display =
+            "none";
+    }
+
+
+    const after =
+        document.getElementById(
+            "afterPhotoPreview"
+        );
+
+
+    if (
+        pendingAfterPhoto
+    ) {
+
+        after.src =
+            pendingAfterPhoto;
+
+
+        after.style.display =
+            "block";
+
+    } else {
+
+        after.style.display =
+            "none";
+    }
+}
+
+
+
+function compressImage(
+    file,
+    maxWidth,
+    quality
+) {
+
+    return new Promise(
+        (
+            resolve,
+            reject
+        ) => {
+
+            const reader =
+                new FileReader();
+
+
+            reader.onload =
+                function () {
+
+                    const image =
+                        new Image();
+
+
+                    image.onload =
+                        function () {
+
+                            let width =
+                                image.width;
+
+
+                            let height =
+                                image.height;
+
+
+                            if (
+                                width >
+                                maxWidth
+                            ) {
+
+                                const ratio =
+                                    maxWidth /
+                                    width;
+
+
+                                width =
+                                    maxWidth;
+
+
+                                height =
+                                    Math.round(
+                                        height *
+                                        ratio
+                                    );
+                            }
+
+
+                            const canvas =
+                                document.createElement(
+                                    "canvas"
+                                );
+
+
+                            canvas.width =
+                                width;
+
+
+                            canvas.height =
+                                height;
+
+
+                            canvas
+                                .getContext(
+                                    "2d"
+                                )
+                                .drawImage(
+                                    image,
+                                    0,
+                                    0,
+                                    width,
+                                    height
+                                );
+
+
+                            resolve(
+                                canvas.toDataURL(
+                                    "image/jpeg",
+                                    quality
+                                )
+                            );
+                        };
+
+
+                    image.onerror =
+                        reject;
+
+
+                    image.src =
+                        reader.result;
+                };
+
+
+            reader.onerror =
+                reject;
+
+
+            reader.readAsDataURL(
+                file
+            );
+        }
+    );
+}
+
+
+
+/* =========================================================
+   操作按钮
+========================================================= */
+
+function renderRepairActionButtons(
+    order
+) {
+
+    const box =
+        document.getElementById(
+            "repairActionButtons"
+        );
+
+
+    if (
+        order.status ===
+        "assigned"
+    ) {
+
+        box.innerHTML = `
+
+            <button
+                type="button"
+                class="success-btn"
+                onclick="startRepair()"
+            >
+                ▶ 拍照后开始维修
+            </button>
+        `;
+
+
+        return;
+    }
+
+
+    if (
+        order.status ===
+            "working"
+
+        ||
+
+        order.status ===
+            "rework"
+    ) {
+
+        box.innerHTML = `
+
+            <button
+                type="button"
+                class="warning-btn"
+                onclick="setWaitingParts()"
+            >
+                📦 等待配件
+            </button>
+
+
+            <button
+                type="button"
+                class="success-btn"
+                onclick="finishRepair()"
+            >
+                ✅ 完成维修并提交验收
+            </button>
+        `;
+
+
+        return;
+    }
+
+
+    if (
+        order.status ===
+        "waiting_parts"
+    ) {
+
+        box.innerHTML = `
+
+            <button
+                type="button"
+                class="success-btn"
+                onclick="resumeRepair('${escapeJs(order.orderId)}')"
+            >
+                ▶ 配件已到 / 继续维修
+            </button>
+        `;
+
+
+        return;
+    }
+
+
+    box.innerHTML = `
+        <div class="warning-box">
+            当前任务已经提交维修管理员处理。
+        </div>
+    `;
+}
+
+
+
+/* =========================================================
+   开始维修
+========================================================= */
+
+function startRepair() {
+
+    const orderId =
+        document.getElementById(
+            "activeOrderId"
+        ).value;
+
+
+    if (
+        !pendingBeforePhoto
+    ) {
+
+        alert(
+            "开始维修前必须拍摄维修前照片。"
+        );
+
+        return;
+    }
+
+
+    const orders =
+        getOrders();
+
+
+    const order =
+        orders.find(
+            item =>
+                item.orderId ===
+                orderId
+        );
+
+
+    if (
+        !order
+    ) {
+
+        return;
+    }
+
+
+    order.beforePhotoData =
+        pendingBeforePhoto;
+
+
+    order.status =
+        "working";
+
+
+    order.startedAt =
+        order.startedAt ||
+        new Date()
+            .toISOString();
+
+
+    order.startedBy =
+        currentWorker?.name ||
+        "";
+
+
+    saveOrders(
+        orders
+    );
+
+
+    saveRepairDraft();
+
+
+    renderAll();
+
+
+    openRepairOrder(
+        orderId
+    );
+
+
+    alert(
+        "维修已经开始。"
+    );
+}
+
+
+
+/* =========================================================
+   等待配件
+========================================================= */
+
+function setWaitingParts() {
+
+    const orderId =
+        document.getElementById(
+            "activeOrderId"
+        ).value;
+
+
+    const note =
+        prompt(
+            "请输入等待配件说明："
+        );
+
+
+    if (
+        note ===
+        null
+    ) {
+
+        return;
+    }
+
+
+    if (
+        !note.trim()
+    ) {
+
+        alert(
+            "请填写等待配件说明。"
+        );
+
+        return;
+    }
+
+
+    saveRepairDraft();
+
+
+    const orders =
+        getOrders();
+
+
+    const order =
+        orders.find(
+            item =>
+                item.orderId ===
+                orderId
+        );
+
+
+    if (
+        !order
+    ) {
+
+        return;
+    }
+
+
+    applyDraftToOrder(
+        order
+    );
+
+
+    order.status =
+        "waiting_parts";
+
+
+    order.waitingPartsNote =
+        note.trim();
+
+
+    order.waitingPartsAt =
+        new Date()
+            .toISOString();
+
+
+    saveOrders(
+        orders
+    );
+
+
+    renderAll();
+
+
+    closeRepairOperation();
+
+
+    openPage(
+        "waiting"
+    );
+}
+
+
+
+/* =========================================================
+   继续维修
+========================================================= */
+
+function resumeRepair(
+    orderId
+) {
+
+    const orders =
+        getOrders();
+
+
+    const order =
+        orders.find(
+            item =>
+                item.orderId ===
+                orderId
+        );
+
+
+    if (
+        !order
+    ) {
+
+        return;
+    }
+
+
+    order.status =
+        "working";
+
+
+    order.resumedAt =
+        new Date()
+            .toISOString();
+
+
+    saveOrders(
+        orders
+    );
+
+
+    renderAll();
+
+
+    openPage(
+        "working"
+    );
+
+
+    openRepairOrder(
+        orderId
+    );
+}
+
+
+
+/* =========================================================
+   完成维修
+========================================================= */
+
+function finishRepair() {
+
+    const orderId =
+        document.getElementById(
+            "activeOrderId"
+        ).value;
+
+
+    const faultCause =
+        document.getElementById(
+            "faultCause"
+        )
+            .value
+            .trim();
+
+
+    const repairProcess =
+        document.getElementById(
+            "repairProcess"
+        )
+            .value
+            .trim();
+
+
+    const actualRepairContent =
+        document.getElementById(
+            "actualRepairContent"
+        )
+            .value
+            .trim();
+
+
+    const partsUsed =
+        document.getElementById(
+            "partsUsed"
+        )
+            .value
+            .trim();
+
+
+    if (
+        !faultCause
+    ) {
+
+        alert(
+            "请填写实际故障原因。"
+        );
+
+        return;
+    }
+
+
+    if (
+        !repairProcess
+    ) {
+
+        alert(
+            "请填写维修过程记录。"
+        );
+
+        return;
+    }
+
+
+    if (
+        !actualRepairContent
+    ) {
+
+        alert(
+            "请填写实际维修内容。"
+        );
+
+        return;
+    }
+
+
+    if (
+        !pendingAfterPhoto
+    ) {
+
+        alert(
+            "维修完成前必须拍摄维修后照片。"
+        );
+
+        return;
+    }
+
+
+    const orders =
+        getOrders();
+
+
+    const order =
+        orders.find(
+            item =>
+                item.orderId ===
+                orderId
+        );
+
+
+    if (
+        !order
+    ) {
+
+        return;
+    }
+
+
+    order.beforePhotoData =
+        pendingBeforePhoto ||
+        order.beforePhotoData ||
+        "";
+
+
+    order.afterPhotoData =
+        pendingAfterPhoto;
+
+
+    order.faultCause =
+        faultCause;
+
+
+    order.repairProcess =
+        repairProcess;
+
+
+    order.actualRepairContent =
+        actualRepairContent;
+
+
+    order.partsUsed =
+        partsUsed
+            ? partsUsed
+                .split(
+                    /[,，、\n]+/
+                )
+                .map(
+                    item =>
+                        item.trim()
+                )
+                .filter(
+                    Boolean
+                )
+            : [];
+
+
+    order.repairResult =
+        actualRepairContent;
+
+
+    order.repairFinishedAt =
+        new Date()
+            .toISOString();
+
+
+    order.status =
+        "waiting_inspection";
+
+
+    order.finishedBy =
+        currentWorker?.name ||
+        "";
+
+
+    saveOrders(
+        orders
+    );
+
+
+    clearDraft(
+        orderId
+    );
+
+
+    pendingBeforePhoto =
+        "";
+
+
+    pendingAfterPhoto =
+        "";
+
+
+    currentOrder =
+        null;
+
+
+    closeRepairOperation();
+
+
+    renderAll();
+
+
+    alert(
+        "维修完成，已经提交维修管理员验收。"
+    );
+}
+
+
+
+/* =========================================================
+   草稿写入工单
+========================================================= */
+
+function applyDraftToOrder(
+    order
+) {
+
+    const drafts =
+        getDrafts();
+
+
+    const draft =
+        drafts[
+            order.orderId
+        ];
+
+
+    if (
+        !draft
+    ) {
+
+        return;
+    }
+
+
+    order.faultCause =
+        draft.faultCause ||
+        order.faultCause ||
+        "";
+
+
+    order.repairProcess =
+        draft.repairProcess ||
+        order.repairProcess ||
+        "";
+
+
+    order.actualRepairContent =
+        draft.actualRepairContent ||
+        order.actualRepairContent ||
+        "";
+
+
+    if (
+        draft.partsUsed
+    ) {
+
+        order.partsUsed =
+            draft.partsUsed
+                .split(
+                    /[,，、\n]+/
+                )
+                .map(
+                    item =>
+                        item.trim()
+                )
+                .filter(
+                    Boolean
+                );
+    }
+
+
+    if (
+        draft.beforePhotoData
+    ) {
+
+        order.beforePhotoData =
+            draft.beforePhotoData;
+    }
+
+
+    if (
+        draft.afterPhotoData
+    ) {
+
+        order.afterPhotoData =
+            draft.afterPhotoData;
+    }
+}
+
+
+
+/* =========================================================
+   清除草稿
+========================================================= */
+
+function clearDraft(
+    orderId
+) {
+
+    const drafts =
+        getDrafts();
+
+
+    delete drafts[
+        orderId
+    ];
+
+
+    save(
+        STORAGE.DRAFTS,
+        drafts
+    );
+}
+
+
+
+/* =========================================================
+   关闭操作
+========================================================= */
+
+function closeRepairOperation() {
+
+    if (
+        document.getElementById(
+            "activeOrderId"
+        ).value
+    ) {
+
+        saveRepairDraft();
+    }
+
+
+    document.getElementById(
+        "repairOperationArea"
+    ).style.display =
+        "none";
+}
+
+
+
+/* =========================================================
+   测试任务
+========================================================= */
+
+function generateDemoWorkerTask() {
+
+    if (
+        !currentWorker
+    ) {
+
+        alert(
+            "请先设置测试修理工身份。"
+        );
+
+        return;
+    }
+
+
+    const orders =
+        getOrders();
+
+
+    orders.push({
+
+        orderId:
+            createId(
+                "WO"
+            ),
+
+        requestId:
+            createId(
+                "TEST_MR"
+            ),
+
+        equipmentType:
+            "矿卡",
+
+        equipmentNumber:
+            "T-TEST-01",
+
+        applicantName:
+            "测试司机",
+
+        faultType:
+            "发动机",
+
+        faultDescription:
+            "发动机漏油测试维修任务",
+
+        bayId:
+            "BAY-TEST",
+
+        bayName:
+            "测试工位",
+
+        workerName:
+            currentWorker.name,
+
+        repairProject:
+            "检查发动机漏油并处理",
+
+        status:
+            "assigned",
+
+        assignedBy:
+            "维修管理员",
+
+        assignedAt:
+            new Date()
+                .toISOString(),
+
+        beforePhotoData:
+            "",
+
+        afterPhotoData:
+            "",
+
+        repairResult:
+            "",
+
+        partsUsed:
+            []
+    });
+
+
+    saveOrders(
+        orders
+    );
+
+
+    renderAll();
+
+
+    alert(
+        "测试维修任务已生成。"
+    );
+}
+
+
+
+/* =========================================================
+   总刷新
+========================================================= */
+
+function renderAll() {
+
+    currentWorker =
+        getCurrentWorker();
+
+
+    renderWorker();
+
+
+    renderStatistics();
+
+
+    renderAssignedTasks();
+
+
+    renderWorkingTasks();
+
+
+    renderWaitingParts();
+
+
+    renderHistory();
+
+
+    /*
+     * 如果正在打开维修表单，
+     * 只刷新计时和摘要，不重建输入内容。
+     */
+    const activeOrderId =
+        document.getElementById(
+            "activeOrderId"
+        ).value;
+
+
+    if (
+        activeOrderId &&
+        document.getElementById(
+            "repairOperationArea"
+        ).style.display !==
+            "none"
+    ) {
+
+        const latest =
+            getOrders()
+                .find(
+                    item =>
+                        item.orderId ===
+                        activeOrderId
+                );
+
+
+        if (
+            latest
+        ) {
+
+            document.getElementById(
+                "repairOrderSummary"
+            ).innerHTML = `
+
+                <strong>
+                    ${escapeHtml(latest.equipmentNumber || "-")}
+                </strong>
+
+                <div class="record-info">
+
+                    工位：
+                    ${escapeHtml(latest.bayName || "-")}
+
+                    <br>
+
+                    维修项目：
+                    ${escapeHtml(latest.repairProject || "-")}
+
+                    <br>
+
+                    当前状态：
+                    ${getStatusText(latest.status)}
+
+                </div>
+
+                ${
+                    latest.startedAt
+
+                        ? `
+
+                        <div class="work-clock">
+
+                            <span>
+                                当前维修时长
+                            </span>
+
+                            <strong>
+                                ${formatDuration(
+                                    Date.now() -
+                                    new Date(
+                                        latest.startedAt
+                                    ).getTime()
+                                )}
+                            </strong>
+
+                        </div>
+                        `
+
+                        : ""
+                }
+            `;
+
+
+            renderRepairActionButtons(
+                latest
+            );
+        }
+    }
+}
+
+
+
+/* =========================================================
+   状态文字
+========================================================= */
+
+function getStatusText(
+    status
+) {
+
+    const map = {
+
+        assigned:
+            "待接车",
+
+        working:
+            "维修中",
+
+        waiting_parts:
+            "等待配件",
+
+        rework:
+            "返修中",
+
+        waiting_inspection:
+            "待验收",
+
+        inspection_passed:
+            "验收通过",
+
+        completed:
+            "已完成"
+    };
+
+
+    return map[status] ||
+        status ||
+        "-";
+}
+
+
+
+/* =========================================================
+   工具
+========================================================= */
+
+function readArray(
+    key
+) {
+
+    const data =
+        readJson(
+            key,
+            []
+        );
+
+
+    return Array.isArray(
+        data
+    )
+        ? data
+        : [];
+}
+
+
+
+function readJson(
+    key,
+    fallback
+) {
+
+    try {
+
+        const raw =
+            localStorage.getItem(
+                key
+            );
+
+
+        return raw
+            ? JSON.parse(
+                raw
+            )
+            : fallback;
+
+
+    } catch (
+        error
+    ) {
+
+        console.error(
+            "读取失败：",
+            key,
+            error
+        );
+
+
+        return fallback;
+    }
+}
+
+
+
+function save(
+    key,
+    data
+) {
+
+    try {
+
+        localStorage.setItem(
+            key,
+            JSON.stringify(
+                data
+            )
+        );
+
+
+    } catch (
+        error
+    ) {
+
+        console.error(
+            error
+        );
+
+
+        alert(
+            "本地存储空间不足，照片测试数据可能过多。"
+        );
+    }
+}
+
+
+
+function setText(
+    id,
+    value
+) {
+
+    const el =
+        document.getElementById(
+            id
+        );
+
+
+    if (
+        el
+    ) {
+
+        el.textContent =
+            value;
+    }
+}
+
+
+
+function createId(
+    prefix
+) {
+
+    return (
+        prefix +
+        "_" +
+        Date.now() +
+        "_" +
+        Math.random()
+            .toString(
+                36
+            )
+            .slice(
+                2,
+                7
+            )
+    );
+}
+
+
+
+function formatDateTime(
+    value
+) {
+
+    if (
+        !value
+    ) {
+
+        return "-";
+    }
+
+
+    const date =
+        new Date(
+            value
+        );
+
+
+    if (
+        Number.isNaN(
+            date.getTime()
+        )
+    ) {
+
+        return "-";
+    }
+
+
+    return date.toLocaleString(
+        "zh-CN",
+        {
+            month:
+                "2-digit",
+
+            day:
+                "2-digit",
+
+            hour:
+                "2-digit",
+
+            minute:
+                "2-digit"
+        }
+    );
+}
+
+
+
+function formatDuration(
+    milliseconds
+) {
+
+    if (
+        !milliseconds ||
+        milliseconds < 0
+    ) {
+
+        return "0小时 0分钟";
+    }
+
+
+    const minutes =
+        Math.floor(
+            milliseconds /
+            60000
+        );
+
+
+    const hours =
+        Math.floor(
+            minutes /
+            60
+        );
+
+
+    return (
+        hours +
+        "小时 " +
+        (
+            minutes %
+            60
+        ) +
+        "分钟"
+    );
+}
+
+
+
+function escapeHtml(
+    value
+) {
+
+    const div =
+        document.createElement(
+            "div"
+        );
+
+
+    div.textContent =
+        String(
+            value ??
+            ""
+        );
+
+
+    return div.innerHTML;
+}
+
+
+
+function escapeJs(
+    value
+) {
+
+    return String(
+        value ||
+        ""
+    )
+        .replace(
+            /\\/g,
+            "\\\\"
+        )
+        .replace(
+            /'/g,
+            "\\'"
+        );
+}
+
+
+
+function goHome() {
+
+    location.href =
+        "index.html";
+}
+
+</script>
+
+
+</body>
+
+</html>
