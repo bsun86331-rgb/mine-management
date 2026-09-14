@@ -643,7 +643,7 @@
                 </h1>
 
                 <p>
-                    Fuel Truck Management · V2.9.9B-1
+                    Fuel Truck Management · V2.10.0N
                 </p>
 
             </div>
@@ -730,6 +730,15 @@
             type="button"
         >
             ⚠️ 库存清零
+        </button>
+
+
+        <button
+            class="nav-btn"
+            type="button"
+            onclick="goMaintenanceReport()"
+        >
+            🔧 设备维修
         </button>
 
     </div>
@@ -842,6 +851,57 @@
                 <small>
                     L
                 </small>
+
+            </div>
+
+        </div>
+
+
+        <div class="card">
+
+            <div class="section-title">
+
+                <div>
+
+                    <h2>
+                        ⚠️ 异常上报 / 设备维修
+                    </h2>
+
+                    <p>
+                        加油车自身发生故障时进入统一维修上报中心
+                    </p>
+
+                </div>
+
+
+                <span class="badge red">
+                    维修
+                </span>
+
+            </div>
+
+
+            <div class="info-box">
+
+                加油车属于生产辅助设备。
+
+                <br>
+
+                提交维修申请后，先进入调度审批；
+                调度批准后再进入维修管理和维修员流程。
+
+            </div>
+
+
+            <div class="task-actions">
+
+                <button
+                    class="danger-btn"
+                    type="button"
+                    onclick="goMaintenanceReport()"
+                >
+                    🔧 异常上报 / 设备维修
+                </button>
 
             </div>
 
@@ -1358,7 +1418,7 @@
 
 <footer>
 
-    矿山管理系统 · 加油车司机端 V2.9.9B-1
+    矿山管理系统 · 加油车司机端 V2.10.0N
 
 </footer>
 
@@ -4547,6 +4607,42 @@ function escapeJs(
             /'/g,
             "\\'"
         );
+}
+
+
+
+function goMaintenanceReport() {
+
+    /*
+     * 加油车端当前版本尚未建立独立人员卡片，
+     * 因此保持现有 currentPersonId，不做覆盖。
+     * 只写入岗位和来源，供统一维修上报中心兼容读取。
+     */
+    localStorage.setItem(
+        "selectedPosition",
+        "加油车司机"
+    );
+
+
+    save(
+        "maintenanceReportDraft",
+        {
+
+            equipmentType:
+                "加油车",
+
+            source:
+                "fuel.html",
+
+            savedAt:
+                new Date()
+                    .toISOString()
+        }
+    );
+
+
+    location.href =
+        "maintenance-report.html";
 }
 
 
