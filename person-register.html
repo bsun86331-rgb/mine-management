@@ -2,16 +2,26 @@
 <html lang="zh-CN">
 
 <head>
+
     <meta charset="UTF-8">
+
     <meta
         name="viewport"
         content="width=device-width, initial-scale=1.0"
     >
-    <meta name="theme-color" content="#0f172a">
 
-    <title>人员入职登记 - 矿山管理系统</title>
+    <meta
+        name="theme-color"
+        content="#0f172a"
+    >
+
+    <title>
+        人员入职登记 - 矿山管理系统
+    </title>
+
 
     <style>
+
         * {
             box-sizing: border-box;
         }
@@ -125,6 +135,15 @@
             font-size: 15px;
         }
 
+        input:focus,
+        textarea:focus {
+            outline: none;
+            border-color: #2563eb;
+            box-shadow:
+                0 0 0 3px
+                rgba(37, 99, 235, .08);
+        }
+
         input[readonly] {
             background: #f8fafc;
             color: #475569;
@@ -187,47 +206,89 @@
         }
 
         @media (max-width: 600px) {
+
             .form-grid {
                 grid-template-columns: 1fr;
             }
+
         }
+
     </style>
+
 </head>
+
 
 <body>
 
+
 <header>
-    <h1>👤 人员入职登记</h1>
-    <p>矿山管理系统 · 统一人员注册</p>
+
+    <h1>
+        👤 人员入职登记
+    </h1>
+
+    <p>
+        矿山管理系统 · 统一人员注册
+    </p>
+
 </header>
 
+
 <main>
+
+
+    <!-- 驳回提示 -->
 
     <div
         class="reject-notice"
         id="rejectNotice"
     >
-        <strong>上次审核未通过</strong>
+
+        <strong>
+            上次审核未通过
+        </strong>
+
         <div
             id="rejectReasonText"
             style="margin-top:6px;margin-bottom:5px;"
         ></div>
+
         请修改资料后重新提交管理员审核。
+
     </div>
+
+
+
+    <!-- 总说明 -->
 
     <div class="notice">
-        所有岗位统一填写个人资料。提交后由管理员审核，
+
+        所有岗位统一填写个人资料。
+
+        提交后由管理员审核，
         审核通过后才能进入对应工作页面。
-        总经理和管理员审核通过后，还需要进行密码验证。
+
+        总经理和管理员审核通过后，
+        还需要进行密码验证。
+
     </div>
 
 
+
+    <!-- 基本资料 -->
+
     <section class="card">
-        <h2>基本资料</h2>
+
+        <h2>
+            基本资料
+        </h2>
+
 
         <div class="form-grid">
 
+
             <div class="form-group">
+
                 <label>
                     姓名
                     <span class="required">*</span>
@@ -239,10 +300,12 @@
                     autocomplete="name"
                     placeholder="请输入姓名"
                 >
+
             </div>
 
 
             <div class="form-group">
+
                 <label>
                     手机号
                     <span class="required">*</span>
@@ -254,10 +317,12 @@
                     autocomplete="tel"
                     placeholder="请输入手机号"
                 >
+
             </div>
 
 
             <div class="form-group">
+
                 <label>
                     申请岗位
                     <span class="required">*</span>
@@ -268,10 +333,12 @@
                     type="text"
                     readonly
                 >
+
             </div>
 
 
             <div class="form-group">
+
                 <label>
                     部门 / 车队
                     <span class="required">*</span>
@@ -280,61 +347,88 @@
                 <input
                     id="department"
                     type="text"
-                    placeholder="例如：山一车队 / 测量部"
+                    placeholder="例如：山一车队 / 测量部 / 维修部"
                 >
+
             </div>
 
 
             <div class="form-group">
-                <label>入职日期</label>
+
+                <label>
+                    入职日期
+                </label>
 
                 <input
                     id="entryDate"
                     type="date"
                 >
+
             </div>
 
+
         </div>
+
     </section>
 
 
+
+    <!-- 身份证件 -->
+
     <section class="card">
 
-        <h2>身份证件</h2>
+        <h2>
+            身份证件
+        </h2>
+
 
         <div class="form-grid">
 
+
             <div class="form-group">
-                <label>身份证号</label>
+
+                <label>
+                    身份证号
+                </label>
 
                 <input
                     id="idCardNumber"
                     type="text"
                     placeholder="中国籍人员填写"
                 >
+
             </div>
 
 
             <div class="form-group">
-                <label>护照号</label>
+
+                <label>
+                    护照号
+                </label>
 
                 <input
                     id="passportNumber"
                     type="text"
                     placeholder="无身份证时填写护照"
                 >
+
             </div>
 
 
             <div class="form-group full">
+
                 <div class="tip">
                     身份证号和护照号至少填写一项。
                 </div>
+
             </div>
 
 
             <div class="form-group">
-                <label>身份证照片</label>
+
+                <label>
+                    身份证照片
+                </label>
 
                 <input
                     id="idCardPhoto"
@@ -348,11 +442,15 @@
                     class="photo-preview"
                     alt="身份证照片"
                 >
+
             </div>
 
 
             <div class="form-group">
-                <label>护照照片</label>
+
+                <label>
+                    护照照片
+                </label>
 
                 <input
                     id="passportPhoto"
@@ -366,11 +464,17 @@
                     class="photo-preview"
                     alt="护照照片"
                 >
+
             </div>
 
+
         </div>
+
     </section>
 
+
+
+    <!-- 驾驶证 -->
 
     <section
         class="card"
@@ -378,12 +482,18 @@
         style="display:none;"
     >
 
-        <h2>驾驶证 / 操作证</h2>
+        <h2>
+            驾驶证 / 操作证
+        </h2>
+
 
         <div class="notice">
+
             当前岗位属于车辆驾驶或设备操作岗位，
             可以上传驾驶证或相关操作证照片。
+
         </div>
+
 
         <div class="form-group">
 
@@ -405,15 +515,25 @@
             >
 
         </div>
+
     </section>
 
 
+
+    <!-- 银行信息 -->
+
     <section class="card">
 
-        <h2>银行信息</h2>
+        <h2>
+            银行信息
+        </h2>
+
 
         <div class="form-group">
-            <label>银行卡号</label>
+
+            <label>
+                银行卡号
+            </label>
 
             <input
                 id="bankCardNumber"
@@ -421,11 +541,15 @@
                 inputmode="numeric"
                 placeholder="请输入银行卡号"
             >
+
         </div>
 
 
         <div class="form-group">
-            <label>银行卡照片</label>
+
+            <label>
+                银行卡照片
+            </label>
 
             <input
                 id="bankCardPhoto"
@@ -439,18 +563,27 @@
                 class="photo-preview"
                 alt="银行卡照片"
             >
+
         </div>
 
     </section>
 
 
+
+    <!-- 紧急联系人 -->
+
     <section class="card">
 
-        <h2>紧急联系人</h2>
+        <h2>
+            紧急联系人
+        </h2>
+
 
         <div class="form-grid">
 
+
             <div class="form-group">
+
                 <label>
                     紧急联系人
                     <span class="required">*</span>
@@ -461,10 +594,12 @@
                     type="text"
                     placeholder="请输入联系人姓名"
                 >
+
             </div>
 
 
             <div class="form-group">
+
                 <label>
                     联系电话
                     <span class="required">*</span>
@@ -475,26 +610,40 @@
                     type="tel"
                     placeholder="请输入联系电话"
                 >
+
             </div>
 
+
         </div>
+
     </section>
 
 
+
+    <!-- 其他 -->
+
     <section class="card">
 
-        <h2>其他信息</h2>
+        <h2>
+            其他信息
+        </h2>
+
 
         <div class="form-group">
-            <label>备注</label>
+
+            <label>
+                备注
+            </label>
 
             <textarea
                 id="remark"
                 placeholder="其他需要说明的信息"
             ></textarea>
+
         </div>
 
     </section>
+
 
 
     <button
@@ -515,15 +664,18 @@
         返回系统首页
     </button>
 
+
 </main>
 
 
 <footer>
-    矿山管理系统 · 统一人员注册 V2.9.7
+    矿山管理系统 · 统一人员注册 V2.10.0D
 </footer>
 
 
+
 <script>
+
 "use strict";
 
 
@@ -537,54 +689,128 @@ const params =
     );
 
 
+
+/* =========================================================
+   岗位名称统一
+
+   正式维修岗位只保留：
+
+   1. 维修管理
+   2. 维修员
+
+   以下旧名称只作为历史兼容，
+   新提交资料统一保存正式名称。
+========================================================= */
+
 const POSITION_ALIASES = {
 
-    "卡车司机": "汽车司机",
+    "卡车司机":
+        "汽车司机",
 
-    "装载机司机": "铲车司机",
+    "装载机司机":
+        "铲车司机",
 
-    "大巴": "大巴司机",
+    "大巴":
+        "大巴司机",
 
-    "测量人员": "测量员",
+    "测量人员":
+        "测量员",
 
-    "后勤人员": "后勤",
+    "后勤人员":
+        "后勤",
 
-    "库房管理员": "库房管理",
+    "库房管理员":
+        "库房管理",
 
-    "维修人员": "修理工",
 
-    "调度员": "车队长"
+    /* 维修管理旧名称 */
+
+    "维修管理员":
+        "维修管理",
+
+    "修理厂管理员":
+        "维修管理",
+
+
+    /* 维修员旧名称 */
+
+    "修理工":
+        "维修员",
+
+    "维修人员":
+        "维修员",
+
+
+    "调度员":
+        "车队长"
 
 };
 
 
-function normalizePosition(position) {
+
+function normalizePosition(
+    position
+) {
 
     return (
-        POSITION_ALIASES[position] ||
-        position ||
+
+        POSITION_ALIASES[
+            position
+        ]
+
+        ||
+
+        position
+
+        ||
+
         ""
+
     );
 
 }
 
 
+
+/* =========================================================
+   当前选择岗位
+========================================================= */
+
 const selectedPosition =
     normalizePosition(
-        params.get("position") ||
+
+        params.get(
+            "position"
+        )
+
+        ||
+
         localStorage.getItem(
             "selectedPosition"
-        ) ||
+        )
+
+        ||
+
         ""
+
     );
 
 
+
 const rejectedMode =
-    params.get("rejected") === "1";
+    params.get(
+        "rejected"
+    ) ===
+    "1";
+
 
 
 /* =========================================================
    有效岗位
+
+   维修正式岗位只保留：
+   - 维修管理
+   - 维修员
 ========================================================= */
 
 const VALID_POSITIONS = [
@@ -607,9 +833,9 @@ const VALID_POSITIONS = [
 
     "车队长",
 
-    "维修管理员",
+    "维修管理",
 
-    "修理工",
+    "维修员",
 
     "测量员",
 
@@ -629,6 +855,11 @@ const VALID_POSITIONS = [
 
 ];
 
+
+
+/* =========================================================
+   驾驶 / 设备操作岗位
+========================================================= */
 
 const DRIVER_POSITIONS = [
 
@@ -651,21 +882,27 @@ const DRIVER_POSITIONS = [
 ];
 
 
+
 /* =========================================================
    图片数据
 ========================================================= */
 
 const photoData = {
 
-    idCardPhoto: "",
+    idCardPhoto:
+        "",
 
-    passportPhoto: "",
+    passportPhoto:
+        "",
 
-    driverLicensePhoto: "",
+    driverLicensePhoto:
+        "",
 
-    bankCardPhoto: ""
+    bankCardPhoto:
+        ""
 
 };
+
 
 
 /* =========================================================
@@ -684,12 +921,16 @@ function getPersonnelRecords() {
             );
 
 
-        return Array.isArray(records)
+        return Array.isArray(
+            records
+        )
             ? records
             : [];
 
 
-    } catch (error) {
+    } catch (
+        error
+    ) {
 
         console.error(
             "读取人员数据失败：",
@@ -704,25 +945,47 @@ function getPersonnelRecords() {
 }
 
 
-function savePersonnelRecords(records) {
+
+function savePersonnelRecords(
+    records
+) {
 
     localStorage.setItem(
         "personnelRecords",
-        JSON.stringify(records)
+        JSON.stringify(
+            records
+        )
     );
 
 }
 
 
-function getPersonId(person) {
+
+/* =========================================================
+   人员ID
+========================================================= */
+
+function getPersonId(
+    person
+) {
 
     return (
 
-        person?.personId ||
+        person?.personId
 
-        person?.driverId ||
+        ||
 
-        person?.id ||
+        person?.driverId
+
+        ||
+
+        person?.employeeId
+
+        ||
+
+        person?.id
+
+        ||
 
         ""
 
@@ -731,16 +994,16 @@ function getPersonId(person) {
 }
 
 
+
 /* =========================================================
    当前人员
 
-   V2.9.7关键修复：
-
    必须同时满足：
+
    1. 人员ID相同
    2. 当前申请岗位相同
 
-   不允许一个岗位覆盖另外一个岗位档案。
+   防止一个岗位资料覆盖另一个岗位。
 ========================================================= */
 
 function findExistingProfile() {
@@ -756,7 +1019,8 @@ function findExistingProfile() {
 
 
     if (
-        !currentPersonId ||
+        !currentPersonId
+        ||
         !selectedPosition
     ) {
 
@@ -766,28 +1030,43 @@ function findExistingProfile() {
 
 
     return (
+
         records.find(
+
             person =>
 
-                getPersonId(person) ===
-                    currentPersonId &&
+                getPersonId(
+                    person
+                ) ===
+                    currentPersonId
+
+                &&
 
                 normalizePosition(
                     person.position
                 ) ===
                     selectedPosition
-        ) ||
+
+        )
+
+        ||
+
         null
+
     );
 
 }
+
 
 
 /* =========================================================
    人员类别
 ========================================================= */
 
-function getPersonnelCategory(position) {
+function getPersonnelCategory(
+    position
+) {
+
 
     if (
         DRIVER_POSITIONS.includes(
@@ -800,14 +1079,25 @@ function getPersonnelCategory(position) {
     }
 
 
+
+    /* 正式维修岗位 */
+
     if (
-        position === "维修管理员" ||
-        position === "修理工"
+
+        position ===
+            "维修管理"
+
+        ||
+
+        position ===
+            "维修员"
+
     ) {
 
         return "维修人员";
 
     }
+
 
 
     if (
@@ -818,7 +1108,9 @@ function getPersonnelCategory(position) {
             "会计",
             "后勤",
             "库房管理"
-        ].includes(position)
+        ].includes(
+            position
+        )
     ) {
 
         return "中层 / 职能人员";
@@ -826,8 +1118,10 @@ function getPersonnelCategory(position) {
     }
 
 
+
     if (
-        position === "车队长"
+        position ===
+        "车队长"
     ) {
 
         return "生产管理人员";
@@ -835,8 +1129,10 @@ function getPersonnelCategory(position) {
     }
 
 
+
     if (
-        position === "总经理"
+        position ===
+        "总经理"
     ) {
 
         return "总经理";
@@ -844,8 +1140,10 @@ function getPersonnelCategory(position) {
     }
 
 
+
     if (
-        position === "管理员"
+        position ===
+        "管理员"
     ) {
 
         return "系统管理员";
@@ -853,9 +1151,11 @@ function getPersonnelCategory(position) {
     }
 
 
+
     return "其他人员";
 
 }
+
 
 
 /* =========================================================
@@ -865,9 +1165,14 @@ function getPersonnelCategory(position) {
 function createPersonId() {
 
     if (
-        window.crypto &&
+
+        window.crypto
+
+        &&
+
         typeof crypto.randomUUID ===
             "function"
+
     ) {
 
         return crypto.randomUUID();
@@ -876,29 +1181,50 @@ function createPersonId() {
 
 
     return (
+
         "PERSON-" +
+
         Date.now() +
+
         "-" +
+
         Math.random()
-            .toString(36)
-            .slice(2, 9)
+            .toString(
+                36
+            )
+            .slice(
+                2,
+                9
+            )
+
     );
 
 }
+
 
 
 /* =========================================================
    图片压缩
 ========================================================= */
 
-function compressImage(file) {
+function compressImage(
+    file
+) {
 
     return new Promise(
-        (resolve, reject) => {
+        (
+            resolve,
+            reject
+        ) => {
 
-            if (!file) {
 
-                resolve("");
+            if (
+                !file
+            ) {
+
+                resolve(
+                    ""
+                );
 
                 return;
 
@@ -927,14 +1253,16 @@ function compressImage(file) {
 
 
             reader.onload =
-                function(event) {
+                function (
+                    event
+                ) {
 
                     const image =
                         new Image();
 
 
                     image.onload =
-                        function() {
+                        function () {
 
                             const maxSize =
                                 1000;
@@ -949,26 +1277,40 @@ function compressImage(file) {
 
 
                             if (
-                                width > maxSize ||
-                                height > maxSize
+
+                                width >
+                                maxSize
+
+                                ||
+
+                                height >
+                                maxSize
+
                             ) {
 
                                 const ratio =
                                     Math.min(
-                                        maxSize / width,
-                                        maxSize / height
+
+                                        maxSize /
+                                        width,
+
+                                        maxSize /
+                                        height
+
                                     );
 
 
                                 width =
                                     Math.round(
-                                        width * ratio
+                                        width *
+                                        ratio
                                     );
 
 
                                 height =
                                     Math.round(
-                                        height * ratio
+                                        height *
+                                        ratio
                                     );
 
                             }
@@ -995,26 +1337,37 @@ function compressImage(file) {
 
 
                             context.drawImage(
+
                                 image,
+
                                 0,
+
                                 0,
+
                                 width,
+
                                 height
+
                             );
 
 
                             resolve(
+
                                 canvas.toDataURL(
+
                                     "image/jpeg",
+
                                     0.6
+
                                 )
+
                             );
 
                         };
 
 
                     image.onerror =
-                        function() {
+                        function () {
 
                             reject(
                                 new Error(
@@ -1032,7 +1385,7 @@ function compressImage(file) {
 
 
             reader.onerror =
-                function() {
+                function () {
 
                     reject(
                         new Error(
@@ -1053,6 +1406,7 @@ function compressImage(file) {
 }
 
 
+
 /* =========================================================
    图片预览
 ========================================================= */
@@ -1068,14 +1422,18 @@ function showPreview(
         );
 
 
-    if (!image) {
+    if (
+        !image
+    ) {
 
         return;
 
     }
 
 
-    if (dataUrl) {
+    if (
+        dataUrl
+    ) {
 
         image.src =
             dataUrl;
@@ -1083,6 +1441,7 @@ function showPreview(
 
         image.style.display =
             "block";
+
 
     } else {
 
@@ -1097,6 +1456,7 @@ function showPreview(
     }
 
 }
+
 
 
 /* =========================================================
@@ -1119,7 +1479,9 @@ async function handlePhotoChange(
         input.files?.[0];
 
 
-    if (!file) {
+    if (
+        !file
+    ) {
 
         return;
 
@@ -1134,7 +1496,9 @@ async function handlePhotoChange(
             );
 
 
-        photoData[key] =
+        photoData[
+            key
+        ] =
             data;
 
 
@@ -1144,11 +1508,18 @@ async function handlePhotoChange(
         );
 
 
-    } catch (error) {
+    } catch (
+        error
+    ) {
 
         alert(
-            error.message ||
+
+            error.message
+
+            ||
+
             "图片处理失败。"
+
         );
 
 
@@ -1158,6 +1529,7 @@ async function handlePhotoChange(
     }
 
 }
+
 
 
 /* =========================================================
@@ -1170,7 +1542,9 @@ function loadExistingProfile() {
         findExistingProfile();
 
 
-    if (!person) {
+    if (
+        !person
+    ) {
 
         return;
 
@@ -1296,14 +1670,24 @@ function loadExistingProfile() {
 
 
     const rejected =
-        person.status === "rejected" ||
+
+        person.status ===
+            "rejected"
+
+        ||
+
         person.approvalStatus ===
             "rejected";
 
 
     if (
-        rejectedMode ||
+
+        rejectedMode
+
+        ||
+
         rejected
+
     ) {
 
         showRejectNotice(
@@ -1315,21 +1699,32 @@ function loadExistingProfile() {
 }
 
 
+
 /* =========================================================
    驳回提示
 ========================================================= */
 
-function showRejectNotice(person) {
+function showRejectNotice(
+    person
+) {
 
     const reason =
 
-        person?.rejectReason ||
+        person?.rejectReason
 
-        person?.rejectionReason ||
+        ||
 
-        person?.reviewRemark ||
+        person?.rejectionReason
 
-        person?.approvalRemark ||
+        ||
+
+        person?.reviewRemark
+
+        ||
+
+        person?.approvalRemark
+
+        ||
 
         "管理员未填写驳回原因";
 
@@ -1337,6 +1732,7 @@ function showRejectNotice(person) {
     document.getElementById(
         "rejectReasonText"
     ).textContent =
+
         "原因：" +
         reason;
 
@@ -1349,24 +1745,41 @@ function showRejectNotice(person) {
 }
 
 
+
 /* =========================================================
-   输入检查
+   输入值
 ========================================================= */
 
-function getValue(id) {
+function getValue(
+    id
+) {
 
     return (
-        document.getElementById(id)
-            ?.value ||
+
+        document.getElementById(
+            id
+        )?.value
+
+        ||
+
         ""
+
     ).trim();
 
 }
 
 
+
+/* =========================================================
+   表单验证
+========================================================= */
+
 function validateForm() {
 
-    if (!selectedPosition) {
+
+    if (
+        !selectedPosition
+    ) {
 
         alert(
             "没有识别到申请岗位，请返回首页重新选择岗位。"
@@ -1392,7 +1805,11 @@ function validateForm() {
     }
 
 
-    if (!getValue("name")) {
+    if (
+        !getValue(
+            "name"
+        )
+    ) {
 
         alert(
             "请输入姓名。"
@@ -1403,7 +1820,11 @@ function validateForm() {
     }
 
 
-    if (!getValue("phone")) {
+    if (
+        !getValue(
+            "phone"
+        )
+    ) {
 
         alert(
             "请输入手机号。"
@@ -1414,7 +1835,11 @@ function validateForm() {
     }
 
 
-    if (!getValue("department")) {
+    if (
+        !getValue(
+            "department"
+        )
+    ) {
 
         alert(
             "请输入部门或车队。"
@@ -1426,8 +1851,17 @@ function validateForm() {
 
 
     if (
-        !getValue("idCardNumber") &&
-        !getValue("passportNumber")
+
+        !getValue(
+            "idCardNumber"
+        )
+
+        &&
+
+        !getValue(
+            "passportNumber"
+        )
+
     ) {
 
         alert(
@@ -1439,7 +1873,11 @@ function validateForm() {
     }
 
 
-    if (!getValue("emergencyContact")) {
+    if (
+        !getValue(
+            "emergencyContact"
+        )
+    ) {
 
         alert(
             "请输入紧急联系人。"
@@ -1450,7 +1888,11 @@ function validateForm() {
     }
 
 
-    if (!getValue("emergencyPhone")) {
+    if (
+        !getValue(
+            "emergencyPhone"
+        )
+    ) {
 
         alert(
             "请输入紧急联系人电话。"
@@ -1466,13 +1908,17 @@ function validateForm() {
 }
 
 
+
 /* =========================================================
    提交注册
 ========================================================= */
 
 async function submitRegistration() {
 
-    if (!validateForm()) {
+
+    if (
+        !validateForm()
+    ) {
 
         return;
 
@@ -1495,6 +1941,7 @@ async function submitRegistration() {
 
     try {
 
+
         const records =
             getPersonnelRecords();
 
@@ -1509,8 +1956,13 @@ async function submitRegistration() {
 
 
         const personId =
+
             existing
-                ? getPersonId(existing)
+
+                ? getPersonId(
+                    existing
+                )
+
                 : createPersonId();
 
 
@@ -1523,109 +1975,155 @@ async function submitRegistration() {
 
             ...oldData,
 
+
             personId:
                 personId,
 
+
             name:
-                getValue("name"),
+                getValue(
+                    "name"
+                ),
+
 
             phone:
-                getValue("phone"),
+                getValue(
+                    "phone"
+                ),
+
+
+            /*
+             * V2.10.0D
+             *
+             * 这里保存的永远是标准化岗位。
+             *
+             * 维修：
+             * 维修管理
+             * 维修员
+             */
 
             position:
                 selectedPosition,
+
 
             personnelCategory:
                 getPersonnelCategory(
                     selectedPosition
                 ),
 
+
             department:
                 getValue(
                     "department"
                 ),
+
 
             team:
                 getValue(
                     "department"
                 ),
 
+
             entryDate:
                 getValue(
                     "entryDate"
                 ),
+
 
             idCardNumber:
                 getValue(
                     "idCardNumber"
                 ),
 
+
             passportNumber:
                 getValue(
                     "passportNumber"
                 ),
 
+
             idCardPhoto:
                 photoData.idCardPhoto,
+
 
             passportPhoto:
                 photoData.passportPhoto,
 
+
             driverLicensePhoto:
                 photoData.driverLicensePhoto,
+
 
             bankCardNumber:
                 getValue(
                     "bankCardNumber"
                 ),
 
+
             bankCardPhoto:
                 photoData.bankCardPhoto,
+
 
             emergencyContact:
                 getValue(
                     "emergencyContact"
                 ),
 
+
             emergencyPhone:
                 getValue(
                     "emergencyPhone"
                 ),
+
 
             remark:
                 getValue(
                     "remark"
                 ),
 
+
             status:
                 "pending",
+
 
             approvalStatus:
                 "pending",
 
+
             personnelStatus:
                 "待审核",
+
 
             submittedAt:
                 now,
 
+
             updatedAt:
                 now,
+
 
             createdAt:
                 oldData.createdAt ||
                 now,
 
+
             resubmitCount:
+
                 existing
+
                     ? Number(
                         oldData.resubmitCount ||
                         0
                     ) + 1
+
                     : 0
 
         };
 
+
+        /*
+         * 重新提交时清除旧审核信息
+         */
 
         delete person.rejectReason;
 
@@ -1646,18 +2144,29 @@ async function submitRegistration() {
         delete person.reviewedBy;
 
 
+
         const index =
             records.findIndex(
+
                 item =>
-                    getPersonId(item) ===
+
+                    getPersonId(
+                        item
+                    ) ===
                     personId
+
             );
 
 
-        if (index >= 0) {
+        if (
+            index >= 0
+        ) {
 
-            records[index] =
+            records[
+                index
+            ] =
                 person;
+
 
         } else {
 
@@ -1702,14 +2211,18 @@ async function submitRegistration() {
 
         location.href =
 
-            "person-waiting.html?position=" +
+            "person-waiting.html?position="
+
+            +
 
             encodeURIComponent(
                 selectedPosition
             );
 
 
-    } catch (error) {
+    } catch (
+        error
+    ) {
 
         console.error(
             error
@@ -1733,6 +2246,7 @@ async function submitRegistration() {
 }
 
 
+
 /* =========================================================
    返回首页
 ========================================================= */
@@ -1745,17 +2259,24 @@ function goHome() {
 }
 
 
+
 /* =========================================================
    初始化
 ========================================================= */
 
 function initializePage() {
 
+
     if (
-        !selectedPosition ||
+
+        !selectedPosition
+
+        ||
+
         !VALID_POSITIONS.includes(
             selectedPosition
         )
+
     ) {
 
         alert(
@@ -1772,6 +2293,10 @@ function initializePage() {
     }
 
 
+    /*
+     * 保存标准岗位名称
+     */
+
     localStorage.setItem(
         "selectedPosition",
         selectedPosition
@@ -1783,6 +2308,11 @@ function initializePage() {
     ).value =
         selectedPosition;
 
+
+
+    /*
+     * 车辆 / 设备操作岗位显示驾驶证上传
+     */
 
     if (
         DRIVER_POSITIONS.includes(
@@ -1798,6 +2328,11 @@ function initializePage() {
     }
 
 
+
+    /*
+     * 默认入职日期
+     */
+
     if (
         !getValue(
             "entryDate"
@@ -1810,12 +2345,20 @@ function initializePage() {
 
         const localDate =
             new Date(
-                today.getTime() -
+
+                today.getTime()
+
+                -
+
                 today.getTimezoneOffset() *
                 60000
+
             )
                 .toISOString()
-                .slice(0, 10);
+                .slice(
+                    0,
+                    10
+                );
 
 
         document.getElementById(
@@ -1831,6 +2374,7 @@ function initializePage() {
 }
 
 
+
 /* =========================================================
    图片事件
 ========================================================= */
@@ -1839,69 +2383,91 @@ document.getElementById(
     "idCardPhoto"
 ).addEventListener(
     "change",
-    function() {
+    function () {
 
         handlePhotoChange(
+
             "idCardPhoto",
+
             "idCardPhoto",
+
             "idCardPreview"
+
         );
 
     }
 );
+
 
 
 document.getElementById(
     "passportPhoto"
 ).addEventListener(
     "change",
-    function() {
+    function () {
 
         handlePhotoChange(
+
             "passportPhoto",
+
             "passportPhoto",
+
             "passportPreview"
+
         );
 
     }
 );
+
 
 
 document.getElementById(
     "driverLicensePhoto"
 ).addEventListener(
     "change",
-    function() {
+    function () {
 
         handlePhotoChange(
+
             "driverLicensePhoto",
+
             "driverLicensePhoto",
+
             "driverLicensePreview"
+
         );
 
     }
 );
+
 
 
 document.getElementById(
     "bankCardPhoto"
 ).addEventListener(
     "change",
-    function() {
+    function () {
 
         handlePhotoChange(
+
             "bankCardPhoto",
+
             "bankCardPhoto",
+
             "bankCardPreview"
+
         );
 
     }
 );
 
 
+
 initializePage();
 
 </script>
 
+
 </body>
+
 </html>
