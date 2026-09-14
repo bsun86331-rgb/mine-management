@@ -456,7 +456,7 @@ footer {
             </h1>
 
             <p>
-                Maintenance Worker · V2.10.0I
+                Maintenance Worker · V2.10.0Q
             </p>
 
         </div>
@@ -1000,7 +1000,7 @@ footer {
 
 <footer>
 
-矿山管理系统 · 维修员工作端 V2.10.0I
+矿山管理系统 · 维修员工作端 V2.10.0Q
 
 </footer>
 
@@ -1015,6 +1015,9 @@ const STORAGE = {
 
     PERSONNEL:
         "personnelRecords",
+
+    REQUESTS:
+        "maintenanceRequests",
 
     WORK_ORDERS:
         "maintenanceWorkOrders",
@@ -1794,6 +1797,106 @@ function saveOrders(
     save(
         STORAGE.WORK_ORDERS,
         records
+    );
+
+}
+
+
+
+function getMaintenanceRequests() {
+
+    return readArray(
+        STORAGE.REQUESTS
+    );
+
+}
+
+
+
+function syncRequestFromOrder(
+    order,
+    status,
+    extra = {}
+) {
+
+    if (
+        !order?.requestId
+    ) {
+
+        return;
+    }
+
+
+    const requests =
+        getMaintenanceRequests();
+
+
+    const request =
+        requests.find(
+            item =>
+                item.requestId ===
+                    order.requestId
+        );
+
+
+    if (
+        !request
+    ) {
+
+        return;
+    }
+
+
+    request.status =
+        status;
+
+
+    request.orderId =
+        order.orderId;
+
+
+    request.workerId =
+        order.workerId ||
+        getPersonId(
+            currentWorker
+        ) ||
+        request.workerId ||
+        "";
+
+
+    request.workerName =
+        order.workerName ||
+        currentWorker?.name ||
+        request.workerName ||
+        "";
+
+
+    request.bayId =
+        order.bayId ||
+        request.bayId ||
+        "";
+
+
+    request.bayName =
+        order.bayName ||
+        request.bayName ||
+        "";
+
+
+    Object.assign(
+        request,
+        extra,
+        {
+            updatedAt:
+                new Date()
+                    .toISOString()
+        }
+    );
+
+
+    save(
+        STORAGE.REQUESTS,
+        requests
     );
 
 }
@@ -3407,8 +3510,21 @@ function startRepair() {
         ).value;
 
 
+    const activeOrderBeforeStart =
+        getOrders()
+            .find(
+                item =>
+                    item.orderId ===
+                        orderId
+            );
+
+
     if (
         !pendingBeforePhoto
+
+        &&
+
+        !activeOrderBeforeStart?.beforePhotoData
     ) {
 
         alert(
@@ -3455,6 +3571,11 @@ function startRepair() {
     if (
         order.status !==
             "assigned"
+
+        &&
+
+        order.status !==
+            "rework"
     ) {
 
         alert(
@@ -3468,7 +3589,9 @@ function startRepair() {
 
 
     order.beforePhotoData =
-        pendingBeforePhoto;
+        pendingBeforePhoto ||
+        order.beforePhotoData ||
+        "";
 
 
     order.status =
@@ -3497,6 +3620,22 @@ function startRepair() {
 
     saveOrders(
         orders
+    );
+
+
+    syncRequestFromOrder(
+        order,
+        "working",
+        {
+            startedAt:
+                order.startedAt,
+
+            startedBy:
+                order.startedBy,
+
+            startedById:
+                order.startedById
+        }
     );
 
 
@@ -3612,6 +3751,19 @@ function setWaitingParts() {
     );
 
 
+    syncRequestFromOrder(
+        order,
+        "waiting_parts",
+        {
+            waitingPartsNote:
+                order.waitingPartsNote,
+
+            waitingPartsAt:
+                order.waitingPartsAt
+        }
+    );
+
+
     closeRepairOperation();
 
 
@@ -3678,6 +3830,16 @@ function resumeRepair(
 
     saveOrders(
         orders
+    );
+
+
+    syncRequestFromOrder(
+        order,
+        "working",
+        {
+            resumedAt:
+                order.resumedAt
+        }
     );
 
 
@@ -3820,6 +3982,25 @@ function finishRepair() {
     }
 
 
+    if (
+        order.status !==
+            "working"
+
+        &&
+
+        order.status !==
+            "rework"
+    ) {
+
+        alert(
+            "当前维修任务状态不能提交验收。"
+        );
+
+
+        return;
+    }
+
+
     order.beforePhotoData =
         pendingBeforePhoto
 
@@ -3871,9 +4052,44 @@ function finishRepair() {
         actualRepairContent;
 
 
+    const previousStatus =
+        order.status;
+
+
     order.repairFinishedAt =
         new Date()
             .toISOString();
+
+
+    if (
+        previousStatus ===
+            "rework"
+    ) {
+
+        order.reworkHistory =
+            Array.isArray(
+                order.reworkHistory
+            )
+                ? order.reworkHistory
+                : [];
+
+
+        order.reworkHistory.push({
+
+            completedAt:
+                order.repairFinishedAt,
+
+            repairProcess,
+
+            actualRepairContent,
+
+            partsUsed:
+                order.partsUsed,
+
+            afterPhotoData:
+                order.afterPhotoData
+        });
+    }
 
 
     order.status =
@@ -3893,6 +4109,43 @@ function finishRepair() {
 
     saveOrders(
         orders
+    );
+
+
+    syncRequestFromOrder(
+        order,
+        "waiting_inspection",
+        {
+            faultCause:
+                order.faultCause,
+
+            repairProcess:
+                order.repairProcess,
+
+            actualRepairContent:
+                order.actualRepairContent,
+
+            partsUsed:
+                order.partsUsed,
+
+            repairResult:
+                order.repairResult,
+
+            beforePhotoData:
+                order.beforePhotoData,
+
+            afterPhotoData:
+                order.afterPhotoData,
+
+            repairFinishedAt:
+                order.repairFinishedAt,
+
+            finishedBy:
+                order.finishedBy,
+
+            finishedById:
+                order.finishedById
+        }
     );
 
 
