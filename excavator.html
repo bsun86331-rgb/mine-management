@@ -404,6 +404,32 @@
         }
 
 
+        .action-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 10px;
+        }
+
+
+        .maintenance-button {
+            width: 100%;
+            min-height: 52px;
+            padding: 13px 16px;
+            border: 1px solid #fecaca;
+            border-radius: 11px;
+            background: #fff1f2;
+            color: #b91c1c;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+
+        .maintenance-button:active {
+            transform: translateY(1px);
+        }
+
+
         .warning-box {
             padding: 13px;
             border: 1px solid #fed7aa;
@@ -453,7 +479,7 @@
                 </h1>
 
                 <p>
-                    Excavator Operator · V2.9.8B-3
+                    Excavator Operator · V2.10.0L
                 </p>
 
             </div>
@@ -624,6 +650,58 @@
 
 
     <!-- =====================================================
+         异常上报 / 设备维修
+    ====================================================== -->
+
+    <section class="card">
+
+        <div class="section-title">
+
+            <div>
+
+                <h2>
+                    ⚠️ 异常上报
+                </h2>
+
+                <p>
+                    挖机发生故障时提交设备维修申请
+                </p>
+
+            </div>
+
+        </div>
+
+
+        <div class="action-grid">
+
+            <button
+                type="button"
+                class="maintenance-button"
+                onclick="openMaintenanceReport()"
+            >
+                🔧 设备故障 / 申请维修
+            </button>
+
+        </div>
+
+
+        <div class="task-note">
+
+            生产设备维修申请提交后，
+            先进入调度审批。
+
+            <br>
+
+            调度批准后，
+            再进入维修管理和维修员流程。
+
+        </div>
+
+    </section>
+
+
+
+    <!-- =====================================================
          自动车数
     ====================================================== -->
 
@@ -724,7 +802,7 @@
 
 <footer>
 
-    矿山管理系统 · 挖机司机端 V2.9.8B-3
+    矿山管理系统 · 挖机司机端 V2.10.0L
 
 </footer>
 
@@ -2853,6 +2931,46 @@ function escapeHtml(
 
 
     return div.innerHTML;
+}
+
+
+
+/* =========================================================
+   设备维修上报
+========================================================= */
+
+function openMaintenanceReport() {
+
+    if (
+        currentPerson
+    ) {
+
+        const personId =
+            getPersonId(
+                currentPerson
+            );
+
+
+        if (
+            personId
+        ) {
+
+            localStorage.setItem(
+                "currentPersonId",
+                personId
+            );
+        }
+
+
+        localStorage.setItem(
+            "selectedPosition",
+            "挖机司机"
+        );
+    }
+
+
+    location.href =
+        "maintenance-report.html";
 }
 
 
