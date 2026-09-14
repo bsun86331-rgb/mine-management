@@ -530,7 +530,7 @@ footer {
             </h1>
 
             <p>
-                Workshop Maintenance · V2.10.0A
+                Workshop Maintenance · V2.10.0H
             </p>
 
         </div>
@@ -560,7 +560,7 @@ footer {
 
     <br>
 
-    皮卡、管理车辆等非生产设备可以直接进入维修管理员待处理列表。
+    皮卡、管理车辆等非生产设备可以直接进入维修管理待处理列表。
 
 </div>
 
@@ -752,7 +752,7 @@ footer {
             </h2>
 
             <p>
-                仅显示生产设备维修申请，维修管理员暂不能派工
+                仅显示生产设备维修申请，维修管理暂不能派工
             </p>
 
         </div>
@@ -828,7 +828,7 @@ footer {
         <div>
 
             <h2>
-                👨‍🔧 待维修管理员派工
+                👨‍🔧 待维修管理派工
             </h2>
 
             <p>
@@ -908,7 +908,7 @@ footer {
         <div>
 
             <h2>
-                ✅ 待维修管理员验收
+                ✅ 待维修管理验收
             </h2>
 
             <p>
@@ -973,7 +973,7 @@ footer {
 
 <footer>
 
-矿山管理系统 · 修理厂维修管理 V2.10.0A
+矿山管理系统 · 修理厂维修管理 V2.10.0H
 
 </footer>
 
@@ -1353,6 +1353,292 @@ const STORAGE = {
 };
 
 
+/* =========================================================
+   维修管理岗位专属访问保护
+
+   正式维修岗位：
+   维修管理 -> maintenance.html
+   维修员   -> maintenance-worker.html
+
+   旧岗位名称仅用于兼容历史数据。
+========================================================= */
+
+function normalizeMaintenancePosition(position) {
+
+    const map = {
+
+        "维修管理员":
+            "维修管理",
+
+        "修理厂管理员":
+            "维修管理",
+
+        "修理工":
+            "维修员",
+
+        "维修人员":
+            "维修员"
+
+    };
+
+
+    return (
+        map[position] ||
+        position ||
+        ""
+    );
+}
+
+
+function getMaintenancePersonnelRecords() {
+
+    try {
+
+        const data =
+            JSON.parse(
+                localStorage.getItem(
+                    "personnelRecords"
+                )
+            );
+
+
+        return Array.isArray(data)
+            ? data
+            : [];
+
+    } catch (error) {
+
+        console.error(
+            "读取人员资料失败：",
+            error
+        );
+
+        return [];
+    }
+}
+
+
+function getMaintenancePersonId(person) {
+
+    return (
+        person?.personId ||
+        person?.employeeId ||
+        person?.driverId ||
+        person?.id ||
+        ""
+    );
+}
+
+
+function isMaintenancePersonApproved(person) {
+
+    if (!person) {
+        return false;
+    }
+
+
+    if (
+        person.status === "rejected" ||
+        person.approvalStatus === "rejected" ||
+        person.status === "disabled" ||
+        person.status === "resigned" ||
+        person.personnelStatus === "停用" ||
+        person.personnelStatus === "离职"
+    ) {
+        return false;
+    }
+
+
+    return (
+        person.approvalStatus === "approved" ||
+        person.status === "approved" ||
+        person.status === "active" ||
+        person.status === "working" ||
+        person.status === "leave" ||
+        person.personnelStatus === "在职可用" ||
+        person.personnelStatus === "作业中" ||
+        person.personnelStatus === "请假"
+    );
+}
+
+
+function denyMaintenanceAccess(message) {
+
+    alert(
+        message ||
+        "当前账号不是维修管理岗位，不能进入维修管理端。"
+    );
+
+    location.replace(
+        "index.html"
+    );
+
+    return false;
+}
+
+
+function verifyMaintenanceAccess() {
+
+    const records =
+        getMaintenancePersonnelRecords();
+
+
+    const currentPersonId =
+        localStorage.getItem(
+            "currentPersonId"
+        ) || "";
+
+
+    const selectedPosition =
+        normalizeMaintenancePosition(
+            localStorage.getItem(
+                "selectedPosition"
+            ) || ""
+        );
+
+
+    /*
+     * 1. 优先使用 currentPersonId。
+     */
+
+    if (currentPersonId) {
+
+        const person =
+            records.find(
+                item =>
+                    String(
+                        getMaintenancePersonId(item)
+                    ) ===
+                    String(currentPersonId)
+            );
+
+
+        if (person) {
+
+            const position =
+                normalizeMaintenancePosition(
+                    person.position
+                );
+
+
+            if (position !== "维修管理") {
+
+                return denyMaintenanceAccess(
+                    position === "维修员"
+                        ? "当前账号是维修员，请进入维修员工作端。"
+                        : "当前岗位不是维修管理，不能进入维修管理端。"
+                );
+            }
+
+
+            if (!isMaintenancePersonApproved(person)) {
+
+                return denyMaintenanceAccess(
+                    "维修管理人员尚未通过审核或账号不可用。"
+                );
+            }
+
+
+            /*
+             * 将历史旧岗位名称统一为正式名称。
+             */
+
+            if (person.position !== "维修管理") {
+
+                person.position =
+                    "维修管理";
+
+                person.updatedAt =
+                    new Date().toISOString();
+
+                localStorage.setItem(
+                    "personnelRecords",
+                    JSON.stringify(records)
+                );
+            }
+
+
+            localStorage.setItem(
+                "selectedPosition",
+                "维修管理"
+            );
+
+            return true;
+        }
+    }
+
+
+    /*
+     * 2. currentPersonId 丢失时，只允许 selectedPosition=维修管理。
+     *    然后尝试自动识别唯一一名已审核维修管理人员。
+     */
+
+    if (selectedPosition !== "维修管理") {
+
+        return denyMaintenanceAccess(
+            selectedPosition === "维修员"
+                ? "当前选择的是维修员，请进入维修员工作端。"
+                : "请先从首页选择“维修管理”岗位进入。"
+        );
+    }
+
+
+    const managers =
+        records.filter(
+            item =>
+                normalizeMaintenancePosition(
+                    item.position
+                ) === "维修管理" &&
+                isMaintenancePersonApproved(item)
+        );
+
+
+    if (managers.length === 1) {
+
+        const manager =
+            managers[0];
+
+        const personId =
+            getMaintenancePersonId(
+                manager
+            );
+
+
+        if (personId) {
+            localStorage.setItem(
+                "currentPersonId",
+                String(personId)
+            );
+        }
+
+
+        if (manager.position !== "维修管理") {
+
+            manager.position =
+                "维修管理";
+
+            manager.updatedAt =
+                new Date().toISOString();
+
+            localStorage.setItem(
+                "personnelRecords",
+                JSON.stringify(records)
+            );
+        }
+
+
+        return true;
+    }
+
+
+    return denyMaintenanceAccess(
+        managers.length > 1
+            ? "检测到多名维修管理人员，但当前人员身份未确定，请从首页重新进入。"
+            : "没有找到已审核的维修管理人员，请先完成入职审核。"
+    );
+}
+
+
 
 /* =========================================================
    默认工位
@@ -1412,7 +1698,11 @@ const DEFAULT_BAYS = [
 
 
 
-initialize();
+if (verifyMaintenanceAccess()) {
+
+    initialize();
+
+}
 
 
 
@@ -2260,7 +2550,7 @@ function receiveVehicle(
 
 
     item.receivedBy =
-        "维修管理员";
+        "维修管理";
 
 
     save(
@@ -2574,7 +2864,7 @@ function confirmAssignment() {
             "assigned",
 
         assignedBy:
-            "维修管理员",
+            "维修管理",
 
         assignedAt:
             new Date()
@@ -3061,7 +3351,7 @@ function approveInspection() {
 
 
     order.inspectedBy =
-        "维修管理员";
+        "维修管理";
 
 
     order.inspectedAt =
@@ -3375,7 +3665,7 @@ function saveCostSheet() {
                 .trim(),
 
         issuedBy:
-            "维修管理员",
+            "维修管理",
 
         issuedAt:
             new Date()
