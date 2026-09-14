@@ -530,7 +530,7 @@ footer {
             </h1>
 
             <p>
-                Workshop Maintenance · V2.10.0H
+                Workshop Maintenance · V2.10.0P
             </p>
 
         </div>
@@ -872,7 +872,7 @@ footer {
             </h2>
 
             <p>
-                修理工接车并开始维修后的车辆
+                维修员接车并开始维修后的车辆
             </p>
 
         </div>
@@ -973,7 +973,7 @@ footer {
 
 <footer>
 
-矿山管理系统 · 修理厂维修管理 V2.10.0H
+矿山管理系统 · 修理厂维修管理 V2.10.0P
 
 </footer>
 
@@ -1030,29 +1030,13 @@ footer {
         <div class="form-group">
 
             <label for="assignmentWorker">
-                主维修工
+                主维修员
             </label>
 
             <select id="assignmentWorker">
 
                 <option value="">
-                    请选择维修工
-                </option>
-
-                <option value="维修工01">
-                    维修工01
-                </option>
-
-                <option value="维修工02">
-                    维修工02
-                </option>
-
-                <option value="维修工03">
-                    维修工03
-                </option>
-
-                <option value="维修工04">
-                    维修工04
+                    请选择已审核维修员
                 </option>
 
             </select>
@@ -1718,6 +1702,8 @@ function initialize() {
 
     migrateLegacyReports();
 
+    reconcileMaintenanceRequestStates();
+
     renderAll();
 
 
@@ -2002,6 +1988,97 @@ function migrateLegacyReports() {
 
 
 /* =========================================================
+   维修申请状态同步
+========================================================= */
+
+function reconcileMaintenanceRequestStates() {
+
+    const requests =
+        getRequests();
+
+    let changed =
+        false;
+
+    requests.forEach(
+        item => {
+
+            const status =
+                item.status || "";
+
+            const alreadyInWorkshopFlow = [
+                "waiting_entry",
+                "waiting_assignment",
+                "received",
+                "assigned",
+                "working",
+                "waiting_parts",
+                "waiting_inspection",
+                "inspection_passed",
+                "rework",
+                "completed"
+            ].includes(status);
+
+            if (alreadyInWorkshopFlow) {
+                return;
+            }
+
+            if (
+                item.dispatchRequired === false ||
+                item.dispatchStatus === "not_required"
+            ) {
+
+                if (
+                    status === "pending_dispatch" ||
+                    !status
+                ) {
+                    item.status = "waiting_entry";
+                    changed = true;
+                }
+
+                return;
+            }
+
+            if (item.dispatchStatus === "approved") {
+
+                if (status !== "waiting_entry") {
+                    item.status = "waiting_entry";
+                    changed = true;
+                }
+
+                return;
+            }
+
+            if (item.dispatchStatus === "rejected") {
+
+                if (status !== "rejected") {
+                    item.status = "rejected";
+                    changed = true;
+                }
+
+                return;
+            }
+
+            if (
+                item.dispatchRequired === true &&
+                status !== "pending_dispatch"
+            ) {
+                item.status = "pending_dispatch";
+                changed = true;
+            }
+        }
+    );
+
+    if (changed) {
+        save(
+            STORAGE.REQUESTS,
+            requests
+        );
+    }
+}
+
+
+
+/* =========================================================
    是否生产设备
 ========================================================= */
 
@@ -2056,6 +2133,8 @@ function isProductionEquipment(
 ========================================================= */
 
 function renderAll() {
+
+    reconcileMaintenanceRequestStates();
 
     renderStatistics();
 
@@ -2489,6 +2568,41 @@ function renderWaitingWorkshop() {
 
                     </div>
 
+                    <div class="record-info" style="margin-top:8px;">
+
+                        调度状态：
+                        ${escapeHtml(
+                            item.dispatchRequired === false
+                                ? "无需调度审批"
+                                : (
+                                    item.dispatchStatus === "approved"
+                                        ? "已批准进厂"
+                                        : (item.dispatchStatus || "-")
+                                )
+                        )}
+
+                    </div>
+
+
+                    ${
+                        item.photoData
+                            ? `
+                                <div style="margin-top:10px;">
+                                    <div style="font-size:12px;color:#64748b;margin-bottom:6px;">
+                                        故障现场照片
+                                    </div>
+                                    <img
+                                        class="photo-thumb"
+                                        style="width:140px;height:100px;"
+                                        src="${item.photoData}"
+                                        alt="故障现场照片"
+                                    >
+                                </div>
+                            `
+                            : ""
+                    }
+
+
 
                     <div class="actions">
 
@@ -2535,6 +2649,19 @@ function receiveVehicle(
     if (
         !item
     ) {
+
+        return;
+    }
+
+
+    if (
+        item.dispatchRequired !== false &&
+        item.dispatchStatus !== "approved"
+    ) {
+
+        alert(
+            "该生产设备尚未获得调度批准，暂不能办理进厂接车。"
+        );
 
         return;
     }
@@ -2652,7 +2779,7 @@ function renderAssignments() {
                             class="primary-btn"
                             onclick="openAssignment('${escapeJs(item.requestId)}')"
                         >
-                            分配工位 / 维修工
+                            分配工位 / 维修员
                         </button>
 
                     </div>
@@ -2663,6 +2790,26 @@ function renderAssignments() {
             .join(
                 ""
             );
+}
+
+
+
+/* =========================================================
+   已审核维修员
+========================================================= */
+
+function getApprovedMaintenanceWorkers() {
+
+    return getMaintenancePersonnelRecords()
+        .filter(
+            person =>
+                normalizeMaintenancePosition(
+                    person.position
+                ) === "维修员" &&
+                isMaintenancePersonApproved(
+                    person
+                )
+        );
 }
 
 
@@ -2687,10 +2834,59 @@ function openAssignment(
         "";
 
 
-    document.getElementById(
-        "assignmentWorker"
-    ).value =
+    const workerSelect =
+        document.getElementById(
+            "assignmentWorker"
+        );
+
+
+    const workers =
+        getApprovedMaintenanceWorkers();
+
+
+    workerSelect.innerHTML =
+        '<option value="">请选择已审核维修员</option>' +
+
+        workers
+            .map(
+                worker => {
+
+                    const workerId =
+                        getMaintenancePersonId(
+                            worker
+                        );
+
+                    const workerName =
+                        worker.name ||
+                        worker.realName ||
+                        "未命名维修员";
+
+                    return `
+                        <option
+                            value="${escapeHtml(workerId)}"
+                            data-worker-name="${escapeHtml(workerName)}"
+                        >
+                            ${escapeHtml(workerName)}
+                            ${workerId ? "（" + escapeHtml(workerId) + "）" : ""}
+                        </option>
+                    `;
+                }
+            )
+            .join(
+                ""
+            );
+
+
+    workerSelect.value =
         "";
+
+
+    if (!workers.length) {
+
+        alert(
+            "当前没有已审核的维修员，请先在管理员端完成维修员入职审核。"
+        );
+    }
 
 
     const select =
@@ -2749,10 +2945,26 @@ function confirmAssignment() {
         ).value;
 
 
-    const workerName =
+    const workerSelect =
         document.getElementById(
             "assignmentWorker"
-        ).value;
+        );
+
+
+    const workerId =
+        workerSelect.value;
+
+
+    const workerName =
+        workerSelect
+            .selectedOptions?.[0]
+            ?.dataset
+            ?.workerName ||
+        workerSelect
+            .selectedOptions?.[0]
+            ?.textContent
+            ?.trim() ||
+        "";
 
 
     const project =
@@ -2765,6 +2977,7 @@ function confirmAssignment() {
 
     if (
         !bayId ||
+        !workerId ||
         !workerName ||
         !project
     ) {
@@ -2855,6 +3068,8 @@ function confirmAssignment() {
         bayName:
             bay.name,
 
+        workerId,
+
         workerName,
 
         repairProject:
@@ -2921,6 +3136,26 @@ function confirmAssignment() {
         order.orderId;
 
 
+    request.workerId =
+        workerId;
+
+
+    request.workerName =
+        workerName;
+
+
+    request.bayId =
+        bay.bayId;
+
+
+    request.bayName =
+        bay.name;
+
+
+    request.assignedAt =
+        order.assignedAt;
+
+
     save(
         STORAGE.REQUESTS,
         requests
@@ -2936,7 +3171,7 @@ function confirmAssignment() {
 
 
     alert(
-        "派工完成，维修工已收到维修任务。"
+        "派工完成，维修员已收到维修任务。"
     );
 }
 
@@ -3057,7 +3292,7 @@ function renderWorking() {
 
                             <div class="warning-box" style="margin-top:10px;">
 
-                                已派工，等待维修工接车、拍维修前照片并开始维修。
+                                已派工，等待维修员接车、拍维修前照片并开始维修。
 
                             </div>
                             `
@@ -3086,7 +3321,12 @@ function renderInspection() {
             .filter(
                 item =>
                     item.status ===
-                    "waiting_inspection"
+                        "waiting_inspection"
+
+                    ||
+
+                    item.status ===
+                        "inspection_passed"
             )
             .slice()
             .reverse();
@@ -3126,8 +3366,8 @@ function renderInspection() {
                             ${escapeHtml(item.equipmentNumber)}
                         </strong>
 
-                        <span class="badge purple">
-                            待验收
+                        <span class="badge ${item.status === "inspection_passed" ? "green" : "purple"}">
+                            ${item.status === "inspection_passed" ? "验收通过 / 待费用单" : "待验收"}
                         </span>
 
                     </div>
@@ -3163,13 +3403,27 @@ function renderInspection() {
 
                     <div class="actions">
 
-                        <button
-                            type="button"
-                            class="success-btn"
-                            onclick="openInspection('${escapeJs(item.orderId)}')"
-                        >
-                            维修验收
-                        </button>
+                        ${
+                            item.status === "inspection_passed"
+                                ? `
+                                    <button
+                                        type="button"
+                                        class="purple-btn"
+                                        onclick="openCostSheet('${escapeJs(item.orderId)}')"
+                                    >
+                                        💰 填写维修费用单
+                                    </button>
+                                `
+                                : `
+                                    <button
+                                        type="button"
+                                        class="success-btn"
+                                        onclick="openInspection('${escapeJs(item.orderId)}')"
+                                    >
+                                        维修验收
+                                    </button>
+                                `
+                        }
 
                     </div>
 
@@ -3365,6 +3619,12 @@ function approveInspection() {
     );
 
 
+    updateMaintenanceRequestFromOrder(
+        order,
+        "inspection_passed"
+    );
+
+
     closeModal(
         "inspectionModal"
     );
@@ -3451,6 +3711,12 @@ function rejectInspection() {
     );
 
 
+    updateMaintenanceRequestFromOrder(
+        order,
+        "rework"
+    );
+
+
     closeModal(
         "inspectionModal"
     );
@@ -3461,6 +3727,71 @@ function rejectInspection() {
 
     alert(
         "该维修任务已退回返修。"
+    );
+}
+
+
+
+/* =========================================================
+   工单状态同步到维修申请
+========================================================= */
+
+function updateMaintenanceRequestFromOrder(
+    order,
+    status
+) {
+
+    if (!order?.requestId) {
+        return;
+    }
+
+    const requests =
+        getRequests();
+
+    const request =
+        requests.find(
+            item =>
+                item.requestId ===
+                order.requestId
+        );
+
+    if (!request) {
+        return;
+    }
+
+    request.status =
+        status;
+
+    request.orderId =
+        order.orderId;
+
+    request.workerId =
+        order.workerId ||
+        request.workerId ||
+        "";
+
+    request.workerName =
+        order.workerName ||
+        request.workerName ||
+        "";
+
+    request.bayId =
+        order.bayId ||
+        request.bayId ||
+        "";
+
+    request.bayName =
+        order.bayName ||
+        request.bayName ||
+        "";
+
+    request.updatedAt =
+        new Date()
+            .toISOString();
+
+    save(
+        STORAGE.REQUESTS,
+        requests
     );
 }
 
@@ -3627,9 +3958,18 @@ function saveCostSheet() {
         getCosts();
 
 
-    costs.push({
+    const existingCost =
+        costs.find(
+            item =>
+                item.orderId ===
+                    orderId
+        );
+
+
+    const costData = {
 
         costId:
+            existingCost?.costId ||
             createId(
                 "COST"
             ),
@@ -3670,7 +4010,24 @@ function saveCostSheet() {
         issuedAt:
             new Date()
                 .toISOString()
-    });
+    };
+
+
+    if (
+        existingCost
+    ) {
+
+        Object.assign(
+            existingCost,
+            costData
+        );
+
+    } else {
+
+        costs.push(
+            costData
+        );
+    }
 
 
     save(
@@ -3764,6 +4121,30 @@ function completeOrder(
 
         request.completedAt =
             order.completedAt;
+
+
+        request.workerId =
+            order.workerId ||
+            request.workerId ||
+            "";
+
+
+        request.workerName =
+            order.workerName ||
+            request.workerName ||
+            "";
+
+
+        request.bayId =
+            order.bayId ||
+            request.bayId ||
+            "";
+
+
+        request.bayName =
+            order.bayName ||
+            request.bayName ||
+            "";
 
 
         save(
