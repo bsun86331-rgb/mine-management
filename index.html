@@ -15,13 +15,17 @@
         content="#0f172a"
     >
 
-    <title>矿山管理系统</title>
+    <title>
+        矿山管理系统
+    </title>
+
 
     <style>
 
         * {
             box-sizing: border-box;
         }
+
 
         body {
             margin: 0;
@@ -34,6 +38,7 @@
                 sans-serif;
         }
 
+
         header {
             padding: 28px 16px 24px;
             background: #0f172a;
@@ -41,10 +46,12 @@
             text-align: center;
         }
 
+
         header h1 {
             margin: 0;
             font-size: 26px;
         }
+
 
         header p {
             margin: 8px 0 0;
@@ -52,12 +59,14 @@
             opacity: .78;
         }
 
+
         main {
             width: 100%;
             max-width: 760px;
             margin: 0 auto;
             padding: 20px 14px 36px;
         }
+
 
         .welcome {
             margin-bottom: 18px;
@@ -69,11 +78,13 @@
                 rgba(15, 23, 42, .06);
         }
 
+
         .welcome-title {
             margin: 0 0 6px;
             font-size: 17px;
             font-weight: 700;
         }
+
 
         .welcome-text {
             margin: 0;
@@ -82,12 +93,14 @@
             line-height: 1.65;
         }
 
+
         .portal-grid {
             display: grid;
             grid-template-columns:
                 repeat(2, minmax(0, 1fr));
             gap: 14px;
         }
+
 
         .portal-card {
             min-height: 126px;
@@ -106,15 +119,18 @@
                 box-shadow .15s ease;
         }
 
+
         .portal-card:active {
             transform: scale(.98);
         }
+
 
         .portal-icon {
             display: block;
             margin-bottom: 9px;
             font-size: 36px;
         }
+
 
         .portal-title {
             display: block;
@@ -123,6 +139,7 @@
             font-weight: 700;
         }
 
+
         .portal-subtitle {
             display: block;
             color: #64748b;
@@ -130,9 +147,11 @@
             line-height: 1.45;
         }
 
+
         .admin-card {
             border: 1px solid #cbd5e1;
         }
+
 
         footer {
             padding: 20px 15px;
@@ -140,6 +159,7 @@
             color: #94a3b8;
             font-size: 12px;
         }
+
 
         .modal {
             display: none;
@@ -151,11 +171,13 @@
             overflow-y: auto;
         }
 
+
         .modal.show {
             display: flex;
             align-items: center;
             justify-content: center;
         }
+
 
         .modal-card {
             width: 100%;
@@ -167,6 +189,7 @@
             background: #ffffff;
         }
 
+
         .modal-header {
             display: flex;
             align-items: center;
@@ -175,10 +198,12 @@
             margin-bottom: 16px;
         }
 
+
         .modal-title {
             margin: 0;
             font-size: 20px;
         }
+
 
         .close-btn {
             width: 38px;
@@ -192,10 +217,12 @@
             cursor: pointer;
         }
 
+
         .role-list {
             display: grid;
             gap: 10px;
         }
+
 
         .role-btn {
             width: 100%;
@@ -211,15 +238,18 @@
             cursor: pointer;
         }
 
+
         .role-btn:active {
             background: #f8fafc;
         }
+
 
         @media (max-width: 520px) {
 
             .portal-grid {
                 grid-template-columns: 1fr;
             }
+
 
             .portal-card {
                 min-height: 105px;
@@ -250,6 +280,7 @@
 
 <main>
 
+
     <section class="welcome">
 
         <p class="welcome-title">
@@ -257,11 +288,15 @@
         </p>
 
         <p class="welcome-text">
+
             首次使用需要填写个人资料并提交管理员审核。
+
             审核通过后，再次点击自己的岗位即可进入对应工作页面。
+
         </p>
 
     </section>
+
 
 
     <section class="portal-grid">
@@ -290,6 +325,7 @@
         </button>
 
 
+
         <!-- 汽车司机 -->
 
         <button
@@ -311,6 +347,7 @@
             </span>
 
         </button>
+
 
 
         <!-- 辅助车辆 -->
@@ -336,6 +373,7 @@
         </button>
 
 
+
         <!-- 调度 -->
 
         <button
@@ -359,6 +397,7 @@
         </button>
 
 
+
         <!-- 维修 -->
 
         <button
@@ -376,10 +415,11 @@
             </span>
 
             <span class="portal-subtitle">
-                维修管理员 · 修理工独立端口
+                维修管理 · 维修员
             </span>
 
         </button>
+
 
 
         <!-- 中层管理 -->
@@ -405,6 +445,7 @@
         </button>
 
 
+
         <!-- 总经理 -->
 
         <button
@@ -426,6 +467,7 @@
             </span>
 
         </button>
+
 
 
         <!-- 管理员 -->
@@ -453,16 +495,19 @@
 
     </section>
 
+
 </main>
 
 
 <footer>
-    矿山管理系统 · 首页 V2.10.0C
+    矿山管理系统 · 首页 V2.10.0E
 </footer>
 
 
 
-<!-- 岗位选择弹窗 -->
+<!-- =====================================================
+     岗位选择弹窗
+===================================================== -->
 
 <div
     class="modal"
@@ -472,6 +517,7 @@
 
     <div class="modal-card">
 
+
         <div class="modal-header">
 
             <h2
@@ -480,6 +526,7 @@
             >
                 选择岗位
             </h2>
+
 
             <button
                 type="button"
@@ -498,6 +545,7 @@
         >
         </div>
 
+
     </div>
 
 </div>
@@ -510,76 +558,99 @@
 
 
 /* =========================================================
-   岗位对应页面
+   岗位页面
+
+   V2.10.0E
+
+   正式维修岗位只保留：
+
+   维修管理 → maintenance.html
+
+   维修员 → maintenance-worker.html
 ========================================================= */
 
 const POSITION_PAGES = {
 
+
     "挖机司机":
         "excavator.html",
+
 
     "汽车司机":
         "driver-work.html",
 
+
     "铲车司机":
         "auxiliary.html",
+
 
     "加油车司机":
         "fuel.html",
 
+
     "大巴司机":
         "auxiliary.html",
+
 
     "平路机司机":
         "auxiliary.html",
 
+
     "洒水车司机":
         "auxiliary.html",
 
+
     "推土机司机":
         "auxiliary.html",
+
 
     "车队长":
         "dispatch.html",
 
 
+
     /* =====================================================
-       维修端完全分离
+       维修端
+
+       正式只保留两个端口
     ====================================================== */
 
-    "维修管理员":
+    "维修管理":
         "maintenance.html",
 
-    "修理厂管理员":
-        "maintenance.html",
-
-    "修理工":
-        "maintenance-worker.html",
 
     "维修员":
         "maintenance-worker.html",
 
 
+
     "测量员":
         "management.html",
+
 
     "安全员":
         "management.html",
 
+
     "统计":
         "management.html",
+
 
     "会计":
         "management.html",
 
+
     "后勤":
         "management.html",
+
 
     "库房管理":
         "warehouse.html",
 
+
     "总经理":
         "general-manager.html",
+
 
     "管理员":
         "admin-review.html"
@@ -589,7 +660,11 @@ const POSITION_PAGES = {
 
 
 /* =========================================================
-   需要第二次密码验证的岗位
+   二次密码验证岗位
+
+   只有：
+   总经理
+   管理员
 ========================================================= */
 
 const PASSWORD_PROTECTED_POSITIONS = [
@@ -614,6 +689,7 @@ const ROLE_GROUPS = {
         title:
             "选择辅助车辆岗位",
 
+
         roles: [
 
             "铲车司机",
@@ -633,26 +709,34 @@ const ROLE_GROUPS = {
     },
 
 
+
+    /* =====================================================
+       维修岗位只显示两个正式入口
+    ====================================================== */
+
     maintenance: {
 
         title:
             "选择维修岗位",
 
+
         roles: [
 
-            "维修管理员",
+            "维修管理",
 
-            "修理工"
+            "维修员"
 
         ]
 
     },
 
 
+
     management: {
 
         title:
             "选择中层管理岗位",
+
 
         roles: [
 
@@ -677,46 +761,73 @@ const ROLE_GROUPS = {
 
 
 /* =========================================================
-   统一岗位名称
+   岗位标准化
+
+   新系统正式名称：
+
+   维修管理
+   维修员
+
+   老名称只用于兼容历史数据。
 ========================================================= */
 
 function normalizePosition(
     position
 ) {
 
+
     const map = {
+
 
         "卡车司机":
             "汽车司机",
 
+
         "装载机司机":
             "铲车司机",
+
 
         "大巴":
             "大巴司机",
 
+
         "测量人员":
             "测量员",
 
+
         "后勤人员":
             "后勤",
+
 
         "库房管理员":
             "库房管理",
 
 
+
         /* =================================================
-           维修岗位统一名称
+           维修管理旧名称
         ================================================= */
 
-        "维修人员":
-            "修理工",
+        "维修管理员":
+            "维修管理",
 
-        "维修员":
-            "修理工",
 
         "修理厂管理员":
-            "维修管理员",
+            "维修管理",
+
+
+
+        /* =================================================
+           维修员旧名称
+        ================================================= */
+
+        "修理工":
+            "维修员",
+
+
+        "维修人员":
+            "维修员",
+
 
 
         "调度员":
@@ -727,9 +838,15 @@ function normalizePosition(
 
     return (
 
-        map[position] ||
+        map[
+            position
+        ]
 
-        position ||
+        ||
+
+        position
+
+        ||
 
         ""
 
@@ -740,12 +857,14 @@ function normalizePosition(
 
 
 /* =========================================================
-   获取人员资料
+   人员资料
 ========================================================= */
 
 function getPersonnelRecords() {
 
+
     try {
+
 
         const data =
             JSON.parse(
@@ -765,6 +884,7 @@ function getPersonnelRecords() {
     } catch (
         error
     ) {
+
 
         console.error(
             "人员资料读取失败：",
@@ -788,15 +908,24 @@ function getPersonId(
     person
 ) {
 
+
     return (
 
-        person?.personId ||
+        person?.personId
 
-        person?.driverId ||
+        ||
 
-        person?.employeeId ||
+        person?.driverId
 
-        person?.id ||
+        ||
+
+        person?.employeeId
+
+        ||
+
+        person?.id
+
+        ||
 
         ""
 
@@ -807,12 +936,13 @@ function getPersonId(
 
 
 /* =========================================================
-   获取人员审核状态
+   审核状态
 ========================================================= */
 
 function getApprovalState(
     person
 ) {
+
 
     if (
         !person
@@ -821,6 +951,7 @@ function getApprovalState(
         return "missing";
 
     }
+
 
 
     if (
@@ -838,6 +969,7 @@ function getApprovalState(
         return "rejected";
 
     }
+
 
 
     if (
@@ -865,6 +997,7 @@ function getApprovalState(
         return "disabled";
 
     }
+
 
 
     const approved = (
@@ -926,13 +1059,15 @@ function getApprovalState(
 
 
 /* =========================================================
-   是否已经存在已审核管理员
+   是否已经存在管理员
 ========================================================= */
 
 function hasApprovedAdministrator() {
 
+
     return getPersonnelRecords()
         .some(
+
             person =>
 
                 normalizePosition(
@@ -946,6 +1081,7 @@ function hasApprovedAdministrator() {
                     person
                 ) ===
                     "approved"
+
         );
 
 }
@@ -959,6 +1095,7 @@ function hasApprovedAdministrator() {
 function findCurrentProfile(
     position
 ) {
+
 
     const normalizedPosition =
         normalizePosition(
@@ -976,16 +1113,19 @@ function findCurrentProfile(
         );
 
 
+
     /*
-       优先根据 currentPersonId 查找当前人员
-    */
+     * 优先使用当前人员ID
+     */
 
     if (
         currentPersonId
     ) {
 
+
         const person =
             records.find(
+
                 item =>
 
                     getPersonId(
@@ -999,6 +1139,7 @@ function findCurrentProfile(
                         item.position
                     ) ===
                         normalizedPosition
+
             );
 
 
@@ -1013,30 +1154,35 @@ function findCurrentProfile(
     }
 
 
-    /*
-       当前 localStorage 阶段：
 
-       如果该岗位只有一名人员，
-       自动识别该人员。
-    */
+    /*
+     * 当前 localStorage 测试阶段：
+     *
+     * 如果当前岗位只有一名人员，
+     * 自动识别。
+     */
 
     const samePosition =
         records.filter(
+
             item =>
 
                 normalizePosition(
                     item.position
                 ) ===
                     normalizedPosition
+
         );
 
 
     if (
         samePosition.length ===
-            1
+        1
     ) {
 
-        return samePosition[0];
+        return samePosition[
+            0
+        ];
 
     }
 
@@ -1048,12 +1194,13 @@ function findCurrentProfile(
 
 
 /* =========================================================
-   点击岗位
+   选择岗位
 ========================================================= */
 
 function selectPosition(
     position
 ) {
+
 
     const normalizedPosition =
         normalizePosition(
@@ -1073,23 +1220,34 @@ function selectPosition(
     closeRoleModal();
 
 
+
+    /*
+     * 保存的永远是标准岗位名称。
+     *
+     * 例如：
+     *
+     * 修理工
+     * ↓
+     * 维修员
+     */
+
     localStorage.setItem(
         "selectedPosition",
         normalizedPosition
     );
 
 
+
     /* =====================================================
-       首个管理员特殊入口
+       第一个管理员特殊入口
 
-       如果系统当前没有任何已审核管理员：
+       系统没有已审核管理员时：
 
-       点击“管理员”
-       不进入注册页，
-       直接进入管理员密码验证页。
-
+       点击管理员
+       →
        management-login.html
-       会负责建立首个管理员。
+
+       由管理员密码流程建立第一个管理员。
     ====================================================== */
 
     if (
@@ -1102,6 +1260,7 @@ function selectPosition(
         !hasApprovedAdministrator()
 
     ) {
+
 
         clearManagementSession();
 
@@ -1119,7 +1278,9 @@ function selectPosition(
 
         location.href =
 
-            "management-login.html?position=" +
+            "management-login.html?position="
+
+            +
 
             encodeURIComponent(
                 "管理员"
@@ -1129,6 +1290,7 @@ function selectPosition(
         return;
 
     }
+
 
 
     const person =
@@ -1143,24 +1305,25 @@ function selectPosition(
         );
 
 
-    /*
-       没有档案：
 
-       普通人员和后续管理员
-       都进入统一人员登记页。
-    */
+    /* =====================================================
+       没有注册资料
+    ====================================================== */
 
     if (
         state ===
-            "missing"
+        "missing"
     ) {
+
 
         clearManagementSession();
 
 
         location.href =
 
-            "person-register.html?position=" +
+            "person-register.html?position="
+
+            +
 
             encodeURIComponent(
                 normalizedPosition
@@ -1170,6 +1333,7 @@ function selectPosition(
         return;
 
     }
+
 
 
     const personId =
@@ -1182,6 +1346,7 @@ function selectPosition(
         personId
     ) {
 
+
         localStorage.setItem(
             "currentPersonId",
             personId
@@ -1190,21 +1355,25 @@ function selectPosition(
     }
 
 
-    /*
+
+    /* =====================================================
        已驳回
-    */
+    ====================================================== */
 
     if (
         state ===
-            "rejected"
+        "rejected"
     ) {
+
 
         clearManagementSession();
 
 
         location.href =
 
-            "person-register.html?position=" +
+            "person-register.html?position="
+
+            +
 
             encodeURIComponent(
                 normalizedPosition
@@ -1220,14 +1389,16 @@ function selectPosition(
     }
 
 
-    /*
-       已停用 / 离职
-    */
+
+    /* =====================================================
+       停用 / 离职
+    ====================================================== */
 
     if (
         state ===
-            "disabled"
+        "disabled"
     ) {
+
 
         clearManagementSession();
 
@@ -1242,21 +1413,25 @@ function selectPosition(
     }
 
 
-    /*
+
+    /* =====================================================
        等待管理员审核
-    */
+    ====================================================== */
 
     if (
         state ===
-            "pending"
+        "pending"
     ) {
+
 
         clearManagementSession();
 
 
         location.href =
 
-            "person-waiting.html?position=" +
+            "person-waiting.html?position="
+
+            +
 
             encodeURIComponent(
                 normalizedPosition
@@ -1268,14 +1443,16 @@ function selectPosition(
     }
 
 
-    /*
+
+    /* =====================================================
        已审核
-    */
+    ====================================================== */
 
     if (
         state ===
-            "approved"
+        "approved"
     ) {
+
 
         enterApprovedPosition(
             person,
@@ -1297,6 +1474,13 @@ function enterApprovedPosition(
     position
 ) {
 
+
+    const normalizedPosition =
+        normalizePosition(
+            position
+        );
+
+
     const personId =
         getPersonId(
             person
@@ -1306,6 +1490,7 @@ function enterApprovedPosition(
     if (
         !personId
     ) {
+
 
         alert(
             "当前人员缺少人员ID，请重新提交人员资料。"
@@ -1317,6 +1502,7 @@ function enterApprovedPosition(
     }
 
 
+
     localStorage.setItem(
         "currentPersonId",
         personId
@@ -1325,31 +1511,34 @@ function enterApprovedPosition(
 
     localStorage.setItem(
         "selectedPosition",
-        position
+        normalizedPosition
     );
 
 
-    /*
+
+    /* =====================================================
        总经理 / 管理员
-       需要额外密码验证
-    */
+       需要二次密码验证
+    ====================================================== */
 
     if (
         PASSWORD_PROTECTED_POSITIONS.includes(
-            position
+            normalizedPosition
         )
     ) {
+
 
         if (
             hasValidManagementSession(
                 personId,
-                position
+                normalizedPosition
             )
         ) {
 
+
             const page =
                 POSITION_PAGES[
-                    position
+                    normalizedPosition
                 ];
 
 
@@ -1368,6 +1557,7 @@ function enterApprovedPosition(
         }
 
 
+
         localStorage.setItem(
             "pendingProtectedPersonId",
             personId
@@ -1376,16 +1566,18 @@ function enterApprovedPosition(
 
         localStorage.setItem(
             "pendingProtectedPosition",
-            position
+            normalizedPosition
         );
 
 
         location.href =
 
-            "management-login.html?position=" +
+            "management-login.html?position="
+
+            +
 
             encodeURIComponent(
-                position
+                normalizedPosition
             );
 
 
@@ -1394,22 +1586,24 @@ function enterApprovedPosition(
     }
 
 
-    /*
-       普通岗位不需要管理密码
-    */
+
+    /* =====================================================
+       普通岗位直接进入对应工作端
+    ====================================================== */
 
     clearManagementSession();
 
 
     const page =
         POSITION_PAGES[
-            position
+            normalizedPosition
         ];
 
 
     if (
         !page
     ) {
+
 
         alert(
             "该岗位工作页面正在建设中。"
@@ -1429,7 +1623,7 @@ function enterApprovedPosition(
 
 
 /* =========================================================
-   检查管理会话
+   管理会话
 ========================================================= */
 
 function hasValidManagementSession(
@@ -1437,7 +1631,9 @@ function hasValidManagementSession(
     position
 ) {
 
+
     try {
+
 
         const session =
             JSON.parse(
@@ -1489,6 +1685,7 @@ function hasValidManagementSession(
         error
     ) {
 
+
         sessionStorage.removeItem(
             "managementSession"
         );
@@ -1507,6 +1704,7 @@ function hasValidManagementSession(
 ========================================================= */
 
 function clearManagementSession() {
+
 
     sessionStorage.removeItem(
         "managementSession"
@@ -1527,12 +1725,13 @@ function clearManagementSession() {
 
 
 /* =========================================================
-   打开岗位选择弹窗
+   打开岗位弹窗
 ========================================================= */
 
 function openRoleModal(
     groupName
 ) {
+
 
     const group =
         ROLE_GROUPS[
@@ -1564,6 +1763,7 @@ function openRoleModal(
     container.innerHTML =
         group.roles
             .map(
+
                 role => `
 
                     <button
@@ -1575,6 +1775,7 @@ function openRoleModal(
                     </button>
 
                 `
+
             )
             .join(
                 ""
@@ -1597,6 +1798,7 @@ function openRoleModal(
 
 function closeRoleModal() {
 
+
     document.getElementById(
         "roleModal"
     ).classList.remove(
@@ -1608,16 +1810,17 @@ function closeRoleModal() {
 
 
 /* =========================================================
-   点击背景关闭岗位弹窗
+   点击背景关闭
 ========================================================= */
 
 function handleModalBackground(
     event
 ) {
 
+
     if (
         event.target.id ===
-            "roleModal"
+        "roleModal"
     ) {
 
         closeRoleModal();
@@ -1633,14 +1836,17 @@ function handleModalBackground(
 ========================================================= */
 
 document.addEventListener(
+
     "keydown",
+
     function (
         event
     ) {
 
+
         if (
             event.key ===
-                "Escape"
+            "Escape"
         ) {
 
             closeRoleModal();
@@ -1648,6 +1854,7 @@ document.addEventListener(
         }
 
     }
+
 );
 
 </script>
