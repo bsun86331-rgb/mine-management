@@ -669,7 +669,7 @@
 
 
 <footer>
-    矿山管理系统 · 统一人员注册 V2.10.0D
+    矿山管理系统 · 统一人员注册 V2.10.0U
 </footer>
 
 
@@ -706,6 +706,9 @@ const POSITION_ALIASES = {
 
     "卡车司机":
         "汽车司机",
+
+    "挖掘机司机":
+        "挖机司机",
 
     "装载机司机":
         "铲车司机",
@@ -969,7 +972,7 @@ function getPersonId(
     person
 ) {
 
-    return (
+    return String(
 
         person?.personId
 
@@ -1012,7 +1015,17 @@ function findExistingProfile() {
         getPersonnelRecords();
 
 
+    const waitingApplicantPersonId =
+        localStorage.getItem(
+            "waitingApplicantPersonId"
+        );
+
+
     const currentPersonId =
+        waitingApplicantPersonId
+
+        ||
+
         localStorage.getItem(
             "currentPersonId"
         );
@@ -1035,10 +1048,14 @@ function findExistingProfile() {
 
             person =>
 
-                getPersonId(
-                    person
+                String(
+                    getPersonId(
+                        person
+                    )
                 ) ===
-                    currentPersonId
+                    String(
+                        currentPersonId
+                    )
 
                 &&
 
@@ -2150,10 +2167,14 @@ async function submitRegistration() {
 
                 item =>
 
-                    getPersonId(
-                        item
+                    String(
+                        getPersonId(
+                            item
+                        )
                     ) ===
-                    personId
+                    String(
+                        personId
+                    )
 
             );
 
@@ -2182,9 +2203,35 @@ async function submitRegistration() {
         );
 
 
+        /*
+         * V2.10.0U
+         * 为等待审核流程保存独立身份。
+         *
+         * 以后管理员登录、岗位切换、管理页面都不应该影响这两个值。
+         * person-waiting.html 将优先使用它们锁定当前申请人。
+         */
+        localStorage.setItem(
+            "waitingApplicantPersonId",
+            String(
+                personId
+            )
+        );
+
+
+        localStorage.setItem(
+            "waitingApplicantPosition",
+            selectedPosition
+        );
+
+
+        /*
+         * 继续保留旧字段，兼容当前其他页面。
+         */
         localStorage.setItem(
             "currentPersonId",
-            personId
+            String(
+                personId
+            )
         );
 
 
@@ -2217,6 +2264,18 @@ async function submitRegistration() {
 
             encodeURIComponent(
                 selectedPosition
+            )
+
+            +
+
+            "&personId="
+
+            +
+
+            encodeURIComponent(
+                String(
+                    personId
+                )
             );
 
 
