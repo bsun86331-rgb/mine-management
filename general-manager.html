@@ -12,7 +12,7 @@
 
     <meta name="theme-color" content="#0f172a">
 
-    <title>总经理审批中心</title>
+    <title>总经理经营驾驶舱与审批中心</title>
 
 
     <!-- =====================================================
@@ -206,7 +206,268 @@
 
         }
 
-    </style>
+    
+        /* =====================================================
+           V2.10.1I 总经理经营驾驶舱
+        ====================================================== */
+
+        .gm-business-note {
+            margin-top: 15px;
+            padding: 12px 14px;
+            background: #f5f3ff;
+            border: 1px solid #ddd6fe;
+            border-radius: 10px;
+            color: #5b21b6;
+            font-size: 13px;
+            line-height: 1.7;
+        }
+
+        .gm-business-kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .gm-business-kpi {
+            padding: 14px;
+            border-radius: 12px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+        }
+
+        .gm-business-kpi span {
+            display: block;
+            color: #64748b;
+            font-size: 12px;
+            margin-bottom: 6px;
+        }
+
+        .gm-business-kpi strong {
+            display: block;
+            font-size: 22px;
+            color: #0f172a;
+        }
+
+        .gm-business-kpi small {
+            display: block;
+            margin-top: 5px;
+            color: #94a3b8;
+            font-size: 11px;
+        }
+
+        .gm-business-grid {
+            display: grid;
+            grid-template-columns: 1.1fr .9fr;
+            gap: 15px;
+        }
+
+        .gm-donut-wrap {
+            display: flex;
+            align-items: center;
+            gap: 24px;
+            flex-wrap: wrap;
+        }
+
+        .gm-donut {
+            width: 280px;
+            height: 280px;
+            border-radius: 50%;
+            position: relative;
+            flex: 0 0 auto;
+            background: conic-gradient(#e2e8f0 0 100%);
+        }
+
+        .gm-donut::after {
+            content: "";
+            position: absolute;
+            inset: 52px;
+            background: #ffffff;
+            border-radius: 50%;
+            box-shadow: inset 0 0 0 1px #e2e8f0;
+        }
+
+        .gm-donut-center {
+            position: absolute;
+            inset: 0;
+            z-index: 2;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            text-align: center;
+            pointer-events: none;
+        }
+
+        .gm-donut-center span {
+            color: #64748b;
+            font-size: 12px;
+        }
+
+        .gm-donut-center strong {
+            margin-top: 4px;
+            font-size: 24px;
+            color: #0f172a;
+        }
+
+        .gm-donut-center small {
+            margin-top: 4px;
+            color: #64748b;
+            font-size: 11px;
+        }
+
+        .gm-cost-legend {
+            min-width: 230px;
+            flex: 1;
+            display: grid;
+            gap: 8px;
+        }
+
+        .gm-legend-row {
+            display: grid;
+            grid-template-columns: 14px 1fr auto;
+            gap: 8px;
+            align-items: center;
+            font-size: 13px;
+        }
+
+        .gm-legend-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 3px;
+        }
+
+        .gm-business-form-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 10px;
+        }
+
+        .gm-business-form-grid label {
+            display: block;
+            font-size: 12px;
+            font-weight: 700;
+            color: #334155;
+        }
+
+        .gm-business-form-grid input {
+            width: 100%;
+            min-height: 40px;
+            margin-top: 6px;
+            padding: 8px 10px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            background: #ffffff;
+            font-size: 14px;
+        }
+
+        .gm-business-actions {
+            margin-top: 12px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .gm-business-actions button {
+            width: auto;
+        }
+
+        .gm-business-primary {
+            background: #2563eb;
+            color: #ffffff;
+        }
+
+        .gm-business-secondary {
+            background: #ffffff;
+            color: #334155;
+            border: 1px solid #cbd5e1;
+        }
+
+        .gm-cost-table-wrap {
+            overflow-x: auto;
+        }
+
+        .gm-cost-table {
+            width: 100%;
+            min-width: 760px;
+            border-collapse: collapse;
+        }
+
+        .gm-cost-table th,
+        .gm-cost-table td {
+            padding: 10px 9px;
+            border-bottom: 1px solid #e2e8f0;
+            text-align: left;
+            font-size: 13px;
+        }
+
+        .gm-cost-table th {
+            background: #f8fafc;
+            color: #475569;
+        }
+
+        .gm-quick-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 10px;
+        }
+
+        .gm-quick-card {
+            padding: 13px;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            background: #f8fafc;
+        }
+
+        .gm-quick-card h3 {
+            margin: 0 0 6px;
+            font-size: 15px;
+        }
+
+        .gm-quick-card p {
+            margin: 0 0 10px;
+            color: #64748b;
+            font-size: 12px;
+            line-height: 1.6;
+        }
+
+        .gm-profit-positive {
+            color: #166534 !important;
+        }
+
+        .gm-profit-negative {
+            color: #991b1b !important;
+        }
+
+        @media (max-width: 900px) {
+            .gm-business-kpi-grid,
+            .gm-quick-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
+            .gm-business-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 700px) {
+            .gm-business-kpi-grid,
+            .gm-business-form-grid,
+            .gm-quick-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .gm-donut {
+                width: 240px;
+                height: 240px;
+            }
+
+            .gm-donut::after {
+                inset: 45px;
+            }
+        }
+
+</style>
 
 </head>
 
@@ -219,18 +480,18 @@
     <div>
 
         <h1>
-            👔 总经理审批中心
+            👔 总经理经营驾驶舱与审批中心
         </h1>
 
         <p>
-            General Manager Approval Center
+            General Manager Business & Approval Center
         </p>
 
     </div>
 
 
     <span>
-        V2.9.6
+        V2.10.1I
     </span>
 
 </header>
@@ -266,7 +527,409 @@
 </div>
 
 
+
 <main class="gm-main">
+
+
+    <!-- =====================================================
+         V2.10.1I 总经理经营驾驶舱
+    ====================================================== -->
+
+    <section class="gm-card">
+
+        <div class="section-title">
+
+            <div>
+
+                <h2>
+                    📈 经营驾驶舱
+                </h2>
+
+                <p>
+                    收入、各项费用、利润及费用率统一汇总
+                </p>
+
+            </div>
+
+            <span
+                id="gmProfitStatus"
+                class="count-badge"
+            >
+                计算中
+            </span>
+
+        </div>
+
+
+        <div class="gm-business-kpi-grid">
+
+            <div class="gm-business-kpi">
+                <span>有效运输车数</span>
+                <strong id="gmBusinessTripCount">0</strong>
+                <small>车</small>
+            </div>
+
+            <div class="gm-business-kpi">
+                <span>本期收入</span>
+                <strong id="gmBusinessRevenue">0</strong>
+                <small>元</small>
+            </div>
+
+            <div class="gm-business-kpi">
+                <span>本期总费用</span>
+                <strong id="gmBusinessTotalCost">0</strong>
+                <small>元</small>
+            </div>
+
+            <div class="gm-business-kpi">
+                <span>经营利润</span>
+                <strong id="gmBusinessProfit">0</strong>
+                <small id="gmBusinessProfitRate">利润率 0%</small>
+            </div>
+
+        </div>
+
+
+        <div class="gm-business-note">
+
+            当前按你确定的规则计算：
+
+            <strong>
+                收入 = 有效运输车数 × 每方综合单价
+            </strong>
+
+            <br>
+
+            后续如果需要把“每车均方”也加入收入公式，
+            可以在 V3.0 数据库阶段再统一调整。
+
+        </div>
+
+    </section>
+
+
+    <div class="gm-business-grid">
+
+        <section class="gm-card">
+
+            <div class="section-title">
+
+                <div>
+
+                    <h2>
+                        ⭕ 收入与各项费用占比
+                    </h2>
+
+                    <p>
+                        以本期收入为 100%，显示各项费用占收入比例
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <div class="gm-donut-wrap">
+
+                <div
+                    id="gmCostDonut"
+                    class="gm-donut"
+                >
+
+                    <div class="gm-donut-center">
+
+                        <span>本期收入</span>
+
+                        <strong id="gmDonutRevenue">
+                            0
+                        </strong>
+
+                        <small id="gmDonutProfit">
+                            利润 0
+                        </small>
+
+                    </div>
+
+                </div>
+
+
+                <div
+                    id="gmCostLegend"
+                    class="gm-cost-legend"
+                >
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <section class="gm-card">
+
+            <div class="section-title">
+
+                <div>
+
+                    <h2>
+                        ⚙️ 经营参数
+                    </h2>
+
+                    <p>
+                        按月份维护综合单价和本期费用
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <div class="gm-business-form-grid">
+
+                <label>
+                    统计月份
+                    <input
+                        id="gmBusinessMonth"
+                        type="month"
+                    >
+                </label>
+
+                <label>
+                    每方综合单价
+                    <input
+                        id="gmComprehensiveUnitPrice"
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        placeholder="元 / 方"
+                    >
+                </label>
+
+                <label>
+                    工资费用
+                    <input
+                        id="gmSalaryCost"
+                        type="number"
+                        min="0"
+                        step="0.01"
+                    >
+                </label>
+
+                <label>
+                    柴油费用
+                    <input
+                        id="gmFuelCost"
+                        type="number"
+                        min="0"
+                        step="0.01"
+                    >
+                </label>
+
+                <label>
+                    维修费用
+                    <input
+                        id="gmMaintenanceCost"
+                        type="number"
+                        min="0"
+                        step="0.01"
+                    >
+                </label>
+
+                <label>
+                    折旧费用
+                    <input
+                        id="gmDepreciationCost"
+                        type="number"
+                        min="0"
+                        step="0.01"
+                    >
+                </label>
+
+                <label>
+                    税费
+                    <input
+                        id="gmTaxCost"
+                        type="number"
+                        min="0"
+                        step="0.01"
+                    >
+                </label>
+
+                <label>
+                    均摊费用
+                    <input
+                        id="gmSharedCost"
+                        type="number"
+                        min="0"
+                        step="0.01"
+                    >
+                </label>
+
+                <label>
+                    财务费用
+                    <input
+                        id="gmFinanceCost"
+                        type="number"
+                        min="0"
+                        step="0.01"
+                    >
+                </label>
+
+                <label>
+                    其他费用
+                    <input
+                        id="gmOtherCost"
+                        type="number"
+                        min="0"
+                        step="0.01"
+                    >
+                </label>
+
+            </div>
+
+
+            <div class="gm-business-actions">
+
+                <button
+                    type="button"
+                    class="gm-business-primary"
+                    onclick="saveGeneralManagerBusinessData()"
+                >
+                    保存并重新计算
+                </button>
+
+                <button
+                    type="button"
+                    class="gm-business-secondary"
+                    onclick="location.href='report-center.html'"
+                >
+                    打开综合报表
+                </button>
+
+            </div>
+
+        </section>
+
+    </div>
+
+
+    <section class="gm-card">
+
+        <div class="section-title">
+
+            <div>
+
+                <h2>
+                    🧮 费用率分析
+                </h2>
+
+                <p>
+                    金额及占本期收入比例
+                </p>
+
+            </div>
+
+        </div>
+
+
+        <div class="gm-cost-table-wrap">
+
+            <table class="gm-cost-table">
+
+                <thead>
+
+                    <tr>
+                        <th>费用项目</th>
+                        <th>金额</th>
+                        <th>占收入比例</th>
+                        <th>说明</th>
+                    </tr>
+
+                </thead>
+
+                <tbody id="gmCostRateTable">
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </section>
+
+
+    <section class="gm-card">
+
+        <div class="section-title">
+
+            <div>
+
+                <h2>
+                    ⚡ 总经理快捷入口
+                </h2>
+
+                <p>
+                    经营、工资、物资、考勤统一入口
+                </p>
+
+            </div>
+
+        </div>
+
+
+        <div class="gm-quick-grid">
+
+            <div class="gm-quick-card">
+                <h3>📊 综合报表中心</h3>
+                <p>工资、生产、维修、加油、折旧、财务、排名和考勤。</p>
+                <button
+                    type="button"
+                    class="gm-business-secondary"
+                    onclick="location.href='report-center.html'"
+                >
+                    进入
+                </button>
+            </div>
+
+            <div class="gm-quick-card">
+                <h3>💰 工资标准</h3>
+                <p>基本工资、绩效单价及绩效奖扣规则。</p>
+                <button
+                    type="button"
+                    class="gm-business-secondary"
+                    onclick="location.href='payroll-settings.html'"
+                >
+                    进入
+                </button>
+            </div>
+
+            <div class="gm-quick-card">
+                <h3>📦 后勤物资</h3>
+                <p>库存、领用、回收、报废和丢失核销。</p>
+                <button
+                    type="button"
+                    class="gm-business-secondary"
+                    onclick="location.href='warehouse.html'"
+                >
+                    进入
+                </button>
+            </div>
+
+            <div class="gm-quick-card">
+                <h3>📍 考勤中心</h3>
+                <p>定位打卡、请假和零产量异常报备。</p>
+                <button
+                    type="button"
+                    class="gm-business-secondary"
+                    onclick="location.href='attendance.html'"
+                >
+                    进入
+                </button>
+            </div>
+
+        </div>
+
+    </section>
+
+
 
 
     <!-- =====================================================
@@ -478,7 +1141,7 @@
 
 <footer>
 
-    矿山管理系统 · 总经理审批端 V2.9.6
+    矿山管理系统 · 总经理经营驾驶舱与审批端 V2.10.1I
 
 </footer>
 
@@ -490,6 +1153,1061 @@
 <script
     src="js/general-manager.js?v=2.9.3"
 ></script>
+
+<script>
+"use strict";
+
+/* =====================================================
+   V2.10.1I 总经理经营驾驶舱
+===================================================== */
+
+const GM_BUSINESS_SETTINGS_KEY =
+    "generalManagerBusinessSettings";
+
+const GM_BUSINESS_COST_KEY =
+    "generalManagerCostInputs";
+
+
+const GM_COST_ITEMS = [
+
+    {
+        key: "gmSalaryCost",
+        storageKey: "salaryCost",
+        label: "工资费用",
+        color: "#2563eb",
+        note: "固定工资 + 绩效工资 + 奖励 - 扣款"
+    },
+
+    {
+        key: "gmFuelCost",
+        storageKey: "fuelCost",
+        label: "柴油费用",
+        color: "#f59e0b",
+        note: "柴油采购与实际消耗成本"
+    },
+
+    {
+        key: "gmMaintenanceCost",
+        storageKey: "maintenanceCost",
+        label: "维修费用",
+        color: "#dc2626",
+        note: "工时费 + 配件费 + 外修费 + 其他维修费用"
+    },
+
+    {
+        key: "gmDepreciationCost",
+        storageKey: "depreciationCost",
+        label: "折旧费用",
+        color: "#7c3aed",
+        note: "设备月度折旧"
+    },
+
+    {
+        key: "gmTaxCost",
+        storageKey: "taxCost",
+        label: "税费",
+        color: "#0891b2",
+        note: "财务录入税费"
+    },
+
+    {
+        key: "gmSharedCost",
+        storageKey: "sharedCost",
+        label: "均摊费用",
+        color: "#db2777",
+        note: "住宿、管理及其他均摊费用"
+    },
+
+    {
+        key: "gmFinanceCost",
+        storageKey: "financeCost",
+        label: "财务费用",
+        color: "#475569",
+        note: "财务相关费用"
+    },
+
+    {
+        key: "gmOtherCost",
+        storageKey: "otherCost",
+        label: "其他费用",
+        color: "#78716c",
+        note: "其他已确认费用"
+    }
+
+];
+
+
+function gmReadArray(
+    key
+) {
+
+    try {
+
+        const data =
+            JSON.parse(
+                localStorage.getItem(
+                    key
+                )
+            );
+
+
+        return Array.isArray(
+            data
+        )
+            ? data
+            : [];
+
+    } catch (
+        error
+    ) {
+
+        return [];
+    }
+}
+
+
+function gmReadObject(
+    key
+) {
+
+    try {
+
+        const data =
+            JSON.parse(
+                localStorage.getItem(
+                    key
+                )
+            );
+
+
+        return (
+            data &&
+            typeof data === "object" &&
+            !Array.isArray(data)
+        )
+            ? data
+            : {};
+
+    } catch (
+        error
+    ) {
+
+        return {};
+    }
+}
+
+
+function gmCurrentMonth() {
+
+    const date =
+        new Date();
+
+
+    return new Date(
+        date.getTime() -
+        date.getTimezoneOffset() * 60000
+    )
+        .toISOString()
+        .slice(
+            0,
+            7
+        );
+}
+
+
+function gmSelectedMonth() {
+
+    return (
+        document
+            .getElementById(
+                "gmBusinessMonth"
+            )
+            ?.value
+
+        ||
+
+        gmCurrentMonth()
+    );
+}
+
+
+function gmRecordMonth(
+    value
+) {
+
+    if (
+        !value
+    ) {
+
+        return "";
+    }
+
+
+    return String(
+        value
+    ).slice(
+        0,
+        7
+    );
+}
+
+
+/*
+ * 有效运输车数
+ *
+ * V2.x 兼容读取常见本地运输记录键。
+ * V3.0 后改为数据库统一查询。
+ */
+function gmGetTripCount() {
+
+    const month =
+        gmSelectedMonth();
+
+
+    const keys = [
+
+        "tripRecords",
+
+        "driverTripRecords",
+
+        "transportRecords"
+
+    ];
+
+
+    let total =
+        0;
+
+
+    keys.forEach(
+        key => {
+
+            gmReadArray(
+                key
+            )
+                .forEach(
+                    item => {
+
+                        const recordMonth =
+                            gmRecordMonth(
+
+                                item.date
+
+                                ||
+
+                                item.workDate
+
+                                ||
+
+                                item.createdAt
+
+                                ||
+
+                                item.completedAt
+
+                            );
+
+
+                        if (
+                            recordMonth !==
+                            month
+                        ) {
+
+                            return;
+                        }
+
+
+                        total +=
+                            Number(
+
+                                item.tripCount
+
+                                ||
+
+                                item.count
+
+                                ||
+
+                                item.completedTrips
+
+                                ||
+
+                                1
+
+                            );
+                    }
+                );
+        }
+    );
+
+
+    return total;
+}
+
+
+/*
+ * 自动读取维修费用
+ */
+function gmGetAutomaticMaintenanceCost() {
+
+    const month =
+        gmSelectedMonth();
+
+
+    return gmReadArray(
+        "maintenanceCosts"
+    )
+        .filter(
+            item =>
+
+                gmRecordMonth(
+
+                    item.issuedAt
+
+                    ||
+
+                    item.createdAt
+
+                    ||
+
+                    item.updatedAt
+
+                ) ===
+                month
+        )
+        .reduce(
+            (
+                sum,
+                item
+            ) =>
+
+                sum +
+                Number(
+                    item.totalCost ||
+                    0
+                ),
+
+            0
+        );
+}
+
+
+function gmLoadBusinessData() {
+
+    const settings =
+        gmReadObject(
+            GM_BUSINESS_SETTINGS_KEY
+        );
+
+
+    const costs =
+        gmReadObject(
+            GM_BUSINESS_COST_KEY
+        );
+
+
+    document
+        .getElementById(
+            "gmBusinessMonth"
+        )
+        .value =
+            settings.reportMonth ||
+            gmCurrentMonth();
+
+
+    document
+        .getElementById(
+            "gmComprehensiveUnitPrice"
+        )
+        .value =
+            Number(
+                settings.comprehensiveUnitPrice ||
+                0
+            );
+
+
+    GM_COST_ITEMS
+        .forEach(
+            item => {
+
+                document
+                    .getElementById(
+                        item.key
+                    )
+                    .value =
+                        Number(
+                            costs[
+                                item.storageKey
+                            ] ||
+                            0
+                        );
+            }
+        );
+
+
+    const automaticMaintenance =
+        gmGetAutomaticMaintenanceCost();
+
+
+    if (
+        automaticMaintenance >
+        0
+    ) {
+
+        document
+            .getElementById(
+                "gmMaintenanceCost"
+            )
+            .value =
+                automaticMaintenance
+                    .toFixed(
+                        2
+                    );
+    }
+}
+
+
+function saveGeneralManagerBusinessData() {
+
+    const settings = {
+
+        reportMonth:
+            gmSelectedMonth(),
+
+        comprehensiveUnitPrice:
+            Number(
+                document
+                    .getElementById(
+                        "gmComprehensiveUnitPrice"
+                    )
+                    .value ||
+                0
+            ),
+
+        updatedAt:
+            new Date()
+                .toISOString()
+    };
+
+
+    const costs = {
+
+        reportMonth:
+            gmSelectedMonth(),
+
+        updatedAt:
+            new Date()
+                .toISOString()
+    };
+
+
+    GM_COST_ITEMS
+        .forEach(
+            item => {
+
+                costs[
+                    item.storageKey
+                ] =
+                    Number(
+                        document
+                            .getElementById(
+                                item.key
+                            )
+                            .value ||
+                        0
+                    );
+            }
+        );
+
+
+    localStorage.setItem(
+        GM_BUSINESS_SETTINGS_KEY,
+        JSON.stringify(
+            settings
+        )
+    );
+
+
+    localStorage.setItem(
+        GM_BUSINESS_COST_KEY,
+        JSON.stringify(
+            costs
+        )
+    );
+
+
+    gmRefreshBusinessDashboard();
+
+
+    alert(
+        "经营参数和费用数据已保存。"
+    );
+}
+
+
+function gmGetCosts() {
+
+    return GM_COST_ITEMS
+        .map(
+            item => ({
+
+                ...item,
+
+                amount:
+                    Number(
+                        document
+                            .getElementById(
+                                item.key
+                            )
+                            .value ||
+                        0
+                    )
+            })
+        );
+}
+
+
+function gmMoney(
+    value
+) {
+
+    return Number(
+        value ||
+        0
+    )
+        .toLocaleString(
+            "zh-CN",
+            {
+                maximumFractionDigits: 2
+            }
+        );
+}
+
+
+function gmRefreshBusinessDashboard() {
+
+    const tripCount =
+        gmGetTripCount();
+
+
+    const unitPrice =
+        Number(
+            document
+                .getElementById(
+                    "gmComprehensiveUnitPrice"
+                )
+                .value ||
+            0
+        );
+
+
+    /*
+     * 按用户当前确定的规则：
+     *
+     * 收入 = 车数 × 每方综合单价
+     */
+    const revenue =
+        tripCount *
+        unitPrice;
+
+
+    const costs =
+        gmGetCosts();
+
+
+    const totalCost =
+        costs.reduce(
+            (
+                sum,
+                item
+            ) =>
+
+                sum +
+                item.amount,
+
+            0
+        );
+
+
+    const profit =
+        revenue -
+        totalCost;
+
+
+    const profitRate =
+        revenue >
+        0
+
+            ?
+
+            profit /
+            revenue *
+            100
+
+            :
+
+            0;
+
+
+    document
+        .getElementById(
+            "gmBusinessTripCount"
+        )
+        .textContent =
+            gmMoney(
+                tripCount
+            );
+
+
+    document
+        .getElementById(
+            "gmBusinessRevenue"
+        )
+        .textContent =
+            gmMoney(
+                revenue
+            );
+
+
+    document
+        .getElementById(
+            "gmBusinessTotalCost"
+        )
+        .textContent =
+            gmMoney(
+                totalCost
+            );
+
+
+    const profitElement =
+        document
+            .getElementById(
+                "gmBusinessProfit"
+            );
+
+
+    profitElement
+        .textContent =
+            gmMoney(
+                profit
+            );
+
+
+    profitElement
+        .className =
+            profit >=
+            0
+
+                ?
+
+                "gm-profit-positive"
+
+                :
+
+                "gm-profit-negative";
+
+
+    document
+        .getElementById(
+            "gmBusinessProfitRate"
+        )
+        .textContent =
+            "利润率 " +
+            profitRate
+                .toFixed(
+                    1
+                ) +
+            "%";
+
+
+    const statusElement =
+        document
+            .getElementById(
+                "gmProfitStatus"
+            );
+
+
+    statusElement
+        .textContent =
+            profit >=
+            0
+
+                ?
+
+                "盈利"
+
+                :
+
+                "亏损";
+
+
+    document
+        .getElementById(
+            "gmDonutRevenue"
+        )
+        .textContent =
+            gmMoney(
+                revenue
+            );
+
+
+    document
+        .getElementById(
+            "gmDonutProfit"
+        )
+        .textContent =
+            (
+                profit >=
+                0
+
+                    ?
+
+                    "利润 "
+
+                    :
+
+                    "亏损 "
+            )
+
+            +
+
+            gmMoney(
+                Math.abs(
+                    profit
+                )
+            );
+
+
+    gmRenderDonut(
+        revenue,
+        costs,
+        profit
+    );
+
+
+    gmRenderCostRateTable(
+        revenue,
+        costs
+    );
+}
+
+
+function gmRenderDonut(
+    revenue,
+    costs,
+    profit
+) {
+
+    const donut =
+        document
+            .getElementById(
+                "gmCostDonut"
+            );
+
+
+    const legend =
+        document
+            .getElementById(
+                "gmCostLegend"
+            );
+
+
+    if (
+        revenue <=
+        0
+    ) {
+
+        donut
+            .style
+            .background =
+                "conic-gradient(#e2e8f0 0 100%)";
+
+
+        legend
+            .innerHTML =
+                '<div style="color:#64748b;font-size:13px;">当前没有收入数据，请先录入综合单价并确认运输车数。</div>';
+
+
+        return;
+    }
+
+
+    let cursor =
+        0;
+
+
+    const parts =
+        [];
+
+
+    const rows =
+        [];
+
+
+    costs
+        .forEach(
+            item => {
+
+                const percentage =
+                    Math.max(
+                        0,
+                        item.amount /
+                        revenue *
+                        100
+                    );
+
+
+                if (
+                    percentage <=
+                    0
+                ) {
+
+                    return;
+                }
+
+
+                const start =
+                    cursor;
+
+
+                const end =
+                    Math.min(
+                        100,
+                        cursor +
+                        percentage
+                    );
+
+
+                if (
+                    start <
+                    100
+                ) {
+
+                    parts.push(
+
+                        item.color +
+                        " " +
+                        start +
+                        "% " +
+                        end +
+                        "%"
+
+                    );
+                }
+
+
+                cursor +=
+                    percentage;
+
+
+                rows.push(
+                    `
+                    <div class="gm-legend-row">
+
+                        <i
+                            class="gm-legend-dot"
+                            style="background:${item.color}"
+                        ></i>
+
+                        <span>
+                            ${item.label}
+                        </span>
+
+                        <strong>
+                            ${percentage.toFixed(1)}%
+                        </strong>
+
+                    </div>
+                    `
+                );
+            }
+        );
+
+
+    const profitPercentage =
+        Math.max(
+            0,
+            profit /
+            revenue *
+            100
+        );
+
+
+    if (
+        cursor <
+        100
+    ) {
+
+        parts.push(
+
+            "#16a34a " +
+            cursor +
+            "% 100%"
+
+        );
+
+
+        rows.push(
+            `
+            <div class="gm-legend-row">
+
+                <i
+                    class="gm-legend-dot"
+                    style="background:#16a34a"
+                ></i>
+
+                <span>
+                    经营利润
+                </span>
+
+                <strong>
+                    ${profitPercentage.toFixed(1)}%
+                </strong>
+
+            </div>
+            `
+        );
+
+    } else if (
+        cursor >
+        100
+    ) {
+
+        rows.push(
+            `
+            <div class="gm-legend-row">
+
+                <i
+                    class="gm-legend-dot"
+                    style="background:#dc2626"
+                ></i>
+
+                <span>
+                    费用超过收入
+                </span>
+
+                <strong>
+                    ${(cursor - 100).toFixed(1)}%
+                </strong>
+
+            </div>
+            `
+        );
+    }
+
+
+    donut
+        .style
+        .background =
+            "conic-gradient(" +
+            (
+                parts.join(
+                    ","
+                )
+
+                ||
+
+                "#e2e8f0 0 100%"
+            )
+            +
+            ")";
+
+
+    legend
+        .innerHTML =
+            rows.join(
+                ""
+            );
+}
+
+
+function gmRenderCostRateTable(
+    revenue,
+    costs
+) {
+
+    const body =
+        document
+            .getElementById(
+                "gmCostRateTable"
+            );
+
+
+    body
+        .innerHTML =
+            costs
+                .map(
+                    item => {
+
+                        const percentage =
+                            revenue >
+                            0
+
+                                ?
+
+                                item.amount /
+                                revenue *
+                                100
+
+                                :
+
+                                0;
+
+
+                        return `
+                            <tr>
+                                <td>${item.label}</td>
+                                <td>${gmMoney(item.amount)}</td>
+                                <td>${percentage.toFixed(2)}%</td>
+                                <td>${item.note}</td>
+                            </tr>
+                        `;
+                    }
+                )
+                .join(
+                    ""
+                );
+}
+
+
+document
+    .getElementById(
+        "gmBusinessMonth"
+    )
+    ?.addEventListener(
+        "change",
+        function () {
+
+            const settings =
+                gmReadObject(
+                    GM_BUSINESS_SETTINGS_KEY
+                );
+
+
+            settings.reportMonth =
+                gmSelectedMonth();
+
+
+            localStorage.setItem(
+                GM_BUSINESS_SETTINGS_KEY,
+                JSON.stringify(
+                    settings
+                )
+            );
+
+
+            gmLoadBusinessData();
+
+            gmRefreshBusinessDashboard();
+        }
+    );
+
+
+gmLoadBusinessData();
+
+gmRefreshBusinessDashboard();
+
+</script>
 
 
 <script>
