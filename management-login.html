@@ -362,7 +362,7 @@
 
         <div class="notice">
 
-            当前为 V2.9 本地测试版。
+            当前为 V2.10.0T 本地测试版。
 
             管理密码暂时只用于测试整个权限流程。
 
@@ -378,7 +378,7 @@
 
 
 <footer>
-    矿山管理系统 · 管理权限验证 V2.9.7
+    矿山管理系统 · 管理权限验证 V2.10.0T
 </footer>
 
 
@@ -480,11 +480,13 @@ if (
 
 function getPersonId(person) {
 
-    return (
+    return String(
 
         person?.personId ||
 
         person?.driverId ||
+
+        person?.employeeId ||
 
         person?.id ||
 
@@ -667,8 +669,12 @@ function getCurrentPerson() {
             records.find(
                 item =>
 
-                    getPersonId(item) ===
-                        pendingId &&
+                    String(
+                        getPersonId(item)
+                    ) ===
+                        String(
+                            pendingId
+                        ) &&
 
                     item.position ===
                         position
@@ -696,8 +702,12 @@ function getCurrentPerson() {
             records.find(
                 item =>
 
-                    getPersonId(item) ===
-                        currentPersonId &&
+                    String(
+                        getPersonId(item)
+                    ) ===
+                        String(
+                            currentPersonId
+                        ) &&
 
                     item.position ===
                         position
@@ -1213,6 +1223,11 @@ document.getElementById(
 
 /* =========================================================
    建立30分钟管理会话
+
+   V2.10.0T：
+   管理员身份与普通申请人身份隔离。
+   管理员只使用 sessionStorage.managementSession，
+   不覆盖 localStorage.currentPersonId。
 ========================================================= */
 
 function establishSession(
@@ -1276,16 +1291,52 @@ function establishSession(
     );
 
 
-    localStorage.setItem(
-        "currentPersonId",
-        personId
-    );
+    /*
+     * V2.10.0T 管理员身份隔离
+     *
+     * 管理员审核别人时，不能覆盖普通申请人的
+     * localStorage.currentPersonId / selectedPosition。
+     *
+     * 否则申请人的 person-waiting.html 会失去原人员身份，
+     * 即使管理员已经审核通过，也无法继续自动进入工作端。
+     *
+     * 管理员身份只使用 managementSession / adminPersonId。
+     */
+    if (
+        targetPosition ===
+            "管理员"
+    ) {
+
+        sessionStorage.setItem(
+            "adminPersonId",
+            String(
+                personId
+            )
+        );
 
 
-    localStorage.setItem(
-        "selectedPosition",
-        targetPosition
-    );
+        sessionStorage.setItem(
+            "adminPosition",
+            "管理员"
+        );
+
+    } else {
+
+        /*
+         * 总经理当前其他页面仍可能依赖旧的全局身份，
+         * 这里先保持兼容，后续再统一拆分身份系统。
+         */
+        localStorage.setItem(
+            "currentPersonId",
+            personId
+        );
+
+
+        localStorage.setItem(
+            "selectedPosition",
+            targetPosition
+        );
+    }
 
 
     clearPendingState();
@@ -1344,6 +1395,16 @@ function goHome() {
 
     sessionStorage.removeItem(
         "managementSession"
+    );
+
+
+    sessionStorage.removeItem(
+        "adminPersonId"
+    );
+
+
+    sessionStorage.removeItem(
+        "adminPosition"
     );
 
 
