@@ -5,9 +5,75 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#0f172a">
 
-  <title>管理员基础资料中心 V2.9.4A</title>
+  <title>管理员基础资料中心 V2.10.1H</title>
 
   <link rel="stylesheet" href="css/admin-master.css?v=2.9.4a">
+
+  <style>
+    .admin-quick-entry-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+
+    .admin-quick-entry-card {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 16px;
+      border: 1px solid #e2e8f0;
+      border-radius: 14px;
+      background: #ffffff;
+      box-shadow: 0 4px 14px rgba(15, 23, 42, .05);
+    }
+
+    .admin-quick-entry-main {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+    }
+
+    .admin-quick-entry-icon {
+      flex: 0 0 auto;
+      font-size: 30px;
+      line-height: 1;
+    }
+
+    .admin-quick-entry-card h3 {
+      margin: 0 0 6px;
+      font-size: 16px;
+      color: #0f172a;
+    }
+
+    .admin-quick-entry-card p {
+      margin: 0;
+      color: #64748b;
+      font-size: 12px;
+      line-height: 1.6;
+    }
+
+    .admin-quick-entry-card .btn {
+      flex: 0 0 auto;
+      white-space: nowrap;
+    }
+
+    @media (max-width: 760px) {
+      .admin-quick-entry-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .admin-quick-entry-card {
+        align-items: stretch;
+        flex-direction: column;
+      }
+
+      .admin-quick-entry-card .btn {
+        width: 100%;
+      }
+    }
+  </style>
 </head>
 
 <body>
@@ -15,7 +81,7 @@
 <header class="top-header">
   <div>
     <h1>⚙️ 管理员基础资料中心</h1>
-    <p>V2.9.4A · 人员 + 设备 + 后勤物资</p>
+    <p>V2.10.1H · 人员 + 设备 + 后勤物资 + 报表 + 工资</p>
   </div>
 
   <button class="btn btn-light" onclick="goHome()">
@@ -25,6 +91,62 @@
 
 
 <main class="container">
+
+  <!-- ==================== 管理员快捷入口 ==================== -->
+
+  <section class="admin-quick-entry-grid">
+
+    <div class="admin-quick-entry-card">
+
+      <div class="admin-quick-entry-main">
+
+        <div class="admin-quick-entry-icon">📊</div>
+
+        <div>
+          <h3>综合报表中心</h3>
+          <p>
+            查看工资、生产、维修费用、加油、折旧、财务、综合绩效排名和考勤报表。
+          </p>
+        </div>
+
+      </div>
+
+      <button
+        class="btn btn-primary"
+        type="button"
+        onclick="goReportCenter()">
+        进入报表中心
+      </button>
+
+    </div>
+
+
+    <div class="admin-quick-entry-card">
+
+      <div class="admin-quick-entry-main">
+
+        <div class="admin-quick-entry-icon">💰</div>
+
+        <div>
+          <h3>工资标准设置</h3>
+          <p>
+            设置固定工资、绩效工资、司机单车价格、挖机装车单价及绩效奖扣规则。
+          </p>
+        </div>
+
+      </div>
+
+      <button
+        class="btn btn-primary"
+        type="button"
+        onclick="goPayrollSettings()">
+        工资标准设置
+      </button>
+
+    </div>
+
+  </section>
+
 
   <!-- ==================== 统计 ==================== -->
 
@@ -1255,6 +1377,16 @@
 
 <div id="toast" class="toast"></div>
 
+
+<script>
+  function goReportCenter() {
+    location.href = "report-center.html";
+  }
+
+  function goPayrollSettings() {
+    location.href = "payroll-settings.html";
+  }
+</script>
 
 <script src="js/admin-master.js?v=2.9.4a"></script>
 
