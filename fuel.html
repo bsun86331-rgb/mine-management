@@ -643,7 +643,7 @@
                 </h1>
 
                 <p>
-                    Fuel Truck Management · V2.10.0N
+                    Fuel Truck Management · V2.10.1M
                 </p>
 
             </div>
@@ -835,6 +835,21 @@
 
                 </div>
 
+
+                <div class="summary-card">
+
+                    <span>
+                        今日柴油采购金额
+                    </span>
+
+                    <strong id="todayPurchaseCost">
+                        0
+                    </strong>
+
+                    <small>元</small>
+
+                </div>
+
             </div>
 
 
@@ -965,7 +980,7 @@
                     </h2>
 
                     <p>
-                        记录加油车当天抽入的柴油
+                        记录加油车当天抽入的柴油，并登记柴油采购单价和采购金额
                     </p>
 
                 </div>
@@ -1002,6 +1017,41 @@
                         min="0"
                         step="0.1"
                         placeholder="请输入数量"
+                        oninput="updateIntakePurchaseAmount()"
+                    >
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label for="intakeUnitPrice">
+                        柴油采购单价 / 元·L
+                    </label>
+
+                    <input
+                        id="intakeUnitPrice"
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        placeholder="请输入采购单价"
+                        oninput="updateIntakePurchaseAmount()"
+                    >
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label for="intakePurchaseAmount">
+                        采购金额 / 元
+                    </label>
+
+                    <input
+                        id="intakePurchaseAmount"
+                        type="text"
+                        value="0.00"
+                        readonly
                     >
 
                 </div>
@@ -1418,7 +1468,7 @@
 
 <footer>
 
-    矿山管理系统 · 加油车司机端 V2.10.0N
+    矿山管理系统 · 加油车司机端 V2.10.1M
 
 </footer>
 
@@ -1635,6 +1685,54 @@ function renderAll() {
 
 
 
+function updateIntakePurchaseAmount() {
+
+    const amount =
+        Number(
+            document
+                .getElementById(
+                    "intakeAmount"
+                )
+                ?.value ||
+            0
+        );
+
+
+    const unitPrice =
+        Number(
+            document
+                .getElementById(
+                    "intakeUnitPrice"
+                )
+                ?.value ||
+            0
+        );
+
+
+    const target =
+        document
+            .getElementById(
+                "intakePurchaseAmount"
+            );
+
+
+    if (
+        target
+    ) {
+
+        target.value =
+            (
+                amount *
+                unitPrice
+            )
+                .toFixed(
+                    2
+                );
+    }
+}
+
+
+
 function submitIntake() {
 
     const source =
@@ -1657,6 +1755,22 @@ function submitIntake() {
         );
 
 
+    const purchaseUnitPrice =
+        Number(
+            document
+                .getElementById(
+                    "intakeUnitPrice"
+                )
+                .value ||
+            0
+        );
+
+
+    const purchaseAmount =
+        amount *
+        purchaseUnitPrice;
+
+
     const remark =
         document
             .getElementById(
@@ -1668,11 +1782,12 @@ function submitIntake() {
 
     if (
         !source ||
-        amount <= 0
+        amount <= 0 ||
+        purchaseUnitPrice <= 0
     ) {
 
         alert(
-            "请填写油品来源和正确的抽油数量。"
+            "请填写油品来源、正确的抽油数量和柴油采购单价。"
         );
 
         return;
@@ -1696,6 +1811,10 @@ function submitIntake() {
             "柴油",
 
         amount,
+
+        purchaseUnitPrice,
+
+        purchaseAmount,
 
         remark,
 
@@ -1724,6 +1843,18 @@ function submitIntake() {
 
 
     document.getElementById(
+        "intakeUnitPrice"
+    ).value =
+        "";
+
+
+    document.getElementById(
+        "intakePurchaseAmount"
+    ).value =
+        "0.00";
+
+
+    document.getElementById(
         "intakeRemark"
     ).value =
         "";
@@ -1733,10 +1864,11 @@ function submitIntake() {
 
 
     alert(
-        "抽油入库记录已保存。"
+        "抽油入库记录已保存。采购金额：" +
+        purchaseAmount.toFixed(2) +
+        " 元"
     );
 }
-
 
 
 function addDemoFuelRequest() {
@@ -1857,6 +1989,12 @@ function generateDemoFuelData() {
 
         amount:
             8000,
+
+        purchaseUnitPrice:
+            7.35,
+
+        purchaseAmount:
+            8000 * 7.35,
 
         remark:
             "测试抽油入库",
@@ -2925,6 +3063,31 @@ function renderDashboard() {
 
 
     setText(
+        "todayPurchaseCost",
+        todayIntakes
+            .reduce(
+                (
+                    sum,
+                    item
+                ) =>
+                    sum +
+                    Number(
+                        item.purchaseAmount ||
+                        (
+                            Number(item.amount || 0) *
+                            Number(item.purchaseUnitPrice || 0)
+                        ) ||
+                        0
+                    ),
+                0
+            )
+            .toFixed(
+                2
+            )
+    );
+
+
+    setText(
         "currentStock",
         calculateCurrentStock()
             .toFixed(
@@ -3084,6 +3247,22 @@ function renderIntakes() {
 
                         来源：
                         ${escapeHtml(item.source)}
+
+                        <br>
+
+                        采购单价：
+                        ${Number(item.purchaseUnitPrice || 0).toFixed(2)} 元/L
+
+                        <br>
+
+                        采购金额：
+                        ${Number(
+                            item.purchaseAmount ||
+                            (
+                                Number(item.amount || 0) *
+                                Number(item.purchaseUnitPrice || 0)
+                            )
+                        ).toFixed(2)} 元
 
                         <br>
 
@@ -3639,6 +3818,26 @@ function renderDailyReport() {
         );
 
 
+    const purchaseAmount =
+        intakes
+            .reduce(
+                (
+                    sum,
+                    item
+                ) =>
+                    sum +
+                    Number(
+                        item.purchaseAmount ||
+                        (
+                            Number(item.amount || 0) *
+                            Number(item.purchaseUnitPrice || 0)
+                        ) ||
+                        0
+                    ),
+                0
+            );
+
+
     const adjustmentAmount =
         adjustments
             .reduce(
@@ -3681,6 +3880,11 @@ function renderDailyReport() {
             </div>
 
             <div class="report-box">
+                <span>柴油采购金额</span>
+                <strong>${purchaseAmount.toFixed(2)} 元</strong>
+            </div>
+
+            <div class="report-box">
                 <span>库存调整</span>
                 <strong>${adjustmentAmount.toFixed(1)} L</strong>
             </div>
@@ -3708,6 +3912,8 @@ function renderDailyReport() {
                         <th>时间</th>
                         <th>来源</th>
                         <th>数量/L</th>
+                        <th>采购单价</th>
+                        <th>采购金额</th>
                         <th>备注</th>
                     </tr>
 
@@ -3725,12 +3931,20 @@ function renderDailyReport() {
                                         <td>${formatTime(item.createdAt)}</td>
                                         <td>${escapeHtml(item.source)}</td>
                                         <td>${Number(item.amount).toFixed(1)}</td>
+                                        <td>${Number(item.purchaseUnitPrice || 0).toFixed(2)} 元/L</td>
+                                        <td>${Number(
+                                            item.purchaseAmount ||
+                                            (
+                                                Number(item.amount || 0) *
+                                                Number(item.purchaseUnitPrice || 0)
+                                            )
+                                        ).toFixed(2)} 元</td>
                                         <td>${escapeHtml(item.remark || "-")}</td>
                                     </tr>
                                     `
                                 )
                                 .join("")
-                            : `<tr><td colspan="4">无记录</td></tr>`
+                            : `<tr><td colspan="6">无记录</td></tr>`
                     }
 
                 </tbody>
@@ -3877,6 +4091,33 @@ function renderMonthlyReport() {
         );
 
 
+    const purchaseAmount =
+        intakes
+            .reduce(
+                (
+                    sum,
+                    item
+                ) =>
+                    sum +
+                    Number(
+                        item.purchaseAmount ||
+                        (
+                            Number(item.amount || 0) *
+                            Number(item.purchaseUnitPrice || 0)
+                        ) ||
+                        0
+                    ),
+                0
+            );
+
+
+    const averagePurchaseUnitPrice =
+        intakeAmount > 0
+            ? purchaseAmount /
+                intakeAmount
+            : 0;
+
+
     const adjustmentAmount =
         adjustments
             .reduce(
@@ -4005,6 +4246,16 @@ function renderMonthlyReport() {
             <div class="report-box">
                 <span>本月加油车次</span>
                 <strong>${fuelRecords.length}</strong>
+            </div>
+
+            <div class="report-box">
+                <span>柴油采购金额</span>
+                <strong>${purchaseAmount.toFixed(2)} 元</strong>
+            </div>
+
+            <div class="report-box">
+                <span>加权平均采购单价</span>
+                <strong>${averagePurchaseUnitPrice.toFixed(2)} 元/L</strong>
             </div>
 
             <div class="report-box">
