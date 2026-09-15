@@ -1,1 +1,1064 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0f172a">
+
+    <title>综合报表中心 - 矿山管理系统</title>
+
+    <style>
+        * { box-sizing: border-box; }
+
+        :root {
+            --bg: #f1f5f9;
+            --card: #ffffff;
+            --text: #0f172a;
+            --muted: #64748b;
+            --line: #e2e8f0;
+            --dark: #0f172a;
+            --primary: #2563eb;
+            --success: #16a34a;
+            --warning: #f59e0b;
+            --danger: #dc2626;
+            --purple: #7c3aed;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            background: var(--bg);
+            color: var(--text);
+            font-family: Arial, "Microsoft YaHei", sans-serif;
+        }
+
+        header {
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            background: var(--dark);
+            color: #fff;
+            box-shadow: 0 5px 18px rgba(15, 23, 42, .18);
+        }
+
+        .header-inner {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 15px 14px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 22px;
+        }
+
+        header p {
+            margin: 5px 0 0;
+            color: #cbd5e1;
+            font-size: 12px;
+        }
+
+        button {
+            border: 0;
+            border-radius: 10px;
+            min-height: 42px;
+            padding: 10px 14px;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .header-btn {
+            background: #1e293b;
+            color: #fff;
+            border: 1px solid #475569;
+        }
+
+        .primary-btn { background: var(--primary); color: #fff; }
+        .success-btn { background: var(--success); color: #fff; }
+        .warning-btn { background: var(--warning); color: #fff; }
+        .danger-btn { background: var(--danger); color: #fff; }
+        .purple-btn { background: var(--purple); color: #fff; }
+        .secondary-btn { background: #fff; color: #334155; border: 1px solid #cbd5e1; }
+
+        main {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 16px 14px 40px;
+        }
+
+        .notice {
+            margin-bottom: 14px;
+            padding: 13px 14px;
+            border: 1px solid #bfdbfe;
+            border-radius: 12px;
+            background: #eff6ff;
+            color: #1e40af;
+            font-size: 13px;
+            line-height: 1.75;
+        }
+
+        .card {
+            margin-bottom: 14px;
+            padding: 17px;
+            border-radius: 16px;
+            background: #fff;
+            box-shadow: 0 5px 20px rgba(15, 23, 42, .06);
+        }
+
+        .section-title {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 12px;
+            margin-bottom: 14px;
+        }
+
+        .section-title h2 {
+            margin: 0;
+            font-size: 18px;
+        }
+
+        .section-title p {
+            margin: 5px 0 0;
+            color: var(--muted);
+            font-size: 12px;
+            line-height: 1.6;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 5px 9px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+
+        .badge.green { background: #dcfce7; color: #166534; }
+        .badge.blue { background: #dbeafe; color: #1e40af; }
+        .badge.yellow { background: #fef3c7; color: #92400e; }
+        .badge.red { background: #fee2e2; color: #991b1b; }
+        .badge.gray { background: #e2e8f0; color: #475569; }
+        .badge.purple { background: #ede9fe; color: #5b21b6; }
+
+        .profile-grid,
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 10px;
+        }
+
+        .info-box,
+        .summary-box {
+            padding: 12px;
+            border-radius: 11px;
+            background: #f8fafc;
+        }
+
+        .info-box span,
+        .summary-box span {
+            display: block;
+            color: var(--muted);
+            font-size: 12px;
+            margin-bottom: 6px;
+        }
+
+        .info-box strong { font-size: 15px; }
+        .summary-box strong { font-size: 23px; }
+
+        .nav-tabs {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 14px;
+        }
+
+        .nav-tab {
+            background: #fff;
+            color: #334155;
+            border: 1px solid var(--line);
+        }
+
+        .nav-tab.active {
+            background: var(--dark);
+            color: #fff;
+            border-color: var(--dark);
+        }
+
+        .nav-tab.hidden { display: none; }
+
+        .page { display: none; }
+        .page.active { display: block; }
+
+        .toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        input,
+        select,
+        textarea {
+            min-height: 42px;
+            padding: 9px 10px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            background: #fff;
+            font-size: 14px;
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 84px;
+            resize: vertical;
+        }
+
+        .toolbar input,
+        .toolbar select {
+            min-width: 170px;
+        }
+
+        .table-wrap {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            min-width: 950px;
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            padding: 10px 9px;
+            border-bottom: 1px solid var(--line);
+            text-align: left;
+            font-size: 13px;
+            vertical-align: middle;
+        }
+
+        th {
+            background: #f8fafc;
+            color: #475569;
+        }
+
+        .formula {
+            margin-top: 10px;
+            padding: 12px 14px;
+            border: 1px solid #ddd6fe;
+            border-radius: 11px;
+            background: #f5f3ff;
+            color: #5b21b6;
+            font-size: 12px;
+            line-height: 1.75;
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 12px;
+        }
+
+        .report-box {
+            padding: 14px;
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            background: #f8fafc;
+        }
+
+        .report-box h3 {
+            margin: 0 0 8px;
+            font-size: 15px;
+        }
+
+        .report-box p {
+            margin: 0;
+            color: var(--muted);
+            font-size: 12px;
+            line-height: 1.7;
+        }
+
+        .empty {
+            padding: 26px 10px;
+            text-align: center;
+            color: #94a3b8;
+            font-size: 13px;
+        }
+
+        footer {
+            padding: 20px;
+            text-align: center;
+            color: #94a3b8;
+            font-size: 12px;
+        }
+
+        @media (max-width: 900px) {
+            .profile-grid,
+            .summary-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
+
+        @media (max-width: 600px) {
+            .profile-grid,
+            .summary-grid,
+            .grid-2 {
+                grid-template-columns: 1fr;
+            }
+
+            .toolbar input,
+            .toolbar select {
+                width: 100%;
+            }
+
+            .header-inner {
+                align-items: flex-start;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<header>
+    <div class="header-inner">
+        <div>
+            <h1>📊 综合报表中心</h1>
+            <p>Report Center · V2.10.1D</p>
+        </div>
+
+        <button type="button" class="header-btn" onclick="goHome()">返回首页</button>
+    </div>
+</header>
+
+<main>
+
+    <div class="notice">
+        当前版本先完成八大报表的界面、权限和计算规则框架。真实跨设备数据汇总将在 V3.0 接入统一数据库后启用。
+    </div>
+
+    <section class="card">
+        <div class="section-title">
+            <div>
+                <h2>👤 当前查看人员</h2>
+                <p>根据岗位自动显示可访问的报表栏目。</p>
+            </div>
+            <span id="accessBadge" class="badge gray">识别中</span>
+        </div>
+
+        <div class="profile-grid">
+            <div class="info-box"><span>姓名</span><strong id="personName">-</strong></div>
+            <div class="info-box"><span>岗位</span><strong id="personPosition">-</strong></div>
+            <div class="info-box"><span>部门 / 车队</span><strong id="personDepartment">-</strong></div>
+            <div class="info-box"><span>人员编号</span><strong id="personId">-</strong></div>
+        </div>
+    </section>
+
+    <section class="card">
+        <div class="section-title">
+            <div>
+                <h2>📌 报表概览</h2>
+                <p>当前为 V2.x 本地原型统计。</p>
+            </div>
+        </div>
+
+        <div class="summary-grid">
+            <div class="summary-box"><span>人员总数</span><strong id="summaryPeople">0</strong></div>
+            <div class="summary-box"><span>本月维修费用</span><strong id="summaryMaintenance">0</strong></div>
+            <div class="summary-box"><span>本月加油量</span><strong id="summaryFuel">0</strong></div>
+            <div class="summary-box"><span>物资待处理</span><strong id="summaryMaterial">0</strong></div>
+        </div>
+    </section>
+
+    <div class="nav-tabs">
+        <button class="nav-tab active" data-report="payroll" onclick="openReport('payroll', this)">💰 工资表</button>
+        <button class="nav-tab" data-report="production" onclick="openReport('production', this)">🚚 生产报表</button>
+        <button class="nav-tab" data-report="maintenance" onclick="openReport('maintenance', this)">🔧 维修费用</button>
+        <button class="nav-tab" data-report="fuel" onclick="openReport('fuel', this)">⛽ 加油统计</button>
+        <button class="nav-tab" data-report="depreciation" onclick="openReport('depreciation', this)">📉 折旧费用</button>
+        <button class="nav-tab" data-report="finance" onclick="openReport('finance', this)">🧮 财务费用</button>
+        <button class="nav-tab" data-report="ranking" onclick="openReport('ranking', this)">🏆 综合绩效排名</button>
+        <button class="nav-tab" data-report="attendance" onclick="openReport('attendance', this)">📍 考勤表</button>
+    </div>
+
+    <!-- 工资表 -->
+    <section id="report-payroll" class="page active">
+        <section class="card">
+            <div class="section-title">
+                <div>
+                    <h2>💰 工资表</h2>
+                    <p>工资由固定工资、绩效工资、奖励和扣款构成。</p>
+                </div>
+                <span class="badge blue">自动生成框架</span>
+            </div>
+
+            <div class="formula">
+                汽车司机：应发工资 = 基本工资 +（有效车数 × 单车价格）+ 奖励 - 扣款<br>
+                挖机司机：应发工资 = 基本工资 +（有效装车数 × 装车单价）+ 奖励 - 扣款<br>
+                固定工资人员：应发工资 = 固定工资 + 固定补贴 + 奖励 - 扣款
+            </div>
+
+            <div class="toolbar">
+                <input type="month" id="payrollMonth" onchange="renderPayroll()">
+                <select id="payrollPositionFilter" onchange="renderPayroll()">
+                    <option value="">全部岗位</option>
+                    <option>汽车司机</option>
+                    <option>挖机司机</option>
+                    <option>统计</option>
+                    <option>会计</option>
+                    <option>后勤</option>
+                </select>
+                <button type="button" class="secondary-btn" onclick="showPlanned('工资标准设置')">⚙️ 工资标准设置</button>
+            </div>
+
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>姓名</th>
+                            <th>岗位</th>
+                            <th>基本/固定工资</th>
+                            <th>绩效数量</th>
+                            <th>绩效单价</th>
+                            <th>绩效工资</th>
+                            <th>奖励</th>
+                            <th>扣款</th>
+                            <th>应发工资</th>
+                        </tr>
+                    </thead>
+                    <tbody id="payrollTableBody"></tbody>
+                </table>
+            </div>
+        </section>
+    </section>
+
+    <!-- 生产报表 -->
+    <section id="report-production" class="page">
+        <section class="card">
+            <div class="section-title">
+                <div>
+                    <h2>🚚 生产报表</h2>
+                    <p>按车数 × 单车均方自动换算渣量和煤量。</p>
+                </div>
+            </div>
+
+            <div class="formula">
+                渣方量 = 拉渣车数 × 渣车平均方量<br>
+                煤产量 = 拉煤车数 × 煤车平均方量
+            </div>
+
+            <div class="toolbar">
+                <input type="date" id="productionDate" onchange="renderProduction()">
+                <button type="button" class="secondary-btn" onclick="showPlanned('车辆平均方量设置')">⚙️ 平均方量设置</button>
+            </div>
+
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>日期</th>
+                            <th>班次</th>
+                            <th>物料</th>
+                            <th>车数</th>
+                            <th>单车均方</th>
+                            <th>换算产量</th>
+                        </tr>
+                    </thead>
+                    <tbody id="productionTableBody"></tbody>
+                </table>
+            </div>
+        </section>
+    </section>
+
+    <!-- 维修费用 -->
+    <section id="report-maintenance" class="page">
+        <section class="card">
+            <div class="section-title">
+                <div>
+                    <h2>🔧 维修费用统计</h2>
+                    <p>按设备汇总工时费、配件费、外修费、其他费用及总费用。</p>
+                </div>
+            </div>
+
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>设备编号</th>
+                            <th>设备类型</th>
+                            <th>维修次数</th>
+                            <th>工时费</th>
+                            <th>配件费</th>
+                            <th>外修费</th>
+                            <th>其他费用</th>
+                            <th>维修总费用</th>
+                        </tr>
+                    </thead>
+                    <tbody id="maintenanceTableBody"></tbody>
+                </table>
+            </div>
+        </section>
+    </section>
+
+    <!-- 加油统计 -->
+    <section id="report-fuel" class="page">
+        <section class="card">
+            <div class="section-title">
+                <div>
+                    <h2>⛽ 加油统计</h2>
+                    <p>汇总柴油入库、采购单价、加油出库、库存和燃油成本。</p>
+                </div>
+            </div>
+
+            <div class="formula">
+                采购金额 = 入库升数 × 柴油采购单价<br>
+                理论库存 = 期初库存 + 入库 - 加油出库
+            </div>
+
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>日期</th>
+                            <th>入库量(L)</th>
+                            <th>采购单价</th>
+                            <th>采购金额</th>
+                            <th>加油出库(L)</th>
+                            <th>理论库存</th>
+                            <th>实际库存</th>
+                            <th>库存误差</th>
+                        </tr>
+                    </thead>
+                    <tbody id="fuelTableBody"></tbody>
+                </table>
+            </div>
+        </section>
+    </section>
+
+    <!-- 折旧 -->
+    <section id="report-depreciation" class="page">
+        <section class="card">
+            <div class="section-title">
+                <div>
+                    <h2>📉 折旧费用表</h2>
+                    <p>由财务维护设备原值、启用日期、使用年限和残值。</p>
+                </div>
+            </div>
+
+            <div class="formula">
+                月折旧 =（设备原值 - 预计残值）÷ 使用年限 ÷ 12
+            </div>
+
+            <div class="grid-2">
+                <div class="report-box">
+                    <h3>设备折旧基础资料</h3>
+                    <p>设备原值、启用日期、预计使用年限、预计残值、折旧方式。</p>
+                    <button class="secondary-btn" onclick="showPlanned('设备折旧基础资料设置')">维护资料</button>
+                </div>
+
+                <div class="report-box">
+                    <h3>月度折旧汇总</h3>
+                    <p>按设备、部门、成本中心自动生成月折旧金额。</p>
+                    <button class="secondary-btn" onclick="showPlanned('月度折旧汇总')">查看预览</button>
+                </div>
+            </div>
+        </section>
+    </section>
+
+    <!-- 财务 -->
+    <section id="report-finance" class="page">
+        <section class="card">
+            <div class="section-title">
+                <div>
+                    <h2>🧮 财务费用表</h2>
+                    <p>人工、柴油、维修、折旧、税费、保险、住宿、餐饮、运输、管理费和其他费用。</p>
+                </div>
+            </div>
+
+            <div class="grid-2">
+                <div class="report-box">
+                    <h3>财务费用录入</h3>
+                    <p>税费、均摊费用、保险及其他无法从业务模块自动生成的费用由财务填写。</p>
+                    <button class="primary-btn" onclick="showPlanned('财务费用录入')">录入费用</button>
+                </div>
+
+                <div class="report-box">
+                    <h3>综合成本</h3>
+                    <p>汇总人工、柴油、维修、折旧及其他费用，后续计算成本/方、成本/吨。</p>
+                    <button class="secondary-btn" onclick="showPlanned('综合成本分析')">查看分析</button>
+                </div>
+            </div>
+        </section>
+    </section>
+
+    <!-- 排名 -->
+    <section id="report-ranking" class="page">
+        <section class="card">
+            <div class="section-title">
+                <div>
+                    <h2>🏆 综合绩效排名</h2>
+                    <p>运输产量、节油和维修成本按管理员设置权重重新计算。</p>
+                </div>
+            </div>
+
+            <div class="formula">
+                综合绩效分 = 产量得分 × 产量权重 + 节油得分 × 节油权重 + 维修成本得分 × 维修权重
+            </div>
+
+            <div class="toolbar">
+                <button class="secondary-btn" onclick="showPlanned('绩效权重设置')">⚙️ 绩效权重设置</button>
+                <button class="secondary-btn" onclick="showPlanned('前三奖励/后三扣款规则')">🎁 奖扣规则设置</button>
+            </div>
+
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>排名</th>
+                            <th>姓名</th>
+                            <th>车数/装车数排名</th>
+                            <th>节油排名</th>
+                            <th>维修费用排名</th>
+                            <th>综合得分</th>
+                            <th>奖励/扣款</th>
+                        </tr>
+                    </thead>
+                    <tbody id="rankingTableBody"></tbody>
+                </table>
+            </div>
+        </section>
+    </section>
+
+    <!-- 考勤 -->
+    <section id="report-attendance" class="page">
+        <section class="card">
+            <div class="section-title">
+                <div>
+                    <h2>📍 考勤表</h2>
+                    <p>由人员定位打卡生成，请假人员打卡不计有效考勤。</p>
+                </div>
+            </div>
+
+            <div class="formula">
+                有考勤但当日生产车数为 0 → 自动生成“零产量异常待报备” → 由车队长选择车辆维修、后勤打杂、等待调度等原因。
+            </div>
+
+            <div class="toolbar">
+                <input type="date" id="attendanceDate">
+                <button class="secondary-btn" onclick="showPlanned('零产量异常报备')">⚠️ 零产量异常报备</button>
+            </div>
+
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>姓名</th>
+                            <th>岗位</th>
+                            <th>上班打卡</th>
+                            <th>下班打卡</th>
+                            <th>考勤状态</th>
+                            <th>生产数量</th>
+                            <th>异常报备</th>
+                        </tr>
+                    </thead>
+                    <tbody id="attendanceTableBody"></tbody>
+                </table>
+            </div>
+        </section>
+    </section>
+
+</main>
+
+<footer>
+    矿山管理系统 · 综合报表中心 V2.10.1D
+</footer>
+
+<script>
+"use strict";
+
+let currentPerson = null;
+
+const REPORT_ACCESS = {
+    "总经理": ["payroll","production","maintenance","fuel","depreciation","finance","ranking","attendance"],
+    "管理员": ["payroll","production","maintenance","fuel","depreciation","finance","ranking","attendance"],
+    "统计": ["production","maintenance","fuel","ranking","attendance"],
+    "会计": ["payroll","maintenance","fuel","depreciation","finance"],
+    "测量员": ["production"],
+    "安全员": ["attendance"],
+    "后勤": ["attendance"],
+    "车队长": ["production","ranking","attendance"]
+};
+
+function normalizePosition(position) {
+    const map = {
+        "卡车司机": "汽车司机",
+        "挖掘机司机": "挖机司机",
+        "测量人员": "测量员",
+        "安全人员": "安全员",
+        "统计员": "统计",
+        "财务": "会计",
+        "会计员": "会计",
+        "后勤人员": "后勤",
+        "调度员": "车队长",
+        "库房管理员": "库房管理"
+    };
+
+    return map[position] || position || "";
+}
+
+function getPersonId(person) {
+    return String(
+        person?.personId ||
+        person?.employeeId ||
+        person?.driverId ||
+        person?.id ||
+        ""
+    );
+}
+
+function readArray(key) {
+    try {
+        const data = JSON.parse(localStorage.getItem(key));
+        return Array.isArray(data) ? data : [];
+    } catch (error) {
+        return [];
+    }
+}
+
+function getPersonnelRecords() {
+    return readArray("personnelRecords");
+}
+
+function isApproved(person) {
+    if (!person) return false;
+
+    if (
+        person.status === "rejected" ||
+        person.approvalStatus === "rejected" ||
+        person.status === "disabled" ||
+        person.status === "resigned" ||
+        person.personnelStatus === "停用" ||
+        person.personnelStatus === "离职"
+    ) {
+        return false;
+    }
+
+    return (
+        person.approvalStatus === "approved" ||
+        person.status === "approved" ||
+        person.status === "active" ||
+        person.status === "working" ||
+        person.status === "leave" ||
+        person.personnelStatus === "在职可用" ||
+        person.personnelStatus === "作业中" ||
+        person.personnelStatus === "请假"
+    );
+}
+
+function findCurrentPerson() {
+    const records = getPersonnelRecords();
+    const currentId = String(localStorage.getItem("currentPersonId") || "");
+    const selectedPosition = normalizePosition(localStorage.getItem("selectedPosition") || "");
+
+    if (currentId) {
+        const found = records.find(person =>
+            getPersonId(person) === currentId &&
+            (!selectedPosition || normalizePosition(person.position) === selectedPosition)
+        );
+
+        if (found) return found;
+    }
+
+    if (selectedPosition) {
+        const matches = records.filter(person =>
+            normalizePosition(person.position) === selectedPosition &&
+            isApproved(person)
+        );
+
+        if (matches.length === 1) return matches[0];
+    }
+
+    return null;
+}
+
+function verifyAccess() {
+    currentPerson = findCurrentPerson();
+
+    if (!currentPerson) {
+        alert("没有找到当前人员资料，请从系统首页重新进入。");
+        location.replace("index.html");
+        return false;
+    }
+
+    if (!isApproved(currentPerson)) {
+        alert("当前人员尚未审核通过。");
+        location.replace("index.html");
+        return false;
+    }
+
+    const position = normalizePosition(currentPerson.position);
+
+    if (!REPORT_ACCESS[position]) {
+        alert("当前岗位没有进入综合报表中心的权限。");
+        history.length > 1 ? history.back() : location.replace("index.html");
+        return false;
+    }
+
+    return true;
+}
+
+function renderProfile() {
+    document.getElementById("personName").textContent = currentPerson.name || "-";
+    document.getElementById("personPosition").textContent = normalizePosition(currentPerson.position) || "-";
+    document.getElementById("personDepartment").textContent = currentPerson.department || currentPerson.team || "-";
+    document.getElementById("personId").textContent = getPersonId(currentPerson) || "-";
+
+    const badge = document.getElementById("accessBadge");
+    badge.textContent = "已授权";
+    badge.className = "badge green";
+}
+
+function applyReportPermissions() {
+    const position = normalizePosition(currentPerson.position);
+    const allowed = REPORT_ACCESS[position] || [];
+
+    document.querySelectorAll("[data-report]").forEach(button => {
+        button.classList.toggle("hidden", !allowed.includes(button.dataset.report));
+    });
+
+    const params = new URLSearchParams(location.search);
+    const requested = params.get("section");
+
+    const initial = allowed.includes(requested)
+        ? requested
+        : allowed[0];
+
+    if (!initial) {
+        alert("当前岗位没有可查看的报表。");
+        return;
+    }
+
+    const targetButton = document.querySelector(`[data-report="${initial}"]`);
+    openReport(initial, targetButton);
+}
+
+function openReport(report, button) {
+    document.querySelectorAll(".page").forEach(page => page.classList.remove("active"));
+    document.querySelectorAll(".nav-tab").forEach(tab => tab.classList.remove("active"));
+
+    document.getElementById("report-" + report)?.classList.add("active");
+    button?.classList.add("active");
+
+    renderAllReports();
+}
+
+function renderSummary() {
+    document.getElementById("summaryPeople").textContent = String(getPersonnelRecords().length);
+
+    const costs = readArray("maintenanceCosts");
+    const totalMaintenance = costs.reduce((sum, item) => sum + Number(item.totalCost || 0), 0);
+    document.getElementById("summaryMaintenance").textContent = totalMaintenance.toFixed(0);
+
+    const fuelRecords = readArray("fuelRecords");
+    const totalFuel = fuelRecords.reduce((sum, item) => sum + Number(item.quantity || item.fuelQuantity || 0), 0);
+    document.getElementById("summaryFuel").textContent = totalFuel.toFixed(0);
+
+    const materialRequests = readArray("materialRequests").filter(item => !item.status || item.status === "pending");
+    document.getElementById("summaryMaterial").textContent = String(materialRequests.length);
+}
+
+function renderPayroll() {
+    const people = getPersonnelRecords()
+        .filter(isApproved)
+        .filter(person => {
+            const filter = document.getElementById("payrollPositionFilter")?.value || "";
+            return !filter || normalizePosition(person.position) === filter;
+        });
+
+    const body = document.getElementById("payrollTableBody");
+
+    body.innerHTML = people.length
+        ? people.map(person => `
+            <tr>
+                <td>${escapeHtml(person.name || "-")}</td>
+                <td>${escapeHtml(normalizePosition(person.position) || "-")}</td>
+                <td>0</td>
+                <td>0</td>
+                <td>0</td>
+                <td>0</td>
+                <td>0</td>
+                <td>0</td>
+                <td>0</td>
+            </tr>
+        `).join("")
+        : `<tr><td colspan="9" class="empty">暂无工资数据</td></tr>`;
+}
+
+function renderProduction() {
+    const body = document.getElementById("productionTableBody");
+    body.innerHTML = `
+        <tr>
+            <td>${today()}</td>
+            <td>白班</td>
+            <td>渣</td>
+            <td>0</td>
+            <td>0</td>
+            <td>0 m³</td>
+        </tr>
+        <tr>
+            <td>${today()}</td>
+            <td>白班</td>
+            <td>煤</td>
+            <td>0</td>
+            <td>0</td>
+            <td>0 m³</td>
+        </tr>
+    `;
+}
+
+function renderMaintenance() {
+    const costs = readArray("maintenanceCosts");
+    const grouped = {};
+
+    costs.forEach(item => {
+        const key = item.equipmentNumber || item.orderId || "未编号";
+        if (!grouped[key]) {
+            grouped[key] = {
+                equipmentNumber: key,
+                equipmentType: item.equipmentType || "-",
+                count: 0,
+                laborCost: 0,
+                partsCost: 0,
+                externalCost: 0,
+                otherCost: 0,
+                totalCost: 0
+            };
+        }
+
+        grouped[key].count += 1;
+        grouped[key].laborCost += Number(item.laborCost || 0);
+        grouped[key].partsCost += Number(item.partsCost || 0);
+        grouped[key].externalCost += Number(item.externalCost || 0);
+        grouped[key].otherCost += Number(item.otherCost || 0);
+        grouped[key].totalCost += Number(item.totalCost || 0);
+    });
+
+    const rows = Object.values(grouped);
+    const body = document.getElementById("maintenanceTableBody");
+
+    body.innerHTML = rows.length
+        ? rows.map(item => `
+            <tr>
+                <td>${escapeHtml(item.equipmentNumber)}</td>
+                <td>${escapeHtml(item.equipmentType)}</td>
+                <td>${item.count}</td>
+                <td>${item.laborCost.toFixed(2)}</td>
+                <td>${item.partsCost.toFixed(2)}</td>
+                <td>${item.externalCost.toFixed(2)}</td>
+                <td>${item.otherCost.toFixed(2)}</td>
+                <td>${item.totalCost.toFixed(2)}</td>
+            </tr>
+        `).join("")
+        : `<tr><td colspan="8" class="empty">暂无维修费用数据</td></tr>`;
+}
+
+function renderFuel() {
+    const body = document.getElementById("fuelTableBody");
+    body.innerHTML = `<tr><td colspan="8" class="empty">加油统计将在 fuel.html 记录采购单价并接入 V3.0 数据库后自动生成</td></tr>`;
+}
+
+function renderRanking() {
+    const drivers = getPersonnelRecords()
+        .filter(isApproved)
+        .filter(person => ["汽车司机","挖机司机"].includes(normalizePosition(person.position)));
+
+    const body = document.getElementById("rankingTableBody");
+
+    body.innerHTML = drivers.length
+        ? drivers.map((person, index) => `
+            <tr>
+                <td>${index + 1}</td>
+                <td>${escapeHtml(person.name || "-")}</td>
+                <td>-</td>
+                <td>-</td>
+                <td>-</td>
+                <td>0</td>
+                <td>-</td>
+            </tr>
+        `).join("")
+        : `<tr><td colspan="7" class="empty">暂无可排名人员</td></tr>`;
+}
+
+function renderAttendance() {
+    const people = getPersonnelRecords().filter(isApproved);
+    const body = document.getElementById("attendanceTableBody");
+
+    body.innerHTML = people.length
+        ? people.map(person => `
+            <tr>
+                <td>${escapeHtml(person.name || "-")}</td>
+                <td>${escapeHtml(normalizePosition(person.position) || "-")}</td>
+                <td>-</td>
+                <td>-</td>
+                <td><span class="badge gray">待接入</span></td>
+                <td>0</td>
+                <td>-</td>
+            </tr>
+        `).join("")
+        : `<tr><td colspan="7" class="empty">暂无考勤人员数据</td></tr>`;
+}
+
+function renderAllReports() {
+    renderSummary();
+    renderPayroll();
+    renderProduction();
+    renderMaintenance();
+    renderFuel();
+    renderRanking();
+    renderAttendance();
+}
+
+function today() {
+    const date = new Date();
+    return new Date(date.getTime() - date.getTimezoneOffset() * 60000)
+        .toISOString()
+        .slice(0, 10);
+}
+
+function showPlanned(name) {
+    alert(
+        name +
+        " 已纳入系统规划。\n\n" +
+        "当前 V2.10.1D 先完成报表中心界面和计算规则框架，" +
+        "正式自动汇总将在 V3.0 数据库阶段启用。"
+    );
+}
+
+function escapeHtml(value) {
+    const div = document.createElement("div");
+    div.textContent = String(value ?? "");
+    return div.innerHTML;
+}
+
+function goHome() {
+    location.href = "index.html";
+}
+
+if (verifyAccess()) {
+    renderProfile();
+    renderAllReports();
+    applyReportPermissions();
+}
+</script>
+
+</body>
+
+</html>
 
