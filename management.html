@@ -1,1 +1,342 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0f172a">
+  <title>中层管理综合工作台 - 矿山管理系统</title>
+  <style>
+    *{box-sizing:border-box}
+    body{margin:0;min-height:100vh;background:#f1f5f9;color:#0f172a;font-family:Arial,"Microsoft YaHei",sans-serif}
+    header{position:sticky;top:0;z-index:20;background:#0f172a;color:#fff;box-shadow:0 4px 18px rgba(15,23,42,.18)}
+    .header-inner{max-width:1180px;margin:0 auto;padding:16px 14px;display:flex;justify-content:space-between;gap:12px;align-items:center}
+    h1{margin:0;font-size:22px}.sub{margin-top:5px;color:#cbd5e1;font-size:12px}
+    main{max-width:1180px;margin:0 auto;padding:16px 14px 40px}
+    .card{background:#fff;border-radius:16px;padding:17px;margin-bottom:14px;box-shadow:0 5px 20px rgba(15,23,42,.06)}
+    .title-row{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:14px}
+    .title-row h2{margin:0;font-size:18px}.title-row p{margin:5px 0 0;color:#64748b;font-size:12px;line-height:1.6}
+    .notice{margin-bottom:14px;padding:13px;border:1px solid #bfdbfe;border-radius:12px;background:#eff6ff;color:#1e40af;font-size:13px;line-height:1.7}
+    .profile-grid,.summary-grid,.module-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+    .info-box,.summary-box{padding:12px;border-radius:11px;background:#f8fafc}
+    .info-box span,.summary-box span{display:block;color:#64748b;font-size:12px;margin-bottom:6px}
+    .info-box strong{font-size:15px}.summary-box strong{font-size:23px}
+    .module-card{border:1px solid #e2e8f0;border-radius:14px;padding:15px;min-height:165px;display:flex;flex-direction:column;justify-content:space-between}
+    .module-card.hidden{display:none}.module-icon{font-size:30px}.module-card h3{margin:8px 0 6px;font-size:16px}.module-card p{margin:0;color:#64748b;font-size:12px;line-height:1.6}
+    .todo-list{display:grid;gap:9px}.todo{display:flex;justify-content:space-between;gap:10px;padding:12px;border:1px solid #e2e8f0;border-radius:11px;background:#f8fafc}
+    .todo small{display:block;color:#64748b;margin-top:4px;line-height:1.5}
+    button{border:0;border-radius:10px;padding:11px 14px;font-size:14px;font-weight:700;cursor:pointer}
+    .header-btn{background:#1e293b;color:#fff;border:1px solid #475569}
+    .primary{background:#2563eb;color:#fff}.success{background:#16a34a;color:#fff}.warning{background:#f59e0b;color:#fff}.secondary{background:#fff;color:#334155;border:1px solid #cbd5e1}
+    .badge{display:inline-block;padding:5px 10px;border-radius:999px;font-size:12px;font-weight:700}.green{background:#dcfce7;color:#166534}.gray{background:#e2e8f0;color:#475569}
+    .quick-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+    .quick-grid button{min-height:58px;background:#fff;color:#334155;border:1px solid #e2e8f0}
+    footer{text-align:center;padding:20px;color:#94a3b8;font-size:12px}
+    @media(max-width:900px){.profile-grid,.summary-grid,.module-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    @media(max-width:560px){.profile-grid,.summary-grid,.module-grid,.quick-grid{grid-template-columns:1fr}.header-inner{align-items:flex-start}}
+  </style>
+</head>
+
+<body>
+<header>
+  <div class="header-inner">
+    <div>
+      <h1>🧭 中层管理综合工作台</h1>
+      <div class="sub">Middle Management Workbench · V2.10.1A</div>
+    </div>
+    <button class="header-btn" type="button" onclick="goHome()">返回首页</button>
+  </div>
+</header>
+
+<main>
+  <div class="notice">
+    当前版本先完成中层管理岗位工作台、权限入口和业务框架。报表中心、后勤物资、工资、考勤等深层数据将在 V3.0 统一数据库阶段正式联动。
+  </div>
+
+  <section class="card">
+    <div class="title-row">
+      <div><h2>👤 当前人员</h2><p>已审核人员按岗位自动显示对应模块</p></div>
+      <span id="approvalBadge" class="badge gray">识别中</span>
+    </div>
+    <div class="profile-grid">
+      <div class="info-box"><span>姓名</span><strong id="personName">-</strong></div>
+      <div class="info-box"><span>岗位</span><strong id="personPosition">-</strong></div>
+      <div class="info-box"><span>部门 / 车队</span><strong id="personDepartment">-</strong></div>
+      <div class="info-box"><span>人员编号</span><strong id="personId">-</strong></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="title-row">
+      <div><h2>📌 今日工作概览</h2><p>V3.0 接入数据库后自动读取真实数据</p></div>
+    </div>
+    <div class="summary-grid">
+      <div class="summary-box"><span>我的待办</span><strong id="todoCount">0</strong></div>
+      <div class="summary-box"><span>今日新增</span><strong>0</strong></div>
+      <div class="summary-box"><span>待确认</span><strong id="pendingCount">0</strong></div>
+      <div class="summary-box"><span>异常事项</span><strong>0</strong></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="title-row">
+      <div><h2>🧩 工作模块</h2><p id="permissionDescription">正在加载岗位权限……</p></div>
+    </div>
+
+    <div class="module-grid">
+      <article class="module-card" data-module="report-center">
+        <div><div class="module-icon">📊</div><h3>报表中心</h3><p>工资、生产、维修费用、加油、折旧、财务、综合绩效排名和考勤。</p></div>
+        <button class="primary" onclick="openPlanned('report-center.html','报表中心')">进入报表中心</button>
+      </article>
+
+      <article class="module-card" data-module="warehouse">
+        <div><div class="module-icon">📦</div><h3>后勤物资管理</h3><p>库存、领用审核、回收换新、报废、丢失核销和物资台账。</p></div>
+        <button class="success" onclick="openPlanned('warehouse.html','后勤物资管理')">进入物资管理</button>
+      </article>
+
+      <article class="module-card" data-module="material-request">
+        <div><div class="module-icon">🧾</div><h3>物资领用</h3><p>所有已审核人员均可发起后勤物资领用申请。</p></div>
+        <button class="secondary" onclick="openPlanned('material-request.html','物资领用中心')">发起领用</button>
+      </article>
+
+      <article class="module-card" data-module="survey">
+        <div><div class="module-icon">📐</div><h3>测量成果</h3><p>测量成果、工程量、方量、生产测量资料和数据复核。</p></div>
+        <button class="primary" onclick="planned('测量成果中心')">打开</button>
+      </article>
+
+      <article class="module-card" data-module="production">
+        <div><div class="module-icon">🚚</div><h3>生产统计</h3><p>拉渣、拉煤车数，单车均方，换算产量和计划完成情况。</p></div>
+        <button class="primary" onclick="planned('生产统计中心')">打开</button>
+      </article>
+
+      <article class="module-card" data-module="safety">
+        <div><div class="module-icon">🦺</div><h3>安全管理</h3><p>安全巡检、隐患记录、异常事件和整改跟踪。</p></div>
+        <button class="warning" onclick="planned('安全管理中心')">打开</button>
+      </article>
+
+      <article class="module-card" data-module="attendance">
+        <div><div class="module-icon">📍</div><h3>考勤管理</h3><p>GPS定位打卡、请假过滤、异常考勤和零产量报备。</p></div>
+        <button class="secondary" onclick="openPlanned('attendance.html','考勤中心')">查看考勤</button>
+      </article>
+
+      <article class="module-card" data-module="payroll">
+        <div><div class="module-icon">💰</div><h3>工资管理</h3><p>固定工资、绩效、奖励、罚单、物资扣款和工资表。</p></div>
+        <button class="success" onclick="openReport('payroll')">工资表</button>
+      </article>
+
+      <article class="module-card" data-module="finance">
+        <div><div class="module-icon">🧮</div><h3>财务费用</h3><p>折旧、税费、均摊、人工、柴油、维修及其他费用。</p></div>
+        <button class="primary" onclick="openReport('finance')">财务报表</button>
+      </article>
+
+      <article class="module-card" data-module="ranking">
+        <div><div class="module-icon">🏆</div><h3>综合绩效排名</h3><p>车数、油耗、维修费用按权重重新计算排名。</p></div>
+        <button class="warning" onclick="openReport('ranking')">查看排名</button>
+      </article>
+
+      <article class="module-card" data-module="maintenance-cost">
+        <div><div class="module-icon">🔧</div><h3>维修费用统计</h3><p>按设备统计工时费、配件费、外修费和停机情况。</p></div>
+        <button class="secondary" onclick="openReport('maintenance')">维修费用</button>
+      </article>
+
+      <article class="module-card" data-module="fuel-report">
+        <div><div class="module-icon">⛽</div><h3>加油统计</h3><p>采购单价、入库、加油、油耗、库存误差和燃油成本。</p></div>
+        <button class="secondary" onclick="openReport('fuel')">加油统计</button>
+      </article>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="title-row"><div><h2>✅ 岗位待办</h2><p>当前为占位数据，后续从数据库读取真实待办</p></div></div>
+    <div id="todoList" class="todo-list"></div>
+  </section>
+
+  <section class="card">
+    <div class="title-row"><div><h2>⚡ 快捷入口</h2></div></div>
+    <div class="quick-grid">
+      <button onclick="openPlanned('material-request.html','物资领用中心')">📦 物资领用</button>
+      <button onclick="openPlanned('fuel-request.html','加油申请中心')">⛽ 加油申请</button>
+      <button onclick="location.href='maintenance-report.html'">⚠️ 异常上报</button>
+      <button onclick="openPlanned('report-center.html','报表中心')">📊 报表中心</button>
+      <button onclick="planned('我的考勤')">📍 我的考勤</button>
+      <button onclick="planned('我的工资明细')">💰 我的工资</button>
+    </div>
+  </section>
+</main>
+
+<footer>矿山管理系统 · 中层管理综合工作台 V2.10.1A</footer>
+
+<script>
+"use strict";
+
+function normalizePosition(position){
+  const map={
+    "测量人员":"测量员",
+    "安全人员":"安全员",
+    "后勤人员":"后勤",
+    "统计员":"统计",
+    "财务":"会计",
+    "会计员":"会计",
+    "库房管理员":"库房管理"
+  };
+  return map[position]||position||"";
+}
+
+const MANAGEMENT_POSITIONS=["测量员","安全员","统计","会计","后勤"];
+
+const POSITION_MODULES={
+  "测量员":["report-center","material-request","survey","production","attendance"],
+  "安全员":["report-center","material-request","safety","attendance"],
+  "统计":["report-center","material-request","production","attendance","ranking","maintenance-cost","fuel-report"],
+  "会计":["report-center","material-request","payroll","finance","maintenance-cost","fuel-report"],
+  "后勤":["report-center","warehouse","material-request","attendance"]
+};
+
+const POSITION_DESCRIPTIONS={
+  "测量员":"测量成果、生产数据、生产报表及个人业务入口。",
+  "安全员":"安全巡检、异常记录、考勤查看及相关报表。",
+  "统计":"生产统计、综合绩效排名、考勤统计、维修及加油报表。",
+  "会计":"工资、折旧、财务费用、税费、均摊及成本报表。",
+  "后勤":"后勤物资、领用审核、库存、回收、报废和丢失核销。"
+};
+
+const POSITION_TODOS={
+  "测量员":[["测量成果整理","整理当日测量数据、方量和生产测量资料。"],["生产数据复核","核对生产区域、工程量及日报基础数据。"]],
+  "安全员":[["安全巡检","检查现场安全隐患并形成整改记录。"],["异常事项跟踪","跟踪已上报安全异常及整改进度。"]],
+  "统计":[["生产日报","汇总拉渣、拉煤车数及转换产量。"],["零产量异常复核","核对有考勤但无车数人员的报备情况。"],["综合绩效排名","汇总运输、油耗和维修费用排名数据。"]],
+  "会计":[["工资数据检查","核对工资标准、绩效、奖励和扣款。"],["月度财务费用","录入折旧、税费、均摊及其他财务费用。"]],
+  "后勤":[["待处理物资领用单","核对申请物资、实际领用数量并确认出库。"],["可回收物资","处理以旧换新、回收、报废和丢失核销。"]]
+};
+
+let currentPerson=null;
+
+function getPersonnelRecords(){
+  try{
+    const data=JSON.parse(localStorage.getItem("personnelRecords"));
+    return Array.isArray(data)?data:[];
+  }catch(error){
+    console.error(error);
+    return [];
+  }
+}
+
+function getPersonId(person){
+  return String(person?.personId||person?.employeeId||person?.driverId||person?.id||"");
+}
+
+function isApproved(person){
+  if(!person)return false;
+  if(person.status==="rejected"||person.approvalStatus==="rejected"||person.status==="disabled"||person.status==="resigned"||person.personnelStatus==="停用"||person.personnelStatus==="离职")return false;
+  return person.approvalStatus==="approved"||person.status==="approved"||person.status==="active"||person.status==="working"||person.status==="leave"||person.personnelStatus==="在职可用"||person.personnelStatus==="作业中"||person.personnelStatus==="请假";
+}
+
+function findCurrentPerson(){
+  const records=getPersonnelRecords();
+  const currentId=String(localStorage.getItem("currentPersonId")||"");
+  const selected=normalizePosition(localStorage.getItem("selectedPosition")||"");
+
+  if(currentId){
+    const found=records.find(p=>getPersonId(p)===currentId&&(!selected||normalizePosition(p.position)===selected));
+    if(found)return found;
+  }
+
+  if(selected){
+    const matches=records.filter(p=>normalizePosition(p.position)===selected&&isApproved(p));
+    if(matches.length===1)return matches[0];
+  }
+
+  return null;
+}
+
+function verifyAccess(){
+  currentPerson=findCurrentPerson();
+
+  if(!currentPerson){
+    alert("没有找到当前人员资料，请从系统首页重新进入。");
+    location.replace("index.html");
+    return false;
+  }
+
+  const position=normalizePosition(currentPerson.position);
+
+  if(!MANAGEMENT_POSITIONS.includes(position)){
+    alert("当前岗位不属于中层管理综合工作台。");
+    location.replace("index.html");
+    return false;
+  }
+
+  if(!isApproved(currentPerson)){
+    const id=getPersonId(currentPerson);
+    localStorage.setItem("waitingApplicantPersonId",id);
+    localStorage.setItem("waitingApplicantPosition",position);
+    location.replace("person-waiting.html?position="+encodeURIComponent(position)+"&personId="+encodeURIComponent(id));
+    return false;
+  }
+
+  localStorage.setItem("currentPersonId",getPersonId(currentPerson));
+  localStorage.setItem("selectedPosition",position);
+  return true;
+}
+
+function render(){
+  const position=normalizePosition(currentPerson.position);
+
+  document.getElementById("personName").textContent=currentPerson.name||"-";
+  document.getElementById("personPosition").textContent=position||"-";
+  document.getElementById("personDepartment").textContent=currentPerson.department||currentPerson.team||"-";
+  document.getElementById("personId").textContent=getPersonId(currentPerson)||"-";
+
+  const badge=document.getElementById("approvalBadge");
+  badge.textContent="已审核";
+  badge.className="badge green";
+
+  document.getElementById("permissionDescription").textContent=POSITION_DESCRIPTIONS[position]||"根据岗位显示对应业务模块。";
+
+  const allowed=POSITION_MODULES[position]||[];
+  document.querySelectorAll("[data-module]").forEach(card=>{
+    card.classList.toggle("hidden",!allowed.includes(card.dataset.module));
+  });
+
+  const todos=POSITION_TODOS[position]||[];
+  document.getElementById("todoCount").textContent=String(todos.length);
+  document.getElementById("pendingCount").textContent=String(todos.length);
+
+  const box=document.getElementById("todoList");
+  box.innerHTML=todos.length
+    ? todos.map((t,i)=>`<div class="todo"><div><strong>${escapeHtml(t[0])}</strong><small>${escapeHtml(t[1])}</small></div><span class="badge ${i===0?"gray":"green"}">待处理</span></div>`).join("")
+    : `<div class="todo"><div><strong>当前暂无岗位待办</strong><small>V3.0 后读取真实业务待办。</small></div><span class="badge gray">0</span></div>`;
+}
+
+function openReport(section){
+  openPlanned("report-center.html?section="+encodeURIComponent(section),"报表中心");
+}
+
+function openPlanned(url,name){
+  const pure=String(url).split("?")[0];
+  const planned=["report-center.html","material-request.html","attendance.html","warehouse.html"];
+  if(planned.includes(pure)){
+    if(!confirm(name+"入口已经预留。\n如果该页面尚未新建，会暂时显示404。\n\n是否继续？"))return;
+  }
+  location.href=url;
+}
+
+function planned(name){
+  alert(name+"已经纳入系统规划。\n当前 V2.10.1A 先完成中层管理综合工作台界面，后续 V3.0 接入真实业务数据。");
+}
+
+function escapeHtml(value){
+  const div=document.createElement("div");
+  div.textContent=String(value??"");
+  return div.innerHTML;
+}
+
+function goHome(){
+  location.href="index.html";
+}
+
+if(verifyAccess()){
+  render();
+}
+</script>
+</body>
+</html>
 
