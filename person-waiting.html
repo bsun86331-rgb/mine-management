@@ -464,7 +464,7 @@
 
 
 <footer>
-    矿山管理系统 · 审核等待页 V2.10.0R
+    矿山管理系统 · 审核等待页 V2.10.0V
 </footer>
 
 
@@ -786,6 +786,12 @@ function getSelectedPosition() {
         ||
 
         localStorage.getItem(
+            "waitingApplicantPosition"
+        )
+
+        ||
+
+        localStorage.getItem(
             "selectedPosition"
         )
 
@@ -809,24 +815,63 @@ function findCurrentPerson() {
         getPersonnelRecords();
 
 
-    const currentPersonId =
-        localStorage.getItem(
-            "currentPersonId"
-        );
-
-
     const selectedPosition =
         getSelectedPosition();
 
 
-
     /*
-     * 优先：
-     * 人员ID + 岗位
+     * V2.10.0V
+     * 等待审核身份锁定优先级：
+     *
+     * 1. URL personId
+     * 2. waitingApplicantPersonId
+     * 3. currentPersonId
+     * 4. 同岗位唯一人员
+     *
+     * 这样管理员登录、岗位切换或其他页面使用
+     * currentPersonId 时，不会再丢失原申请人身份。
      */
 
-    if (
+    const urlPersonId =
+        String(
+            params.get(
+                "personId"
+            ) || ""
+        );
+
+
+    const waitingApplicantPersonId =
+        String(
+            localStorage.getItem(
+                "waitingApplicantPersonId"
+            ) || ""
+        );
+
+
+    const currentPersonId =
+        String(
+            localStorage.getItem(
+                "currentPersonId"
+            ) || ""
+        );
+
+
+    const candidateIds = [
+
+        urlPersonId,
+
+        waitingApplicantPersonId,
+
         currentPersonId
+
+    ].filter(
+        Boolean
+    );
+
+
+    for (
+        const candidateId
+        of candidateIds
     ) {
 
         const found =
@@ -840,7 +885,7 @@ function findCurrentPerson() {
                         )
                     ) ===
                         String(
-                            currentPersonId
+                            candidateId
                         )
 
                     &&
@@ -863,17 +908,59 @@ function findCurrentPerson() {
             found
         ) {
 
+            /*
+             * 一旦通过 URL 或专用等待ID找到本人，
+             * 立即重新同步等待审核身份和旧兼容字段。
+             */
+
+            const personId =
+                getPersonId(
+                    found
+                );
+
+
+            const position =
+                normalizePosition(
+                    found.position
+                );
+
+
+            localStorage.setItem(
+                "waitingApplicantPersonId",
+                String(
+                    personId
+                )
+            );
+
+
+            localStorage.setItem(
+                "waitingApplicantPosition",
+                position
+            );
+
+
+            localStorage.setItem(
+                "currentPersonId",
+                String(
+                    personId
+                )
+            );
+
+
+            localStorage.setItem(
+                "selectedPosition",
+                position
+            );
+
+
             return found;
-
         }
-
     }
 
 
-
     /*
-     * 当前岗位只有1人时
-     * 自动识别
+     * 最后兼容：
+     * 当前岗位只有1人时自动识别。
      */
 
     if (
@@ -895,13 +982,43 @@ function findCurrentPerson() {
 
         if (
             matches.length ===
-            1
+                1
         ) {
 
-            return matches[0];
+            const found =
+                matches[0];
 
+
+            const personId =
+                getPersonId(
+                    found
+                );
+
+
+            localStorage.setItem(
+                "waitingApplicantPersonId",
+                String(
+                    personId
+                )
+            );
+
+
+            localStorage.setItem(
+                "waitingApplicantPosition",
+                selectedPosition
+            );
+
+
+            localStorage.setItem(
+                "currentPersonId",
+                String(
+                    personId
+                )
+            );
+
+
+            return found;
         }
-
     }
 
 
@@ -1799,6 +1916,21 @@ function enterWorkPage() {
     );
 
 
+    /*
+     * 审核已经通过，等待审核专用身份完成使命。
+     * currentPersonId / selectedPosition 已经重新锁定为本人，
+     * 所以这里可以安全清理等待字段。
+     */
+    localStorage.removeItem(
+        "waitingApplicantPersonId"
+    );
+
+
+    localStorage.removeItem(
+        "waitingApplicantPosition"
+    );
+
+
 
     /*
      * 总经理 / 管理员
@@ -2038,6 +2170,25 @@ function formatDateTime(
 function initialize() {
 
 
+    const urlPersonId =
+        String(
+            params.get(
+                "personId"
+            ) || ""
+        );
+
+
+    if (
+        urlPersonId
+    ) {
+
+        localStorage.setItem(
+            "waitingApplicantPersonId",
+            urlPersonId
+        );
+    }
+
+
     const selectedPosition =
         getSelectedPosition();
 
@@ -2045,6 +2196,12 @@ function initialize() {
     if (
         selectedPosition
     ) {
+
+        localStorage.setItem(
+            "waitingApplicantPosition",
+            selectedPosition
+        );
+
 
         localStorage.setItem(
             "selectedPosition",
