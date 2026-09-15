@@ -1,1 +1,678 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0f172a">
+
+    <title>财务费用录入中心 - 矿山管理系统</title>
+
+    <style>
+        * { box-sizing: border-box; }
+
+        :root {
+            --bg: #f1f5f9;
+            --card: #ffffff;
+            --text: #0f172a;
+            --muted: #64748b;
+            --line: #e2e8f0;
+            --dark: #0f172a;
+            --primary: #2563eb;
+            --success: #16a34a;
+            --warning: #f59e0b;
+            --danger: #dc2626;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            background: var(--bg);
+            color: var(--text);
+            font-family: Arial, "Microsoft YaHei", sans-serif;
+        }
+
+        header {
+            position: sticky;
+            top: 0;
+            z-index: 40;
+            background: var(--dark);
+            color: #fff;
+            box-shadow: 0 5px 18px rgba(15, 23, 42, .18);
+        }
+
+        .header-inner {
+            max-width: 1150px;
+            margin: 0 auto;
+            padding: 15px 14px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 22px;
+        }
+
+        header p {
+            margin: 5px 0 0;
+            color: #cbd5e1;
+            font-size: 12px;
+        }
+
+        button {
+            border: 0;
+            border-radius: 10px;
+            min-height: 42px;
+            padding: 10px 14px;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .header-btn {
+            background: #1e293b;
+            color: #fff;
+            border: 1px solid #475569;
+        }
+
+        .primary-btn { background: var(--primary); color: #fff; }
+        .success-btn { background: var(--success); color: #fff; }
+        .danger-btn { background: var(--danger); color: #fff; }
+        .secondary-btn { background: #fff; color: #334155; border: 1px solid #cbd5e1; }
+
+        main {
+            max-width: 1150px;
+            margin: 0 auto;
+            padding: 16px 14px 40px;
+        }
+
+        .notice {
+            margin-bottom: 14px;
+            padding: 13px 14px;
+            border: 1px solid #bfdbfe;
+            border-radius: 12px;
+            background: #eff6ff;
+            color: #1e40af;
+            font-size: 13px;
+            line-height: 1.75;
+        }
+
+        .card {
+            margin-bottom: 14px;
+            padding: 17px;
+            border-radius: 16px;
+            background: #fff;
+            box-shadow: 0 5px 20px rgba(15, 23, 42, .06);
+        }
+
+        .section-title {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 14px;
+        }
+
+        .section-title h2 {
+            margin: 0;
+            font-size: 18px;
+        }
+
+        .section-title p {
+            margin: 5px 0 0;
+            color: var(--muted);
+            font-size: 12px;
+            line-height: 1.6;
+        }
+
+        .grid-3 {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 12px;
+        }
+
+        .form-group {
+            margin-bottom: 12px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+        input,
+        select,
+        textarea {
+            width: 100%;
+            min-height: 42px;
+            padding: 9px 10px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            background: #fff;
+            font-size: 14px;
+        }
+
+        textarea {
+            min-height: 84px;
+            resize: vertical;
+        }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 10px;
+        }
+
+        .summary-box {
+            padding: 13px;
+            border-radius: 12px;
+            background: #f8fafc;
+        }
+
+        .summary-box span {
+            display: block;
+            color: #64748b;
+            font-size: 12px;
+        }
+
+        .summary-box strong {
+            display: block;
+            margin-top: 6px;
+            font-size: 22px;
+        }
+
+        .table-wrap {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            min-width: 900px;
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            padding: 10px 9px;
+            border-bottom: 1px solid var(--line);
+            text-align: left;
+            font-size: 13px;
+        }
+
+        th {
+            background: #f8fafc;
+            color: #475569;
+        }
+
+        .toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .toolbar input,
+        .toolbar select {
+            width: auto;
+            min-width: 180px;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 5px 9px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .badge.green {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .badge.gray {
+            background: #e2e8f0;
+            color: #475569;
+        }
+
+        .empty {
+            padding: 24px 10px;
+            text-align: center;
+            color: #94a3b8;
+        }
+
+        footer {
+            padding: 20px;
+            text-align: center;
+            color: #94a3b8;
+            font-size: 12px;
+        }
+
+        @media (max-width: 760px) {
+            .grid-3,
+            .summary-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .toolbar input,
+            .toolbar select {
+                width: 100%;
+            }
+
+            .header-inner {
+                align-items: flex-start;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<header>
+    <div class="header-inner">
+        <div>
+            <h1>🧮 财务费用录入中心</h1>
+            <p>Finance Cost Center · V2.10.1J</p>
+        </div>
+
+        <button type="button" class="header-btn" onclick="goHome()">首页</button>
+    </div>
+</header>
+
+<main>
+
+    <div class="notice">
+        本页面主要供会计、管理员和总经理录入无法从业务系统自动生成的费用。
+        工资、柴油、维修费用后续优先从对应模块自动汇总；折旧、税费、均摊及其他财务费用在这里维护。
+    </div>
+
+    <section class="card">
+        <div class="section-title">
+            <div>
+                <h2>➕ 新增财务费用</h2>
+                <p>所有费用按月份保存，供报表中心和总经理经营驾驶舱汇总。</p>
+            </div>
+        </div>
+
+        <div class="grid-3">
+            <div class="form-group">
+                <label>费用月份 *</label>
+                <input id="costMonth" type="month">
+            </div>
+
+            <div class="form-group">
+                <label>费用类型 *</label>
+                <select id="costType">
+                    <option value="">请选择</option>
+                    <option value="depreciation">折旧费用</option>
+                    <option value="tax">税费</option>
+                    <option value="shared">均摊费用</option>
+                    <option value="finance">财务费用</option>
+                    <option value="insurance">保险费用</option>
+                    <option value="accommodation">住宿费用</option>
+                    <option value="meal">餐饮费用</option>
+                    <option value="transport">运输费用</option>
+                    <option value="management">管理费用</option>
+                    <option value="other">其他费用</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>金额 *</label>
+                <input id="costAmount" type="number" min="0" step="0.01" placeholder="0">
+            </div>
+
+            <div class="form-group">
+                <label>费用名称 *</label>
+                <input id="costName" type="text" placeholder="例如：9月设备折旧">
+            </div>
+
+            <div class="form-group">
+                <label>成本中心 / 部门</label>
+                <input id="costDepartment" type="text" placeholder="例如：车队 / 修理厂 / 管理部">
+            </div>
+
+            <div class="form-group">
+                <label>凭证号</label>
+                <input id="voucherNo" type="text" placeholder="可选">
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>备注</label>
+            <textarea id="costRemark" placeholder="费用说明"></textarea>
+        </div>
+
+        <button type="button" class="primary-btn" onclick="saveFinanceCost()">保存费用</button>
+    </section>
+
+    <section class="card">
+        <div class="section-title">
+            <div>
+                <h2>📌 月度费用汇总</h2>
+                <p>按当前筛选月份自动汇总。</p>
+            </div>
+        </div>
+
+        <div class="summary-grid">
+            <div class="summary-box"><span>折旧费用</span><strong id="sumDepreciation">0</strong></div>
+            <div class="summary-box"><span>税费</span><strong id="sumTax">0</strong></div>
+            <div class="summary-box"><span>均摊费用</span><strong id="sumShared">0</strong></div>
+            <div class="summary-box"><span>其他财务费用</span><strong id="sumOther">0</strong></div>
+        </div>
+    </section>
+
+    <section class="card">
+        <div class="section-title">
+            <div>
+                <h2>📋 财务费用记录</h2>
+                <p>可按月份和类型筛选。</p>
+            </div>
+        </div>
+
+        <div class="toolbar">
+            <input id="filterMonth" type="month" onchange="renderRecords()">
+            <select id="filterType" onchange="renderRecords()">
+                <option value="">全部类型</option>
+                <option value="depreciation">折旧费用</option>
+                <option value="tax">税费</option>
+                <option value="shared">均摊费用</option>
+                <option value="finance">财务费用</option>
+                <option value="insurance">保险费用</option>
+                <option value="accommodation">住宿费用</option>
+                <option value="meal">餐饮费用</option>
+                <option value="transport">运输费用</option>
+                <option value="management">管理费用</option>
+                <option value="other">其他费用</option>
+            </select>
+        </div>
+
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>月份</th>
+                        <th>类型</th>
+                        <th>费用名称</th>
+                        <th>部门</th>
+                        <th>金额</th>
+                        <th>凭证号</th>
+                        <th>备注</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody id="financeCostTableBody"></tbody>
+            </table>
+        </div>
+    </section>
+
+</main>
+
+<footer>
+    矿山管理系统 · 财务费用录入中心 V2.10.1J
+</footer>
+
+<script>
+"use strict";
+
+const FINANCE_COST_KEY = "financeCostRecords";
+
+const TYPE_LABELS = {
+    depreciation: "折旧费用",
+    tax: "税费",
+    shared: "均摊费用",
+    finance: "财务费用",
+    insurance: "保险费用",
+    accommodation: "住宿费用",
+    meal: "餐饮费用",
+    transport: "运输费用",
+    management: "管理费用",
+    other: "其他费用"
+};
+
+function monthNow() {
+    const d = new Date();
+
+    return new Date(
+        d.getTime() -
+        d.getTimezoneOffset() * 60000
+    )
+        .toISOString()
+        .slice(0, 7);
+}
+
+function readRecords() {
+    try {
+        const data = JSON.parse(localStorage.getItem(FINANCE_COST_KEY));
+        return Array.isArray(data) ? data : [];
+    } catch (error) {
+        return [];
+    }
+}
+
+function saveRecords(records) {
+    localStorage.setItem(
+        FINANCE_COST_KEY,
+        JSON.stringify(records)
+    );
+}
+
+function saveFinanceCost() {
+    const month = document.getElementById("costMonth").value;
+    const type = document.getElementById("costType").value;
+    const amount = Number(document.getElementById("costAmount").value || 0);
+    const name = document.getElementById("costName").value.trim();
+    const department = document.getElementById("costDepartment").value.trim();
+    const voucherNo = document.getElementById("voucherNo").value.trim();
+    const remark = document.getElementById("costRemark").value.trim();
+
+    if (!month) {
+        alert("请选择费用月份。");
+        return;
+    }
+
+    if (!type) {
+        alert("请选择费用类型。");
+        return;
+    }
+
+    if (!name) {
+        alert("请填写费用名称。");
+        return;
+    }
+
+    if (amount <= 0) {
+        alert("请填写正确的费用金额。");
+        return;
+    }
+
+    const records = readRecords();
+
+    records.push({
+        financeCostId:
+            "FIN_" +
+            Date.now() +
+            "_" +
+            Math.random().toString(36).slice(2, 7),
+
+        month,
+        type,
+        typeName: TYPE_LABELS[type] || type,
+        name,
+        department,
+        amount,
+        voucherNo,
+        remark,
+        status: "active",
+        createdAt: new Date().toISOString()
+    });
+
+    saveRecords(records);
+
+    document.getElementById("costAmount").value = "";
+    document.getElementById("costName").value = "";
+    document.getElementById("costDepartment").value = "";
+    document.getElementById("voucherNo").value = "";
+    document.getElementById("costRemark").value = "";
+
+    document.getElementById("filterMonth").value = month;
+
+    renderRecords();
+
+    alert("财务费用已保存。");
+}
+
+function deleteFinanceCost(id) {
+    if (!confirm("确认删除该费用记录？")) {
+        return;
+    }
+
+    const records = readRecords()
+        .filter(item => item.financeCostId !== id);
+
+    saveRecords(records);
+    renderRecords();
+}
+
+function renderRecords() {
+    const month =
+        document.getElementById("filterMonth").value ||
+        monthNow();
+
+    const type =
+        document.getElementById("filterType").value;
+
+    const records =
+        readRecords()
+            .filter(item =>
+                item.status !== "disabled" &&
+                item.month === month &&
+                (!type || item.type === type)
+            )
+            .sort((a, b) =>
+                String(b.createdAt || "")
+                    .localeCompare(
+                        String(a.createdAt || "")
+                    )
+            );
+
+    const body =
+        document.getElementById("financeCostTableBody");
+
+    body.innerHTML =
+        records.length
+            ?
+            records
+                .map(item => `
+                    <tr>
+                        <td>${escapeHtml(item.month || "-")}</td>
+                        <td>${escapeHtml(item.typeName || TYPE_LABELS[item.type] || "-")}</td>
+                        <td>${escapeHtml(item.name || "-")}</td>
+                        <td>${escapeHtml(item.department || "-")}</td>
+                        <td>${formatMoney(item.amount)}</td>
+                        <td>${escapeHtml(item.voucherNo || "-")}</td>
+                        <td>${escapeHtml(item.remark || "-")}</td>
+                        <td>
+                            <button
+                                type="button"
+                                class="danger-btn"
+                                onclick="deleteFinanceCost('${escapeJs(item.financeCostId)}')"
+                            >
+                                删除
+                            </button>
+                        </td>
+                    </tr>
+                `)
+                .join("")
+            :
+            `<tr><td colspan="8" class="empty">当前月份暂无财务费用记录</td></tr>`;
+
+    renderSummary(month);
+}
+
+function renderSummary(month) {
+    const records =
+        readRecords()
+            .filter(item =>
+                item.status !== "disabled" &&
+                item.month === month
+            );
+
+    const sumType = type =>
+        records
+            .filter(item => item.type === type)
+            .reduce(
+                (sum, item) =>
+                    sum + Number(item.amount || 0),
+                0
+            );
+
+    const depreciation = sumType("depreciation");
+    const tax = sumType("tax");
+    const shared = sumType("shared");
+
+    const other = records
+        .filter(item =>
+            !["depreciation", "tax", "shared"].includes(item.type)
+        )
+        .reduce(
+            (sum, item) =>
+                sum + Number(item.amount || 0),
+            0
+        );
+
+    document.getElementById("sumDepreciation").textContent =
+        formatMoney(depreciation);
+
+    document.getElementById("sumTax").textContent =
+        formatMoney(tax);
+
+    document.getElementById("sumShared").textContent =
+        formatMoney(shared);
+
+    document.getElementById("sumOther").textContent =
+        formatMoney(other);
+}
+
+function formatMoney(value) {
+    return Number(value || 0)
+        .toLocaleString(
+            "zh-CN",
+            {
+                maximumFractionDigits: 2
+            }
+        );
+}
+
+function escapeHtml(value) {
+    const div = document.createElement("div");
+    div.textContent = String(value ?? "");
+    return div.innerHTML;
+}
+
+function escapeJs(value) {
+    return String(value ?? "")
+        .replaceAll("\\", "\\\\")
+        .replaceAll("'", "\\'")
+        .replaceAll("\n", "\\n")
+        .replaceAll("\r", "\\r");
+}
+
+function goHome() {
+    location.href = "index.html";
+}
+
+document.getElementById("costMonth").value = monthNow();
+document.getElementById("filterMonth").value = monthNow();
+
+renderRecords();
+</script>
+
+</body>
+</html>
 
