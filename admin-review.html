@@ -18,7 +18,7 @@
     <!-- =====================================================
          管理员登录保护
 
-         V2.10.0G 本地测试版：
+         V2.10.0S 本地测试版：
          1. 必须存在 managementSession
          2. 必须是管理员
          3. 必须在30分钟有效期内
@@ -35,7 +35,7 @@
 
             function getPersonId(person) {
 
-                return (
+                return String(
                     person?.personId ||
                     person?.driverId ||
                     person?.employeeId ||
@@ -214,8 +214,12 @@
                 records.find(
                     person =>
 
-                        getPersonId(person) ===
-                            session.personId &&
+                        String(
+                            getPersonId(person)
+                        ) ===
+                            String(
+                                session.personId
+                            ) &&
 
                         normalizePosition(
                             person.position
@@ -238,9 +242,20 @@
             }
 
 
-            localStorage.setItem(
-                "currentPersonId",
-                session.personId
+            /*
+             * V2.10.0S 关键修复：
+             * 管理员身份只保存在 sessionStorage。
+             *
+             * 不再写 localStorage.currentPersonId，
+             * 避免把正在等待审核的申请人ID覆盖成管理员ID。
+             * 这样 person-waiting.html 才能继续识别原申请人，
+             * 审核通过后自动进入其对应工作端。
+             */
+            sessionStorage.setItem(
+                "adminPersonId",
+                String(
+                    session.personId
+                )
             );
 
 
@@ -727,7 +742,7 @@
                 </h1>
 
                 <p>
-                    统一人员入职审核 · V2.10.0G
+                    统一人员入职审核 · V2.10.0S
                 </p>
 
             </div>
@@ -983,7 +998,7 @@
     color:#94a3b8;
     font-size:12px;
 ">
-    矿山管理系统 · 管理员审核中心 V2.10.0G
+    矿山管理系统 · 管理员审核中心 V2.10.0S
 </footer>
 
 
@@ -1451,6 +1466,9 @@ function normalizePosition(position) {
         "卡车司机":
             "汽车司机",
 
+        "挖掘机司机":
+            "挖机司机",
+
         "装载机司机":
             "铲车司机",
 
@@ -1507,7 +1525,7 @@ function normalizePosition(position) {
 
 function getPersonId(person) {
 
-    return (
+    return String(
         person?.personId ||
         person?.driverId ||
         person?.employeeId ||
@@ -2093,8 +2111,12 @@ function findPerson(personId) {
         getPersonnelRecords()
             .find(
                 person =>
-                    getPersonId(person) ===
-                    personId
+                    String(
+                        getPersonId(person)
+                    ) ===
+                    String(
+                        personId
+                    )
             ) ||
         null
     );
@@ -2403,8 +2425,12 @@ function approveCurrentPerson() {
     const index =
         records.findIndex(
             person =>
-                getPersonId(person) ===
-                selectedPersonId
+                String(
+                    getPersonId(person)
+                ) ===
+                String(
+                    selectedPersonId
+                )
         );
 
 
@@ -2586,8 +2612,12 @@ function confirmReject() {
     const index =
         records.findIndex(
             person =>
-                getPersonId(person) ===
-                selectedPersonId
+                String(
+                    getPersonId(person)
+                ) ===
+                String(
+                    selectedPersonId
+                )
         );
 
 
@@ -3162,6 +3192,11 @@ function logoutAdmin() {
 
     sessionStorage.removeItem(
         "managementSession"
+    );
+
+
+    sessionStorage.removeItem(
+        "adminPersonId"
     );
 
 
