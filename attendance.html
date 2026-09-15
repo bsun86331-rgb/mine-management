@@ -1,1 +1,1199 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0f172a">
+
+    <title>全员定位考勤中心 - 矿山管理系统</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg: #f1f5f9;
+            --card: #ffffff;
+            --text: #0f172a;
+            --muted: #64748b;
+            --line: #e2e8f0;
+            --dark: #0f172a;
+            --primary: #2563eb;
+            --success: #16a34a;
+            --warning: #f59e0b;
+            --danger: #dc2626;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            background: var(--bg);
+            color: var(--text);
+            font-family: Arial, "Microsoft YaHei", sans-serif;
+        }
+
+        header {
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            background: var(--dark);
+            color: #fff;
+            box-shadow: 0 5px 18px rgba(15, 23, 42, .18);
+        }
+
+        .header-inner {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 15px 14px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 22px;
+        }
+
+        header p {
+            margin: 5px 0 0;
+            color: #cbd5e1;
+            font-size: 12px;
+        }
+
+        button {
+            border: 0;
+            border-radius: 10px;
+            min-height: 42px;
+            padding: 10px 14px;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .header-btn {
+            background: #1e293b;
+            color: #fff;
+            border: 1px solid #475569;
+        }
+
+        .primary-btn {
+            background: var(--primary);
+            color: #fff;
+        }
+
+        .success-btn {
+            background: var(--success);
+            color: #fff;
+        }
+
+        .warning-btn {
+            background: var(--warning);
+            color: #fff;
+        }
+
+        .danger-btn {
+            background: var(--danger);
+            color: #fff;
+        }
+
+        .secondary-btn {
+            background: #fff;
+            color: #334155;
+            border: 1px solid #cbd5e1;
+        }
+
+        main {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 16px 14px 40px;
+        }
+
+        .notice {
+            margin-bottom: 14px;
+            padding: 13px 14px;
+            border: 1px solid #bfdbfe;
+            border-radius: 12px;
+            background: #eff6ff;
+            color: #1e40af;
+            font-size: 13px;
+            line-height: 1.75;
+        }
+
+        .card {
+            margin-bottom: 14px;
+            padding: 17px;
+            border-radius: 16px;
+            background: #fff;
+            box-shadow: 0 5px 20px rgba(15, 23, 42, .06);
+        }
+
+        .section-title {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 12px;
+            margin-bottom: 14px;
+        }
+
+        .section-title h2 {
+            margin: 0;
+            font-size: 18px;
+        }
+
+        .section-title p {
+            margin: 5px 0 0;
+            color: var(--muted);
+            font-size: 12px;
+            line-height: 1.6;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 5px 9px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+
+        .badge.green {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .badge.yellow {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .badge.red {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .badge.gray {
+            background: #e2e8f0;
+            color: #475569;
+        }
+
+        .badge.blue {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        .profile-grid,
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 10px;
+        }
+
+        .info-box,
+        .status-box {
+            padding: 12px;
+            border-radius: 11px;
+            background: #f8fafc;
+        }
+
+        .info-box span,
+        .status-box span {
+            display: block;
+            margin-bottom: 6px;
+            color: var(--muted);
+            font-size: 12px;
+        }
+
+        .info-box strong {
+            display: block;
+            font-size: 15px;
+            word-break: break-word;
+        }
+
+        .status-box strong {
+            display: block;
+            font-size: 18px;
+        }
+
+        .clock {
+            padding: 14px;
+            margin-bottom: 12px;
+            border-radius: 12px;
+            background: #0f172a;
+            color: #fff;
+            text-align: center;
+        }
+
+        .clock strong {
+            display: block;
+            font-size: 28px;
+            letter-spacing: 1px;
+        }
+
+        .clock span {
+            display: block;
+            margin-top: 5px;
+            color: #cbd5e1;
+            font-size: 12px;
+        }
+
+        .action-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+        }
+
+        .action-grid button {
+            min-height: 54px;
+        }
+
+        .gps-box {
+            margin-top: 12px;
+            padding: 12px;
+            border: 1px solid var(--line);
+            border-radius: 11px;
+            background: #f8fafc;
+            color: #475569;
+            font-size: 12px;
+            line-height: 1.75;
+        }
+
+        .table-wrap {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            min-width: 900px;
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            padding: 10px 9px;
+            border-bottom: 1px solid var(--line);
+            text-align: left;
+            font-size: 13px;
+            vertical-align: middle;
+        }
+
+        th {
+            background: #f8fafc;
+            color: #475569;
+        }
+
+        .form-group {
+            margin-bottom: 12px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+        input,
+        select,
+        textarea {
+            width: 100%;
+            min-height: 42px;
+            padding: 9px 10px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            background: #fff;
+            font-size: 14px;
+        }
+
+        textarea {
+            min-height: 84px;
+            resize: vertical;
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 12px;
+        }
+
+        .empty {
+            padding: 24px 10px;
+            text-align: center;
+            color: #94a3b8;
+            font-size: 13px;
+        }
+
+        .warning-box {
+            margin-top: 12px;
+            padding: 12px 14px;
+            border: 1px solid #fde68a;
+            border-radius: 11px;
+            background: #fffbeb;
+            color: #92400e;
+            font-size: 12px;
+            line-height: 1.7;
+        }
+
+        footer {
+            padding: 20px;
+            text-align: center;
+            color: #94a3b8;
+            font-size: 12px;
+        }
+
+        @media (max-width: 760px) {
+            .profile-grid,
+            .status-grid,
+            .grid-2,
+            .action-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .header-inner {
+                align-items: flex-start;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<header>
+    <div class="header-inner">
+        <div>
+            <h1>📍 全员定位考勤中心</h1>
+            <p>Attendance Center · V2.10.1E</p>
+        </div>
+
+        <button type="button" class="header-btn" onclick="goHome()">首页</button>
+    </div>
+</header>
+
+<main>
+
+    <div class="notice">
+        所有已审核人员均可定位打卡。有效请假期间的打卡记录会保存，但不计入有效出勤。
+        对汽车司机等生产岗位，如“当天有考勤但生产数量为 0”，系统自动标记为零产量异常，等待车队长报备原因。
+    </div>
+
+    <section class="card">
+        <div class="section-title">
+            <div>
+                <h2>👤 当前人员</h2>
+                <p>自动读取当前已审核人员资料。</p>
+            </div>
+
+            <span id="approvalBadge" class="badge gray">识别中</span>
+        </div>
+
+        <div class="profile-grid">
+            <div class="info-box"><span>姓名</span><strong id="personName">-</strong></div>
+            <div class="info-box"><span>岗位</span><strong id="personPosition">-</strong></div>
+            <div class="info-box"><span>部门 / 车队</span><strong id="personDepartment">-</strong></div>
+            <div class="info-box"><span>人员编号</span><strong id="personId">-</strong></div>
+        </div>
+    </section>
+
+    <section class="card">
+        <div class="section-title">
+            <div>
+                <h2>🕒 今日定位打卡</h2>
+                <p>打卡时自动记录时间、经纬度和定位精度。</p>
+            </div>
+
+            <span id="todayStatusBadge" class="badge gray">未打卡</span>
+        </div>
+
+        <div class="clock">
+            <strong id="currentTime">--:--:--</strong>
+            <span id="currentDate">----</span>
+        </div>
+
+        <div class="action-grid">
+            <button type="button" class="success-btn" onclick="checkIn()">📍 上班打卡</button>
+            <button type="button" class="primary-btn" onclick="checkOut()">🏁 下班打卡</button>
+        </div>
+
+        <div id="gpsInfo" class="gps-box">
+            尚未获取定位。
+        </div>
+
+        <div id="leaveWarning" class="warning-box" style="display:none;">
+            当前人员处于有效请假期间。定位打卡可以保存，但不计为有效出勤。
+        </div>
+    </section>
+
+    <section class="card">
+        <div class="section-title">
+            <div>
+                <h2>📌 今日考勤状态</h2>
+                <p>结合打卡、请假及生产数量生成状态。</p>
+            </div>
+        </div>
+
+        <div class="status-grid">
+            <div class="status-box"><span>上班打卡</span><strong id="checkInTime">-</strong></div>
+            <div class="status-box"><span>下班打卡</span><strong id="checkOutTime">-</strong></div>
+            <div class="status-box"><span>考勤状态</span><strong id="attendanceStatus">未打卡</strong></div>
+            <div class="status-box"><span>生产数量</span><strong id="productionCount">0</strong></div>
+        </div>
+    </section>
+
+    <section class="card">
+        <div class="section-title">
+            <div>
+                <h2>⚠️ 零产量异常报备</h2>
+                <p>有有效考勤但当天生产数量为 0 的生产人员，需要由车队长说明原因。</p>
+            </div>
+
+            <span id="zeroProductionBadge" class="badge gray">无需报备</span>
+        </div>
+
+        <div id="zeroProductionForm" style="display:none;">
+            <div class="grid-2">
+                <div class="form-group">
+                    <label>报备原因 *</label>
+                    <select id="zeroReason">
+                        <option value="">请选择</option>
+                        <option value="车辆维修">车辆维修</option>
+                        <option value="备用司机">备用司机</option>
+                        <option value="后勤打杂">后勤打杂</option>
+                        <option value="道路维护">道路维护</option>
+                        <option value="培训">培训</option>
+                        <option value="等待调度">等待调度</option>
+                        <option value="天气停产">天气停产</option>
+                        <option value="设备故障">设备故障</option>
+                        <option value="其他">其他</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>报备人</label>
+                    <input id="reporterName" type="text" placeholder="车队长姓名">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>说明 *</label>
+                <textarea id="zeroRemark" placeholder="请填写当天没有生产数量的具体情况"></textarea>
+            </div>
+
+            <button type="button" class="warning-btn" onclick="submitZeroProductionReport()">提交报备</button>
+        </div>
+
+        <div id="zeroProductionResult" class="empty">
+            当前无需报备。
+        </div>
+    </section>
+
+    <section class="card">
+        <div class="section-title">
+            <div>
+                <h2>📋 我的近期考勤</h2>
+                <p>显示最近 30 条打卡记录。</p>
+            </div>
+        </div>
+
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>日期</th>
+                        <th>上班</th>
+                        <th>下班</th>
+                        <th>状态</th>
+                        <th>生产数量</th>
+                        <th>零产量报备</th>
+                    </tr>
+                </thead>
+                <tbody id="attendanceTableBody"></tbody>
+            </table>
+        </div>
+    </section>
+
+</main>
+
+<footer>
+    矿山管理系统 · 全员定位考勤中心 V2.10.1E
+</footer>
+
+<script>
+"use strict";
+
+const STORAGE = {
+    ATTENDANCE: "attendanceRecords",
+    ZERO_REPORTS: "zeroProductionReports",
+    LEAVE_KEYS: [
+        "leaveRequests",
+        "leaveRecords",
+        "driverLeaveRequests"
+    ]
+};
+
+let currentPerson = null;
+let latestLocation = null;
+
+function normalizePosition(position) {
+    const map = {
+        "卡车司机": "汽车司机",
+        "挖掘机司机": "挖机司机",
+        "装载机司机": "铲车司机",
+        "大巴": "大巴司机",
+        "测量人员": "测量员",
+        "安全人员": "安全员",
+        "后勤人员": "后勤",
+        "库房管理员": "库房管理",
+        "维修管理员": "维修管理",
+        "修理厂管理员": "维修管理",
+        "修理工": "维修员",
+        "维修人员": "维修员",
+        "调度员": "车队长"
+    };
+
+    return map[position] || position || "";
+}
+
+function getPersonId(person) {
+    return String(
+        person?.personId ||
+        person?.employeeId ||
+        person?.driverId ||
+        person?.id ||
+        ""
+    );
+}
+
+function readArray(key) {
+    try {
+        const data = JSON.parse(localStorage.getItem(key));
+        return Array.isArray(data) ? data : [];
+    } catch (error) {
+        return [];
+    }
+}
+
+function saveArray(key, data) {
+    localStorage.setItem(key, JSON.stringify(data));
+}
+
+function getPersonnelRecords() {
+    return readArray("personnelRecords");
+}
+
+function isApproved(person) {
+    if (!person) return false;
+
+    if (
+        person.status === "rejected" ||
+        person.approvalStatus === "rejected" ||
+        person.status === "disabled" ||
+        person.status === "resigned" ||
+        person.personnelStatus === "停用" ||
+        person.personnelStatus === "离职"
+    ) {
+        return false;
+    }
+
+    return (
+        person.approvalStatus === "approved" ||
+        person.status === "approved" ||
+        person.status === "active" ||
+        person.status === "working" ||
+        person.status === "leave" ||
+        person.personnelStatus === "在职可用" ||
+        person.personnelStatus === "作业中" ||
+        person.personnelStatus === "请假"
+    );
+}
+
+function findCurrentPerson() {
+    const records = getPersonnelRecords();
+    const currentId = String(localStorage.getItem("currentPersonId") || "");
+    const selectedPosition = normalizePosition(localStorage.getItem("selectedPosition") || "");
+
+    if (currentId) {
+        const found = records.find(person =>
+            getPersonId(person) === currentId &&
+            (!selectedPosition || normalizePosition(person.position) === selectedPosition)
+        );
+
+        if (found) return found;
+    }
+
+    if (selectedPosition) {
+        const matches = records.filter(person =>
+            normalizePosition(person.position) === selectedPosition &&
+            isApproved(person)
+        );
+
+        if (matches.length === 1) return matches[0];
+    }
+
+    return null;
+}
+
+function verifyAccess() {
+    currentPerson = findCurrentPerson();
+
+    if (!currentPerson) {
+        alert("没有找到当前人员资料，请从系统首页重新进入。");
+        location.replace("index.html");
+        return false;
+    }
+
+    if (!isApproved(currentPerson)) {
+        alert("当前人员尚未审核通过。");
+        location.replace("index.html");
+        return false;
+    }
+
+    return true;
+}
+
+function renderProfile() {
+    document.getElementById("personName").textContent = currentPerson.name || "-";
+    document.getElementById("personPosition").textContent = normalizePosition(currentPerson.position) || "-";
+    document.getElementById("personDepartment").textContent = currentPerson.department || currentPerson.team || "-";
+    document.getElementById("personId").textContent = getPersonId(currentPerson) || "-";
+
+    const badge = document.getElementById("approvalBadge");
+    badge.textContent = "已审核";
+    badge.className = "badge green";
+}
+
+function startClock() {
+    function refresh() {
+        const now = new Date();
+
+        document.getElementById("currentTime").textContent =
+            now.toLocaleTimeString("zh-CN", { hour12: false });
+
+        document.getElementById("currentDate").textContent =
+            now.toLocaleDateString("zh-CN", {
+                year: "numeric",
+                month: "long",
+                day: "numeric",
+                weekday: "long"
+            });
+    }
+
+    refresh();
+    setInterval(refresh, 1000);
+}
+
+function today() {
+    const date = new Date();
+
+    return new Date(
+        date.getTime() -
+        date.getTimezoneOffset() * 60000
+    )
+        .toISOString()
+        .slice(0, 10);
+}
+
+function getTodayRecord() {
+    const personId = getPersonId(currentPerson);
+    const date = today();
+
+    return readArray(STORAGE.ATTENDANCE)
+        .find(item =>
+            String(item.personId || "") === personId &&
+            item.date === date
+        ) || null;
+}
+
+function isOnApprovedLeave() {
+    const personId = getPersonId(currentPerson);
+    const current = new Date();
+
+    let leaveRecords = [];
+
+    STORAGE.LEAVE_KEYS.forEach(key => {
+        leaveRecords = leaveRecords.concat(readArray(key));
+    });
+
+    return leaveRecords.some(item => {
+        const samePerson =
+            String(
+                item.personId ||
+                item.driverId ||
+                item.employeeId ||
+                ""
+            ) === personId;
+
+        const approved =
+            item.status === "approved" ||
+            item.approvalStatus === "approved";
+
+        const start = new Date(
+            item.startTime ||
+            item.leaveStart ||
+            item.startDate ||
+            0
+        );
+
+        const end = new Date(
+            item.endTime ||
+            item.leaveEnd ||
+            item.endDate ||
+            0
+        );
+
+        return (
+            samePerson &&
+            approved &&
+            !Number.isNaN(start.getTime()) &&
+            !Number.isNaN(end.getTime()) &&
+            current >= start &&
+            current <= end
+        );
+    });
+}
+
+function getProductionCountForToday() {
+    const personId = getPersonId(currentPerson);
+    const position = normalizePosition(currentPerson.position);
+    const date = today();
+
+    const possibleKeys = [
+        "tripRecords",
+        "driverTripRecords",
+        "excavatorTripRecords",
+        "excavatorLoadingRecords"
+    ];
+
+    let count = 0;
+
+    possibleKeys.forEach(key => {
+        readArray(key).forEach(item => {
+            const samePerson =
+                String(
+                    item.personId ||
+                    item.driverId ||
+                    item.workerId ||
+                    ""
+                ) === personId;
+
+            const recordDate = String(
+                item.date ||
+                item.workDate ||
+                item.createdAt ||
+                item.completedAt ||
+                ""
+            ).slice(0, 10);
+
+            if (
+                samePerson &&
+                recordDate === date
+            ) {
+                count += Number(
+                    item.tripCount ||
+                    item.count ||
+                    item.loadingCount ||
+                    1
+                );
+            }
+        });
+    });
+
+    if (
+        position !== "汽车司机" &&
+        position !== "挖机司机"
+    ) {
+        return 0;
+    }
+
+    return count;
+}
+
+function getLocation() {
+    return new Promise((resolve, reject) => {
+        if (!navigator.geolocation) {
+            reject(new Error("当前浏览器不支持定位。"));
+            return;
+        }
+
+        navigator.geolocation.getCurrentPosition(
+            position => {
+                const data = {
+                    latitude: position.coords.latitude,
+                    longitude: position.coords.longitude,
+                    accuracy: position.coords.accuracy,
+                    capturedAt: new Date().toISOString()
+                };
+
+                latestLocation = data;
+                renderGpsInfo(data);
+                resolve(data);
+            },
+            error => {
+                let message = "定位失败。";
+
+                if (error.code === 1) {
+                    message = "定位权限被拒绝，请允许浏览器访问位置。";
+                } else if (error.code === 2) {
+                    message = "暂时无法获取当前位置。";
+                } else if (error.code === 3) {
+                    message = "定位超时，请重试。";
+                }
+
+                reject(new Error(message));
+            },
+            {
+                enableHighAccuracy: true,
+                timeout: 15000,
+                maximumAge: 0
+            }
+        );
+    });
+}
+
+function renderGpsInfo(data) {
+    const box = document.getElementById("gpsInfo");
+
+    if (!data) {
+        box.textContent = "尚未获取定位。";
+        return;
+    }
+
+    box.innerHTML = `
+        纬度：${Number(data.latitude).toFixed(6)}<br>
+        经度：${Number(data.longitude).toFixed(6)}<br>
+        定位精度：约 ${Math.round(Number(data.accuracy || 0))} 米<br>
+        更新时间：${formatDateTime(data.capturedAt)}
+    `;
+}
+
+async function checkIn() {
+    const existing = getTodayRecord();
+
+    if (existing?.checkInAt) {
+        alert("今天已经完成上班打卡。");
+        return;
+    }
+
+    try {
+        const locationData = await getLocation();
+        const records = readArray(STORAGE.ATTENDANCE);
+        const leaveActive = isOnApprovedLeave();
+        const now = new Date().toISOString();
+
+        let record = getTodayRecord();
+
+        if (!record) {
+            record = {
+                attendanceId: "ATT_" + Date.now() + "_" + Math.random().toString(36).slice(2, 7),
+                personId: getPersonId(currentPerson),
+                personName: currentPerson.name || "",
+                position: normalizePosition(currentPerson.position),
+                department: currentPerson.department || currentPerson.team || "",
+                date: today(),
+                createdAt: now
+            };
+
+            records.push(record);
+        }
+
+        record.checkInAt = now;
+        record.checkInLocation = locationData;
+        record.leaveActiveAtCheckIn = leaveActive;
+        record.attendanceStatus = leaveActive ? "leave_invalid" : "present";
+        record.updatedAt = now;
+
+        saveArray(STORAGE.ATTENDANCE, records);
+
+        renderTodayStatus();
+        renderHistory();
+
+        alert(
+            leaveActive
+                ? "打卡已保存，但当前处于有效请假期间，本次不计有效出勤。"
+                : "上班打卡成功。"
+        );
+
+    } catch (error) {
+        alert(error.message || "定位打卡失败。");
+    }
+}
+
+async function checkOut() {
+    const record = getTodayRecord();
+
+    if (!record?.checkInAt) {
+        alert("请先完成上班打卡。");
+        return;
+    }
+
+    if (record.checkOutAt) {
+        alert("今天已经完成下班打卡。");
+        return;
+    }
+
+    try {
+        const locationData = await getLocation();
+        const records = readArray(STORAGE.ATTENDANCE);
+        const target = records.find(item => item.attendanceId === record.attendanceId);
+
+        if (!target) return;
+
+        target.checkOutAt = new Date().toISOString();
+        target.checkOutLocation = locationData;
+        target.updatedAt = new Date().toISOString();
+
+        saveArray(STORAGE.ATTENDANCE, records);
+
+        renderTodayStatus();
+        renderHistory();
+
+        alert("下班打卡成功。");
+
+    } catch (error) {
+        alert(error.message || "定位打卡失败。");
+    }
+}
+
+function renderTodayStatus() {
+    const record = getTodayRecord();
+    const leaveActive = isOnApprovedLeave();
+    const productionCount = getProductionCountForToday();
+
+    document.getElementById("leaveWarning").style.display =
+        leaveActive ? "block" : "none";
+
+    document.getElementById("productionCount").textContent =
+        String(productionCount);
+
+    if (!record) {
+        document.getElementById("checkInTime").textContent = "-";
+        document.getElementById("checkOutTime").textContent = "-";
+        document.getElementById("attendanceStatus").textContent =
+            leaveActive ? "请假" : "未打卡";
+
+        const badge = document.getElementById("todayStatusBadge");
+        badge.textContent = leaveActive ? "请假" : "未打卡";
+        badge.className = leaveActive ? "badge yellow" : "badge gray";
+
+        renderZeroProduction(null, productionCount, leaveActive);
+        return;
+    }
+
+    document.getElementById("checkInTime").textContent =
+        record.checkInAt
+            ? new Date(record.checkInAt).toLocaleTimeString("zh-CN", { hour12: false })
+            : "-";
+
+    document.getElementById("checkOutTime").textContent =
+        record.checkOutAt
+            ? new Date(record.checkOutAt).toLocaleTimeString("zh-CN", { hour12: false })
+            : "-";
+
+    let statusText = "正常";
+
+    if (record.attendanceStatus === "leave_invalid" || leaveActive) {
+        statusText = "请假 / 打卡无效";
+    } else if (record.checkInAt && !record.checkOutAt) {
+        statusText = "已上班";
+    } else if (record.checkInAt && record.checkOutAt) {
+        statusText = "已完成";
+    }
+
+    document.getElementById("attendanceStatus").textContent = statusText;
+
+    const badge = document.getElementById("todayStatusBadge");
+    badge.textContent = statusText;
+    badge.className =
+        statusText.includes("请假")
+            ? "badge yellow"
+            : "badge green";
+
+    renderZeroProduction(record, productionCount, leaveActive);
+}
+
+function isProductionPosition() {
+    return [
+        "汽车司机",
+        "挖机司机"
+    ].includes(
+        normalizePosition(currentPerson.position)
+    );
+}
+
+function renderZeroProduction(record, productionCount, leaveActive) {
+    const form = document.getElementById("zeroProductionForm");
+    const result = document.getElementById("zeroProductionResult");
+    const badge = document.getElementById("zeroProductionBadge");
+
+    const needsReport =
+        isProductionPosition() &&
+        !!record?.checkInAt &&
+        !leaveActive &&
+        productionCount === 0;
+
+    const existingReport = getTodayZeroReport();
+
+    if (existingReport) {
+        form.style.display = "none";
+        result.style.display = "block";
+        result.innerHTML = `
+            已完成报备：<strong>${escapeHtml(existingReport.reason || "-")}</strong><br>
+            报备人：${escapeHtml(existingReport.reporterName || "-")}<br>
+            说明：${escapeHtml(existingReport.remark || "-")}
+        `;
+
+        badge.textContent = "已报备";
+        badge.className = "badge green";
+        return;
+    }
+
+    if (needsReport) {
+        form.style.display = "block";
+        result.style.display = "none";
+        badge.textContent = "待报备";
+        badge.className = "badge red";
+    } else {
+        form.style.display = "none";
+        result.style.display = "block";
+        result.textContent = "当前无需报备。";
+        badge.textContent = "无需报备";
+        badge.className = "badge gray";
+    }
+}
+
+function getTodayZeroReport() {
+    const personId = getPersonId(currentPerson);
+    const date = today();
+
+    return readArray(STORAGE.ZERO_REPORTS)
+        .find(item =>
+            String(item.personId || "") === personId &&
+            item.date === date
+        ) || null;
+}
+
+function submitZeroProductionReport() {
+    const reason = document.getElementById("zeroReason").value;
+    const reporterName = document.getElementById("reporterName").value.trim();
+    const remark = document.getElementById("zeroRemark").value.trim();
+
+    if (!reason) {
+        alert("请选择报备原因。");
+        return;
+    }
+
+    if (!reporterName) {
+        alert("请输入报备人姓名。");
+        return;
+    }
+
+    if (!remark) {
+        alert("请填写具体说明。");
+        return;
+    }
+
+    const records = readArray(STORAGE.ZERO_REPORTS);
+
+    records.push({
+        reportId: "ZERO_" + Date.now() + "_" + Math.random().toString(36).slice(2, 7),
+        personId: getPersonId(currentPerson),
+        personName: currentPerson.name || "",
+        position: normalizePosition(currentPerson.position),
+        date: today(),
+        reason,
+        reporterName,
+        remark,
+        status: "reported",
+        createdAt: new Date().toISOString()
+    });
+
+    saveArray(STORAGE.ZERO_REPORTS, records);
+
+    renderTodayStatus();
+    renderHistory();
+
+    alert("零产量异常已完成报备。");
+}
+
+function renderHistory() {
+    const personId = getPersonId(currentPerson);
+
+    const records = readArray(STORAGE.ATTENDANCE)
+        .filter(item => String(item.personId || "") === personId)
+        .sort((a, b) => String(b.date || "").localeCompare(String(a.date || "")))
+        .slice(0, 30);
+
+    const reports = readArray(STORAGE.ZERO_REPORTS);
+
+    const body = document.getElementById("attendanceTableBody");
+
+    if (!records.length) {
+        body.innerHTML =
+            '<tr><td colspan="6" class="empty">暂无考勤记录</td></tr>';
+        return;
+    }
+
+    body.innerHTML = records.map(item => {
+        const report = reports.find(r =>
+            String(r.personId || "") === personId &&
+            r.date === item.date
+        );
+
+        const status =
+            item.attendanceStatus === "leave_invalid"
+                ? "请假 / 无效"
+                : item.checkInAt && item.checkOutAt
+                    ? "已完成"
+                    : item.checkInAt
+                        ? "已上班"
+                        : "未打卡";
+
+        return `
+            <tr>
+                <td>${escapeHtml(item.date || "-")}</td>
+                <td>${item.checkInAt ? new Date(item.checkInAt).toLocaleTimeString("zh-CN",{hour12:false}) : "-"}</td>
+                <td>${item.checkOutAt ? new Date(item.checkOutAt).toLocaleTimeString("zh-CN",{hour12:false}) : "-"}</td>
+                <td>${escapeHtml(status)}</td>
+                <td>${Number(item.productionCount || 0)}</td>
+                <td>${report ? escapeHtml(report.reason || "已报备") : "-"}</td>
+            </tr>
+        `;
+    }).join("");
+}
+
+function formatDateTime(value) {
+    if (!value) return "-";
+
+    const date = new Date(value);
+
+    if (Number.isNaN(date.getTime())) {
+        return "-";
+    }
+
+    return date.toLocaleString("zh-CN");
+}
+
+function escapeHtml(value) {
+    const div = document.createElement("div");
+    div.textContent = String(value ?? "");
+    return div.innerHTML;
+}
+
+function goHome() {
+    location.href = "index.html";
+}
+
+if (verifyAccess()) {
+    renderProfile();
+    startClock();
+    renderTodayStatus();
+    renderHistory();
+}
+</script>
+
+</body>
+
+</html>
 
