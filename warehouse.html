@@ -1,1 +1,1870 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0f172a">
+
+    <title>后勤物资库管理端 - 矿山管理系统</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg: #f1f5f9;
+            --card: #ffffff;
+            --text: #0f172a;
+            --muted: #64748b;
+            --line: #e2e8f0;
+            --dark: #0f172a;
+            --primary: #2563eb;
+            --success: #16a34a;
+            --warning: #f59e0b;
+            --danger: #dc2626;
+            --purple: #7c3aed;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            background: var(--bg);
+            color: var(--text);
+            font-family: Arial, "Microsoft YaHei", sans-serif;
+        }
+
+        header {
+            position: sticky;
+            top: 0;
+            z-index: 60;
+            background: var(--dark);
+            color: #fff;
+            box-shadow: 0 5px 18px rgba(15, 23, 42, .18);
+        }
+
+        .header-inner {
+            max-width: 1250px;
+            margin: 0 auto;
+            padding: 15px 14px;
+        }
+
+        .header-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 22px;
+        }
+
+        header p {
+            margin: 5px 0 0;
+            color: #cbd5e1;
+            font-size: 12px;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        button {
+            border: 0;
+            border-radius: 10px;
+            min-height: 42px;
+            padding: 10px 14px;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .header-btn {
+            background: #1e293b;
+            color: #fff;
+            border: 1px solid #475569;
+        }
+
+        .primary-btn {
+            background: var(--primary);
+            color: #fff;
+        }
+
+        .success-btn {
+            background: var(--success);
+            color: #fff;
+        }
+
+        .warning-btn {
+            background: var(--warning);
+            color: #fff;
+        }
+
+        .danger-btn {
+            background: var(--danger);
+            color: #fff;
+        }
+
+        .purple-btn {
+            background: var(--purple);
+            color: #fff;
+        }
+
+        .secondary-btn {
+            background: #fff;
+            color: #334155;
+            border: 1px solid #cbd5e1;
+        }
+
+        main {
+            width: 100%;
+            max-width: 1250px;
+            margin: 0 auto;
+            padding: 16px 14px 40px;
+        }
+
+        .notice {
+            margin-bottom: 14px;
+            padding: 13px 14px;
+            border: 1px solid #bfdbfe;
+            border-radius: 12px;
+            background: #eff6ff;
+            color: #1e40af;
+            font-size: 13px;
+            line-height: 1.75;
+        }
+
+        .card {
+            margin-bottom: 14px;
+            padding: 17px;
+            border-radius: 16px;
+            background: #fff;
+            box-shadow: 0 5px 20px rgba(15, 23, 42, .06);
+        }
+
+        .section-title {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 14px;
+        }
+
+        .section-title h2 {
+            margin: 0;
+            font-size: 18px;
+        }
+
+        .section-title p {
+            margin: 5px 0 0;
+            color: var(--muted);
+            font-size: 12px;
+            line-height: 1.6;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 5px 9px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+
+        .badge.blue {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        .badge.green {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .badge.yellow {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .badge.red {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .badge.gray {
+            background: #e2e8f0;
+            color: #475569;
+        }
+
+        .badge.purple {
+            background: #ede9fe;
+            color: #5b21b6;
+        }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 10px;
+        }
+
+        .summary-box {
+            padding: 14px;
+            border-radius: 13px;
+            background: #f8fafc;
+        }
+
+        .summary-box span {
+            display: block;
+            color: var(--muted);
+            font-size: 12px;
+        }
+
+        .summary-box strong {
+            display: block;
+            margin-top: 6px;
+            font-size: 24px;
+        }
+
+        .nav-tabs {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 14px;
+        }
+
+        .nav-tab {
+            background: #fff;
+            color: #334155;
+            border: 1px solid var(--line);
+        }
+
+        .nav-tab.active {
+            background: var(--dark);
+            color: #fff;
+            border-color: var(--dark);
+        }
+
+        .page {
+            display: none;
+        }
+
+        .page.active {
+            display: block;
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 12px;
+        }
+
+        .grid-3 {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 12px;
+        }
+
+        .form-group {
+            margin-bottom: 12px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+        input,
+        select,
+        textarea {
+            width: 100%;
+            min-height: 42px;
+            padding: 9px 10px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            background: #fff;
+            font-size: 14px;
+        }
+
+        textarea {
+            min-height: 88px;
+            resize: vertical;
+        }
+
+        .table-wrap {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            min-width: 900px;
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            padding: 10px 9px;
+            border-bottom: 1px solid var(--line);
+            text-align: left;
+            font-size: 13px;
+            vertical-align: middle;
+        }
+
+        th {
+            background: #f8fafc;
+            color: #475569;
+        }
+
+        .actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 7px;
+        }
+
+        .mini-btn {
+            min-height: 34px;
+            padding: 7px 10px;
+            border-radius: 8px;
+            font-size: 12px;
+        }
+
+        .empty {
+            padding: 26px 10px;
+            text-align: center;
+            color: #94a3b8;
+            font-size: 13px;
+        }
+
+        .state-grid {
+            display: grid;
+            grid-template-columns: repeat(7, minmax(0, 1fr));
+            gap: 8px;
+        }
+
+        .state-box {
+            padding: 12px;
+            border-radius: 11px;
+            background: #f8fafc;
+        }
+
+        .state-box span {
+            display: block;
+            color: var(--muted);
+            font-size: 11px;
+            line-height: 1.5;
+        }
+
+        .state-box strong {
+            display: block;
+            margin-top: 5px;
+            font-size: 18px;
+        }
+
+        .toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .toolbar input,
+        .toolbar select {
+            width: auto;
+            min-width: 180px;
+        }
+
+        .record-card {
+            padding: 13px;
+            margin-bottom: 10px;
+            border: 1px solid var(--line);
+            border-radius: 11px;
+            background: #f8fafc;
+        }
+
+        .record-top {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+        .record-card h3 {
+            margin: 0;
+            font-size: 15px;
+        }
+
+        .record-info {
+            margin-top: 8px;
+            color: #475569;
+            font-size: 12px;
+            line-height: 1.8;
+        }
+
+        .report-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 12px;
+        }
+
+        .report-box {
+            padding: 16px;
+            border: 1px solid var(--line);
+            border-radius: 13px;
+            background: #fff;
+        }
+
+        .report-box h3 {
+            margin: 0 0 8px;
+            font-size: 16px;
+        }
+
+        .report-box p {
+            margin: 0;
+            color: var(--muted);
+            font-size: 12px;
+            line-height: 1.7;
+        }
+
+        footer {
+            padding: 20px;
+            color: #94a3b8;
+            text-align: center;
+            font-size: 12px;
+        }
+
+        @media (max-width: 900px) {
+            .summary-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
+            .state-grid {
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+            }
+
+            .grid-3 {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .summary-grid,
+            .grid-2,
+            .grid-3,
+            .report-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .state-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
+            .header-row {
+                align-items: flex-start;
+            }
+
+            .toolbar input,
+            .toolbar select {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<header>
+    <div class="header-inner">
+        <div class="header-row">
+            <div>
+                <h1>📦 后勤物资库管理端</h1>
+                <p>Warehouse & Logistics Materials · V2.10.1B</p>
+            </div>
+
+            <div class="header-actions">
+                <button type="button" class="header-btn" onclick="initializeDemoData()">测试数据</button>
+                <button type="button" class="header-btn" onclick="goHome()">首页</button>
+            </div>
+        </div>
+    </div>
+</header>
+
+<main>
+
+    <div class="notice">
+        本页面先完成后勤物资库的完整业务界面和本地原型。正式多人协同、跨设备库存和审批将在 V3.0 接入统一数据库后实现。
+    </div>
+
+    <section class="card">
+        <div class="section-title">
+            <div>
+                <h2>📊 库存总览</h2>
+                <p>自动汇总可用库存、已发放、回收、报废和待赔偿核销状态。</p>
+            </div>
+            <span class="badge blue">本地原型</span>
+        </div>
+
+        <div class="summary-grid">
+            <div class="summary-box"><span>物资种类</span><strong id="summaryMaterialKinds">0</strong></div>
+            <div class="summary-box"><span>可用库存</span><strong id="summaryAvailable">0</strong></div>
+            <div class="summary-box"><span>待领用申请</span><strong id="summaryRequests">0</strong></div>
+            <div class="summary-box"><span>待处理异常</span><strong id="summaryAbnormal">0</strong></div>
+        </div>
+    </section>
+
+    <div class="nav-tabs">
+        <button class="nav-tab active" data-page="inventory" onclick="openPage('inventory', this)">📦 库存</button>
+        <button class="nav-tab" data-page="master" onclick="openPage('master', this)">📚 物资资料</button>
+        <button class="nav-tab" data-page="inbound" onclick="openPage('inbound', this)">📥 入库</button>
+        <button class="nav-tab" data-page="requests" onclick="openPage('requests', this)">📤 待领用</button>
+        <button class="nav-tab" data-page="holders" onclick="openPage('holders', this)">👤 员工持有</button>
+        <button class="nav-tab" data-page="recycle" onclick="openPage('recycle', this)">♻️ 回收换新</button>
+        <button class="nav-tab" data-page="scrap" onclick="openPage('scrap', this)">🗑 报废</button>
+        <button class="nav-tab" data-page="lost" onclick="openPage('lost', this)">⚠️ 丢失核销</button>
+        <button class="nav-tab" data-page="reports" onclick="openPage('reports', this)">📊 报表</button>
+        <button class="nav-tab" data-page="ledger" onclick="openPage('ledger', this)">📒 台账</button>
+    </div>
+
+    <!-- 库存 -->
+    <section id="page-inventory" class="page active">
+        <section class="card">
+            <div class="section-title">
+                <div>
+                    <h2>📦 当前库存</h2>
+                    <p>普通消耗物资与可回收物资统一管理。</p>
+                </div>
+            </div>
+
+            <div class="state-grid">
+                <div class="state-box"><span>可用库存</span><strong id="stateAvailable">0</strong></div>
+                <div class="state-box"><span>已发放</span><strong id="stateIssued">0</strong></div>
+                <div class="state-box"><span>待回收</span><strong id="stateReturn">0</strong></div>
+                <div class="state-box"><span>待检查</span><strong id="stateInspect">0</strong></div>
+                <div class="state-box"><span>待报废</span><strong id="stateScrap">0</strong></div>
+                <div class="state-box"><span>已报废</span><strong id="stateScrapped">0</strong></div>
+                <div class="state-box"><span>待赔偿核销</span><strong id="stateLost">0</strong></div>
+            </div>
+        </section>
+
+        <section class="card">
+            <div class="toolbar">
+                <input id="inventorySearch" type="search" placeholder="搜索物资名称 / 编码" oninput="renderInventory()">
+                <select id="inventoryTypeFilter" onchange="renderInventory()">
+                    <option value="">全部类型</option>
+                    <option value="consumable">普通消耗物资</option>
+                    <option value="recyclable">可回收物资</option>
+                </select>
+            </div>
+
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>物资编码</th>
+                            <th>物资名称</th>
+                            <th>分类</th>
+                            <th>规格</th>
+                            <th>单位</th>
+                            <th>属性</th>
+                            <th>可用</th>
+                            <th>已发放</th>
+                            <th>待处理</th>
+                            <th>最低库存</th>
+                        </tr>
+                    </thead>
+                    <tbody id="inventoryTableBody"></tbody>
+                </table>
+            </div>
+        </section>
+    </section>
+
+    <!-- 物资主数据 -->
+    <section id="page-master" class="page">
+        <section class="card">
+            <div class="section-title">
+                <div>
+                    <h2>📚 新增 / 维护物资资料</h2>
+                    <p>员工申请时应从标准物资库选择，不自行手输物资名称。</p>
+                </div>
+            </div>
+
+            <div class="grid-3">
+                <div class="form-group">
+                    <label>物资编码 *</label>
+                    <input id="masterCode" type="text" placeholder="例如：WL-0001">
+                </div>
+
+                <div class="form-group">
+                    <label>物资名称 *</label>
+                    <input id="masterName" type="text" placeholder="例如：安全帽">
+                </div>
+
+                <div class="form-group">
+                    <label>分类 *</label>
+                    <input id="masterCategory" type="text" placeholder="劳保用品 / 工具 / 办公">
+                </div>
+
+                <div class="form-group">
+                    <label>规格型号</label>
+                    <input id="masterSpec" type="text" placeholder="例如：黄色 / 均码">
+                </div>
+
+                <div class="form-group">
+                    <label>单位 *</label>
+                    <input id="masterUnit" type="text" placeholder="个 / 双 / 件 / 箱">
+                </div>
+
+                <div class="form-group">
+                    <label>物资属性 *</label>
+                    <select id="masterType">
+                        <option value="consumable">普通消耗物资</option>
+                        <option value="recyclable">可回收物资</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>参考单价</label>
+                    <input id="masterPrice" type="number" min="0" step="0.01" placeholder="0">
+                </div>
+
+                <div class="form-group">
+                    <label>最低库存</label>
+                    <input id="masterMinimum" type="number" min="0" step="1" placeholder="0">
+                </div>
+            </div>
+
+            <button type="button" class="primary-btn" onclick="saveMaterialMaster()">保存物资资料</button>
+        </section>
+
+        <section class="card">
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>编码</th>
+                            <th>名称</th>
+                            <th>分类</th>
+                            <th>规格</th>
+                            <th>单位</th>
+                            <th>属性</th>
+                            <th>参考单价</th>
+                            <th>最低库存</th>
+                            <th>状态</th>
+                        </tr>
+                    </thead>
+                    <tbody id="masterTableBody"></tbody>
+                </table>
+            </div>
+        </section>
+    </section>
+
+    <!-- 入库 -->
+    <section id="page-inbound" class="page">
+        <section class="card">
+            <div class="section-title">
+                <div>
+                    <h2>📥 物资入库</h2>
+                    <p>记录采购、调拨或退回后重新入库的物资。</p>
+                </div>
+            </div>
+
+            <div class="grid-3">
+                <div class="form-group">
+                    <label>物资 *</label>
+                    <select id="inboundMaterial"></select>
+                </div>
+
+                <div class="form-group">
+                    <label>入库数量 *</label>
+                    <input id="inboundQuantity" type="number" min="0" step="1" placeholder="0">
+                </div>
+
+                <div class="form-group">
+                    <label>采购单价</label>
+                    <input id="inboundPrice" type="number" min="0" step="0.01" placeholder="0">
+                </div>
+
+                <div class="form-group">
+                    <label>供应商</label>
+                    <input id="inboundSupplier" type="text" placeholder="供应商名称">
+                </div>
+
+                <div class="form-group">
+                    <label>入库类型</label>
+                    <select id="inboundType">
+                        <option value="purchase">采购入库</option>
+                        <option value="transfer">调拨入库</option>
+                        <option value="return">退回入库</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>备注</label>
+                <textarea id="inboundRemark" placeholder="采购单号、说明等"></textarea>
+            </div>
+
+            <button type="button" class="success-btn" onclick="submitInbound()">确认入库</button>
+        </section>
+    </section>
+
+    <!-- 待领用 -->
+    <section id="page-requests" class="page">
+        <section class="card">
+            <div class="section-title">
+                <div>
+                    <h2>📤 待领用申请</h2>
+                    <p>后勤管理核对申请内容，填写实际发放数量后确认出库。</p>
+                </div>
+            </div>
+            <div id="requestList"></div>
+        </section>
+    </section>
+
+    <!-- 员工持有 -->
+    <section id="page-holders" class="page">
+        <section class="card">
+            <div class="section-title">
+                <div>
+                    <h2>👤 员工持有物资</h2>
+                    <p>主要跟踪可回收物资当前由谁持有。</p>
+                </div>
+            </div>
+
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>员工</th>
+                            <th>岗位</th>
+                            <th>物资</th>
+                            <th>编码</th>
+                            <th>数量</th>
+                            <th>领用日期</th>
+                            <th>状态</th>
+                        </tr>
+                    </thead>
+                    <tbody id="holderTableBody"></tbody>
+                </table>
+            </div>
+        </section>
+    </section>
+
+    <!-- 回收换新 -->
+    <section id="page-recycle" class="page">
+        <section class="card">
+            <div class="section-title">
+                <div>
+                    <h2>♻️ 回收 / 以旧换新</h2>
+                    <p>旧物回收后先进入待检查，检查后决定重新入库或报废。</p>
+                </div>
+            </div>
+
+            <div class="grid-3">
+                <div class="form-group">
+                    <label>员工姓名 *</label>
+                    <input id="recyclePersonName" type="text" placeholder="员工姓名">
+                </div>
+
+                <div class="form-group">
+                    <label>物资 *</label>
+                    <select id="recycleMaterial"></select>
+                </div>
+
+                <div class="form-group">
+                    <label>数量 *</label>
+                    <input id="recycleQuantity" type="number" min="1" step="1" value="1">
+                </div>
+
+                <div class="form-group">
+                    <label>处理类型</label>
+                    <select id="recycleType">
+                        <option value="return">普通回收</option>
+                        <option value="exchange">以旧换新</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>说明</label>
+                <textarea id="recycleRemark" placeholder="损坏情况、换新原因等"></textarea>
+            </div>
+
+            <button type="button" class="primary-btn" onclick="submitRecycle()">登记回收</button>
+        </section>
+
+        <section class="card">
+            <div id="recycleList"></div>
+        </section>
+    </section>
+
+    <!-- 报废 -->
+    <section id="page-scrap" class="page">
+        <section class="card">
+            <div class="section-title">
+                <div>
+                    <h2>🗑 报废管理</h2>
+                    <p>不能继续使用的可回收物资进入报废申请，批准后核销。</p>
+                </div>
+            </div>
+
+            <div class="grid-3">
+                <div class="form-group">
+                    <label>物资 *</label>
+                    <select id="scrapMaterial"></select>
+                </div>
+
+                <div class="form-group">
+                    <label>数量 *</label>
+                    <input id="scrapQuantity" type="number" min="1" step="1" value="1">
+                </div>
+
+                <div class="form-group">
+                    <label>原领用人</label>
+                    <input id="scrapPersonName" type="text" placeholder="如有">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>报废原因 *</label>
+                <textarea id="scrapReason" placeholder="损坏、无法修复等"></textarea>
+            </div>
+
+            <button type="button" class="danger-btn" onclick="submitScrap()">提交报废申请</button>
+        </section>
+
+        <section class="card">
+            <div id="scrapList"></div>
+        </section>
+    </section>
+
+    <!-- 丢失核销 -->
+    <section id="page-lost" class="page">
+        <section class="card">
+            <div class="section-title">
+                <div>
+                    <h2>⚠️ 丢失物资 / 离职扣款核销</h2>
+                    <p>可回收物资丢失后先进入待赔偿核销，确认扣款后再核销库存。</p>
+                </div>
+            </div>
+
+            <div class="grid-3">
+                <div class="form-group">
+                    <label>员工姓名 *</label>
+                    <input id="lostPersonName" type="text" placeholder="员工姓名">
+                </div>
+
+                <div class="form-group">
+                    <label>物资 *</label>
+                    <select id="lostMaterial"></select>
+                </div>
+
+                <div class="form-group">
+                    <label>数量 *</label>
+                    <input id="lostQuantity" type="number" min="1" step="1" value="1">
+                </div>
+
+                <div class="form-group">
+                    <label>赔偿金额</label>
+                    <input id="lostAmount" type="number" min="0" step="0.01" placeholder="0">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>说明</label>
+                <textarea id="lostRemark" placeholder="丢失情况、离职扣款说明等"></textarea>
+            </div>
+
+            <button type="button" class="warning-btn" onclick="submitLost()">登记丢失</button>
+        </section>
+
+        <section class="card">
+            <div id="lostList"></div>
+        </section>
+    </section>
+
+    <!-- 报表 -->
+    <section id="page-reports" class="page">
+        <section class="card">
+            <div class="section-title">
+                <div>
+                    <h2>📊 后勤物资报表</h2>
+                    <p>日报和月报后续接入数据库后自动生成。</p>
+                </div>
+            </div>
+
+            <div class="report-grid">
+                <div class="report-box">
+                    <h3>📅 库存日报</h3>
+                    <p>今日入库、今日出库、今日回收、今日报废、当前库存。</p>
+                    <button type="button" class="secondary-btn" onclick="showReportPreview('daily')">查看日报预览</button>
+                </div>
+
+                <div class="report-box">
+                    <h3>🗓 月度物资报表</h3>
+                    <p>月初库存、本月入库、领用、回收、报废、丢失及月末库存。</p>
+                    <button type="button" class="secondary-btn" onclick="showReportPreview('monthly')">查看月报预览</button>
+                </div>
+            </div>
+        </section>
+    </section>
+
+    <!-- 台账 -->
+    <section id="page-ledger" class="page">
+        <section class="card">
+            <div class="section-title">
+                <div>
+                    <h2>📒 物资业务台账</h2>
+                    <p>所有入库、出库、回收、报废、丢失核销操作统一留痕。</p>
+                </div>
+            </div>
+
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>时间</th>
+                            <th>类型</th>
+                            <th>物资</th>
+                            <th>数量</th>
+                            <th>人员</th>
+                            <th>说明</th>
+                        </tr>
+                    </thead>
+                    <tbody id="ledgerTableBody"></tbody>
+                </table>
+            </div>
+        </section>
+    </section>
+
+</main>
+
+<footer>
+    矿山管理系统 · 后勤物资库管理端 V2.10.1B
+</footer>
+
+<script>
+"use strict";
+
+const STORAGE = {
+    MATERIALS: "warehouseMaterials",
+    REQUESTS: "materialRequests",
+    HOLDERS: "materialHolders",
+    RECYCLES: "materialRecycleRecords",
+    SCRAPS: "materialScrapRecords",
+    LOSTS: "materialLostRecords",
+    LEDGER: "materialLedger"
+};
+
+function readArray(key) {
+    try {
+        const data = JSON.parse(localStorage.getItem(key));
+        return Array.isArray(data) ? data : [];
+    } catch (error) {
+        console.error(error);
+        return [];
+    }
+}
+
+function saveArray(key, data) {
+    localStorage.setItem(key, JSON.stringify(data));
+}
+
+function createId(prefix) {
+    return prefix + "_" + Date.now() + "_" + Math.random().toString(36).slice(2, 7);
+}
+
+function openPage(page, button) {
+    document.querySelectorAll(".page").forEach(item => item.classList.remove("active"));
+    document.querySelectorAll(".nav-tab").forEach(item => item.classList.remove("active"));
+
+    document.getElementById("page-" + page)?.classList.add("active");
+    button?.classList.add("active");
+
+    renderAll();
+}
+
+function goHome() {
+    location.href = "index.html";
+}
+
+function getMaterials() {
+    return readArray(STORAGE.MATERIALS);
+}
+
+function findMaterial(materialId) {
+    return getMaterials().find(item => item.materialId === materialId) || null;
+}
+
+function saveMaterialMaster() {
+    const code = value("masterCode");
+    const name = value("masterName");
+    const category = value("masterCategory");
+    const spec = value("masterSpec");
+    const unit = value("masterUnit");
+    const type = value("masterType");
+    const price = Number(value("masterPrice") || 0);
+    const minimumStock = Number(value("masterMinimum") || 0);
+
+    if (!code || !name || !category || !unit) {
+        alert("请完整填写物资编码、名称、分类和单位。");
+        return;
+    }
+
+    const materials = getMaterials();
+
+    if (materials.some(item => item.code === code)) {
+        alert("该物资编码已经存在。");
+        return;
+    }
+
+    materials.push({
+        materialId: createId("MAT"),
+        code,
+        name,
+        category,
+        spec,
+        unit,
+        type,
+        referencePrice: price,
+        minimumStock,
+        availableQty: 0,
+        issuedQty: 0,
+        pendingReturnQty: 0,
+        pendingInspectQty: 0,
+        pendingScrapQty: 0,
+        scrappedQty: 0,
+        pendingLostQty: 0,
+        status: "active",
+        createdAt: new Date().toISOString()
+    });
+
+    saveArray(STORAGE.MATERIALS, materials);
+
+    ["masterCode","masterName","masterCategory","masterSpec","masterUnit","masterPrice","masterMinimum"]
+        .forEach(id => document.getElementById(id).value = "");
+
+    refreshMaterialOptions();
+    renderAll();
+
+    alert("物资资料已保存。");
+}
+
+function submitInbound() {
+    const materialId = value("inboundMaterial");
+    const quantity = Number(value("inboundQuantity"));
+    const price = Number(value("inboundPrice") || 0);
+    const supplier = value("inboundSupplier");
+    const inboundType = value("inboundType");
+    const remark = value("inboundRemark");
+
+    if (!materialId || !quantity || quantity <= 0) {
+        alert("请选择物资并填写正确的入库数量。");
+        return;
+    }
+
+    const materials = getMaterials();
+    const material = materials.find(item => item.materialId === materialId);
+
+    if (!material) {
+        alert("没有找到该物资。");
+        return;
+    }
+
+    material.availableQty = Number(material.availableQty || 0) + quantity;
+    material.lastPurchasePrice = price;
+    material.updatedAt = new Date().toISOString();
+
+    saveArray(STORAGE.MATERIALS, materials);
+
+    addLedger({
+        type: "入库",
+        materialId,
+        materialName: material.name,
+        quantity,
+        personName: supplier || "-",
+        remark: (inboundType || "") + (remark ? "；" + remark : "")
+    });
+
+    document.getElementById("inboundQuantity").value = "";
+    document.getElementById("inboundPrice").value = "";
+    document.getElementById("inboundSupplier").value = "";
+    document.getElementById("inboundRemark").value = "";
+
+    renderAll();
+    alert("入库完成。");
+}
+
+function approveRequest(requestId) {
+    const requests = readArray(STORAGE.REQUESTS);
+    const request = requests.find(item => item.requestId === requestId);
+
+    if (!request) {
+        alert("没有找到该领用单。");
+        return;
+    }
+
+    const actualQuantity = Number(prompt("请输入实际发放数量：", request.requestQuantity || request.quantity || 1));
+
+    if (!actualQuantity || actualQuantity <= 0) {
+        return;
+    }
+
+    const materials = getMaterials();
+    const material = materials.find(item => item.materialId === request.materialId);
+
+    if (!material) {
+        alert("物资资料不存在。");
+        return;
+    }
+
+    if (Number(material.availableQty || 0) < actualQuantity) {
+        alert("可用库存不足。");
+        return;
+    }
+
+    material.availableQty -= actualQuantity;
+    material.issuedQty = Number(material.issuedQty || 0) + actualQuantity;
+    material.updatedAt = new Date().toISOString();
+
+    request.status = "issued";
+    request.actualQuantity = actualQuantity;
+    request.issuedAt = new Date().toISOString();
+    request.issuedBy = "后勤管理";
+
+    if (material.type === "recyclable") {
+        const holders = readArray(STORAGE.HOLDERS);
+
+        holders.push({
+            holderId: createId("HOLD"),
+            personId: request.personId || "",
+            personName: request.personName || request.applicantName || "-",
+            position: request.position || request.applicantPosition || "-",
+            materialId: material.materialId,
+            materialCode: material.code,
+            materialName: material.name,
+            quantity: actualQuantity,
+            status: "holding",
+            issuedAt: request.issuedAt
+        });
+
+        saveArray(STORAGE.HOLDERS, holders);
+    }
+
+    saveArray(STORAGE.MATERIALS, materials);
+    saveArray(STORAGE.REQUESTS, requests);
+
+    addLedger({
+        type: "出库",
+        materialId: material.materialId,
+        materialName: material.name,
+        quantity: actualQuantity,
+        personName: request.personName || request.applicantName || "-",
+        remark: request.purpose || request.remark || ""
+    });
+
+    renderAll();
+    alert("已确认出库。");
+}
+
+function rejectRequest(requestId) {
+    const reason = prompt("请输入驳回原因：");
+
+    if (reason === null || !reason.trim()) {
+        return;
+    }
+
+    const requests = readArray(STORAGE.REQUESTS);
+    const request = requests.find(item => item.requestId === requestId);
+
+    if (!request) return;
+
+    request.status = "rejected";
+    request.rejectReason = reason.trim();
+    request.updatedAt = new Date().toISOString();
+
+    saveArray(STORAGE.REQUESTS, requests);
+    renderAll();
+}
+
+function submitRecycle() {
+    const personName = value("recyclePersonName");
+    const materialId = value("recycleMaterial");
+    const quantity = Number(value("recycleQuantity"));
+    const type = value("recycleType");
+    const remark = value("recycleRemark");
+
+    if (!personName || !materialId || !quantity || quantity <= 0) {
+        alert("请完整填写员工、物资和数量。");
+        return;
+    }
+
+    const material = findMaterial(materialId);
+
+    if (!material || material.type !== "recyclable") {
+        alert("只能回收可回收物资。");
+        return;
+    }
+
+    const records = readArray(STORAGE.RECYCLES);
+
+    records.push({
+        recycleId: createId("REC"),
+        personName,
+        materialId,
+        materialName: material.name,
+        quantity,
+        type,
+        remark,
+        status: "pending_inspection",
+        createdAt: new Date().toISOString()
+    });
+
+    saveArray(STORAGE.RECYCLES, records);
+
+    const materials = getMaterials();
+    const target = materials.find(item => item.materialId === materialId);
+    target.pendingInspectQty = Number(target.pendingInspectQty || 0) + quantity;
+    saveArray(STORAGE.MATERIALS, materials);
+
+    addLedger({
+        type: type === "exchange" ? "以旧换新回收" : "回收",
+        materialId,
+        materialName: material.name,
+        quantity,
+        personName,
+        remark
+    });
+
+    document.getElementById("recyclePersonName").value = "";
+    document.getElementById("recycleRemark").value = "";
+
+    renderAll();
+    alert("已登记回收，等待检查。");
+}
+
+function inspectRecycle(recycleId, result) {
+    const records = readArray(STORAGE.RECYCLES);
+    const record = records.find(item => item.recycleId === recycleId);
+    if (!record) return;
+
+    const materials = getMaterials();
+    const material = materials.find(item => item.materialId === record.materialId);
+    if (!material) return;
+
+    if (record.status !== "pending_inspection") {
+        alert("该记录已经处理。");
+        return;
+    }
+
+    material.pendingInspectQty = Math.max(0, Number(material.pendingInspectQty || 0) - Number(record.quantity || 0));
+
+    if (result === "available") {
+        material.availableQty = Number(material.availableQty || 0) + Number(record.quantity || 0);
+        record.status = "returned_to_stock";
+        record.inspectionResult = "可继续使用";
+
+        addLedger({
+            type: "回收入库",
+            materialId: material.materialId,
+            materialName: material.name,
+            quantity: record.quantity,
+            personName: record.personName,
+            remark: "检查合格，重新入库"
+        });
+
+    } else {
+        material.pendingScrapQty = Number(material.pendingScrapQty || 0) + Number(record.quantity || 0);
+        record.status = "pending_scrap";
+        record.inspectionResult = "不可继续使用";
+    }
+
+    record.inspectedAt = new Date().toISOString();
+
+    saveArray(STORAGE.MATERIALS, materials);
+    saveArray(STORAGE.RECYCLES, records);
+
+    renderAll();
+}
+
+function submitScrap() {
+    const materialId = value("scrapMaterial");
+    const quantity = Number(value("scrapQuantity"));
+    const personName = value("scrapPersonName");
+    const reason = value("scrapReason");
+
+    if (!materialId || !quantity || quantity <= 0 || !reason) {
+        alert("请完整填写物资、数量和报废原因。");
+        return;
+    }
+
+    const material = findMaterial(materialId);
+    if (!material) return;
+
+    const records = readArray(STORAGE.SCRAPS);
+
+    records.push({
+        scrapId: createId("SCRAP"),
+        materialId,
+        materialName: material.name,
+        quantity,
+        personName,
+        reason,
+        status: "pending_approval",
+        createdAt: new Date().toISOString()
+    });
+
+    saveArray(STORAGE.SCRAPS, records);
+
+    const materials = getMaterials();
+    const target = materials.find(item => item.materialId === materialId);
+    target.pendingScrapQty = Number(target.pendingScrapQty || 0) + quantity;
+    saveArray(STORAGE.MATERIALS, materials);
+
+    document.getElementById("scrapPersonName").value = "";
+    document.getElementById("scrapReason").value = "";
+
+    renderAll();
+    alert("报废申请已提交。");
+}
+
+function approveScrap(scrapId) {
+    const records = readArray(STORAGE.SCRAPS);
+    const record = records.find(item => item.scrapId === scrapId);
+    if (!record || record.status !== "pending_approval") return;
+
+    const materials = getMaterials();
+    const material = materials.find(item => item.materialId === record.materialId);
+    if (!material) return;
+
+    material.pendingScrapQty = Math.max(0, Number(material.pendingScrapQty || 0) - Number(record.quantity || 0));
+    material.scrappedQty = Number(material.scrappedQty || 0) + Number(record.quantity || 0);
+
+    record.status = "scrapped";
+    record.approvedAt = new Date().toISOString();
+
+    saveArray(STORAGE.MATERIALS, materials);
+    saveArray(STORAGE.SCRAPS, records);
+
+    addLedger({
+        type: "报废核销",
+        materialId: material.materialId,
+        materialName: material.name,
+        quantity: record.quantity,
+        personName: record.personName || "-",
+        remark: record.reason
+    });
+
+    renderAll();
+}
+
+function submitLost() {
+    const personName = value("lostPersonName");
+    const materialId = value("lostMaterial");
+    const quantity = Number(value("lostQuantity"));
+    const amount = Number(value("lostAmount") || 0);
+    const remark = value("lostRemark");
+
+    if (!personName || !materialId || !quantity || quantity <= 0) {
+        alert("请完整填写员工、物资和数量。");
+        return;
+    }
+
+    const material = findMaterial(materialId);
+    if (!material) return;
+
+    const records = readArray(STORAGE.LOSTS);
+
+    records.push({
+        lostId: createId("LOST"),
+        personName,
+        materialId,
+        materialName: material.name,
+        quantity,
+        compensationAmount: amount,
+        remark,
+        status: "pending_compensation",
+        createdAt: new Date().toISOString()
+    });
+
+    saveArray(STORAGE.LOSTS, records);
+
+    const materials = getMaterials();
+    const target = materials.find(item => item.materialId === materialId);
+    target.pendingLostQty = Number(target.pendingLostQty || 0) + quantity;
+    saveArray(STORAGE.MATERIALS, materials);
+
+    document.getElementById("lostPersonName").value = "";
+    document.getElementById("lostAmount").value = "";
+    document.getElementById("lostRemark").value = "";
+
+    renderAll();
+    alert("丢失记录已登记，等待扣款确认。");
+}
+
+function confirmLostWriteOff(lostId) {
+    const records = readArray(STORAGE.LOSTS);
+    const record = records.find(item => item.lostId === lostId);
+
+    if (!record || record.status !== "pending_compensation") return;
+
+    if (!confirm("确认财务/离职结算已经完成扣款，并核销该物资？")) return;
+
+    const materials = getMaterials();
+    const material = materials.find(item => item.materialId === record.materialId);
+    if (!material) return;
+
+    material.pendingLostQty = Math.max(0, Number(material.pendingLostQty || 0) - Number(record.quantity || 0));
+    material.issuedQty = Math.max(0, Number(material.issuedQty || 0) - Number(record.quantity || 0));
+
+    record.status = "written_off";
+    record.writeOffAt = new Date().toISOString();
+
+    saveArray(STORAGE.MATERIALS, materials);
+    saveArray(STORAGE.LOSTS, records);
+
+    addLedger({
+        type: "丢失核销",
+        materialId: material.materialId,
+        materialName: material.name,
+        quantity: record.quantity,
+        personName: record.personName,
+        remark: "赔偿金额：" + Number(record.compensationAmount || 0)
+    });
+
+    renderAll();
+}
+
+function addLedger(data) {
+    const records = readArray(STORAGE.LEDGER);
+
+    records.push({
+        ledgerId: createId("LEDGER"),
+        createdAt: new Date().toISOString(),
+        ...data
+    });
+
+    saveArray(STORAGE.LEDGER, records);
+}
+
+function renderAll() {
+    renderSummary();
+    renderInventory();
+    renderMaster();
+    renderRequests();
+    renderHolders();
+    renderRecycle();
+    renderScraps();
+    renderLosts();
+    renderLedger();
+    refreshMaterialOptions();
+}
+
+function renderSummary() {
+    const materials = getMaterials();
+    const requests = readArray(STORAGE.REQUESTS).filter(item => !item.status || item.status === "pending");
+    const recycles = readArray(STORAGE.RECYCLES).filter(item => item.status === "pending_inspection");
+    const scraps = readArray(STORAGE.SCRAPS).filter(item => item.status === "pending_approval");
+    const losts = readArray(STORAGE.LOSTS).filter(item => item.status === "pending_compensation");
+
+    const totalAvailable = materials.reduce((sum, item) => sum + Number(item.availableQty || 0), 0);
+
+    document.getElementById("summaryMaterialKinds").textContent = String(materials.length);
+    document.getElementById("summaryAvailable").textContent = String(totalAvailable);
+    document.getElementById("summaryRequests").textContent = String(requests.length);
+    document.getElementById("summaryAbnormal").textContent = String(recycles.length + scraps.length + losts.length);
+
+    document.getElementById("stateAvailable").textContent = String(totalAvailable);
+    document.getElementById("stateIssued").textContent = String(materials.reduce((s, i) => s + Number(i.issuedQty || 0), 0));
+    document.getElementById("stateReturn").textContent = String(materials.reduce((s, i) => s + Number(i.pendingReturnQty || 0), 0));
+    document.getElementById("stateInspect").textContent = String(materials.reduce((s, i) => s + Number(i.pendingInspectQty || 0), 0));
+    document.getElementById("stateScrap").textContent = String(materials.reduce((s, i) => s + Number(i.pendingScrapQty || 0), 0));
+    document.getElementById("stateScrapped").textContent = String(materials.reduce((s, i) => s + Number(i.scrappedQty || 0), 0));
+    document.getElementById("stateLost").textContent = String(materials.reduce((s, i) => s + Number(i.pendingLostQty || 0), 0));
+}
+
+function renderInventory() {
+    const search = (document.getElementById("inventorySearch")?.value || "").trim().toLowerCase();
+    const typeFilter = document.getElementById("inventoryTypeFilter")?.value || "";
+
+    const materials = getMaterials()
+        .filter(item => {
+            const text = [item.code, item.name, item.category, item.spec].join(" ").toLowerCase();
+            return (!search || text.includes(search)) && (!typeFilter || item.type === typeFilter);
+        });
+
+    const tbody = document.getElementById("inventoryTableBody");
+
+    tbody.innerHTML = materials.length
+        ? materials.map(item => {
+            const pending = Number(item.pendingReturnQty || 0) + Number(item.pendingInspectQty || 0) + Number(item.pendingScrapQty || 0) + Number(item.pendingLostQty || 0);
+            return `
+                <tr>
+                    <td>${escapeHtml(item.code || "-")}</td>
+                    <td>${escapeHtml(item.name || "-")}</td>
+                    <td>${escapeHtml(item.category || "-")}</td>
+                    <td>${escapeHtml(item.spec || "-")}</td>
+                    <td>${escapeHtml(item.unit || "-")}</td>
+                    <td>${item.type === "recyclable" ? '<span class="badge purple">可回收</span>' : '<span class="badge gray">消耗品</span>'}</td>
+                    <td>${Number(item.availableQty || 0)}</td>
+                    <td>${Number(item.issuedQty || 0)}</td>
+                    <td>${pending}</td>
+                    <td>${Number(item.minimumStock || 0)}</td>
+                </tr>
+            `;
+        }).join("")
+        : `<tr><td colspan="10" class="empty">暂无物资资料</td></tr>`;
+}
+
+function renderMaster() {
+    const materials = getMaterials();
+    const tbody = document.getElementById("masterTableBody");
+
+    tbody.innerHTML = materials.length
+        ? materials.map(item => `
+            <tr>
+                <td>${escapeHtml(item.code || "-")}</td>
+                <td>${escapeHtml(item.name || "-")}</td>
+                <td>${escapeHtml(item.category || "-")}</td>
+                <td>${escapeHtml(item.spec || "-")}</td>
+                <td>${escapeHtml(item.unit || "-")}</td>
+                <td>${item.type === "recyclable" ? "可回收" : "普通消耗"}</td>
+                <td>${Number(item.referencePrice || 0).toFixed(2)}</td>
+                <td>${Number(item.minimumStock || 0)}</td>
+                <td><span class="badge green">启用</span></td>
+            </tr>
+        `).join("")
+        : `<tr><td colspan="9" class="empty">暂无物资主数据</td></tr>`;
+}
+
+function renderRequests() {
+    const requests = readArray(STORAGE.REQUESTS)
+        .filter(item => !item.status || item.status === "pending")
+        .slice()
+        .reverse();
+
+    const box = document.getElementById("requestList");
+
+    box.innerHTML = requests.length
+        ? requests.map(item => `
+            <div class="record-card">
+                <div class="record-top">
+                    <h3>${escapeHtml(item.materialName || "-")} · ${escapeHtml(item.personName || item.applicantName || "-")}</h3>
+                    <span class="badge yellow">待出库</span>
+                </div>
+                <div class="record-info">
+                    申请数量：${Number(item.requestQuantity || item.quantity || 0)}<br>
+                    岗位：${escapeHtml(item.position || item.applicantPosition || "-")}<br>
+                    用途：${escapeHtml(item.purpose || item.remark || "-")}<br>
+                    申请时间：${formatDateTime(item.createdAt || item.submittedAt)}
+                </div>
+                <div class="actions" style="margin-top:10px;">
+                    <button class="mini-btn success-btn" onclick="approveRequest('${escapeJs(item.requestId)}')">确认出库</button>
+                    <button class="mini-btn danger-btn" onclick="rejectRequest('${escapeJs(item.requestId)}')">驳回</button>
+                </div>
+            </div>
+        `).join("")
+        : `<div class="empty">当前没有待领用申请</div>`;
+}
+
+function renderHolders() {
+    const holders = readArray(STORAGE.HOLDERS).filter(item => item.status !== "closed");
+    const tbody = document.getElementById("holderTableBody");
+
+    tbody.innerHTML = holders.length
+        ? holders.map(item => `
+            <tr>
+                <td>${escapeHtml(item.personName || "-")}</td>
+                <td>${escapeHtml(item.position || "-")}</td>
+                <td>${escapeHtml(item.materialName || "-")}</td>
+                <td>${escapeHtml(item.materialCode || "-")}</td>
+                <td>${Number(item.quantity || 0)}</td>
+                <td>${formatDateTime(item.issuedAt)}</td>
+                <td><span class="badge green">持有中</span></td>
+            </tr>
+        `).join("")
+        : `<tr><td colspan="7" class="empty">暂无员工持有记录</td></tr>`;
+}
+
+function renderRecycle() {
+    const records = readArray(STORAGE.RECYCLES).slice().reverse();
+    const box = document.getElementById("recycleList");
+
+    box.innerHTML = records.length
+        ? records.map(item => `
+            <div class="record-card">
+                <div class="record-top">
+                    <h3>${escapeHtml(item.personName)} · ${escapeHtml(item.materialName)}</h3>
+                    <span class="badge ${item.status === "pending_inspection" ? "yellow" : item.status === "returned_to_stock" ? "green" : "red"}">
+                        ${item.status === "pending_inspection" ? "待检查" : item.status === "returned_to_stock" ? "已回收入库" : "待报废"}
+                    </span>
+                </div>
+                <div class="record-info">
+                    数量：${Number(item.quantity || 0)}<br>
+                    类型：${item.type === "exchange" ? "以旧换新" : "普通回收"}<br>
+                    说明：${escapeHtml(item.remark || "-")}
+                </div>
+                ${item.status === "pending_inspection" ? `
+                    <div class="actions" style="margin-top:10px;">
+                        <button class="mini-btn success-btn" onclick="inspectRecycle('${escapeJs(item.recycleId)}','available')">可继续使用</button>
+                        <button class="mini-btn danger-btn" onclick="inspectRecycle('${escapeJs(item.recycleId)}','scrap')">不可使用 / 待报废</button>
+                    </div>
+                ` : ""}
+            </div>
+        `).join("")
+        : `<div class="empty">暂无回收记录</div>`;
+}
+
+function renderScraps() {
+    const records = readArray(STORAGE.SCRAPS).slice().reverse();
+    const box = document.getElementById("scrapList");
+
+    box.innerHTML = records.length
+        ? records.map(item => `
+            <div class="record-card">
+                <div class="record-top">
+                    <h3>${escapeHtml(item.materialName)} · ${Number(item.quantity || 0)}</h3>
+                    <span class="badge ${item.status === "pending_approval" ? "yellow" : "gray"}">
+                        ${item.status === "pending_approval" ? "待报废审批" : "已核销"}
+                    </span>
+                </div>
+                <div class="record-info">
+                    原领用人：${escapeHtml(item.personName || "-")}<br>
+                    报废原因：${escapeHtml(item.reason || "-")}<br>
+                    时间：${formatDateTime(item.createdAt)}
+                </div>
+                ${item.status === "pending_approval" ? `
+                    <div class="actions" style="margin-top:10px;">
+                        <button class="mini-btn danger-btn" onclick="approveScrap('${escapeJs(item.scrapId)}')">批准报废并核销</button>
+                    </div>
+                ` : ""}
+            </div>
+        `).join("")
+        : `<div class="empty">暂无报废记录</div>`;
+}
+
+function renderLosts() {
+    const records = readArray(STORAGE.LOSTS).slice().reverse();
+    const box = document.getElementById("lostList");
+
+    box.innerHTML = records.length
+        ? records.map(item => `
+            <div class="record-card">
+                <div class="record-top">
+                    <h3>${escapeHtml(item.personName)} · ${escapeHtml(item.materialName)}</h3>
+                    <span class="badge ${item.status === "pending_compensation" ? "yellow" : "green"}">
+                        ${item.status === "pending_compensation" ? "待赔偿核销" : "已核销"}
+                    </span>
+                </div>
+                <div class="record-info">
+                    数量：${Number(item.quantity || 0)}<br>
+                    赔偿金额：${Number(item.compensationAmount || 0).toFixed(2)}<br>
+                    说明：${escapeHtml(item.remark || "-")}
+                </div>
+                ${item.status === "pending_compensation" ? `
+                    <div class="actions" style="margin-top:10px;">
+                        <button class="mini-btn warning-btn" onclick="confirmLostWriteOff('${escapeJs(item.lostId)}')">确认扣款并核销</button>
+                    </div>
+                ` : ""}
+            </div>
+        `).join("")
+        : `<div class="empty">暂无丢失核销记录</div>`;
+}
+
+function renderLedger() {
+    const records = readArray(STORAGE.LEDGER).slice().reverse();
+    const tbody = document.getElementById("ledgerTableBody");
+
+    tbody.innerHTML = records.length
+        ? records.map(item => `
+            <tr>
+                <td>${formatDateTime(item.createdAt)}</td>
+                <td>${escapeHtml(item.type || "-")}</td>
+                <td>${escapeHtml(item.materialName || "-")}</td>
+                <td>${Number(item.quantity || 0)}</td>
+                <td>${escapeHtml(item.personName || "-")}</td>
+                <td>${escapeHtml(item.remark || "-")}</td>
+            </tr>
+        `).join("")
+        : `<tr><td colspan="6" class="empty">暂无台账记录</td></tr>`;
+}
+
+function refreshMaterialOptions() {
+    const materials = getMaterials();
+    const allOptions = '<option value="">请选择物资</option>' + materials.map(item =>
+        `<option value="${escapeHtml(item.materialId)}">${escapeHtml(item.code)} · ${escapeHtml(item.name)}</option>`
+    ).join("");
+
+    const recyclableOptions = '<option value="">请选择可回收物资</option>' + materials
+        .filter(item => item.type === "recyclable")
+        .map(item => `<option value="${escapeHtml(item.materialId)}">${escapeHtml(item.code)} · ${escapeHtml(item.name)}</option>`)
+        .join("");
+
+    ["inboundMaterial"].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.innerHTML = allOptions;
+    });
+
+    ["recycleMaterial","scrapMaterial","lostMaterial"].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.innerHTML = recyclableOptions;
+    });
+}
+
+function initializeDemoData() {
+    if (!confirm("确认初始化一组后勤物资测试数据？")) return;
+
+    const materials = getMaterials();
+
+    if (!materials.length) {
+        materials.push(
+            {
+                materialId: "MAT_DEMO_001",
+                code: "WL-0001",
+                name: "安全帽",
+                category: "劳保用品",
+                spec: "黄色 / 均码",
+                unit: "个",
+                type: "recyclable",
+                referencePrice: 80,
+                minimumStock: 50,
+                availableQty: 120,
+                issuedQty: 35,
+                pendingReturnQty: 0,
+                pendingInspectQty: 2,
+                pendingScrapQty: 1,
+                scrappedQty: 3,
+                pendingLostQty: 1,
+                status: "active"
+            },
+            {
+                materialId: "MAT_DEMO_002",
+                code: "WL-0002",
+                name: "劳保手套",
+                category: "劳保用品",
+                spec: "通用",
+                unit: "双",
+                type: "consumable",
+                referencePrice: 6,
+                minimumStock: 200,
+                availableQty: 460,
+                issuedQty: 0,
+                pendingReturnQty: 0,
+                pendingInspectQty: 0,
+                pendingScrapQty: 0,
+                scrappedQty: 0,
+                pendingLostQty: 0,
+                status: "active"
+            },
+            {
+                materialId: "MAT_DEMO_003",
+                code: "WL-0003",
+                name: "对讲机",
+                category: "通讯设备",
+                spec: "矿区手持式",
+                unit: "台",
+                type: "recyclable",
+                referencePrice: 900,
+                minimumStock: 10,
+                availableQty: 18,
+                issuedQty: 12,
+                pendingReturnQty: 0,
+                pendingInspectQty: 0,
+                pendingScrapQty: 0,
+                scrappedQty: 1,
+                pendingLostQty: 1,
+                status: "active"
+            }
+        );
+
+        saveArray(STORAGE.MATERIALS, materials);
+    }
+
+    const requests = readArray(STORAGE.REQUESTS);
+    if (!requests.some(item => item.requestId === "REQ_DEMO_001")) {
+        requests.push({
+            requestId: "REQ_DEMO_001",
+            personId: "PERSON_DEMO",
+            personName: "测试员工",
+            position: "汽车司机",
+            materialId: "MAT_DEMO_002",
+            materialName: "劳保手套",
+            requestQuantity: 3,
+            purpose: "日常劳保使用",
+            status: "pending",
+            createdAt: new Date().toISOString()
+        });
+        saveArray(STORAGE.REQUESTS, requests);
+    }
+
+    renderAll();
+    alert("测试数据已初始化。");
+}
+
+function showReportPreview(type) {
+    const materials = getMaterials();
+    const available = materials.reduce((s, i) => s + Number(i.availableQty || 0), 0);
+    const issued = materials.reduce((s, i) => s + Number(i.issuedQty || 0), 0);
+
+    if (type === "daily") {
+        alert(
+            "库存日报预览\n\n" +
+            "物资种类：" + materials.length + "\n" +
+            "当前可用库存：" + available + "\n" +
+            "当前已发放：" + issued + "\n\n" +
+            "正式日报将在 V3.0 根据每日业务流水自动生成。"
+        );
+    } else {
+        alert(
+            "月度物资报表预览\n\n" +
+            "当前物资种类：" + materials.length + "\n" +
+            "当前可用库存：" + available + "\n\n" +
+            "V3.0 后自动计算月初库存、本月入库、本月领用、本月回收、本月报废、本月丢失和月末库存。"
+        );
+    }
+}
+
+function value(id) {
+    return (document.getElementById(id)?.value || "").trim();
+}
+
+function formatDateTime(value) {
+    if (!value) return "-";
+
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "-";
+
+    return date.toLocaleString("zh-CN", {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit"
+    });
+}
+
+function escapeHtml(value) {
+    const div = document.createElement("div");
+    div.textContent = String(value ?? "");
+    return div.innerHTML;
+}
+
+function escapeJs(value) {
+    return String(value ?? "")
+        .replaceAll("\\", "\\\\")
+        .replaceAll("'", "\\'")
+        .replaceAll("\n", "\\n")
+        .replaceAll("\r", "\\r");
+}
+
+renderAll();
+</script>
+
+</body>
+
+</html>
 
