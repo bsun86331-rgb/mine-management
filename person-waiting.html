@@ -464,7 +464,7 @@
 
 
 <footer>
-    矿山管理系统 · 审核等待页 V2.10.0F
+    矿山管理系统 · 审核等待页 V2.10.0R
 </footer>
 
 
@@ -502,6 +502,10 @@ function normalizePosition(
 
         "卡车司机":
             "汽车司机",
+
+
+        "挖掘机司机":
+            "挖机司机",
 
 
         "装载机司机":
@@ -683,6 +687,14 @@ let currentPerson =
     null;
 
 
+let approvedAutoEnterTimer =
+    null;
+
+
+let approvedAutoEnterStarted =
+    false;
+
+
 
 /* =========================================================
    获取人员数据库
@@ -733,7 +745,7 @@ function getPersonId(
     person
 ) {
 
-    return (
+    return String(
 
         person?.personId
 
@@ -822,10 +834,14 @@ function findCurrentPerson() {
 
                 person =>
 
-                    getPersonId(
-                        person
+                    String(
+                        getPersonId(
+                            person
+                        )
                     ) ===
-                        currentPersonId
+                        String(
+                            currentPersonId
+                        )
 
                     &&
 
@@ -1051,6 +1067,28 @@ function refreshStatus() {
         getApprovalState(
             currentPerson
         );
+
+
+    if (
+        state !==
+            "approved"
+    ) {
+
+        approvedAutoEnterStarted =
+            false;
+
+        if (
+            approvedAutoEnterTimer
+        ) {
+
+            clearTimeout(
+                approvedAutoEnterTimer
+            );
+
+            approvedAutoEnterTimer =
+                null;
+        }
+    }
 
 
     if (
@@ -1373,6 +1411,11 @@ function renderApproved(
     ).style.display =
         "none";
 
+
+    scheduleApprovedAutoEnter(
+        person
+    );
+
 }
 
 
@@ -1627,6 +1670,63 @@ function hideStateBoxes() {
     ).style.display =
         "none";
 
+}
+
+
+
+/* =========================================================
+   审核通过后自动进入工作端
+========================================================= */
+
+function scheduleApprovedAutoEnter(
+    person
+) {
+
+    if (
+        approvedAutoEnterStarted
+    ) {
+        return;
+    }
+
+
+    const position =
+        normalizePosition(
+            person?.position
+        );
+
+
+    const page =
+        POSITION_PAGES[
+            position
+        ];
+
+
+    if (
+        !page
+    ) {
+        return;
+    }
+
+
+    approvedAutoEnterStarted =
+        true;
+
+
+    setText(
+        "statusText",
+        "您的人员资料已经通过管理员审核，正在进入“" +
+        position +
+        "”工作端……"
+    );
+
+
+    approvedAutoEnterTimer =
+        setTimeout(
+            function () {
+                enterWorkPage();
+            },
+            1200
+        );
 }
 
 
