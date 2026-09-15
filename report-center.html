@@ -331,7 +331,7 @@
     <div class="header-inner">
         <div>
             <h1>📊 综合报表中心</h1>
-            <p>Report Center · V2.10.1D</p>
+            <p>Report Center · V2.10.1G</p>
         </div>
 
         <button type="button" class="header-btn" onclick="goHome()">返回首页</button>
@@ -415,7 +415,7 @@
                     <option>会计</option>
                     <option>后勤</option>
                 </select>
-                <button type="button" class="secondary-btn" onclick="showPlanned('工资标准设置')">⚙️ 工资标准设置</button>
+                <button type="button" class="secondary-btn" onclick="openPayrollSettings()">⚙️ 工资标准设置</button>
             </div>
 
             <div class="table-wrap">
@@ -677,7 +677,7 @@
 </main>
 
 <footer>
-    矿山管理系统 · 综合报表中心 V2.10.1D
+    矿山管理系统 · 综合报表中心 V2.10.1G
 </footer>
 
 <script>
@@ -1032,6 +1032,17 @@ function today() {
         .slice(0, 10);
 }
 
+function openPayrollSettings() {
+    const position = normalizePosition(currentPerson?.position);
+
+    if (!["管理员", "总经理", "会计"].includes(position)) {
+        alert("当前岗位没有工资标准设置权限。");
+        return;
+    }
+
+    location.href = "payroll-settings.html";
+}
+
 function showPlanned(name) {
     alert(
         name +
@@ -1061,4 +1072,3 @@ if (verifyAccess()) {
 </body>
 
 </html>
-
