@@ -331,7 +331,7 @@
     <div class="header-inner">
         <div>
             <h1>📊 综合报表中心</h1>
-            <p>Report Center · V2.10.1G</p>
+            <p>Report Center · V2.10.1L</p>
         </div>
 
         <button type="button" class="header-btn" onclick="goHome()">返回首页</button>
@@ -548,26 +548,30 @@
             <div class="section-title">
                 <div>
                     <h2>📉 折旧费用表</h2>
-                    <p>由财务维护设备原值、启用日期、使用年限和残值。</p>
+                    <p>自动读取财务费用中心中“折旧费用”记录。</p>
                 </div>
+                <span class="badge blue" id="depreciationTotalBadge">本月折旧 0</span>
             </div>
 
-            <div class="formula">
-                月折旧 =（设备原值 - 预计残值）÷ 使用年限 ÷ 12
+            <div class="toolbar">
+                <input type="month" id="depreciationMonth" onchange="renderDepreciation()">
+                <button type="button" class="secondary-btn" onclick="openFinanceCostCenter()">🧮 财务费用录入</button>
             </div>
 
-            <div class="grid-2">
-                <div class="report-box">
-                    <h3>设备折旧基础资料</h3>
-                    <p>设备原值、启用日期、预计使用年限、预计残值、折旧方式。</p>
-                    <button class="secondary-btn" onclick="showPlanned('设备折旧基础资料设置')">维护资料</button>
-                </div>
-
-                <div class="report-box">
-                    <h3>月度折旧汇总</h3>
-                    <p>按设备、部门、成本中心自动生成月折旧金额。</p>
-                    <button class="secondary-btn" onclick="showPlanned('月度折旧汇总')">查看预览</button>
-                </div>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>月份</th>
+                            <th>费用名称</th>
+                            <th>部门 / 成本中心</th>
+                            <th>金额</th>
+                            <th>凭证号</th>
+                            <th>备注</th>
+                        </tr>
+                    </thead>
+                    <tbody id="depreciationTableBody"></tbody>
+                </table>
             </div>
         </section>
     </section>
@@ -578,22 +582,49 @@
             <div class="section-title">
                 <div>
                     <h2>🧮 财务费用表</h2>
-                    <p>人工、柴油、维修、折旧、税费、保险、住宿、餐饮、运输、管理费和其他费用。</p>
+                    <p>自动读取税费、均摊、财务、保险、住宿、餐饮、运输、管理及其他费用。</p>
                 </div>
+                <button type="button" class="primary-btn" onclick="openFinanceCostCenter()">财务费用录入</button>
             </div>
 
-            <div class="grid-2">
-                <div class="report-box">
-                    <h3>财务费用录入</h3>
-                    <p>税费、均摊费用、保险及其他无法从业务模块自动生成的费用由财务填写。</p>
-                    <button class="primary-btn" onclick="showPlanned('财务费用录入')">录入费用</button>
-                </div>
+            <div class="toolbar">
+                <input type="month" id="financeMonth" onchange="renderFinance()">
+                <select id="financeTypeFilter" onchange="renderFinance()">
+                    <option value="">全部类型</option>
+                    <option value="tax">税费</option>
+                    <option value="shared">均摊费用</option>
+                    <option value="finance">财务费用</option>
+                    <option value="insurance">保险费用</option>
+                    <option value="accommodation">住宿费用</option>
+                    <option value="meal">餐饮费用</option>
+                    <option value="transport">运输费用</option>
+                    <option value="management">管理费用</option>
+                    <option value="other">其他费用</option>
+                </select>
+            </div>
 
-                <div class="report-box">
-                    <h3>综合成本</h3>
-                    <p>汇总人工、柴油、维修、折旧及其他费用，后续计算成本/方、成本/吨。</p>
-                    <button class="secondary-btn" onclick="showPlanned('综合成本分析')">查看分析</button>
-                </div>
+            <div class="summary-grid" style="margin-bottom:14px;">
+                <div class="summary-box"><span>税费</span><strong id="financeSumTax">0</strong></div>
+                <div class="summary-box"><span>均摊费用</span><strong id="financeSumShared">0</strong></div>
+                <div class="summary-box"><span>财务费用</span><strong id="financeSumFinance">0</strong></div>
+                <div class="summary-box"><span>其他费用</span><strong id="financeSumOther">0</strong></div>
+            </div>
+
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>月份</th>
+                            <th>类型</th>
+                            <th>费用名称</th>
+                            <th>部门</th>
+                            <th>金额</th>
+                            <th>凭证号</th>
+                            <th>备注</th>
+                        </tr>
+                    </thead>
+                    <tbody id="financeTableBody"></tbody>
+                </table>
             </div>
         </section>
     </section>
@@ -677,7 +708,7 @@
 </main>
 
 <footer>
-    矿山管理系统 · 综合报表中心 V2.10.1G
+    矿山管理系统 · 综合报表中心 V2.10.1L
 </footer>
 
 <script>
@@ -974,6 +1005,176 @@ function renderFuel() {
     body.innerHTML = `<tr><td colspan="8" class="empty">加油统计将在 fuel.html 记录采购单价并接入 V3.0 数据库后自动生成</td></tr>`;
 }
 
+
+const FINANCE_TYPE_LABELS = {
+    depreciation: "折旧费用",
+    tax: "税费",
+    shared: "均摊费用",
+    finance: "财务费用",
+    insurance: "保险费用",
+    accommodation: "住宿费用",
+    meal: "餐饮费用",
+    transport: "运输费用",
+    management: "管理费用",
+    other: "其他费用"
+};
+
+function reportMonthNow() {
+    const now = new Date();
+
+    return new Date(
+        now.getTime() -
+        now.getTimezoneOffset() * 60000
+    )
+        .toISOString()
+        .slice(0, 7);
+}
+
+function getFinanceCostRecords() {
+    return readArray("financeCostRecords")
+        .filter(item => item.status !== "disabled");
+}
+
+function formatMoney(value) {
+    return Number(value || 0)
+        .toLocaleString(
+            "zh-CN",
+            {
+                maximumFractionDigits: 2
+            }
+        );
+}
+
+function openFinanceCostCenter() {
+    const position = normalizePosition(currentPerson?.position);
+
+    if (!["管理员", "总经理", "会计"].includes(position)) {
+        alert("当前岗位没有财务费用录入权限。");
+        return;
+    }
+
+    location.href = "finance-cost.html";
+}
+
+function renderDepreciation() {
+    const month =
+        document.getElementById("depreciationMonth")?.value ||
+        reportMonthNow();
+
+    const records = getFinanceCostRecords()
+        .filter(item =>
+            String(item.month || "") === month &&
+            item.type === "depreciation"
+        );
+
+    const total = records.reduce(
+        (sum, item) =>
+            sum + Number(item.amount || 0),
+        0
+    );
+
+    const badge =
+        document.getElementById("depreciationTotalBadge");
+
+    if (badge) {
+        badge.textContent =
+            "本月折旧 " +
+            formatMoney(total);
+    }
+
+    const body =
+        document.getElementById("depreciationTableBody");
+
+    if (!body) return;
+
+    body.innerHTML = records.length
+        ? records.map(item => `
+            <tr>
+                <td>${escapeHtml(item.month || "-")}</td>
+                <td>${escapeHtml(item.name || "-")}</td>
+                <td>${escapeHtml(item.department || "-")}</td>
+                <td>${formatMoney(item.amount)}</td>
+                <td>${escapeHtml(item.voucherNo || "-")}</td>
+                <td>${escapeHtml(item.remark || "-")}</td>
+            </tr>
+        `).join("")
+        : `<tr><td colspan="6" class="empty">当前月份暂无折旧费用记录</td></tr>`;
+}
+
+function renderFinance() {
+    const month =
+        document.getElementById("financeMonth")?.value ||
+        reportMonthNow();
+
+    const type =
+        document.getElementById("financeTypeFilter")?.value ||
+        "";
+
+    const allMonthRecords = getFinanceCostRecords()
+        .filter(item =>
+            String(item.month || "") === month &&
+            item.type !== "depreciation"
+        );
+
+    const records = allMonthRecords
+        .filter(item =>
+            !type ||
+            item.type === type
+        );
+
+    const sumByType = typeName =>
+        allMonthRecords
+            .filter(item => item.type === typeName)
+            .reduce(
+                (sum, item) =>
+                    sum + Number(item.amount || 0),
+                0
+            );
+
+    const tax = sumByType("tax");
+    const shared = sumByType("shared");
+    const finance = sumByType("finance");
+
+    const other = allMonthRecords
+        .filter(item =>
+            !["tax", "shared", "finance"].includes(item.type)
+        )
+        .reduce(
+            (sum, item) =>
+                sum + Number(item.amount || 0),
+            0
+        );
+
+    const setSummary = (id, value) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = formatMoney(value);
+    };
+
+    setSummary("financeSumTax", tax);
+    setSummary("financeSumShared", shared);
+    setSummary("financeSumFinance", finance);
+    setSummary("financeSumOther", other);
+
+    const body =
+        document.getElementById("financeTableBody");
+
+    if (!body) return;
+
+    body.innerHTML = records.length
+        ? records.map(item => `
+            <tr>
+                <td>${escapeHtml(item.month || "-")}</td>
+                <td>${escapeHtml(item.typeName || FINANCE_TYPE_LABELS[item.type] || "-")}</td>
+                <td>${escapeHtml(item.name || "-")}</td>
+                <td>${escapeHtml(item.department || "-")}</td>
+                <td>${formatMoney(item.amount)}</td>
+                <td>${escapeHtml(item.voucherNo || "-")}</td>
+                <td>${escapeHtml(item.remark || "-")}</td>
+            </tr>
+        `).join("")
+        : `<tr><td colspan="7" class="empty">当前筛选条件暂无财务费用记录</td></tr>`;
+}
+
 function renderRanking() {
     const drivers = getPersonnelRecords()
         .filter(isApproved)
@@ -1021,6 +1222,8 @@ function renderAllReports() {
     renderProduction();
     renderMaintenance();
     renderFuel();
+    renderDepreciation();
+    renderFinance();
     renderRanking();
     renderAttendance();
 }
@@ -1063,6 +1266,30 @@ function goHome() {
 }
 
 if (verifyAccess()) {
+
+    const defaultMonth =
+        reportMonthNow();
+
+    const depreciationMonth =
+        document.getElementById(
+            "depreciationMonth"
+        );
+
+    const financeMonth =
+        document.getElementById(
+            "financeMonth"
+        );
+
+    if (depreciationMonth) {
+        depreciationMonth.value =
+            defaultMonth;
+    }
+
+    if (financeMonth) {
+        financeMonth.value =
+            defaultMonth;
+    }
+
     renderProfile();
     renderAllReports();
     applyReportPermissions();
