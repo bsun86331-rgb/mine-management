@@ -208,7 +208,7 @@
 
     
         /* =====================================================
-           V2.10.1I 总经理经营驾驶舱
+           V2.10.1K 总经理经营驾驶舱
         ====================================================== */
 
         .gm-business-note {
@@ -408,7 +408,7 @@
 
         .gm-quick-grid {
             display: grid;
-            grid-template-columns: repeat(4, minmax(0, 1fr));
+            grid-template-columns: repeat(5, minmax(0, 1fr));
             gap: 10px;
         }
 
@@ -491,7 +491,7 @@
 
 
     <span>
-        V2.10.1I
+        V2.10.1K
     </span>
 
 </header>
@@ -532,7 +532,7 @@
 
 
     <!-- =====================================================
-         V2.10.1I 总经理经营驾驶舱
+         V2.10.1K 总经理经营驾驶舱
     ====================================================== -->
 
     <section class="gm-card">
@@ -675,7 +675,7 @@
                     </h2>
 
                     <p>
-                        按月份维护综合单价和本期费用
+                        按月份维护综合单价；折旧、税费、均摊、财务及其他费用自动读取财务费用中心
                     </p>
 
                 </div>
@@ -740,7 +740,7 @@
                         id="gmDepreciationCost"
                         type="number"
                         min="0"
-                        step="0.01"
+                        step="0.01" readonly
                     >
                 </label>
 
@@ -750,7 +750,7 @@
                         id="gmTaxCost"
                         type="number"
                         min="0"
-                        step="0.01"
+                        step="0.01" readonly
                     >
                 </label>
 
@@ -760,7 +760,7 @@
                         id="gmSharedCost"
                         type="number"
                         min="0"
-                        step="0.01"
+                        step="0.01" readonly
                     >
                 </label>
 
@@ -770,7 +770,7 @@
                         id="gmFinanceCost"
                         type="number"
                         min="0"
-                        step="0.01"
+                        step="0.01" readonly
                     >
                 </label>
 
@@ -780,7 +780,7 @@
                         id="gmOtherCost"
                         type="number"
                         min="0"
-                        step="0.01"
+                        step="0.01" readonly
                     >
                 </label>
 
@@ -794,7 +794,7 @@
                     class="gm-business-primary"
                     onclick="saveGeneralManagerBusinessData()"
                 >
-                    保存并重新计算
+                    保存经营参数并重新计算
                 </button>
 
                 <button
@@ -888,6 +888,19 @@
                     进入
                 </button>
             </div>
+
+            <div class="gm-quick-card">
+                <h3>🧮 财务费用录入</h3>
+                <p>录入折旧、税费、均摊、财务费用及其他费用。</p>
+                <button
+                    type="button"
+                    class="gm-business-secondary"
+                    onclick="location.href='finance-cost.html'"
+                >
+                    进入
+                </button>
+            </div>
+
 
             <div class="gm-quick-card">
                 <h3>💰 工资标准</h3>
@@ -1141,7 +1154,7 @@
 
 <footer>
 
-    矿山管理系统 · 总经理经营驾驶舱与审批端 V2.10.1I
+    矿山管理系统 · 总经理经营驾驶舱与审批端 V2.10.1K
 
 </footer>
 
@@ -1158,7 +1171,7 @@
 "use strict";
 
 /* =====================================================
-   V2.10.1I 总经理经营驾驶舱
+   V2.10.1K 总经理经营驾驶舱
 ===================================================== */
 
 const GM_BUSINESS_SETTINGS_KEY =
@@ -1492,6 +1505,117 @@ function gmGetAutomaticMaintenanceCost() {
 }
 
 
+/*
+ * 自动读取财务费用中心 finance-cost.html
+ *
+ * financeCostRecords:
+ * depreciation = 折旧费用
+ * tax          = 税费
+ * shared       = 均摊费用
+ * finance      = 财务费用
+ * 其他类型      = 其他费用
+ */
+function gmGetFinanceCostSummary() {
+
+    const month =
+        gmSelectedMonth();
+
+
+    const records =
+        gmReadArray(
+            "financeCostRecords"
+        )
+        .filter(
+            item =>
+
+                item.status !==
+                    "disabled"
+
+                &&
+
+                String(
+                    item.month ||
+                    ""
+                ) ===
+                    month
+        );
+
+
+    const summary = {
+
+        depreciationCost: 0,
+
+        taxCost: 0,
+
+        sharedCost: 0,
+
+        financeCost: 0,
+
+        otherCost: 0
+
+    };
+
+
+    records
+        .forEach(
+            item => {
+
+                const amount =
+                    Number(
+                        item.amount ||
+                        0
+                    );
+
+
+                if (
+                    item.type ===
+                        "depreciation"
+                ) {
+
+                    summary.depreciationCost +=
+                        amount;
+
+                } else if (
+                    item.type ===
+                        "tax"
+                ) {
+
+                    summary.taxCost +=
+                        amount;
+
+                } else if (
+                    item.type ===
+                        "shared"
+                ) {
+
+                    summary.sharedCost +=
+                        amount;
+
+                } else if (
+                    item.type ===
+                        "finance"
+                ) {
+
+                    summary.financeCost +=
+                        amount;
+
+                } else {
+
+                    /*
+                     * 保险、住宿、餐饮、运输、管理费、
+                     * 其他费用统一计入经营驾驶舱“其他费用”。
+                     */
+                    summary.otherCost +=
+                        amount;
+                }
+            }
+        );
+
+
+    return summary;
+}
+
+
 function gmLoadBusinessData() {
 
     const settings =
@@ -1504,6 +1628,10 @@ function gmLoadBusinessData() {
         gmReadObject(
             GM_BUSINESS_COST_KEY
         );
+
+
+    const financeSummary =
+        gmGetFinanceCostSummary();
 
 
     document
@@ -1526,44 +1654,120 @@ function gmLoadBusinessData() {
             );
 
 
-    GM_COST_ITEMS
-        .forEach(
-            item => {
+    /*
+     * V2.10.1K
+     * 工资、柴油当前仍保留本地经营费用输入。
+     * 维修费用优先读取维修系统。
+     * 折旧、税费、均摊、财务及其他费用
+     * 直接读取 finance-cost.html 的 financeCostRecords。
+     */
+    document
+        .getElementById(
+            "gmSalaryCost"
+        )
+        .value =
+            Number(
+                costs.salaryCost ||
+                0
+            );
 
-                document
-                    .getElementById(
-                        item.key
-                    )
-                    .value =
-                        Number(
-                            costs[
-                                item.storageKey
-                            ] ||
-                            0
-                        );
-            }
-        );
+
+    document
+        .getElementById(
+            "gmFuelCost"
+        )
+        .value =
+            Number(
+                costs.fuelCost ||
+                0
+            );
 
 
     const automaticMaintenance =
         gmGetAutomaticMaintenanceCost();
 
 
-    if (
-        automaticMaintenance >
-        0
-    ) {
+    document
+        .getElementById(
+            "gmMaintenanceCost"
+        )
+        .value =
+            automaticMaintenance >
+            0
 
-        document
-            .getElementById(
-                "gmMaintenanceCost"
-            )
-            .value =
+                ?
+
                 automaticMaintenance
                     .toFixed(
                         2
-                    );
-    }
+                    )
+
+                :
+
+                Number(
+                    costs.maintenanceCost ||
+                    0
+                );
+
+
+    document
+        .getElementById(
+            "gmDepreciationCost"
+        )
+        .value =
+            financeSummary
+                .depreciationCost
+                .toFixed(
+                    2
+                );
+
+
+    document
+        .getElementById(
+            "gmTaxCost"
+        )
+        .value =
+            financeSummary
+                .taxCost
+                .toFixed(
+                    2
+                );
+
+
+    document
+        .getElementById(
+            "gmSharedCost"
+        )
+        .value =
+            financeSummary
+                .sharedCost
+                .toFixed(
+                    2
+                );
+
+
+    document
+        .getElementById(
+            "gmFinanceCost"
+        )
+        .value =
+            financeSummary
+                .financeCost
+                .toFixed(
+                    2
+                );
+
+
+    document
+        .getElementById(
+            "gmOtherCost"
+        )
+        .value =
+            financeSummary
+                .otherCost
+                .toFixed(
+                    2
+                );
 }
 
 
@@ -1590,34 +1794,53 @@ function saveGeneralManagerBusinessData() {
     };
 
 
+    const oldCosts =
+        gmReadObject(
+            GM_BUSINESS_COST_KEY
+        );
+
+
     const costs = {
+
+        ...oldCosts,
 
         reportMonth:
             gmSelectedMonth(),
+
+        salaryCost:
+            Number(
+                document
+                    .getElementById(
+                        "gmSalaryCost"
+                    )
+                    .value ||
+                0
+            ),
+
+        fuelCost:
+            Number(
+                document
+                    .getElementById(
+                        "gmFuelCost"
+                    )
+                    .value ||
+                0
+            ),
+
+        maintenanceCost:
+            Number(
+                document
+                    .getElementById(
+                        "gmMaintenanceCost"
+                    )
+                    .value ||
+                0
+            ),
 
         updatedAt:
             new Date()
                 .toISOString()
     };
-
-
-    GM_COST_ITEMS
-        .forEach(
-            item => {
-
-                costs[
-                    item.storageKey
-                ] =
-                    Number(
-                        document
-                            .getElementById(
-                                item.key
-                            )
-                            .value ||
-                        0
-                    );
-            }
-        );
 
 
     localStorage.setItem(
@@ -1636,11 +1859,17 @@ function saveGeneralManagerBusinessData() {
     );
 
 
+    /*
+     * 重新读取财务中心数据后计算，
+     * 防止总经理端覆盖财务录入结果。
+     */
+    gmLoadBusinessData();
+
     gmRefreshBusinessDashboard();
 
 
     alert(
-        "经营参数和费用数据已保存。"
+        "经营参数已保存。折旧、税费、均摊、财务及其他费用已自动读取财务费用中心。"
     );
 }
 
