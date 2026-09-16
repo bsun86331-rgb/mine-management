@@ -331,7 +331,7 @@
     <div class="header-inner">
         <div>
             <h1>📊 综合报表中心</h1>
-            <p>Report Center · V2.10.1N</p>
+            <p>Report Center · V2.10.1P</p>
         </div>
 
         <button type="button" class="header-btn" onclick="goHome()">返回首页</button>
@@ -396,7 +396,7 @@
                     <h2>💰 工资表</h2>
                     <p>工资由固定工资、绩效工资、奖励和扣款构成。</p>
                 </div>
-                <span class="badge blue">自动生成框架</span>
+                <span class="badge green" id="payrollTotalBadge">本月工资 0</span>
             </div>
 
             <div class="formula">
@@ -416,6 +416,7 @@
                     <option>后勤</option>
                 </select>
                 <button type="button" class="secondary-btn" onclick="openPayrollSettings()">⚙️ 工资标准设置</button>
+                <button type="button" class="primary-btn" onclick="generateMonthlyPayroll(true)">🔄 重新生成工资表</button>
             </div>
 
             <div class="table-wrap">
@@ -431,6 +432,7 @@
                             <th>奖励</th>
                             <th>扣款</th>
                             <th>应发工资</th>
+                            <th>说明</th>
                         </tr>
                     </thead>
                     <tbody id="payrollTableBody"></tbody>
@@ -753,7 +755,7 @@
 </main>
 
 <footer>
-    矿山管理系统 · 综合报表中心 V2.10.1N
+    矿山管理系统 · 综合报表中心 V2.10.1P
 </footer>
 
 <script>
@@ -950,32 +952,782 @@ function renderSummary() {
     document.getElementById("summaryMaterial").textContent = String(materialRequests.length);
 }
 
-function renderPayroll() {
-    const people = getPersonnelRecords()
-        .filter(isApproved)
-        .filter(person => {
-            const filter = document.getElementById("payrollPositionFilter")?.value || "";
-            return !filter || normalizePosition(person.position) === filter;
+const PAYROLL_MONTHLY_KEY = "payrollMonthlyRecords";
+
+function payrollMonthNow() {
+    const now = new Date();
+
+    return new Date(
+        now.getTime() -
+        now.getTimezoneOffset() * 60000
+    )
+        .toISOString()
+        .slice(0, 7);
+}
+
+function payrollRecordMonth(value) {
+    if (!value) return "";
+
+    const date = new Date(value);
+
+    if (Number.isNaN(date.getTime())) {
+        return String(value).slice(0, 7);
+    }
+
+    return new Date(
+        date.getTime() -
+        date.getTimezoneOffset() * 60000
+    )
+        .toISOString()
+        .slice(0, 7);
+}
+
+function getPayrollStandards() {
+    return readArray("payrollStandards")
+        .filter(item =>
+            item.status !== "disabled"
+        );
+}
+
+function getPayrollRules() {
+    try {
+        const data =
+            JSON.parse(
+                localStorage.getItem(
+                    "payrollRules"
+                )
+            );
+
+        return (
+            data &&
+            typeof data === "object"
+        )
+            ? data
+            : {};
+    } catch (error) {
+        return {};
+    }
+}
+
+function getPersonIdForPayroll(person) {
+    return String(
+        person?.personId ||
+        person?.employeeId ||
+        person?.driverId ||
+        person?.id ||
+        ""
+    );
+}
+
+function findPayrollStandard(person, month) {
+    const personId =
+        getPersonIdForPayroll(person);
+
+    const standards =
+        getPayrollStandards()
+            .filter(item =>
+                String(item.personId || "") === personId &&
+                (!item.effectiveDate ||
+                    String(item.effectiveDate).slice(0, 7) <= month)
+            )
+            .sort((a, b) =>
+                String(b.effectiveDate || "")
+                    .localeCompare(
+                        String(a.effectiveDate || "")
+                    )
+            );
+
+    return standards[0] || null;
+}
+
+function sumDriverTripsForPayroll(person, month) {
+    const personId =
+        getPersonIdForPayroll(person);
+
+    const personName =
+        String(person.name || "");
+
+    const keys = [
+        "tripRecords",
+        "driverTripRecords",
+        "transportRecords"
+    ];
+
+    let total = 0;
+
+    keys.forEach(key => {
+        readArray(key).forEach(item => {
+            const samePerson =
+                String(
+                    item.personId ||
+                    item.driverId ||
+                    item.employeeId ||
+                    item.workerId ||
+                    ""
+                ) === personId
+                ||
+                (
+                    personName &&
+                    String(
+                        item.personName ||
+                        item.driverName ||
+                        item.name ||
+                        ""
+                    ) === personName
+                );
+
+            const recordMonth =
+                payrollRecordMonth(
+                    item.completedAt ||
+                    item.workDate ||
+                    item.date ||
+                    item.createdAt
+                );
+
+            const valid =
+                item.status !== "cancelled" &&
+                item.status !== "rejected";
+
+            if (
+                samePerson &&
+                recordMonth === month &&
+                valid
+            ) {
+                total += Number(
+                    item.tripCount ||
+                    item.count ||
+                    item.completedTrips ||
+                    1
+                );
+            }
+        });
+    });
+
+    return total;
+}
+
+function sumExcavatorLoadsForPayroll(person, month) {
+    const personId =
+        getPersonIdForPayroll(person);
+
+    const personName =
+        String(person.name || "");
+
+    const keys = [
+        "excavatorTripRecords",
+        "excavatorLoadingRecords",
+        "loadingRecords"
+    ];
+
+    let total = 0;
+
+    keys.forEach(key => {
+        readArray(key).forEach(item => {
+            const samePerson =
+                String(
+                    item.personId ||
+                    item.driverId ||
+                    item.operatorId ||
+                    item.workerId ||
+                    ""
+                ) === personId
+                ||
+                (
+                    personName &&
+                    String(
+                        item.personName ||
+                        item.driverName ||
+                        item.operatorName ||
+                        item.name ||
+                        ""
+                    ) === personName
+                );
+
+            const recordMonth =
+                payrollRecordMonth(
+                    item.completedAt ||
+                    item.workDate ||
+                    item.date ||
+                    item.createdAt
+                );
+
+            const valid =
+                item.status !== "cancelled" &&
+                item.status !== "rejected";
+
+            if (
+                samePerson &&
+                recordMonth === month &&
+                valid
+            ) {
+                total += Number(
+                    item.loadingCount ||
+                    item.loadCount ||
+                    item.tripCount ||
+                    item.count ||
+                    1
+                );
+            }
+        });
+    });
+
+    return total;
+}
+
+function getPayrollProductionQuantity(person, month) {
+    const position =
+        normalizePosition(
+            person.position
+        );
+
+    if (position === "汽车司机") {
+        return sumDriverTripsForPayroll(
+            person,
+            month
+        );
+    }
+
+    if (position === "挖机司机") {
+        return sumExcavatorLoadsForPayroll(
+            person,
+            month
+        );
+    }
+
+    return 0;
+}
+
+function recordBelongsToPerson(item, person) {
+    const personId =
+        getPersonIdForPayroll(person);
+
+    const personName =
+        String(person.name || "");
+
+    const recordId =
+        String(
+            item.personId ||
+            item.employeeId ||
+            item.driverId ||
+            item.workerId ||
+            ""
+        );
+
+    const recordName =
+        String(
+            item.personName ||
+            item.employeeName ||
+            item.driverName ||
+            item.name ||
+            ""
+        );
+
+    return (
+        (personId && recordId === personId)
+        ||
+        (personName && recordName === personName)
+    );
+}
+
+function getExplicitPayrollAdjustments(person, month) {
+    let reward = 0;
+    let deduction = 0;
+
+    const rewardKeys = [
+        "rewardRecords",
+        "driverRewardRecords",
+        "dispatchRewardRecords"
+    ];
+
+    rewardKeys.forEach(key => {
+        readArray(key).forEach(item => {
+            if (
+                recordBelongsToPerson(item, person) &&
+                payrollRecordMonth(
+                    item.createdAt ||
+                    item.date ||
+                    item.workDate
+                ) === month &&
+                item.status !== "cancelled" &&
+                item.status !== "rejected"
+            ) {
+                reward += Number(
+                    item.amount ||
+                    item.rewardAmount ||
+                    0
+                );
+            }
+        });
+    });
+
+    const penaltyKeys = [
+        "penaltyRecords",
+        "driverPenaltyRecords",
+        "dispatchPenaltyRecords"
+    ];
+
+    penaltyKeys.forEach(key => {
+        readArray(key).forEach(item => {
+            if (
+                recordBelongsToPerson(item, person) &&
+                payrollRecordMonth(
+                    item.createdAt ||
+                    item.date ||
+                    item.workDate
+                ) === month &&
+                item.status !== "cancelled" &&
+                item.status !== "rejected"
+            ) {
+                deduction += Number(
+                    item.amount ||
+                    item.penaltyAmount ||
+                    0
+                );
+            }
+        });
+    });
+
+    /*
+     * 丢失可回收后勤物资：
+     * 仅在确认扣款/已核销后进入工资扣款。
+     */
+    readArray("materialLostRecords")
+        .forEach(item => {
+            if (
+                recordBelongsToPerson(item, person) &&
+                item.status === "written_off" &&
+                payrollRecordMonth(
+                    item.writeOffAt ||
+                    item.createdAt
+                ) === month
+            ) {
+                deduction += Number(
+                    item.compensationAmount ||
+                    0
+                );
+            }
         });
 
-    const body = document.getElementById("payrollTableBody");
-
-    body.innerHTML = people.length
-        ? people.map(person => `
-            <tr>
-                <td>${escapeHtml(person.name || "-")}</td>
-                <td>${escapeHtml(normalizePosition(person.position) || "-")}</td>
-                <td>0</td>
-                <td>0</td>
-                <td>0</td>
-                <td>0</td>
-                <td>0</td>
-                <td>0</td>
-                <td>0</td>
-            </tr>
-        `).join("")
-        : `<tr><td colspan="9" class="empty">暂无工资数据</td></tr>`;
+    return {
+        reward,
+        deduction
+    };
 }
+
+function getRankingAdjustment(person, month) {
+    const rules =
+        getPayrollRules();
+
+    const personId =
+        getPersonIdForPayroll(person);
+
+    const ranking =
+        readArray("performanceRankingRecords")
+            .find(item =>
+                String(item.month || "") === month &&
+                (
+                    String(item.personId || "") === personId
+                    ||
+                    String(item.personName || "") ===
+                        String(person.name || "")
+                )
+            );
+
+    if (!ranking) {
+        return {
+            reward: 0,
+            deduction: 0,
+            description: ""
+        };
+    }
+
+    const rank =
+        Number(
+            ranking.rank ||
+            ranking.ranking ||
+            0
+        );
+
+    const totalPeople =
+        Number(
+            ranking.totalPeople ||
+            ranking.totalCount ||
+            0
+        );
+
+    let reward = 0;
+    let deduction = 0;
+    let description = "";
+
+    if (rank === 1) {
+        reward =
+            Number(
+                rules.rank1Reward ||
+                0
+            );
+        description = "综合绩效第1名奖励";
+    } else if (rank === 2) {
+        reward =
+            Number(
+                rules.rank2Reward ||
+                0
+            );
+        description = "综合绩效第2名奖励";
+    } else if (rank === 3) {
+        reward =
+            Number(
+                rules.rank3Reward ||
+                0
+            );
+        description = "综合绩效第3名奖励";
+    }
+
+    if (
+        totalPeople >= 3 &&
+        rank === totalPeople
+    ) {
+        deduction +=
+            Number(
+                rules.bottom1Deduction ||
+                0
+            );
+        description =
+            (
+                description
+                    ? description + "；"
+                    : ""
+            )
+            +
+            "综合绩效倒数第1名扣款";
+    } else if (
+        totalPeople >= 3 &&
+        rank === totalPeople - 1
+    ) {
+        deduction +=
+            Number(
+                rules.bottom2Deduction ||
+                0
+            );
+        description =
+            (
+                description
+                    ? description + "；"
+                    : ""
+            )
+            +
+            "综合绩效倒数第2名扣款";
+    } else if (
+        totalPeople >= 3 &&
+        rank === totalPeople - 2
+    ) {
+        deduction +=
+            Number(
+                rules.bottom3Deduction ||
+                0
+            );
+        description =
+            (
+                description
+                    ? description + "；"
+                    : ""
+            )
+            +
+            "综合绩效倒数第3名扣款";
+    }
+
+    return {
+        reward,
+        deduction,
+        description
+    };
+}
+
+function generateMonthlyPayroll(showMessage = false) {
+    const month =
+        document.getElementById("payrollMonth")?.value ||
+        payrollMonthNow();
+
+    const people =
+        getPersonnelRecords()
+            .filter(isApproved);
+
+    const generated =
+        people.map(person => {
+            const personId =
+                getPersonIdForPayroll(person);
+
+            const position =
+                normalizePosition(
+                    person.position
+                );
+
+            const standard =
+                findPayrollStandard(
+                    person,
+                    month
+                );
+
+            const baseSalary =
+                Number(
+                    standard?.baseSalary ||
+                    0
+                );
+
+            const fixedAllowance =
+                Number(
+                    standard?.fixedAllowance ||
+                    0
+                );
+
+            const salaryMode =
+                standard?.salaryMode ||
+                "fixed";
+
+            const performanceUnitPrice =
+                Number(
+                    standard?.performanceUnitPrice ||
+                    0
+                );
+
+            const performanceQuantity =
+                salaryMode === "performance"
+                    ? getPayrollProductionQuantity(
+                        person,
+                        month
+                    )
+                    : 0;
+
+            const performanceSalary =
+                salaryMode === "performance"
+                    ? performanceQuantity *
+                        performanceUnitPrice
+                    : 0;
+
+            const explicitAdjustments =
+                getExplicitPayrollAdjustments(
+                    person,
+                    month
+                );
+
+            const rankingAdjustment =
+                getRankingAdjustment(
+                    person,
+                    month
+                );
+
+            const reward =
+                explicitAdjustments.reward +
+                rankingAdjustment.reward;
+
+            const deduction =
+                explicitAdjustments.deduction +
+                rankingAdjustment.deduction;
+
+            const payableSalary =
+                baseSalary +
+                fixedAllowance +
+                performanceSalary +
+                reward -
+                deduction;
+
+            const descriptions = [];
+
+            if (!standard) {
+                descriptions.push(
+                    "未设置工资标准"
+                );
+            }
+
+            if (
+                salaryMode === "performance" &&
+                performanceUnitPrice <= 0
+            ) {
+                descriptions.push(
+                    "未设置绩效单价"
+                );
+            }
+
+            if (
+                rankingAdjustment.description
+            ) {
+                descriptions.push(
+                    rankingAdjustment.description
+                );
+            }
+
+            return {
+                payrollId:
+                    "PAYROLL_" +
+                    month +
+                    "_" +
+                    personId,
+
+                month,
+                personId,
+                personName:
+                    person.name ||
+                    "",
+
+                position,
+
+                salaryMode,
+
+                baseSalary,
+                fixedAllowance,
+
+                performanceQuantity,
+                performanceUnitPrice,
+                performanceSalary,
+
+                reward,
+                deduction,
+
+                payableSalary,
+
+                description:
+                    descriptions.join("；"),
+
+                generatedAt:
+                    new Date()
+                        .toISOString()
+            };
+        });
+
+    const existing =
+        readArray(
+            PAYROLL_MONTHLY_KEY
+        )
+        .filter(item =>
+            String(item.month || "") !== month
+        );
+
+    localStorage.setItem(
+        PAYROLL_MONTHLY_KEY,
+        JSON.stringify(
+            existing.concat(generated)
+        )
+    );
+
+    renderPayroll();
+
+    if (showMessage) {
+        const total =
+            generated.reduce(
+                (sum, item) =>
+                    sum +
+                    Number(
+                        item.payableSalary ||
+                        0
+                    ),
+                0
+            );
+
+        alert(
+            "已生成 " +
+            month +
+            " 工资表，共 " +
+            generated.length +
+            " 人，应发工资合计 " +
+            formatMoney(total) +
+            " 元。"
+        );
+    }
+
+    return generated;
+}
+
+function getMonthlyPayrollRecords(month) {
+    return readArray(
+        PAYROLL_MONTHLY_KEY
+    )
+        .filter(item =>
+            String(item.month || "") ===
+            month
+        );
+}
+
+function renderPayroll() {
+    const month =
+        document.getElementById("payrollMonth")?.value ||
+        payrollMonthNow();
+
+    let records =
+        getMonthlyPayrollRecords(
+            month
+        );
+
+    /*
+     * 第一次查看该月份时自动生成一次。
+     */
+    if (!records.length) {
+        records =
+            generateMonthlyPayroll(
+                false
+            );
+    }
+
+    const filter =
+        document.getElementById("payrollPositionFilter")?.value ||
+        "";
+
+    records =
+        records.filter(item =>
+            !filter ||
+            item.position === filter
+        );
+
+    const totalSalary =
+        records.reduce(
+            (sum, item) =>
+                sum +
+                Number(
+                    item.payableSalary ||
+                    0
+                ),
+            0
+        );
+
+    const badge =
+        document.getElementById(
+            "payrollTotalBadge"
+        );
+
+    if (badge) {
+        badge.textContent =
+            "本月工资 " +
+            formatMoney(
+                totalSalary
+            ) +
+            " 元";
+    }
+
+    const body =
+        document.getElementById(
+            "payrollTableBody"
+        );
+
+    body.innerHTML =
+        records.length
+            ? records.map(item => `
+                <tr>
+                    <td>${escapeHtml(item.personName || "-")}</td>
+                    <td>${escapeHtml(item.position || "-")}</td>
+                    <td>${formatMoney(
+                        Number(item.baseSalary || 0) +
+                        Number(item.fixedAllowance || 0)
+                    )}</td>
+                    <td>${Number(item.performanceQuantity || 0)}</td>
+                    <td>${formatMoney(item.performanceUnitPrice)}</td>
+                    <td>${formatMoney(item.performanceSalary)}</td>
+                    <td>${formatMoney(item.reward)}</td>
+                    <td>${formatMoney(item.deduction)}</td>
+                    <td><strong>${formatMoney(item.payableSalary)}</strong></td>
+                    <td>${escapeHtml(item.description || "-")}</td>
+                </tr>
+            `).join("")
+            : `<tr><td colspan="10" class="empty">暂无工资数据</td></tr>`;
+}
+
 
 function renderProduction() {
     const body = document.getElementById("productionTableBody");
@@ -1574,6 +2326,12 @@ if (verifyAccess()) {
             "fuelMonth"
         );
 
+
+    const payrollMonth =
+        document.getElementById(
+            "payrollMonth"
+        );
+
     if (depreciationMonth) {
         depreciationMonth.value =
             defaultMonth;
@@ -1587,6 +2345,12 @@ if (verifyAccess()) {
 
     if (fuelMonth) {
         fuelMonth.value =
+            defaultMonth;
+    }
+
+
+    if (payrollMonth) {
+        payrollMonth.value =
             defaultMonth;
     }
 
