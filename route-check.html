@@ -1,1 +1,252 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0f172a">
+<title>系统跳转自检 - 矿山管理系统</title>
+<style>
+*{box-sizing:border-box}
+:root{--bg:#f1f5f9;--card:#fff;--text:#0f172a;--muted:#64748b;--line:#e2e8f0;--dark:#0f172a;--green:#16a34a;--red:#dc2626;--yellow:#d97706;--blue:#2563eb}
+body{margin:0;background:var(--bg);color:var(--text);font-family:Arial,"Microsoft YaHei",sans-serif}
+header{position:sticky;top:0;z-index:30;background:var(--dark);color:#fff}
+.header-inner{max-width:1280px;margin:auto;padding:15px 14px;display:flex;justify-content:space-between;gap:12px;align-items:center}
+h1{margin:0;font-size:22px}.sub{margin-top:5px;color:#cbd5e1;font-size:12px}
+button{border:0;border-radius:10px;min-height:42px;padding:10px 14px;font-weight:700;cursor:pointer}
+.primary{background:var(--blue);color:#fff}.secondary{background:#fff;border:1px solid #cbd5e1;color:#334155}.header-btn{background:#1e293b;color:#fff;border:1px solid #475569}
+main{max-width:1280px;margin:auto;padding:16px 14px 40px}
+.notice{margin-bottom:14px;padding:13px 14px;border:1px solid #bfdbfe;border-radius:12px;background:#eff6ff;color:#1e40af;font-size:13px;line-height:1.7}
+.card{background:#fff;border-radius:16px;padding:17px;margin-bottom:14px;box-shadow:0 5px 20px rgba(15,23,42,.06)}
+.section-title{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:14px}.section-title h2{margin:0;font-size:18px}.section-title p{margin:5px 0 0;color:var(--muted);font-size:12px;line-height:1.6}
+.summary-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.summary{padding:13px;border-radius:12px;background:#f8fafc}.summary span{display:block;color:#64748b;font-size:12px}.summary strong{display:block;margin-top:6px;font-size:22px}
+.table-wrap{overflow-x:auto}table{width:100%;min-width:1000px;border-collapse:collapse}th,td{padding:10px 9px;border-bottom:1px solid var(--line);text-align:left;font-size:13px;vertical-align:top}th{background:#f8fafc;color:#475569}
+.badge{display:inline-block;padding:5px 9px;border-radius:999px;font-size:12px;font-weight:700}.ok{background:#dcfce7;color:#166534}.fail{background:#fee2e2;color:#991b1b}.wait{background:#fef3c7;color:#92400e}.skip{background:#e2e8f0;color:#475569}
+code{background:#e2e8f0;padding:2px 5px;border-radius:5px;font-family:Consolas,monospace}
+.actions{display:flex;flex-wrap:wrap;gap:8px}.small{font-size:12px;color:#64748b;line-height:1.6}
+footer{text-align:center;padding:20px;color:#94a3b8;font-size:12px}
+@media(max-width:760px){.summary-grid{grid-template-columns:1fr 1fr}.header-inner{align-items:flex-start}}
+</style>
+</head>
+<body>
+<header>
+<div class="header-inner">
+  <div>
+    <h1>🧪 系统跳转自检</h1>
+    <div class="sub">ROUTE-CHECK V1.0 · mine-management</div>
+  </div>
+  <button class="header-btn" onclick="location.href='system-map.html'">系统地图</button>
+</div>
+</header>
+<main>
+<div class="notice">
+部署到 GitHub Pages 后打开本页面，点击“开始全量检查”。系统会逐个检查正式页面是否能够访问，并核对首页、等待审核页和高权限登录页中是否包含正确的岗位目标页面。此页面只用于开发自检，不参与正式业务。
+</div>
 
+<section class="card">
+  <div class="section-title">
+    <div><h2>① 自检概览</h2><p>404、文件名错误、漏提交等问题会直接标红。</p></div>
+    <div class="actions">
+      <button class="primary" onclick="runAllChecks()">▶ 开始全量检查</button>
+      <button class="secondary" onclick="location.reload()">重置</button>
+    </div>
+  </div>
+  <div class="summary-grid">
+    <div class="summary"><span>检查项目</span><strong id="totalCount">0</strong></div>
+    <div class="summary"><span>通过</span><strong id="passCount">0</strong></div>
+    <div class="summary"><span>失败</span><strong id="failCount">0</strong></div>
+    <div class="summary"><span>完成率</span><strong id="passRate">0%</strong></div>
+  </div>
+</section>
+
+<section class="card">
+  <div class="section-title"><div><h2>② 正式页面存在性检查</h2><p>检查当前 GitHub Pages 部署目录中的正式页面。</p></div></div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>模块</th><th>正式文件</th><th>预期用途</th><th>结果</th><th>HTTP</th></tr></thead>
+      <tbody id="pageTable"></tbody>
+    </table>
+  </div>
+</section>
+
+<section class="card">
+  <div class="section-title"><div><h2>③ 岗位跳转一致性检查</h2><p>同时核对 <code>index.html</code> 与 <code>person-waiting.html</code> 中的岗位目标页面。</p></div></div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>岗位</th><th>目标页面</th><th>首页</th><th>审核等待页</th><th>结论</th></tr></thead>
+      <tbody id="routeTable"></tbody>
+    </table>
+  </div>
+</section>
+
+<section class="card">
+  <div class="section-title"><div><h2>④ 高权限流程检查</h2><p>总经理和管理员必须经过 <code>management-login.html</code> 二次验证。</p></div></div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>检查项</th><th>要求</th><th>结果</th></tr></thead>
+      <tbody id="protectedTable"></tbody>
+    </table>
+  </div>
+</section>
+
+<section class="card">
+  <div class="section-title"><div><h2>⑤ 已废弃页面</h2><p>自动折旧页面不属于正式业务流程。</p></div></div>
+  <div class="small">
+    <strong><code>depreciation.html</code></strong>：不要求存在。折旧费用由财务在 <code>finance-cost.html</code> 按月填写，报表中心只负责汇总。
+  </div>
+</section>
+</main>
+<footer>mine-management · ROUTE-CHECK V1.0</footer>
+
+<script>
+"use strict";
+
+const PAGES = [
+  ["系统首页","index.html","全部岗位入口"],
+  ["人员登记","person-register.html","首次登记 / 修改资料"],
+  ["审核等待","person-waiting.html","审核状态与审核后自动分流"],
+  ["管理员审核","admin-review.html","人员审核"],
+  ["高权限验证","management-login.html","总经理 / 管理员密码验证"],
+  ["管理员中心","admin-master.html","人员 / 设备 / 后勤基础资料"],
+  ["总经理端","general-manager.html","经营驾驶舱与审批"],
+  ["中层管理","management.html","中层管理工作台"],
+  ["调度端","dispatch.html","车队长 / 调度"],
+  ["汽车司机","driver-work.html","汽车司机工作端"],
+  ["挖机司机","excavator.html","挖机司机工作端"],
+  ["辅助车辆","auxiliary.html","铲车 / 大巴 / 平路机 / 洒水车 / 推土机"],
+  ["加油车","fuel.html","柴油入库与加油管理"],
+  ["维修管理","maintenance.html","维修管理端"],
+  ["维修员","maintenance-worker.html","维修员工作端"],
+  ["库房管理","warehouse.html","后勤物资库"],
+  ["物资申请","material-request.html","全员后勤物资申请"],
+  ["考勤中心","attendance.html","GPS定位考勤"],
+  ["报表中心","report-center.html","工资 / 生产 / 维修 / 燃油 / 财务 / 排名 / 考勤"],
+  ["工资设置","payroll-settings.html","工资标准设置"],
+  ["财务费用","finance-cost.html","折旧等财务费用录入"],
+  ["系统地图","system-map.html","系统结构说明"]
+];
+
+const ROUTES = [
+  ["挖机司机","excavator.html"],
+  ["汽车司机","driver-work.html"],
+  ["铲车司机","auxiliary.html"],
+  ["加油车司机","fuel.html"],
+  ["大巴司机","auxiliary.html"],
+  ["平路机司机","auxiliary.html"],
+  ["洒水车司机","auxiliary.html"],
+  ["推土机司机","auxiliary.html"],
+  ["车队长","dispatch.html"],
+  ["维修管理","maintenance.html"],
+  ["维修员","maintenance-worker.html"],
+  ["测量员","management.html"],
+  ["安全员","management.html"],
+  ["统计","management.html"],
+  ["会计","management.html"],
+  ["后勤","management.html"],
+  ["库房管理","warehouse.html"],
+  ["总经理","general-manager.html"],
+  ["管理员","admin-review.html"]
+];
+
+let checked=0,passed=0,failed=0;
+
+function badge(text,type){return `<span class="badge ${type}">${text}</span>`;}
+function updateSummary(){
+  document.getElementById("totalCount").textContent=checked;
+  document.getElementById("passCount").textContent=passed;
+  document.getElementById("failCount").textContent=failed;
+  document.getElementById("passRate").textContent=checked?Math.round(passed/checked*100)+"%":"0%";
+}
+async function fetchText(file){
+  try{
+    const res=await fetch(file+"?routeCheck="+Date.now(),{cache:"no-store"});
+    const text=await res.text();
+    return {ok:res.ok,status:res.status,text};
+  }catch(error){
+    return {ok:false,status:"网络错误",text:"",error};
+  }
+}
+async function checkPages(){
+  const body=document.getElementById("pageTable");
+  body.innerHTML="";
+  for(const [module,file,purpose] of PAGES){
+    const result=await fetchText(file);
+    checked++;
+    if(result.ok)passed++;else failed++;
+    body.insertAdjacentHTML("beforeend",`
+      <tr>
+        <td>${module}</td>
+        <td><code>${file}</code></td>
+        <td>${purpose}</td>
+        <td>${result.ok?badge("通过","ok"):badge("失败","fail")}</td>
+        <td>${result.status}</td>
+      </tr>
+    `);
+    updateSummary();
+  }
+}
+async function checkRoutes(){
+  const body=document.getElementById("routeTable");
+  body.innerHTML="";
+  const [indexResult,waitingResult]=await Promise.all([fetchText("index.html"),fetchText("person-waiting.html")]);
+
+  for(const [position,target] of ROUTES){
+    const indexHas=indexResult.ok && indexResult.text.includes(position) && indexResult.text.includes(target);
+    const waitingHas=waitingResult.ok && waitingResult.text.includes(position) && waitingResult.text.includes(target);
+    const ok=indexHas&&waitingHas;
+    checked++;
+    if(ok)passed++;else failed++;
+    body.insertAdjacentHTML("beforeend",`
+      <tr>
+        <td>${position}</td>
+        <td><code>${target}</code></td>
+        <td>${indexHas?badge("一致","ok"):badge("需检查","fail")}</td>
+        <td>${waitingHas?badge("一致","ok"):badge("需检查","fail")}</td>
+        <td>${ok?badge("通过","ok"):badge("不一致","fail")}</td>
+      </tr>
+    `);
+    updateSummary();
+  }
+}
+async function checkProtected(){
+  const body=document.getElementById("protectedTable");
+  body.innerHTML="";
+  const [indexResult,waitingResult,loginResult]=await Promise.all([
+    fetchText("index.html"),fetchText("person-waiting.html"),fetchText("management-login.html")
+  ]);
+
+  const checks=[
+    ["总经理二次验证","总经理 → management-login.html → general-manager.html",
+      indexResult.text.includes("总经理")&&indexResult.text.includes("management-login.html")&&waitingResult.text.includes("management-login.html")&&loginResult.text.includes("general-manager.html")],
+    ["管理员二次验证","管理员 → management-login.html → admin-review.html",
+      indexResult.text.includes("管理员")&&indexResult.text.includes("management-login.html")&&waitingResult.text.includes("management-login.html")&&loginResult.text.includes("admin-review.html")],
+    ["30分钟管理会话","managementSession + expiresAt",
+      loginResult.text.includes("managementSession")&&loginResult.text.includes("expiresAt")],
+    ["申请人身份保护","管理员验证不得覆盖普通申请人的 currentPersonId",
+      loginResult.text.includes("adminPersonId")&&loginResult.text.includes("currentPersonId")]
+  ];
+
+  for(const [name,requirement,ok] of checks){
+    checked++;
+    if(ok)passed++;else failed++;
+    body.insertAdjacentHTML("beforeend",`
+      <tr><td>${name}</td><td>${requirement}</td><td>${ok?badge("通过","ok"):badge("需检查","fail")}</td></tr>
+    `);
+    updateSummary();
+  }
+}
+async function runAllChecks(){
+  checked=0;passed=0;failed=0;updateSummary();
+  document.getElementById("pageTable").innerHTML=`<tr><td colspan="5">${badge("检查中…","wait")}</td></tr>`;
+  document.getElementById("routeTable").innerHTML=`<tr><td colspan="5">${badge("等待…","wait")}</td></tr>`;
+  document.getElementById("protectedTable").innerHTML=`<tr><td colspan="3">${badge("等待…","wait")}</td></tr>`;
+  await checkPages();
+  await checkRoutes();
+  await checkProtected();
+  alert("系统跳转自检完成。\n检查："+checked+"\n通过："+passed+"\n失败："+failed);
+}
+
+document.getElementById("totalCount").textContent=PAGES.length+ROUTES.length+4;
+</script>
+</body>
+</html>
