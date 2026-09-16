@@ -208,7 +208,7 @@
 
     
         /* =====================================================
-           V2.10.1K 总经理经营驾驶舱
+           V2.10.1O 总经理经营驾驶舱
         ====================================================== */
 
         .gm-business-note {
@@ -491,7 +491,7 @@
 
 
     <span>
-        V2.10.1K
+        V2.10.1O
     </span>
 
 </header>
@@ -532,7 +532,7 @@
 
 
     <!-- =====================================================
-         V2.10.1K 总经理经营驾驶舱
+         V2.10.1O 总经理经营驾驶舱
     ====================================================== -->
 
     <section class="gm-card">
@@ -675,7 +675,7 @@
                     </h2>
 
                     <p>
-                        按月份维护综合单价；折旧、税费、均摊、财务及其他费用自动读取财务费用中心
+                        按月份维护综合单价；柴油费用自动读取 fuel.html，折旧、税费、均摊、财务及其他费用自动读取财务费用中心
                     </p>
 
                 </div>
@@ -715,12 +715,14 @@
                 </label>
 
                 <label>
-                    柴油费用
+                    柴油费用（自动）
                     <input
                         id="gmFuelCost"
                         type="number"
                         min="0"
                         step="0.01"
+                        readonly
+                        title="自动读取 fuel.html 抽油入库采购金额"
                     >
                 </label>
 
@@ -1154,7 +1156,7 @@
 
 <footer>
 
-    矿山管理系统 · 总经理经营驾驶舱与审批端 V2.10.1K
+    矿山管理系统 · 总经理经营驾驶舱与审批端 V2.10.1O
 
 </footer>
 
@@ -1171,7 +1173,7 @@
 "use strict";
 
 /* =====================================================
-   V2.10.1K 总经理经营驾驶舱
+   V2.10.1O 总经理经营驾驶舱
 ===================================================== */
 
 const GM_BUSINESS_SETTINGS_KEY =
@@ -1461,6 +1463,60 @@ function gmGetTripCount() {
 /*
  * 自动读取维修费用
  */
+
+/*
+ * 自动读取 fuel.html 的柴油采购金额
+ *
+ * fuelIntakeRecords:
+ * purchaseAmount
+ * 或 amount × purchaseUnitPrice
+ */
+function gmGetAutomaticFuelCost() {
+
+    const month =
+        gmSelectedMonth();
+
+
+    return gmReadArray(
+        "fuelIntakeRecords"
+    )
+        .filter(
+            item =>
+
+                gmRecordMonth(
+                    item.createdAt
+                ) ===
+                month
+        )
+        .reduce(
+            (
+                sum,
+                item
+            ) =>
+
+                sum +
+                Number(
+                    item.purchaseAmount ||
+                    (
+                        Number(
+                            item.amount ||
+                            0
+                        )
+                        *
+                        Number(
+                            item.purchaseUnitPrice ||
+                            0
+                        )
+                    )
+                    ||
+                    0
+                ),
+
+            0
+        );
+}
+
+
 function gmGetAutomaticMaintenanceCost() {
 
     const month =
@@ -1655,8 +1711,8 @@ function gmLoadBusinessData() {
 
 
     /*
-     * V2.10.1K
-     * 工资、柴油当前仍保留本地经营费用输入。
+     * V2.10.1O
+     * 工资当前仍保留本地经营费用输入；柴油费用自动读取 fuel.html。
      * 维修费用优先读取维修系统。
      * 折旧、税费、均摊、财务及其他费用
      * 直接读取 finance-cost.html 的 financeCostRecords。
@@ -1672,15 +1728,19 @@ function gmLoadBusinessData() {
             );
 
 
+    const automaticFuelCost =
+        gmGetAutomaticFuelCost();
+
+
     document
         .getElementById(
             "gmFuelCost"
         )
         .value =
-            Number(
-                costs.fuelCost ||
-                0
-            );
+            automaticFuelCost
+                .toFixed(
+                    2
+                );
 
 
     const automaticMaintenance =
@@ -1817,16 +1877,6 @@ function saveGeneralManagerBusinessData() {
                 0
             ),
 
-        fuelCost:
-            Number(
-                document
-                    .getElementById(
-                        "gmFuelCost"
-                    )
-                    .value ||
-                0
-            ),
-
         maintenanceCost:
             Number(
                 document
@@ -1869,7 +1919,7 @@ function saveGeneralManagerBusinessData() {
 
 
     alert(
-        "经营参数已保存。折旧、税费、均摊、财务及其他费用已自动读取财务费用中心。"
+        "经营参数已保存。柴油费用已自动读取 fuel.html；折旧、税费、均摊、财务及其他费用已自动读取财务费用中心。"
     );
 }
 
