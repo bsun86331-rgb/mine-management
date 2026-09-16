@@ -331,7 +331,7 @@
     <div class="header-inner">
         <div>
             <h1>📊 综合报表中心</h1>
-            <p>Report Center · V2.10.1L</p>
+            <p>Report Center · V2.10.1N</p>
         </div>
 
         <button type="button" class="header-btn" onclick="goHome()">返回首页</button>
@@ -513,13 +513,59 @@
             <div class="section-title">
                 <div>
                     <h2>⛽ 加油统计</h2>
-                    <p>汇总柴油入库、采购单价、加油出库、库存和燃油成本。</p>
+                    <p>自动读取 fuel.html 的柴油入库、采购单价、采购金额、加油出库和库存调整。</p>
                 </div>
+
+                <span
+                    id="fuelPurchaseCostBadge"
+                    class="badge blue"
+                >
+                    本月采购金额 0
+                </span>
             </div>
 
             <div class="formula">
                 采购金额 = 入库升数 × 柴油采购单价<br>
-                理论库存 = 期初库存 + 入库 - 加油出库
+                加权平均采购单价 = 本月采购金额 ÷ 本月入库量<br>
+                理论库存 = 累计入库 - 累计有效加油 + 累计库存调整
+            </div>
+
+            <div class="toolbar">
+                <input
+                    type="month"
+                    id="fuelMonth"
+                    onchange="renderFuel()"
+                >
+
+                <button
+                    type="button"
+                    class="secondary-btn"
+                    onclick="location.href='fuel.html'"
+                >
+                    ⛽ 打开加油车工作端
+                </button>
+            </div>
+
+            <div class="summary-grid" style="margin-bottom:14px;">
+                <div class="summary-box">
+                    <span>本月柴油入库</span>
+                    <strong id="fuelMonthIntake">0</strong>
+                </div>
+
+                <div class="summary-box">
+                    <span>本月加油出库</span>
+                    <strong id="fuelMonthOutput">0</strong>
+                </div>
+
+                <div class="summary-box">
+                    <span>采购金额</span>
+                    <strong id="fuelMonthPurchaseCost">0</strong>
+                </div>
+
+                <div class="summary-box">
+                    <span>加权平均采购单价</span>
+                    <strong id="fuelAveragePurchasePrice">0</strong>
+                </div>
             </div>
 
             <div class="table-wrap">
@@ -528,12 +574,11 @@
                         <tr>
                             <th>日期</th>
                             <th>入库量(L)</th>
-                            <th>采购单价</th>
+                            <th>平均采购单价</th>
                             <th>采购金额</th>
                             <th>加油出库(L)</th>
-                            <th>理论库存</th>
-                            <th>实际库存</th>
-                            <th>库存误差</th>
+                            <th>库存调整(L)</th>
+                            <th>累计理论库存(L)</th>
                         </tr>
                     </thead>
                     <tbody id="fuelTableBody"></tbody>
@@ -708,7 +753,7 @@
 </main>
 
 <footer>
-    矿山管理系统 · 综合报表中心 V2.10.1L
+    矿山管理系统 · 综合报表中心 V2.10.1N
 </footer>
 
 <script>
@@ -1000,9 +1045,252 @@ function renderMaintenance() {
         : `<tr><td colspan="8" class="empty">暂无维修费用数据</td></tr>`;
 }
 
+function fuelDateKey(value) {
+    const date = value ? new Date(value) : new Date();
+
+    if (Number.isNaN(date.getTime())) {
+        return "";
+    }
+
+    return [
+        date.getFullYear(),
+        String(date.getMonth() + 1).padStart(2, "0"),
+        String(date.getDate()).padStart(2, "0")
+    ].join("-");
+}
+
+function fuelMonthKey(value) {
+    return fuelDateKey(value).slice(0, 7);
+}
+
 function renderFuel() {
-    const body = document.getElementById("fuelTableBody");
-    body.innerHTML = `<tr><td colspan="8" class="empty">加油统计将在 fuel.html 记录采购单价并接入 V3.0 数据库后自动生成</td></tr>`;
+    const selectedMonth =
+        document.getElementById("fuelMonth")?.value ||
+        reportMonthNow();
+
+    const allIntakes =
+        readArray("fuelIntakeRecords");
+
+    const allFuelRecords =
+        readArray("fuelRecords")
+            .filter(item =>
+                item.confirmationStatus !== "rejected"
+            );
+
+    const allAdjustments =
+        readArray("fuelStockAdjustments");
+
+    const monthIntakes =
+        allIntakes.filter(item =>
+            fuelMonthKey(item.createdAt) === selectedMonth
+        );
+
+    const monthFuelRecords =
+        allFuelRecords.filter(item =>
+            fuelMonthKey(item.createdAt) === selectedMonth
+        );
+
+    const monthAdjustments =
+        allAdjustments.filter(item =>
+            fuelMonthKey(item.createdAt) === selectedMonth
+        );
+
+    const monthIntakeAmount =
+        monthIntakes.reduce(
+            (sum, item) =>
+                sum + Number(item.amount || 0),
+            0
+        );
+
+    const monthFuelAmount =
+        monthFuelRecords.reduce(
+            (sum, item) =>
+                sum + Number(item.amount || 0),
+            0
+        );
+
+    const monthPurchaseAmount =
+        monthIntakes.reduce(
+            (sum, item) =>
+                sum +
+                Number(
+                    item.purchaseAmount ||
+                    (
+                        Number(item.amount || 0) *
+                        Number(item.purchaseUnitPrice || 0)
+                    ) ||
+                    0
+                ),
+            0
+        );
+
+    const averagePurchasePrice =
+        monthIntakeAmount > 0
+            ? monthPurchaseAmount / monthIntakeAmount
+            : 0;
+
+    const setValue = (id, value) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = value;
+    };
+
+    setValue(
+        "fuelMonthIntake",
+        monthIntakeAmount.toFixed(1) + " L"
+    );
+
+    setValue(
+        "fuelMonthOutput",
+        monthFuelAmount.toFixed(1) + " L"
+    );
+
+    setValue(
+        "fuelMonthPurchaseCost",
+        formatMoney(monthPurchaseAmount) + " 元"
+    );
+
+    setValue(
+        "fuelAveragePurchasePrice",
+        averagePurchasePrice.toFixed(2) + " 元/L"
+    );
+
+    const badge =
+        document.getElementById("fuelPurchaseCostBadge");
+
+    if (badge) {
+        badge.textContent =
+            "本月采购金额 " +
+            formatMoney(monthPurchaseAmount) +
+            " 元";
+    }
+
+    /*
+     * 按日期聚合本月数据。
+     */
+    const days = {};
+
+    const ensureDay = date => {
+        if (!days[date]) {
+            days[date] = {
+                date,
+                intake: 0,
+                purchaseAmount: 0,
+                fuel: 0,
+                adjustment: 0
+            };
+        }
+
+        return days[date];
+    };
+
+    monthIntakes.forEach(item => {
+        const date = fuelDateKey(item.createdAt);
+        const day = ensureDay(date);
+
+        day.intake +=
+            Number(item.amount || 0);
+
+        day.purchaseAmount +=
+            Number(
+                item.purchaseAmount ||
+                (
+                    Number(item.amount || 0) *
+                    Number(item.purchaseUnitPrice || 0)
+                ) ||
+                0
+            );
+    });
+
+    monthFuelRecords.forEach(item => {
+        const date = fuelDateKey(item.createdAt);
+        const day = ensureDay(date);
+
+        day.fuel +=
+            Number(item.amount || 0);
+    });
+
+    monthAdjustments.forEach(item => {
+        const date = fuelDateKey(item.createdAt);
+        const day = ensureDay(date);
+
+        day.adjustment +=
+            Number(item.difference || 0);
+    });
+
+    /*
+     * 理论库存必须从历史累计，不只看当月。
+     * 先按所有历史记录计算选中月份开始前的期初理论库存。
+     */
+    const monthStart =
+        selectedMonth + "-01";
+
+    let runningStock = 0;
+
+    allIntakes.forEach(item => {
+        const date = fuelDateKey(item.createdAt);
+
+        if (date && date < monthStart) {
+            runningStock +=
+                Number(item.amount || 0);
+        }
+    });
+
+    allFuelRecords.forEach(item => {
+        const date = fuelDateKey(item.createdAt);
+
+        if (date && date < monthStart) {
+            runningStock -=
+                Number(item.amount || 0);
+        }
+    });
+
+    allAdjustments.forEach(item => {
+        const date = fuelDateKey(item.createdAt);
+
+        if (date && date < monthStart) {
+            runningStock +=
+                Number(item.difference || 0);
+        }
+    });
+
+    const rows =
+        Object.values(days)
+            .sort((a, b) =>
+                String(a.date).localeCompare(String(b.date))
+            )
+            .map(day => {
+                runningStock +=
+                    day.intake -
+                    day.fuel +
+                    day.adjustment;
+
+                const averagePrice =
+                    day.intake > 0
+                        ? day.purchaseAmount / day.intake
+                        : 0;
+
+                return `
+                    <tr>
+                        <td>${escapeHtml(day.date)}</td>
+                        <td>${day.intake.toFixed(1)}</td>
+                        <td>${averagePrice.toFixed(2)} 元/L</td>
+                        <td>${formatMoney(day.purchaseAmount)} 元</td>
+                        <td>${day.fuel.toFixed(1)}</td>
+                        <td>${day.adjustment.toFixed(1)}</td>
+                        <td>${runningStock.toFixed(1)}</td>
+                    </tr>
+                `;
+            });
+
+    const body =
+        document.getElementById("fuelTableBody");
+
+    if (!body) return;
+
+    body.innerHTML =
+        rows.length
+            ? rows.join("")
+            : `<tr><td colspan="7" class="empty">当前月份暂无柴油业务数据</td></tr>`;
 }
 
 
@@ -1280,6 +1568,12 @@ if (verifyAccess()) {
             "financeMonth"
         );
 
+
+    const fuelMonth =
+        document.getElementById(
+            "fuelMonth"
+        );
+
     if (depreciationMonth) {
         depreciationMonth.value =
             defaultMonth;
@@ -1287,6 +1581,12 @@ if (verifyAccess()) {
 
     if (financeMonth) {
         financeMonth.value =
+            defaultMonth;
+    }
+
+
+    if (fuelMonth) {
+        fuelMonth.value =
             defaultMonth;
     }
 
