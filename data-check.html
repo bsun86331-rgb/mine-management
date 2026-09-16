@@ -1,1 +1,128 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>全系统数据一致性检查</title>
+<style>
+body{margin:0;background:#f1f5f9;color:#0f172a;font-family:Arial,"Microsoft YaHei",sans-serif}
+header{background:#0f172a;color:white;padding:18px}
+main{max-width:1200px;margin:auto;padding:16px}
+.card{background:white;border-radius:14px;padding:16px;margin-bottom:14px;box-shadow:0 4px 16px rgba(15,23,42,.06)}
+button{padding:10px 14px;border:0;border-radius:9px;font-weight:700;cursor:pointer}
+.primary{background:#2563eb;color:white}.secondary{background:white;border:1px solid #cbd5e1}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.kpi{background:#f8fafc;padding:12px;border-radius:10px}.kpi span{display:block;color:#64748b;font-size:12px}.kpi strong{font-size:22px}
+table{width:100%;border-collapse:collapse;min-width:900px}th,td{padding:9px;border-bottom:1px solid #e2e8f0;text-align:left;font-size:13px}th{background:#f8fafc}
+.wrap{overflow:auto}.ok{color:#166534;font-weight:700}.warn{color:#92400e;font-weight:700}.fail{color:#991b1b;font-weight:700}
+code{background:#e2e8f0;padding:2px 5px;border-radius:5px}
+@media(max-width:760px){.grid{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<header>
+<h2 style="margin:0">🧬 全系统数据一致性检查</h2>
+<div style="font-size:12px;color:#cbd5e1;margin-top:5px">DATA-CHECK V1.0 · mine-management</div>
+</header>
+<main>
+
+<div class="card">
+<p>本页面只检查当前浏览器中的业务数据，不会修改任何数据。重点检查：人员ID、运输数据键、挖机数据键、车辆编号、燃油、维修和考勤关联。</p>
+<button class="primary" onclick="runCheck()">▶ 开始数据检查</button>
+<button class="secondary" onclick="location.href='system-map.html'">系统地图</button>
+</div>
+
+<div class="card">
+<div class="grid">
+<div class="kpi"><span>检查项目</span><strong id="total">0</strong></div>
+<div class="kpi"><span>通过</span><strong id="pass">0</strong></div>
+<div class="kpi"><span>警告</span><strong id="warn">0</strong></div>
+<div class="kpi"><span>失败</span><strong id="fail">0</strong></div>
+</div>
+</div>
+
+<div class="card">
+<h3>核心数据键</h3>
+<div class="wrap"><table><thead><tr><th>业务</th><th>数据键</th><th>记录数</th><th>状态</th><th>说明</th></tr></thead><tbody id="keys"></tbody></table></div>
+</div>
+
+<div class="card">
+<h3>数据质量检查</h3>
+<div class="wrap"><table><thead><tr><th>检查项目</th><th>异常数</th><th>状态</th><th>建议</th></tr></thead><tbody id="quality"></tbody></table></div>
+</div>
+
+<div class="card">
+<h3>下一阶段建议</h3>
+<div id="advice">尚未检查。</div>
+</div>
+
+</main>
+
+<script>
+"use strict";
+const arr=k=>{try{const v=JSON.parse(localStorage.getItem(k));return Array.isArray(v)?v:[]}catch(e){return[]}};
+const pid=p=>String(p?.personId||p?.employeeId||p?.driverId||p?.id||"");
+const rid=r=>String(r?.personId||r?.employeeId||r?.driverId||r?.operatorId||r?.workerId||"");
+const veh=r=>String(r?.vehicleNumber||r?.truckNumber||r?.carNumber||r?.vehicleNo||r?.equipmentNumber||"");
+let stats={total:0,pass:0,warn:0,fail:0};
+function mark(t){stats.total++;stats[t]++;document.getElementById("total").textContent=stats.total;document.getElementById("pass").textContent=stats.pass;document.getElementById("warn").textContent=stats.warn;document.getElementById("fail").textContent=stats.fail}
+function status(t){return `<span class="${t}">${t==="pass"?"通过":t==="warn"?"需统一":"异常"}</span>`}
+function add(id,cells){document.getElementById(id).insertAdjacentHTML("beforeend","<tr>"+cells.map(x=>"<td>"+x+"</td>").join("")+"</tr>")}
+function runCheck(){
+ stats={total:0,pass:0,warn:0,fail:0};
+ document.getElementById("keys").innerHTML="";
+ document.getElementById("quality").innerHTML="";
+ ["total","pass","warn","fail"].forEach(id=>document.getElementById(id).textContent="0");
+
+ const keyGroups=[
+ ["人员","personnelRecords"],["运输","tripRecords"],["运输","driverTripRecords"],["运输","transportRecords"],
+ ["挖机","excavatorTripRecords"],["挖机","excavatorLoadingRecords"],["燃油入库","fuelIntakeRecords"],["车辆加油","fuelRecords"],
+ ["维修","maintenanceCosts"],["考勤","attendanceRecords"],["零产量报备","zeroProductionReports"],["物资库存","warehouseMaterials"],
+ ["月度工资","payrollMonthlyRecords"],["绩效排名","performanceRankingRecords"],["财务费用","financeCostRecords"]
+ ];
+ keyGroups.forEach(([b,k])=>{const n=arr(k).length;const exists=localStorage.getItem(k)!==null;add("keys",[b,"<code>"+k+"</code>",n,exists?status("pass"):"无数据",exists?"已建立":"当前浏览器暂无数据"]);if(exists)mark("pass")});
+
+ const people=arr("personnelRecords");
+ const personIds=new Set(people.map(pid).filter(Boolean));
+ const missingId=people.filter(p=>!pid(p)).length;
+ const ids=people.map(pid).filter(Boolean); const dup=[...new Set(ids.filter((x,i)=>ids.indexOf(x)!==i))].length;
+ const transport=[...arr("tripRecords"),...arr("driverTripRecords"),...arr("transportRecords")];
+ const excavator=[...arr("excavatorTripRecords"),...arr("excavatorLoadingRecords")];
+ const fuel=arr("fuelRecords"), maintenance=arr("maintenanceCosts"), attendance=arr("attendanceRecords");
+
+ const transportKeys=["tripRecords","driverTripRecords","transportRecords"].filter(k=>arr(k).length>0).length;
+ const excavatorKeys=["excavatorTripRecords","excavatorLoadingRecords"].filter(k=>arr(k).length>0).length;
+
+ const checks=[
+ ["人员缺少ID",missingId,missingId?"fail":"pass","所有人员必须有唯一 personId"],
+ ["人员ID重复",dup,dup?"fail":"pass","personId 不允许重复"],
+ ["运输数据键重复使用",Math.max(0,transportKeys-1),transportKeys>1?"warn":"pass","数据库前统一为一套运输记录结构"],
+ ["运输记录无法关联人员",transport.filter(r=>!rid(r)||!personIds.has(rid(r))).length,"auto","运输记录应统一保存 personId"],
+ ["运输记录缺车辆编号",transport.filter(r=>!veh(r)).length,"auto","统一保存 vehicleNumber"],
+ ["运输记录缺物料类型",transport.filter(r=>!(r.materialType||r.material||r.cargoType||r.loadType||r.taskType||r.transportType)).length,"auto","必须区分煤/渣废石/其他"],
+ ["挖机数据键重复使用",Math.max(0,excavatorKeys-1),excavatorKeys>1?"warn":"pass","数据库前统一挖机装车记录"],
+ ["挖机记录无法关联人员",excavator.filter(r=>!rid(r)||!personIds.has(rid(r))).length,"auto","统一保存 personId"],
+ ["加油记录缺车辆编号",fuel.filter(r=>!veh(r)).length,"auto","每次加油必须关联具体车辆"],
+ ["维修记录缺设备编号",maintenance.filter(r=>!(r.equipmentNumber||r.vehicleNumber||r.vehicleNo||r.machineNumber)).length,"auto","维修必须关联具体设备/车辆"],
+ ["考勤记录无法关联人员",attendance.filter(r=>!rid(r)||!personIds.has(rid(r))).length,"auto","考勤必须关联 personId"]
+ ];
+
+ checks.forEach(([name,count,type,advice])=>{
+   if(type==="auto") type=count===0?"pass":count<=3?"warn":"fail";
+   mark(type); add("quality",[name,count,status(type),advice]);
+ });
+
+ const advice=[];
+ if(transportKeys>1) advice.push("优先统一运输数据键：tripRecords / driverTripRecords / transportRecords。");
+ if(excavatorKeys>1) advice.push("统一挖机数据键：excavatorTripRecords / excavatorLoadingRecords。");
+ if(missingId||dup) advice.push("先修复 personnelRecords 的 personId，再进入数据库阶段。");
+ if(!advice.length) advice.push("当前本地数据结构没有发现明显冲突，可以进入数据结构标准化阶段。");
+ advice.push("下一阶段统一四类主键：personId、vehicleId、equipmentId、recordId。");
+ document.getElementById("advice").innerHTML="<ol>"+advice.map(x=>"<li>"+x+"</li>").join("")+"</ol>";
+
+ alert(`数据检查完成。\n检查：${stats.total}\n通过：${stats.pass}\n警告：${stats.warn}\n失败：${stats.fail}`);
+}
+</script>
+</body>
+</html>
 
