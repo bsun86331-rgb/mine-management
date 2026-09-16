@@ -1,1 +1,284 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0f172a">
+<title>全系统页面与跳转关系图 - 矿山管理系统</title>
+<style>
+*{box-sizing:border-box}
+:root{
+  --bg:#f1f5f9;--card:#fff;--text:#0f172a;--muted:#64748b;--line:#e2e8f0;
+  --dark:#0f172a;--primary:#2563eb;--success:#16a34a;--warning:#f59e0b;--danger:#dc2626;--purple:#7c3aed
+}
+body{margin:0;background:var(--bg);color:var(--text);font-family:Arial,"Microsoft YaHei",sans-serif}
+header{position:sticky;top:0;z-index:50;background:var(--dark);color:#fff;box-shadow:0 5px 18px rgba(15,23,42,.18)}
+.header-inner{max-width:1400px;margin:auto;padding:15px 14px;display:flex;justify-content:space-between;align-items:center;gap:12px}
+header h1{margin:0;font-size:22px}.sub{margin-top:5px;color:#cbd5e1;font-size:12px}
+button{border:0;border-radius:10px;min-height:40px;padding:9px 13px;font-weight:700;cursor:pointer}
+.header-btn{background:#1e293b;color:#fff;border:1px solid #475569}
+main{max-width:1400px;margin:auto;padding:16px 14px 40px}
+.notice{margin-bottom:14px;padding:13px 14px;border:1px solid #bfdbfe;border-radius:12px;background:#eff6ff;color:#1e40af;font-size:13px;line-height:1.75}
+.card{background:#fff;border-radius:16px;padding:17px;margin-bottom:14px;box-shadow:0 5px 20px rgba(15,23,42,.06)}
+.section-title{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:14px}
+.section-title h2{margin:0;font-size:18px}.section-title p{margin:5px 0 0;color:var(--muted);font-size:12px;line-height:1.6}
+.badge{display:inline-block;padding:5px 9px;border-radius:999px;font-size:12px;font-weight:700}
+.green{background:#dcfce7;color:#166534}.yellow{background:#fef3c7;color:#92400e}.red{background:#fee2e2;color:#991b1b}.blue{background:#dbeafe;color:#1e40af}.gray{background:#e2e8f0;color:#475569}.purple{background:#ede9fe;color:#5b21b6}
+.flow{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.node{padding:10px 12px;border:1px solid var(--line);border-radius:11px;background:#f8fafc;font-size:13px;font-weight:700}
+.arrow{color:#94a3b8;font-weight:700}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.role-card{border:1px solid var(--line);border-radius:14px;padding:14px;background:#fff}
+.role-card h3{margin:0 0 8px;font-size:16px}.role-card p{margin:0 0 10px;color:var(--muted);font-size:12px;line-height:1.6}
+.route{padding:10px 12px;border-radius:10px;background:#f8fafc;font-size:12px;line-height:1.8}
+.route code,.data-key{font-family:Consolas,monospace;background:#e2e8f0;padding:2px 5px;border-radius:5px}
+.table-wrap{overflow-x:auto}
+table{width:100%;min-width:1100px;border-collapse:collapse}
+th,td{padding:10px 9px;border-bottom:1px solid var(--line);text-align:left;font-size:13px;vertical-align:top}
+th{background:#f8fafc;color:#475569}
+.status-box{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.status{padding:13px;border-radius:12px;background:#f8fafc}.status span{display:block;color:#64748b;font-size:12px}.status strong{display:block;margin-top:6px;font-size:22px}
+ul{margin:8px 0 0;padding-left:20px;color:#475569;font-size:13px;line-height:1.8}
+footer{text-align:center;padding:20px;color:#94a3b8;font-size:12px}
+@media(max-width:900px){.grid,.status-box{grid-template-columns:1fr}}
+</style>
+</head>
+
+<body>
+<header>
+<div class="header-inner">
+  <div>
+    <h1>🗺️ 全系统页面与跳转关系图</h1>
+    <div class="sub">SYSTEM-MAP V1.0 · mine-management</div>
+  </div>
+  <button class="header-btn" onclick="location.href='index.html'">返回首页</button>
+</div>
+</header>
+
+<main>
+
+<div class="notice">
+本页面不是业务工作端，而是系统结构检查页。用于统一页面、跳转、岗位权限和数据键，避免后续继续扩展时出现重复页面、错误跳转和数据名称不一致。
+</div>
+
+<section class="card">
+  <div class="section-title">
+    <div><h2>① 系统主流程</h2><p>所有人员统一走同一套入职审核逻辑。</p></div>
+    <span class="badge green">主流程已建立</span>
+  </div>
+
+  <div class="flow">
+    <div class="node">index.html<br>系统首页</div><div class="arrow">→</div>
+    <div class="node">person-register.html<br>首次登记</div><div class="arrow">→</div>
+    <div class="node">person-waiting.html<br>等待审核</div><div class="arrow">→</div>
+    <div class="node">admin-review.html<br>管理员审核</div><div class="arrow">→</div>
+    <div class="node">对应岗位工作页</div>
+  </div>
+</section>
+
+<section class="card">
+  <div class="section-title">
+    <div><h2>② 各岗位正式工作页面</h2><p>下面这些页面应作为仓库正式页面，不再继续创建同功能的新端口。</p></div>
+  </div>
+
+  <div class="grid">
+
+    <div class="role-card">
+      <h3>👔 总经理</h3>
+      <p>经营驾驶舱、审批、生产报表入口。</p>
+      <div class="route">
+        审核通过 → <code>general-manager.html</code><br>
+        子模块：<code>report-center.html</code> / <code>payroll-settings.html</code> / <code>finance-cost.html</code><br>
+        关键数据：<span class="data-key">payrollMonthlyRecords</span> <span class="data-key">fuelIntakeRecords</span> <span class="data-key">maintenanceCosts</span> <span class="data-key">financeCostRecords</span>
+      </div>
+    </div>
+
+    <div class="role-card">
+      <h3>🛡️ 管理员</h3>
+      <p>人员、设备、后勤基础资料与审核。</p>
+      <div class="route">
+        登录 → <code>admin-master.html</code><br>
+        审核 → <code>admin-review.html</code><br>
+        关键数据：<span class="data-key">personnelRecords</span> <span class="data-key">warehouseMaterials</span>
+      </div>
+    </div>
+
+    <div class="role-card">
+      <h3>🧑‍💼 中层管理</h3>
+      <p>各专业管理岗位统一入口。</p>
+      <div class="route">
+        登录 → <code>management-login.html</code> → <code>management.html</code><br>
+        其中库房管理进入 <code>warehouse.html</code>
+      </div>
+    </div>
+
+    <div class="role-card">
+      <h3>🚦 车队长 / 调度</h3>
+      <p>生产调度、车辆作业、异常报备、绩效查看。</p>
+      <div class="route">
+        审核通过 → <code>dispatch.html</code><br>
+        数据：<span class="data-key">tripRecords</span> / <span class="data-key">driverTripRecords</span>
+      </div>
+    </div>
+
+    <div class="role-card">
+      <h3>🚚 汽车司机</h3>
+      <p>运输作业、车数、任务和工作记录。</p>
+      <div class="route">
+        审核通过 → <code>driver-work.html</code><br>
+        数据：<span class="data-key">tripRecords</span> / <span class="data-key">driverTripRecords</span>
+      </div>
+    </div>
+
+    <div class="role-card">
+      <h3>🏗️ 挖机司机</h3>
+      <p>装车记录与生产作业。</p>
+      <div class="route">
+        审核通过 → <code>excavator.html</code><br>
+        数据：<span class="data-key">excavatorTripRecords</span> / <span class="data-key">excavatorLoadingRecords</span>
+      </div>
+    </div>
+
+    <div class="role-card">
+      <h3>🚜 辅助车辆</h3>
+      <p>洒水、推土、平路等辅助作业。</p>
+      <div class="route">
+        审核通过 → <code>auxiliary.html</code>
+      </div>
+    </div>
+
+    <div class="role-card">
+      <h3>⛽ 加油车司机</h3>
+      <p>柴油入库、加油、库存、日报和月报。</p>
+      <div class="route">
+        审核通过 → <code>fuel.html</code><br>
+        数据：<span class="data-key">fuelIntakeRecords</span> <span class="data-key">fuelRecords</span> <span class="data-key">fuelStockAdjustments</span>
+      </div>
+    </div>
+
+    <div class="role-card">
+      <h3>🔧 维修管理</h3>
+      <p>修理厂管理、维修任务、费用统计。</p>
+      <div class="route">
+        审核通过 → <code>maintenance.html</code><br>
+        数据：<span class="data-key">maintenanceCosts</span>
+      </div>
+    </div>
+
+    <div class="role-card">
+      <h3>🧰 维修员</h3>
+      <p>接收、执行和完成维修工作。</p>
+      <div class="route">
+        审核通过 → <code>maintenance-worker.html</code>
+      </div>
+    </div>
+
+    <div class="role-card">
+      <h3>📦 后勤 / 库房管理</h3>
+      <p>物资库存、领用、以旧换新、报废和核销。</p>
+      <div class="route">
+        管理 → <code>warehouse.html</code><br>
+        全员申请 → <code>material-request.html</code><br>
+        数据：<span class="data-key">warehouseMaterials</span> <span class="data-key">materialRequests</span>
+      </div>
+    </div>
+
+    <div class="role-card">
+      <h3>📍 全员考勤</h3>
+      <p>GPS定位打卡、请假状态和零产量报备。</p>
+      <div class="route">
+        全员 → <code>attendance.html</code><br>
+        数据：<span class="data-key">attendanceRecords</span> <span class="data-key">zeroProductionReports</span>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<section class="card">
+  <div class="section-title">
+    <div><h2>③ 公共管理页面</h2><p>这些页面不是单一岗位工作页，而是多个端口共用。</p></div>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>页面</th><th>用途</th><th>当前状态</th><th>备注</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>report-center.html</code></td><td>工资、生产、维修、燃油、折旧（财务填写）、财务、排名、考勤</td><td><span class="badge green">保留</span></td><td>以 V2.10.2B 规则为准</td></tr>
+        <tr><td><code>payroll-settings.html</code></td><td>工资标准、绩效单价、奖扣规则</td><td><span class="badge green">保留</span></td><td>管理员/总经理/会计</td></tr>
+        <tr><td><code>finance-cost.html</code></td><td>财务费用录入，包括折旧</td><td><span class="badge green">保留</span></td><td>折旧由财务填写</td></tr>
+        <tr><td><code>material-request.html</code></td><td>全员物资申请</td><td><span class="badge green">保留</span></td><td>连接 warehouse.html</td></tr>
+        <tr><td><code>attendance.html</code></td><td>全员考勤</td><td><span class="badge green">保留</span></td><td>定位+请假+零产量报备</td></tr>
+        <tr><td><code>depreciation.html</code></td><td>自动折旧</td><td><span class="badge red">废弃</span></td><td>不要使用；折旧改由财务手工填写</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="card">
+  <div class="section-title">
+    <div><h2>④ 关键数据键统一表</h2><p>后续数据库设计应以这些业务概念为基础统一命名。</p></div>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>业务</th><th>当前主要数据键</th><th>状态</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>人员</td><td><code>personnelRecords</code></td><td><span class="badge green">核心</span></td></tr>
+        <tr><td>运输车数</td><td><code>tripRecords</code> / <code>driverTripRecords</code> / <code>transportRecords</code></td><td><span class="badge yellow">需统一</span></td></tr>
+        <tr><td>挖机装车</td><td><code>excavatorTripRecords</code> / <code>excavatorLoadingRecords</code></td><td><span class="badge yellow">需统一</span></td></tr>
+        <tr><td>柴油入库</td><td><code>fuelIntakeRecords</code></td><td><span class="badge green">稳定</span></td></tr>
+        <tr><td>车辆加油</td><td><code>fuelRecords</code></td><td><span class="badge green">稳定</span></td></tr>
+        <tr><td>库存调整</td><td><code>fuelStockAdjustments</code></td><td><span class="badge green">稳定</span></td></tr>
+        <tr><td>维修费用</td><td><code>maintenanceCosts</code></td><td><span class="badge green">核心</span></td></tr>
+        <tr><td>考勤</td><td><code>attendanceRecords</code></td><td><span class="badge green">核心</span></td></tr>
+        <tr><td>零产量报备</td><td><code>zeroProductionReports</code></td><td><span class="badge green">核心</span></td></tr>
+        <tr><td>物资库存</td><td><code>warehouseMaterials</code></td><td><span class="badge green">核心</span></td></tr>
+        <tr><td>物资申请</td><td><code>materialRequests</code></td><td><span class="badge green">核心</span></td></tr>
+        <tr><td>工资标准</td><td><code>payrollStandards</code></td><td><span class="badge green">核心</span></td></tr>
+        <tr><td>月度工资</td><td><code>payrollMonthlyRecords</code></td><td><span class="badge green">核心</span></td></tr>
+        <tr><td>综合绩效</td><td><code>performanceRankingRecords</code></td><td><span class="badge green">核心</span></td></tr>
+        <tr><td>财务费用</td><td><code>financeCostRecords</code></td><td><span class="badge green">核心</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="card">
+  <div class="section-title">
+    <div><h2>⑤ 当前系统体检状态</h2></div>
+  </div>
+
+  <div class="status-box">
+    <div class="status"><span>主要岗位页面</span><strong>基本齐全</strong></div>
+    <div class="status"><span>页面级完成度</span><strong>90%+</strong></div>
+    <div class="status"><span>跨页面联调</span><strong>待完成</strong></div>
+    <div class="status"><span>统一数据库</span><strong>未开始</strong></div>
+  </div>
+</section>
+
+<section class="card">
+  <div class="section-title">
+    <div><h2>⑥ 下一阶段必须检查</h2><p>以后优先处理这些，不再随意增加新页面。</p></div>
+  </div>
+
+  <ul>
+    <li>逐岗位测试：登记 → 审核 → 再次登录 → 是否进入正确工作页。</li>
+    <li>检查所有页面按钮链接，确认不存在旧文件名和错误跳转。</li>
+    <li>统一运输车数和挖机装车的数据键，避免同一业务多套数据。</li>
+    <li>统一 personId、车辆编号、设备编号，确保报表可以正确关联。</li>
+    <li>删除或停止使用废弃页面，例如 depreciation.html。</li>
+    <li>完成前端联调后，再进入统一数据库阶段。</li>
+  </ul>
+</section>
+
+</main>
+
+<footer>mine-management · SYSTEM-MAP V1.0</footer>
+</body>
+</html>
 
