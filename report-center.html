@@ -331,7 +331,7 @@
     <div class="header-inner">
         <div>
             <h1>📊 综合报表中心</h1>
-            <p>Report Center · V2.10.1R</p>
+            <p>Report Center · V2.10.1S</p>
         </div>
 
         <button type="button" class="header-btn" onclick="goHome()">返回首页</button>
@@ -447,18 +447,173 @@
             <div class="section-title">
                 <div>
                     <h2>🚚 生产报表</h2>
-                    <p>按车数 × 单车均方自动换算渣量和煤量。</p>
+                    <p>自动读取运输记录，按日期、物料类型和车辆型号汇总车数并换算产量。</p>
                 </div>
+
+                <span
+                    id="productionGeneratedBadge"
+                    class="badge green"
+                >
+                    自动汇总
+                </span>
             </div>
 
             <div class="formula">
-                渣方量 = 拉渣车数 × 渣车平均方量<br>
-                煤产量 = 拉煤车数 × 煤车平均方量
+                煤产量 = 有效拉煤车数 × 对应车辆单车均方<br>
+                剥离量 = 有效拉渣/废石车数 × 对应车辆单车均方<br>
+                未设置车辆型号均方时，自动使用默认单车均方
             </div>
 
             <div class="toolbar">
-                <input type="date" id="productionDate" onchange="renderProduction()">
-                <button type="button" class="secondary-btn" onclick="showPlanned('车辆平均方量设置')">⚙️ 平均方量设置</button>
+                <input
+                    type="date"
+                    id="productionDate"
+                    onchange="renderProduction()"
+                >
+
+                <input
+                    type="month"
+                    id="productionMonth"
+                    onchange="renderProduction()"
+                >
+
+                <button
+                    type="button"
+                    class="secondary-btn"
+                    onclick="toggleVolumeSettings()"
+                >
+                    ⚙️ 单车均方设置
+                </button>
+            </div>
+
+            <div
+                id="productionVolumeSettingsBox"
+                class="card"
+                style="display:none;box-shadow:none;border:1px solid #e2e8f0;margin-bottom:14px;"
+            >
+                <div class="section-title">
+                    <div>
+                        <h2>⚙️ 单车均方设置</h2>
+                        <p>可设置默认均方，也可按车辆型号单独设置。</p>
+                    </div>
+                </div>
+
+                <div class="grid-2">
+                    <div class="report-box">
+                        <h3>默认单车均方</h3>
+                        <p>当运输记录没有车辆型号，或该型号没有单独设置时使用。</p>
+
+                        <div style="margin-top:10px;">
+                            <label style="display:block;margin-bottom:6px;font-size:12px;font-weight:700;">
+                                默认均方（m³/车）
+                            </label>
+
+                            <input
+                                id="defaultVolumePerTrip"
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                style="width:100%;"
+                            >
+                        </div>
+
+                        <button
+                            type="button"
+                            class="primary-btn"
+                            style="margin-top:10px;"
+                            onclick="saveDefaultVolumeSetting()"
+                        >
+                            保存默认均方
+                        </button>
+                    </div>
+
+                    <div class="report-box">
+                        <h3>车辆型号均方</h3>
+                        <p>例如：宽体车A型 32m³/车，矿卡B型 38m³/车。</p>
+
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px;">
+                            <input
+                                id="vehicleModelSettingName"
+                                type="text"
+                                placeholder="车辆型号"
+                            >
+
+                            <input
+                                id="vehicleModelSettingVolume"
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                placeholder="m³/车"
+                            >
+                        </div>
+
+                        <button
+                            type="button"
+                            class="primary-btn"
+                            style="margin-top:10px;"
+                            onclick="saveVehicleModelVolumeSetting()"
+                        >
+                            保存型号均方
+                        </button>
+                    </div>
+                </div>
+
+                <div style="margin-top:12px;" class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>车辆型号</th>
+                                <th>单车均方</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="vehicleModelVolumeTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="summary-grid" style="margin-bottom:14px;">
+                <div class="summary-box">
+                    <span>当日总车数</span>
+                    <strong id="productionDayTotalTrips">0</strong>
+                </div>
+
+                <div class="summary-box">
+                    <span>当日拉煤车数</span>
+                    <strong id="productionDayCoalTrips">0</strong>
+                </div>
+
+                <div class="summary-box">
+                    <span>当日拉渣车数</span>
+                    <strong id="productionDayWasteTrips">0</strong>
+                </div>
+
+                <div class="summary-box">
+                    <span>当日总产量</span>
+                    <strong id="productionDayTotalVolume">0</strong>
+                </div>
+            </div>
+
+            <div class="summary-grid" style="margin-bottom:14px;">
+                <div class="summary-box">
+                    <span>本月总车数</span>
+                    <strong id="productionMonthTotalTrips">0</strong>
+                </div>
+
+                <div class="summary-box">
+                    <span>本月煤产量</span>
+                    <strong id="productionMonthCoalVolume">0</strong>
+                </div>
+
+                <div class="summary-box">
+                    <span>本月剥离量</span>
+                    <strong id="productionMonthWasteVolume">0</strong>
+                </div>
+
+                <div class="summary-box">
+                    <span>本月总产量</span>
+                    <strong id="productionMonthTotalVolume">0</strong>
+                </div>
             </div>
 
             <div class="table-wrap">
@@ -466,13 +621,14 @@
                     <thead>
                         <tr>
                             <th>日期</th>
-                            <th>班次</th>
-                            <th>物料</th>
-                            <th>车数</th>
+                            <th>物料类型</th>
+                            <th>车辆型号</th>
+                            <th>有效车数</th>
                             <th>单车均方</th>
                             <th>换算产量</th>
                         </tr>
                     </thead>
+
                     <tbody id="productionTableBody"></tbody>
                 </table>
             </div>
@@ -850,7 +1006,7 @@
 </main>
 
 <footer>
-    矿山管理系统 · 综合报表中心 V2.10.1R
+    矿山管理系统 · 综合报表中心 V2.10.1S
 </footer>
 
 <script>
@@ -1824,27 +1980,651 @@ function renderPayroll() {
 }
 
 
-function renderProduction() {
-    const body = document.getElementById("productionTableBody");
-    body.innerHTML = `
-        <tr>
-            <td>${today()}</td>
-            <td>白班</td>
-            <td>渣</td>
-            <td>0</td>
-            <td>0</td>
-            <td>0 m³</td>
-        </tr>
-        <tr>
-            <td>${today()}</td>
-            <td>白班</td>
-            <td>煤</td>
-            <td>0</td>
-            <td>0</td>
-            <td>0 m³</td>
-        </tr>
-    `;
+const PRODUCTION_VOLUME_SETTINGS_KEY = "productionVolumeSettings";
+
+function getProductionVolumeSettings() {
+    try {
+        const data =
+            JSON.parse(
+                localStorage.getItem(
+                    PRODUCTION_VOLUME_SETTINGS_KEY
+                )
+            );
+
+        if (
+            data &&
+            typeof data === "object"
+        ) {
+            return {
+                defaultVolumePerTrip:
+                    Number(
+                        data.defaultVolumePerTrip ||
+                        0
+                    ),
+
+                vehicleModels:
+                    (
+                        data.vehicleModels &&
+                        typeof data.vehicleModels === "object"
+                    )
+                        ? data.vehicleModels
+                        : {}
+            };
+        }
+    } catch (error) {
+        // 使用默认值
+    }
+
+    return {
+        defaultVolumePerTrip: 0,
+        vehicleModels: {}
+    };
 }
+
+function saveProductionVolumeSettings(settings) {
+    localStorage.setItem(
+        PRODUCTION_VOLUME_SETTINGS_KEY,
+        JSON.stringify({
+            ...settings,
+            updatedAt:
+                new Date()
+                    .toISOString()
+        })
+    );
+}
+
+function toggleVolumeSettings() {
+    const box =
+        document.getElementById(
+            "productionVolumeSettingsBox"
+        );
+
+    if (!box) return;
+
+    const isHidden =
+        box.style.display === "none";
+
+    box.style.display =
+        isHidden
+            ? "block"
+            : "none";
+
+    if (isHidden) {
+        loadProductionVolumeSettingsForm();
+    }
+}
+
+function loadProductionVolumeSettingsForm() {
+    const settings =
+        getProductionVolumeSettings();
+
+    const defaultInput =
+        document.getElementById(
+            "defaultVolumePerTrip"
+        );
+
+    if (defaultInput) {
+        defaultInput.value =
+            Number(
+                settings.defaultVolumePerTrip ||
+                0
+            );
+    }
+
+    renderVehicleModelVolumeSettings();
+}
+
+function saveDefaultVolumeSetting() {
+    const volume =
+        Number(
+            document.getElementById(
+                "defaultVolumePerTrip"
+            )?.value ||
+            0
+        );
+
+    if (volume <= 0) {
+        alert("请输入正确的默认单车均方。");
+        return;
+    }
+
+    const settings =
+        getProductionVolumeSettings();
+
+    settings.defaultVolumePerTrip =
+        volume;
+
+    saveProductionVolumeSettings(
+        settings
+    );
+
+    renderProduction();
+
+    alert("默认单车均方已保存。");
+}
+
+function saveVehicleModelVolumeSetting() {
+    const model =
+        document.getElementById(
+            "vehicleModelSettingName"
+        )?.value
+        .trim();
+
+    const volume =
+        Number(
+            document.getElementById(
+                "vehicleModelSettingVolume"
+            )?.value ||
+            0
+        );
+
+    if (!model) {
+        alert("请输入车辆型号。");
+        return;
+    }
+
+    if (volume <= 0) {
+        alert("请输入正确的单车均方。");
+        return;
+    }
+
+    const settings =
+        getProductionVolumeSettings();
+
+    settings.vehicleModels[model] =
+        volume;
+
+    saveProductionVolumeSettings(
+        settings
+    );
+
+    document.getElementById(
+        "vehicleModelSettingName"
+    ).value =
+        "";
+
+    document.getElementById(
+        "vehicleModelSettingVolume"
+    ).value =
+        "";
+
+    renderVehicleModelVolumeSettings();
+    renderProduction();
+
+    alert("车辆型号均方已保存。");
+}
+
+function deleteVehicleModelVolumeSetting(model) {
+    const settings =
+        getProductionVolumeSettings();
+
+    delete settings.vehicleModels[model];
+
+    saveProductionVolumeSettings(
+        settings
+    );
+
+    renderVehicleModelVolumeSettings();
+    renderProduction();
+}
+
+function renderVehicleModelVolumeSettings() {
+    const body =
+        document.getElementById(
+            "vehicleModelVolumeTableBody"
+        );
+
+    if (!body) return;
+
+    const settings =
+        getProductionVolumeSettings();
+
+    const rows =
+        Object.entries(
+            settings.vehicleModels
+        );
+
+    body.innerHTML =
+        rows.length
+            ? rows.map(
+                ([model, volume]) => `
+                    <tr>
+                        <td>${escapeHtml(model)}</td>
+                        <td>${Number(volume || 0).toFixed(2)} m³/车</td>
+                        <td>
+                            <button
+                                type="button"
+                                class="danger-btn"
+                                onclick="deleteVehicleModelVolumeSetting('${String(model).replace(/\\/g, "\\\\").replace(/'/g, "\\'")}')"
+                            >
+                                删除
+                            </button>
+                        </td>
+                    </tr>
+                `
+            ).join("")
+            : `<tr><td colspan="3" class="empty">暂无车辆型号单独均方设置</td></tr>`;
+}
+
+function normalizeMaterialType(item) {
+    const raw =
+        String(
+            item.materialType ||
+            item.material ||
+            item.cargoType ||
+            item.loadType ||
+            item.taskType ||
+            item.transportType ||
+            ""
+        )
+        .trim()
+        .toLowerCase();
+
+    if (
+        raw.includes("煤") ||
+        raw.includes("coal")
+    ) {
+        return "煤";
+    }
+
+    if (
+        raw.includes("渣") ||
+        raw.includes("废石") ||
+        raw.includes("岩") ||
+        raw.includes("土") ||
+        raw.includes("waste") ||
+        raw.includes("rock") ||
+        raw.includes("overburden")
+    ) {
+        return "渣/废石";
+    }
+
+    return raw
+        ? String(
+            item.materialType ||
+            item.material ||
+            item.cargoType ||
+            item.loadType ||
+            item.taskType ||
+            item.transportType
+        )
+        : "其他";
+}
+
+function productionVehicleModel(item) {
+    return String(
+        item.vehicleModel ||
+        item.truckModel ||
+        item.carModel ||
+        item.equipmentModel ||
+        item.model ||
+        ""
+    ).trim();
+}
+
+function productionRecordDate(item) {
+    return String(
+        item.completedAt ||
+        item.workDate ||
+        item.date ||
+        item.createdAt ||
+        ""
+    ).slice(0, 10);
+}
+
+function productionTripCount(item) {
+    return Number(
+        item.tripCount ||
+        item.count ||
+        item.completedTrips ||
+        item.trips ||
+        1
+    );
+}
+
+function isValidProductionRecord(item) {
+    return (
+        item.status !== "cancelled" &&
+        item.status !== "rejected" &&
+        item.confirmationStatus !== "rejected"
+    );
+}
+
+function getAllProductionTripRecords() {
+    const keys = [
+        "tripRecords",
+        "driverTripRecords",
+        "transportRecords"
+    ];
+
+    const records = [];
+
+    keys.forEach(key => {
+        readArray(key)
+            .forEach(item => {
+                if (
+                    isValidProductionRecord(
+                        item
+                    )
+                ) {
+                    records.push({
+                        ...item,
+                        __sourceKey: key
+                    });
+                }
+            });
+    });
+
+    return records;
+}
+
+function getVolumePerTripForRecord(item) {
+    const settings =
+        getProductionVolumeSettings();
+
+    const model =
+        productionVehicleModel(
+            item
+        );
+
+    if (
+        model &&
+        Object.prototype.hasOwnProperty.call(
+            settings.vehicleModels,
+            model
+        )
+    ) {
+        return Number(
+            settings.vehicleModels[model] ||
+            0
+        );
+    }
+
+    const ownVolume =
+        Number(
+            item.volumePerTrip ||
+            item.averageVolume ||
+            item.avgVolume ||
+            item.vehicleVolume ||
+            0
+        );
+
+    if (ownVolume > 0) {
+        return ownVolume;
+    }
+
+    return Number(
+        settings.defaultVolumePerTrip ||
+        0
+    );
+}
+
+function aggregateProductionRecords(records) {
+    const groups = {};
+
+    records.forEach(item => {
+        const date =
+            productionRecordDate(
+                item
+            );
+
+        if (!date) return;
+
+        const material =
+            normalizeMaterialType(
+                item
+            );
+
+        const model =
+            productionVehicleModel(
+                item
+            ) || "未设置型号";
+
+        const volumePerTrip =
+            getVolumePerTripForRecord(
+                item
+            );
+
+        const key =
+            [
+                date,
+                material,
+                model,
+                volumePerTrip
+            ].join("||");
+
+        if (!groups[key]) {
+            groups[key] = {
+                date,
+                material,
+                model,
+                tripCount: 0,
+                volumePerTrip,
+                volume: 0
+            };
+        }
+
+        const trips =
+            productionTripCount(
+                item
+            );
+
+        groups[key].tripCount +=
+            trips;
+
+        groups[key].volume +=
+            trips *
+            volumePerTrip;
+    });
+
+    return Object.values(
+        groups
+    )
+        .sort((a, b) => {
+            const dateCompare =
+                String(a.date)
+                    .localeCompare(
+                        String(b.date)
+                    );
+
+            if (dateCompare !== 0) {
+                return dateCompare;
+            }
+
+            return String(a.material)
+                .localeCompare(
+                    String(b.material),
+                    "zh-CN"
+                );
+        });
+}
+
+function sumProductionStats(groups) {
+    const result = {
+        totalTrips: 0,
+        coalTrips: 0,
+        wasteTrips: 0,
+        totalVolume: 0,
+        coalVolume: 0,
+        wasteVolume: 0
+    };
+
+    groups.forEach(item => {
+        result.totalTrips +=
+            Number(
+                item.tripCount ||
+                0
+            );
+
+        result.totalVolume +=
+            Number(
+                item.volume ||
+                0
+            );
+
+        if (item.material === "煤") {
+            result.coalTrips +=
+                Number(
+                    item.tripCount ||
+                    0
+                );
+
+            result.coalVolume +=
+                Number(
+                    item.volume ||
+                    0
+                );
+        } else if (
+            item.material === "渣/废石"
+        ) {
+            result.wasteTrips +=
+                Number(
+                    item.tripCount ||
+                    0
+                );
+
+            result.wasteVolume +=
+                Number(
+                    item.volume ||
+                    0
+                );
+        }
+    });
+
+    return result;
+}
+
+function renderProduction() {
+    const selectedDate =
+        document.getElementById(
+            "productionDate"
+        )?.value ||
+        today();
+
+    const selectedMonth =
+        document.getElementById(
+            "productionMonth"
+        )?.value ||
+        selectedDate.slice(0, 7);
+
+    const allRecords =
+        getAllProductionTripRecords();
+
+    const dayGroups =
+        aggregateProductionRecords(
+            allRecords.filter(item =>
+                productionRecordDate(item) ===
+                selectedDate
+            )
+        );
+
+    const monthGroups =
+        aggregateProductionRecords(
+            allRecords.filter(item =>
+                productionRecordDate(item).slice(0, 7) ===
+                selectedMonth
+            )
+        );
+
+    const dayStats =
+        sumProductionStats(
+            dayGroups
+        );
+
+    const monthStats =
+        sumProductionStats(
+            monthGroups
+        );
+
+    const setValue =
+        (id, value) => {
+            const el =
+                document.getElementById(
+                    id
+                );
+
+            if (el) {
+                el.textContent =
+                    value;
+            }
+        };
+
+    setValue(
+        "productionDayTotalTrips",
+        String(
+            dayStats.totalTrips
+        )
+    );
+
+    setValue(
+        "productionDayCoalTrips",
+        String(
+            dayStats.coalTrips
+        )
+    );
+
+    setValue(
+        "productionDayWasteTrips",
+        String(
+            dayStats.wasteTrips
+        )
+    );
+
+    setValue(
+        "productionDayTotalVolume",
+        dayStats.totalVolume.toFixed(1) +
+        " m³"
+    );
+
+    setValue(
+        "productionMonthTotalTrips",
+        String(
+            monthStats.totalTrips
+        )
+    );
+
+    setValue(
+        "productionMonthCoalVolume",
+        monthStats.coalVolume.toFixed(1) +
+        " m³"
+    );
+
+    setValue(
+        "productionMonthWasteVolume",
+        monthStats.wasteVolume.toFixed(1) +
+        " m³"
+    );
+
+    setValue(
+        "productionMonthTotalVolume",
+        monthStats.totalVolume.toFixed(1) +
+        " m³"
+    );
+
+    const body =
+        document.getElementById(
+            "productionTableBody"
+        );
+
+    if (!body) return;
+
+    body.innerHTML =
+        dayGroups.length
+            ? dayGroups.map(item => `
+                <tr>
+                    <td>${escapeHtml(item.date)}</td>
+                    <td>${escapeHtml(item.material)}</td>
+                    <td>${escapeHtml(item.model)}</td>
+                    <td>${Number(item.tripCount || 0)}</td>
+                    <td>${Number(item.volumePerTrip || 0).toFixed(2)} m³/车</td>
+                    <td>${Number(item.volume || 0).toFixed(1)} m³</td>
+                </tr>
+            `).join("")
+            : `<tr><td colspan="6" class="empty">当前日期暂无有效运输记录</td></tr>`;
+
+    renderVehicleModelVolumeSettings();
+}
+
 
 function renderMaintenance() {
     const costs = readArray("maintenanceCosts");
@@ -3306,6 +4086,18 @@ if (verifyAccess()) {
             "rankingMonth"
         );
 
+
+    const productionDate =
+        document.getElementById(
+            "productionDate"
+        );
+
+
+    const productionMonth =
+        document.getElementById(
+            "productionMonth"
+        );
+
     if (depreciationMonth) {
         depreciationMonth.value =
             defaultMonth;
@@ -3331,6 +4123,18 @@ if (verifyAccess()) {
 
     if (rankingMonth) {
         rankingMonth.value =
+            defaultMonth;
+    }
+
+
+    if (productionDate) {
+        productionDate.value =
+            today();
+    }
+
+
+    if (productionMonth) {
+        productionMonth.value =
             defaultMonth;
     }
 
