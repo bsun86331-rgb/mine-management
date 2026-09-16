@@ -208,7 +208,7 @@
 
     
         /* =====================================================
-           V2.10.1O 总经理经营驾驶舱
+           V2.10.1Q 总经理经营驾驶舱
         ====================================================== */
 
         .gm-business-note {
@@ -491,7 +491,7 @@
 
 
     <span>
-        V2.10.1O
+        V2.10.1Q
     </span>
 
 </header>
@@ -532,7 +532,7 @@
 
 
     <!-- =====================================================
-         V2.10.1O 总经理经营驾驶舱
+         V2.10.1Q 总经理经营驾驶舱
     ====================================================== -->
 
     <section class="gm-card">
@@ -675,7 +675,7 @@
                     </h2>
 
                     <p>
-                        按月份维护综合单价；柴油费用自动读取 fuel.html，折旧、税费、均摊、财务及其他费用自动读取财务费用中心
+                        按月份维护综合单价；工资自动读取月度工资表，柴油自动读取 fuel.html，折旧、税费、均摊、财务及其他费用自动读取财务费用中心
                     </p>
 
                 </div>
@@ -705,12 +705,14 @@
                 </label>
 
                 <label>
-                    工资费用
+                    工资费用（自动）
                     <input
                         id="gmSalaryCost"
                         type="number"
                         min="0"
                         step="0.01"
+                        readonly
+                        title="自动读取 report-center.html 生成的月度工资表"
                     >
                 </label>
 
@@ -1156,7 +1158,7 @@
 
 <footer>
 
-    矿山管理系统 · 总经理经营驾驶舱与审批端 V2.10.1O
+    矿山管理系统 · 总经理经营驾驶舱与审批端 V2.10.1Q
 
 </footer>
 
@@ -1173,7 +1175,7 @@
 "use strict";
 
 /* =====================================================
-   V2.10.1O 总经理经营驾驶舱
+   V2.10.1Q 总经理经营驾驶舱
 ===================================================== */
 
 const GM_BUSINESS_SETTINGS_KEY =
@@ -1471,6 +1473,48 @@ function gmGetTripCount() {
  * purchaseAmount
  * 或 amount × purchaseUnitPrice
  */
+
+/*
+ * 自动读取综合报表中心生成的月度工资表
+ *
+ * payrollMonthlyRecords:
+ * payableSalary = 应发工资
+ */
+function gmGetAutomaticSalaryCost() {
+
+    const month =
+        gmSelectedMonth();
+
+
+    return gmReadArray(
+        "payrollMonthlyRecords"
+    )
+        .filter(
+            item =>
+
+                String(
+                    item.month ||
+                    ""
+                ) ===
+                month
+        )
+        .reduce(
+            (
+                sum,
+                item
+            ) =>
+
+                sum +
+                Number(
+                    item.payableSalary ||
+                    0
+                ),
+
+            0
+        );
+}
+
+
 function gmGetAutomaticFuelCost() {
 
     const month =
@@ -1711,21 +1755,25 @@ function gmLoadBusinessData() {
 
 
     /*
-     * V2.10.1O
-     * 工资当前仍保留本地经营费用输入；柴油费用自动读取 fuel.html。
+     * V2.10.1Q
+     * 工资费用自动读取月度工资表；柴油费用自动读取 fuel.html。
      * 维修费用优先读取维修系统。
      * 折旧、税费、均摊、财务及其他费用
      * 直接读取 finance-cost.html 的 financeCostRecords。
      */
+    const automaticSalaryCost =
+        gmGetAutomaticSalaryCost();
+
+
     document
         .getElementById(
             "gmSalaryCost"
         )
         .value =
-            Number(
-                costs.salaryCost ||
-                0
-            );
+            automaticSalaryCost
+                .toFixed(
+                    2
+                );
 
 
     const automaticFuelCost =
@@ -1867,16 +1915,6 @@ function saveGeneralManagerBusinessData() {
         reportMonth:
             gmSelectedMonth(),
 
-        salaryCost:
-            Number(
-                document
-                    .getElementById(
-                        "gmSalaryCost"
-                    )
-                    .value ||
-                0
-            ),
-
         maintenanceCost:
             Number(
                 document
@@ -1919,7 +1957,7 @@ function saveGeneralManagerBusinessData() {
 
 
     alert(
-        "经营参数已保存。柴油费用已自动读取 fuel.html；折旧、税费、均摊、财务及其他费用已自动读取财务费用中心。"
+        "经营参数已保存。工资费用已自动读取月度工资表；柴油费用已自动读取 fuel.html；折旧、税费、均摊、财务及其他费用已自动读取财务费用中心。"
     );
 }
 
@@ -2128,6 +2166,44 @@ function gmRefreshBusinessDashboard() {
             gmMoney(
                 revenue
             );
+
+
+    const payrollRecordsForMonth =
+        gmReadArray(
+            "payrollMonthlyRecords"
+        )
+        .filter(
+            item =>
+                String(
+                    item.month ||
+                    ""
+                ) ===
+                gmSelectedMonth()
+        );
+
+
+    const salaryInput =
+        document
+            .getElementById(
+                "gmSalaryCost"
+            );
+
+
+    if (
+        salaryInput
+    ) {
+
+        salaryInput.title =
+            payrollRecordsForMonth.length
+
+                ?
+
+                "已自动读取当月工资表"
+
+                :
+
+                "当前月份尚未生成工资表，请先到综合报表中心生成工资表";
+    }
 
 
     document
