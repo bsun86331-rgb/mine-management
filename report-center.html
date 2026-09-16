@@ -331,7 +331,7 @@
     <div class="header-inner">
         <div>
             <h1>📊 综合报表中心</h1>
-            <p>Report Center · V2.10.1P</p>
+            <p>Report Center · V2.10.1R</p>
         </div>
 
         <button type="button" class="header-btn" onclick="goHome()">返回首页</button>
@@ -682,32 +682,127 @@
             <div class="section-title">
                 <div>
                     <h2>🏆 综合绩效排名</h2>
-                    <p>运输产量、节油和维修成本按管理员设置权重重新计算。</p>
+                    <p>当前先对汽车司机按运输车数、油耗和维修费用进行月度综合排名。</p>
                 </div>
+
+                <span
+                    id="rankingGeneratedBadge"
+                    class="badge blue"
+                >
+                    待生成
+                </span>
             </div>
 
             <div class="formula">
-                综合绩效分 = 产量得分 × 产量权重 + 节油得分 × 节油权重 + 维修成本得分 × 维修权重
+                运输车数：车数越多，排名越靠前<br>
+                油耗：本月加油量越少，排名越靠前<br>
+                维修费用：本月维修费用越少，排名越靠前<br><br>
+                综合得分 = 运输排名得分 × 运输权重 + 节油排名得分 × 节油权重 + 维修排名得分 × 维修权重
             </div>
 
             <div class="toolbar">
-                <button class="secondary-btn" onclick="showPlanned('绩效权重设置')">⚙️ 绩效权重设置</button>
-                <button class="secondary-btn" onclick="showPlanned('前三奖励/后三扣款规则')">🎁 奖扣规则设置</button>
+                <input
+                    type="month"
+                    id="rankingMonth"
+                    onchange="renderRanking()"
+                >
+
+                <label style="display:flex;align-items:center;gap:5px;">
+                    运输权重
+                    <input
+                        id="rankingTripWeight"
+                        type="number"
+                        min="0"
+                        max="100"
+                        step="1"
+                        style="min-width:90px;width:90px;"
+                    >
+                    %
+                </label>
+
+                <label style="display:flex;align-items:center;gap:5px;">
+                    节油权重
+                    <input
+                        id="rankingFuelWeight"
+                        type="number"
+                        min="0"
+                        max="100"
+                        step="1"
+                        style="min-width:90px;width:90px;"
+                    >
+                    %
+                </label>
+
+                <label style="display:flex;align-items:center;gap:5px;">
+                    维修权重
+                    <input
+                        id="rankingMaintenanceWeight"
+                        type="number"
+                        min="0"
+                        max="100"
+                        step="1"
+                        style="min-width:90px;width:90px;"
+                    >
+                    %
+                </label>
+
+                <button
+                    type="button"
+                    class="secondary-btn"
+                    onclick="saveRankingWeights()"
+                >
+                    保存权重
+                </button>
+
+                <button
+                    type="button"
+                    class="primary-btn"
+                    onclick="generatePerformanceRanking(true)"
+                >
+                    🔄 重新生成排名
+                </button>
+            </div>
+
+            <div class="summary-grid" style="margin-bottom:14px;">
+                <div class="summary-box">
+                    <span>参与排名司机</span>
+                    <strong id="rankingDriverCount">0</strong>
+                </div>
+
+                <div class="summary-box">
+                    <span>本月运输车数</span>
+                    <strong id="rankingTripTotal">0</strong>
+                </div>
+
+                <div class="summary-box">
+                    <span>本月司机加油量</span>
+                    <strong id="rankingFuelTotal">0</strong>
+                </div>
+
+                <div class="summary-box">
+                    <span>本月司机维修费用</span>
+                    <strong id="rankingMaintenanceTotal">0</strong>
+                </div>
             </div>
 
             <div class="table-wrap">
                 <table>
                     <thead>
                         <tr>
-                            <th>排名</th>
+                            <th>综合排名</th>
                             <th>姓名</th>
-                            <th>车数/装车数排名</th>
+                            <th>车辆</th>
+                            <th>运输车数</th>
+                            <th>运输排名</th>
+                            <th>加油量(L)</th>
                             <th>节油排名</th>
-                            <th>维修费用排名</th>
+                            <th>维修费用</th>
+                            <th>维修排名</th>
                             <th>综合得分</th>
-                            <th>奖励/扣款</th>
+                            <th>奖扣状态</th>
                         </tr>
                     </thead>
+
                     <tbody id="rankingTableBody"></tbody>
                 </table>
             </div>
@@ -755,7 +850,7 @@
 </main>
 
 <footer>
-    矿山管理系统 · 综合报表中心 V2.10.1P
+    矿山管理系统 · 综合报表中心 V2.10.1R
 </footer>
 
 <script>
@@ -2215,27 +2310,900 @@ function renderFinance() {
         : `<tr><td colspan="7" class="empty">当前筛选条件暂无财务费用记录</td></tr>`;
 }
 
-function renderRanking() {
-    const drivers = getPersonnelRecords()
-        .filter(isApproved)
-        .filter(person => ["汽车司机","挖机司机"].includes(normalizePosition(person.position)));
+const PERFORMANCE_RANKING_KEY = "performanceRankingRecords";
+const PERFORMANCE_WEIGHT_KEY = "performanceRankingWeights";
 
-    const body = document.getElementById("rankingTableBody");
+function getRankingWeights() {
+    try {
+        const data =
+            JSON.parse(
+                localStorage.getItem(
+                    PERFORMANCE_WEIGHT_KEY
+                )
+            );
 
-    body.innerHTML = drivers.length
-        ? drivers.map((person, index) => `
-            <tr>
-                <td>${index + 1}</td>
-                <td>${escapeHtml(person.name || "-")}</td>
-                <td>-</td>
-                <td>-</td>
-                <td>-</td>
-                <td>0</td>
-                <td>-</td>
-            </tr>
-        `).join("")
-        : `<tr><td colspan="7" class="empty">暂无可排名人员</td></tr>`;
+        if (
+            data &&
+            typeof data === "object"
+        ) {
+            return {
+                tripWeight:
+                    Number(
+                        data.tripWeight ?? 50
+                    ),
+                fuelWeight:
+                    Number(
+                        data.fuelWeight ?? 30
+                    ),
+                maintenanceWeight:
+                    Number(
+                        data.maintenanceWeight ?? 20
+                    )
+            };
+        }
+    } catch (error) {
+        // 使用默认值
+    }
+
+    return {
+        tripWeight: 50,
+        fuelWeight: 30,
+        maintenanceWeight: 20
+    };
 }
+
+function loadRankingWeightsToForm() {
+    const weights =
+        getRankingWeights();
+
+    const trip =
+        document.getElementById(
+            "rankingTripWeight"
+        );
+
+    const fuel =
+        document.getElementById(
+            "rankingFuelWeight"
+        );
+
+    const maintenance =
+        document.getElementById(
+            "rankingMaintenanceWeight"
+        );
+
+    if (trip) {
+        trip.value =
+            weights.tripWeight;
+    }
+
+    if (fuel) {
+        fuel.value =
+            weights.fuelWeight;
+    }
+
+    if (maintenance) {
+        maintenance.value =
+            weights.maintenanceWeight;
+    }
+}
+
+function saveRankingWeights() {
+    const tripWeight =
+        Number(
+            document.getElementById(
+                "rankingTripWeight"
+            )?.value ||
+            0
+        );
+
+    const fuelWeight =
+        Number(
+            document.getElementById(
+                "rankingFuelWeight"
+            )?.value ||
+            0
+        );
+
+    const maintenanceWeight =
+        Number(
+            document.getElementById(
+                "rankingMaintenanceWeight"
+            )?.value ||
+            0
+        );
+
+    const total =
+        tripWeight +
+        fuelWeight +
+        maintenanceWeight;
+
+    if (
+        Math.abs(
+            total -
+            100
+        ) >
+        0.001
+    ) {
+        alert(
+            "三个权重合计必须等于 100%。当前合计：" +
+            total +
+            "%"
+        );
+
+        return;
+    }
+
+    localStorage.setItem(
+        PERFORMANCE_WEIGHT_KEY,
+        JSON.stringify({
+            tripWeight,
+            fuelWeight,
+            maintenanceWeight,
+            updatedAt:
+                new Date()
+                    .toISOString()
+        })
+    );
+
+    generatePerformanceRanking(
+        false
+    );
+
+    alert(
+        "绩效权重已保存，并已重新计算排名。"
+    );
+}
+
+function rankingPersonId(person) {
+    return String(
+        person?.personId ||
+        person?.employeeId ||
+        person?.driverId ||
+        person?.id ||
+        ""
+    );
+}
+
+function rankingVehicleNumber(person) {
+    return String(
+        person?.vehicleNumber ||
+        person?.truckNumber ||
+        person?.carNumber ||
+        person?.equipmentNumber ||
+        person?.vehicleNo ||
+        person?.assignedVehicle ||
+        ""
+    );
+}
+
+function rankingSamePerson(item, person) {
+    const personId =
+        rankingPersonId(
+            person
+        );
+
+    const personName =
+        String(
+            person?.name ||
+            ""
+        );
+
+    const itemPersonId =
+        String(
+            item?.personId ||
+            item?.driverId ||
+            item?.employeeId ||
+            item?.workerId ||
+            ""
+        );
+
+    const itemName =
+        String(
+            item?.personName ||
+            item?.driverName ||
+            item?.employeeName ||
+            item?.name ||
+            ""
+        );
+
+    if (
+        personId &&
+        itemPersonId &&
+        personId === itemPersonId
+    ) {
+        return true;
+    }
+
+    return (
+        !!personName &&
+        !!itemName &&
+        personName === itemName
+    );
+}
+
+function rankingSameVehicle(item, person) {
+    const vehicleNumber =
+        rankingVehicleNumber(
+            person
+        );
+
+    if (!vehicleNumber) {
+        return false;
+    }
+
+    const itemVehicle =
+        String(
+            item?.vehicleNumber ||
+            item?.truckNumber ||
+            item?.carNumber ||
+            item?.equipmentNumber ||
+            item?.vehicleNo ||
+            ""
+        );
+
+    return (
+        !!itemVehicle &&
+        itemVehicle === vehicleNumber
+    );
+}
+
+function getDriverTripCountForRanking(person, month) {
+    const keys = [
+        "tripRecords",
+        "driverTripRecords",
+        "transportRecords"
+    ];
+
+    let total = 0;
+
+    keys.forEach(key => {
+        readArray(key)
+            .forEach(item => {
+                const recordMonth =
+                    payrollRecordMonth(
+                        item.completedAt ||
+                        item.workDate ||
+                        item.date ||
+                        item.createdAt
+                    );
+
+                const valid =
+                    item.status !== "cancelled" &&
+                    item.status !== "rejected";
+
+                if (
+                    recordMonth === month &&
+                    valid &&
+                    (
+                        rankingSamePerson(
+                            item,
+                            person
+                        )
+                        ||
+                        rankingSameVehicle(
+                            item,
+                            person
+                        )
+                    )
+                ) {
+                    total +=
+                        Number(
+                            item.tripCount ||
+                            item.count ||
+                            item.completedTrips ||
+                            1
+                        );
+                }
+            });
+    });
+
+    return total;
+}
+
+function getDriverFuelForRanking(person, month) {
+    return readArray("fuelRecords")
+        .filter(item =>
+            payrollRecordMonth(
+                item.createdAt ||
+                item.date
+            ) === month
+            &&
+            item.confirmationStatus !== "rejected"
+            &&
+            (
+                rankingSamePerson(
+                    item,
+                    person
+                )
+                ||
+                rankingSameVehicle(
+                    item,
+                    person
+                )
+            )
+        )
+        .reduce(
+            (sum, item) =>
+                sum +
+                Number(
+                    item.amount ||
+                    item.fuelAmount ||
+                    item.quantity ||
+                    0
+                ),
+            0
+        );
+}
+
+function getDriverMaintenanceCostForRanking(person, month) {
+    return readArray("maintenanceCosts")
+        .filter(item =>
+            payrollRecordMonth(
+                item.issuedAt ||
+                item.createdAt ||
+                item.updatedAt
+            ) === month
+            &&
+            (
+                rankingSamePerson(
+                    item,
+                    person
+                )
+                ||
+                rankingSameVehicle(
+                    item,
+                    person
+                )
+            )
+        )
+        .reduce(
+            (sum, item) =>
+                sum +
+                Number(
+                    item.totalCost ||
+                    (
+                        Number(
+                            item.laborCost ||
+                            0
+                        )
+                        +
+                        Number(
+                            item.partsCost ||
+                            0
+                        )
+                        +
+                        Number(
+                            item.externalCost ||
+                            0
+                        )
+                        +
+                        Number(
+                            item.otherCost ||
+                            0
+                        )
+                    )
+                ),
+            0
+        );
+}
+
+function applyDenseRanking(records, field, direction) {
+    const sorted =
+        [...records]
+            .sort((a, b) => {
+                const av =
+                    Number(
+                        a[field] ||
+                        0
+                    );
+
+                const bv =
+                    Number(
+                        b[field] ||
+                        0
+                    );
+
+                return direction === "desc"
+                    ? bv - av
+                    : av - bv;
+            });
+
+    let previousValue = null;
+    let previousRank = 0;
+
+    sorted.forEach(
+        (item, index) => {
+            const value =
+                Number(
+                    item[field] ||
+                    0
+                );
+
+            const rank =
+                previousValue !== null &&
+                value === previousValue
+                    ? previousRank
+                    : index + 1;
+
+            item[field + "Rank"] =
+                rank;
+
+            previousValue =
+                value;
+
+            previousRank =
+                rank;
+        }
+    );
+}
+
+function rankScore(rank, totalPeople) {
+    if (
+        !rank ||
+        totalPeople <= 0
+    ) {
+        return 0;
+    }
+
+    return (
+        totalPeople -
+        rank +
+        1
+    )
+        /
+        totalPeople
+        *
+        100;
+}
+
+function getRankingAwardText(rank, totalPeople) {
+    const rules =
+        getPayrollRules();
+
+    if (rank === 1) {
+        return Number(
+            rules.rank1Reward ||
+            0
+        ) > 0
+            ? "第1名奖励 " +
+                formatMoney(
+                    rules.rank1Reward
+                ) +
+                " 元"
+            : "第1名";
+    }
+
+    if (rank === 2) {
+        return Number(
+            rules.rank2Reward ||
+            0
+        ) > 0
+            ? "第2名奖励 " +
+                formatMoney(
+                    rules.rank2Reward
+                ) +
+                " 元"
+            : "第2名";
+    }
+
+    if (rank === 3) {
+        return Number(
+            rules.rank3Reward ||
+            0
+        ) > 0
+            ? "第3名奖励 " +
+                formatMoney(
+                    rules.rank3Reward
+                ) +
+                " 元"
+            : "第3名";
+    }
+
+    if (
+        totalPeople >= 3 &&
+        rank === totalPeople
+    ) {
+        return Number(
+            rules.bottom1Deduction ||
+            0
+        ) > 0
+            ? "倒数第1扣款 " +
+                formatMoney(
+                    rules.bottom1Deduction
+                ) +
+                " 元"
+            : "倒数第1";
+    }
+
+    if (
+        totalPeople >= 3 &&
+        rank === totalPeople - 1
+    ) {
+        return Number(
+            rules.bottom2Deduction ||
+            0
+        ) > 0
+            ? "倒数第2扣款 " +
+                formatMoney(
+                    rules.bottom2Deduction
+                ) +
+                " 元"
+            : "倒数第2";
+    }
+
+    if (
+        totalPeople >= 3 &&
+        rank === totalPeople - 2
+    ) {
+        return Number(
+            rules.bottom3Deduction ||
+            0
+        ) > 0
+            ? "倒数第3扣款 " +
+                formatMoney(
+                    rules.bottom3Deduction
+                ) +
+                " 元"
+            : "倒数第3";
+    }
+
+    return "-";
+}
+
+function generatePerformanceRanking(showMessage = false) {
+    const month =
+        document.getElementById(
+            "rankingMonth"
+        )?.value ||
+        payrollMonthNow();
+
+    const weights =
+        getRankingWeights();
+
+    const drivers =
+        getPersonnelRecords()
+            .filter(isApproved)
+            .filter(person =>
+                normalizePosition(
+                    person.position
+                ) === "汽车司机"
+            );
+
+    const rows =
+        drivers.map(person => ({
+            personId:
+                rankingPersonId(
+                    person
+                ),
+
+            personName:
+                person.name ||
+                "",
+
+            position:
+                "汽车司机",
+
+            vehicleNumber:
+                rankingVehicleNumber(
+                    person
+                ),
+
+            month,
+
+            tripCount:
+                getDriverTripCountForRanking(
+                    person,
+                    month
+                ),
+
+            fuelAmount:
+                getDriverFuelForRanking(
+                    person,
+                    month
+                ),
+
+            maintenanceCost:
+                getDriverMaintenanceCostForRanking(
+                    person,
+                    month
+                )
+        }));
+
+    applyDenseRanking(
+        rows,
+        "tripCount",
+        "desc"
+    );
+
+    applyDenseRanking(
+        rows,
+        "fuelAmount",
+        "asc"
+    );
+
+    applyDenseRanking(
+        rows,
+        "maintenanceCost",
+        "asc"
+    );
+
+    const totalPeople =
+        rows.length;
+
+    rows.forEach(item => {
+        const tripScore =
+            rankScore(
+                item.tripCountRank,
+                totalPeople
+            );
+
+        const fuelScore =
+            rankScore(
+                item.fuelAmountRank,
+                totalPeople
+            );
+
+        const maintenanceScore =
+            rankScore(
+                item.maintenanceCostRank,
+                totalPeople
+            );
+
+        item.tripScore =
+            tripScore;
+
+        item.fuelScore =
+            fuelScore;
+
+        item.maintenanceScore =
+            maintenanceScore;
+
+        item.comprehensiveScore =
+            tripScore *
+                weights.tripWeight /
+                100
+            +
+            fuelScore *
+                weights.fuelWeight /
+                100
+            +
+            maintenanceScore *
+                weights.maintenanceWeight /
+                100;
+    });
+
+    rows.sort((a, b) =>
+        b.comprehensiveScore -
+        a.comprehensiveScore
+    );
+
+    rows.forEach((item, index) => {
+        item.rank =
+            index + 1;
+
+        item.totalPeople =
+            totalPeople;
+
+        item.tripWeight =
+            weights.tripWeight;
+
+        item.fuelWeight =
+            weights.fuelWeight;
+
+        item.maintenanceWeight =
+            weights.maintenanceWeight;
+
+        item.generatedAt =
+            new Date()
+                .toISOString();
+    });
+
+    const existing =
+        readArray(
+            PERFORMANCE_RANKING_KEY
+        )
+        .filter(item =>
+            String(item.month || "") !== month
+        );
+
+    localStorage.setItem(
+        PERFORMANCE_RANKING_KEY,
+        JSON.stringify(
+            existing.concat(rows)
+        )
+    );
+
+    /*
+     * 排名重新生成后，同步重新生成工资表，
+     * 使前三奖励、后三扣款自动进入工资。
+     */
+    if (
+        document.getElementById(
+            "payrollMonth"
+        )
+    ) {
+        document
+            .getElementById(
+                "payrollMonth"
+            )
+            .value =
+                month;
+
+        generateMonthlyPayroll(
+            false
+        );
+    }
+
+    renderRanking();
+
+    if (showMessage) {
+        alert(
+            "已生成 " +
+            month +
+            " 综合绩效排名，共 " +
+            totalPeople +
+            " 名汽车司机。排名结果已同步供工资表奖扣使用。"
+        );
+    }
+
+    return rows;
+}
+
+function renderRanking() {
+    const month =
+        document.getElementById(
+            "rankingMonth"
+        )?.value ||
+        payrollMonthNow();
+
+    loadRankingWeightsToForm();
+
+    let records =
+        readArray(
+            PERFORMANCE_RANKING_KEY
+        )
+        .filter(item =>
+            String(item.month || "") === month
+        );
+
+    if (!records.length) {
+        records =
+            generatePerformanceRanking(
+                false
+            );
+    }
+
+    records =
+        [...records]
+            .sort((a, b) =>
+                Number(a.rank || 0) -
+                Number(b.rank || 0)
+            );
+
+    const tripTotal =
+        records.reduce(
+            (sum, item) =>
+                sum +
+                Number(
+                    item.tripCount ||
+                    0
+                ),
+            0
+        );
+
+    const fuelTotal =
+        records.reduce(
+            (sum, item) =>
+                sum +
+                Number(
+                    item.fuelAmount ||
+                    0
+                ),
+            0
+        );
+
+    const maintenanceTotal =
+        records.reduce(
+            (sum, item) =>
+                sum +
+                Number(
+                    item.maintenanceCost ||
+                    0
+                ),
+            0
+        );
+
+    const setValue = (id, value) => {
+        const el =
+            document.getElementById(
+                id
+            );
+
+        if (el) {
+            el.textContent =
+                value;
+        }
+    };
+
+    setValue(
+        "rankingDriverCount",
+        String(
+            records.length
+        )
+    );
+
+    setValue(
+        "rankingTripTotal",
+        String(
+            tripTotal
+        )
+    );
+
+    setValue(
+        "rankingFuelTotal",
+        fuelTotal.toFixed(1) +
+        " L"
+    );
+
+    setValue(
+        "rankingMaintenanceTotal",
+        formatMoney(
+            maintenanceTotal
+        ) +
+        " 元"
+    );
+
+    const badge =
+        document.getElementById(
+            "rankingGeneratedBadge"
+        );
+
+    if (badge) {
+        badge.textContent =
+            records.length
+                ? month + " 已生成"
+                : "暂无数据";
+
+        badge.className =
+            records.length
+                ? "badge green"
+                : "badge gray";
+    }
+
+    const body =
+        document.getElementById(
+            "rankingTableBody"
+        );
+
+    if (!body) {
+        return;
+    }
+
+    body.innerHTML =
+        records.length
+            ? records.map(item => `
+                <tr>
+                    <td><strong>${Number(item.rank || 0)}</strong></td>
+                    <td>${escapeHtml(item.personName || "-")}</td>
+                    <td>${escapeHtml(item.vehicleNumber || "-")}</td>
+                    <td>${Number(item.tripCount || 0)}</td>
+                    <td>${Number(item.tripCountRank || 0)}</td>
+                    <td>${Number(item.fuelAmount || 0).toFixed(1)}</td>
+                    <td>${Number(item.fuelAmountRank || 0)}</td>
+                    <td>${formatMoney(item.maintenanceCost)}</td>
+                    <td>${Number(item.maintenanceCostRank || 0)}</td>
+                    <td>${Number(item.comprehensiveScore || 0).toFixed(2)}</td>
+                    <td>${escapeHtml(
+                        getRankingAwardText(
+                            Number(item.rank || 0),
+                            Number(item.totalPeople || records.length)
+                        )
+                    )}</td>
+                </tr>
+            `).join("")
+            : `<tr><td colspan="11" class="empty">暂无汽车司机绩效排名数据</td></tr>`;
+}
+
 
 function renderAttendance() {
     const people = getPersonnelRecords().filter(isApproved);
@@ -2332,6 +3300,12 @@ if (verifyAccess()) {
             "payrollMonth"
         );
 
+
+    const rankingMonth =
+        document.getElementById(
+            "rankingMonth"
+        );
+
     if (depreciationMonth) {
         depreciationMonth.value =
             defaultMonth;
@@ -2351,6 +3325,12 @@ if (verifyAccess()) {
 
     if (payrollMonth) {
         payrollMonth.value =
+            defaultMonth;
+    }
+
+
+    if (rankingMonth) {
+        rankingMonth.value =
             defaultMonth;
     }
 
