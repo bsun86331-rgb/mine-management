@@ -331,7 +331,7 @@
     <div class="header-inner">
         <div>
             <h1>📊 综合报表中心</h1>
-            <p>Report Center · V2.10.1S</p>
+            <p>Report Center · V2.10.1T</p>
         </div>
 
         <button type="button" class="header-btn" onclick="goHome()">返回首页</button>
@@ -971,17 +971,104 @@
             <div class="section-title">
                 <div>
                     <h2>📍 考勤表</h2>
-                    <p>由人员定位打卡生成，请假人员打卡不计有效考勤。</p>
+                    <p>自动读取定位打卡、请假状态和零产量异常报备。</p>
                 </div>
+
+                <span
+                    id="attendanceGeneratedBadge"
+                    class="badge green"
+                >
+                    自动汇总
+                </span>
             </div>
 
             <div class="formula">
-                有考勤但当日生产车数为 0 → 自动生成“零产量异常待报备” → 由车队长选择车辆维修、后勤打杂、等待调度等原因。
+                有效考勤：非请假期间的正常定位打卡<br>
+                请假期间打卡：记录保留，但不计有效出勤<br>
+                生产岗位有有效考勤但生产数量为 0：自动显示零产量异常报备状态
             </div>
 
             <div class="toolbar">
-                <input type="date" id="attendanceDate">
-                <button class="secondary-btn" onclick="showPlanned('零产量异常报备')">⚠️ 零产量异常报备</button>
+                <input
+                    type="date"
+                    id="attendanceDate"
+                    onchange="renderAttendance()"
+                >
+
+                <input
+                    type="month"
+                    id="attendanceMonth"
+                    onchange="renderAttendance()"
+                >
+
+                <select
+                    id="attendancePositionFilter"
+                    onchange="renderAttendance()"
+                >
+                    <option value="">全部岗位</option>
+                    <option value="汽车司机">汽车司机</option>
+                    <option value="挖机司机">挖机司机</option>
+                    <option value="车队长">车队长</option>
+                    <option value="维修员">维修员</option>
+                    <option value="维修管理">维修管理</option>
+                    <option value="统计">统计</option>
+                    <option value="会计">会计</option>
+                    <option value="后勤">后勤</option>
+                    <option value="测量员">测量员</option>
+                    <option value="安全员">安全员</option>
+                </select>
+
+                <button
+                    type="button"
+                    class="secondary-btn"
+                    onclick="location.href='attendance.html'"
+                >
+                    📍 打开考勤中心
+                </button>
+            </div>
+
+            <div class="summary-grid" style="margin-bottom:14px;">
+                <div class="summary-box">
+                    <span>当日应出勤人数</span>
+                    <strong id="attendanceDayPeople">0</strong>
+                </div>
+
+                <div class="summary-box">
+                    <span>当日有效出勤</span>
+                    <strong id="attendanceDayPresent">0</strong>
+                </div>
+
+                <div class="summary-box">
+                    <span>当日请假</span>
+                    <strong id="attendanceDayLeave">0</strong>
+                </div>
+
+                <div class="summary-box">
+                    <span>零产量待报备</span>
+                    <strong id="attendanceDayZeroPending">0</strong>
+                </div>
+            </div>
+
+            <div class="summary-grid" style="margin-bottom:14px;">
+                <div class="summary-box">
+                    <span>本月有效出勤人次</span>
+                    <strong id="attendanceMonthPresent">0</strong>
+                </div>
+
+                <div class="summary-box">
+                    <span>本月请假人次</span>
+                    <strong id="attendanceMonthLeave">0</strong>
+                </div>
+
+                <div class="summary-box">
+                    <span>本月零产量已报备</span>
+                    <strong id="attendanceMonthZeroReported">0</strong>
+                </div>
+
+                <div class="summary-box">
+                    <span>本月零产量未报备</span>
+                    <strong id="attendanceMonthZeroPending">0</strong>
+                </div>
             </div>
 
             <div class="table-wrap">
@@ -994,9 +1081,11 @@
                             <th>下班打卡</th>
                             <th>考勤状态</th>
                             <th>生产数量</th>
-                            <th>异常报备</th>
+                            <th>零产量状态</th>
+                            <th>报备原因</th>
                         </tr>
                     </thead>
+
                     <tbody id="attendanceTableBody"></tbody>
                 </table>
             </div>
@@ -1006,7 +1095,7 @@
 </main>
 
 <footer>
-    矿山管理系统 · 综合报表中心 V2.10.1S
+    矿山管理系统 · 综合报表中心 V2.10.1T
 </footer>
 
 <script>
@@ -3985,24 +4074,570 @@ function renderRanking() {
 }
 
 
-function renderAttendance() {
-    const people = getPersonnelRecords().filter(isApproved);
-    const body = document.getElementById("attendanceTableBody");
-
-    body.innerHTML = people.length
-        ? people.map(person => `
-            <tr>
-                <td>${escapeHtml(person.name || "-")}</td>
-                <td>${escapeHtml(normalizePosition(person.position) || "-")}</td>
-                <td>-</td>
-                <td>-</td>
-                <td><span class="badge gray">待接入</span></td>
-                <td>0</td>
-                <td>-</td>
-            </tr>
-        `).join("")
-        : `<tr><td colspan="7" class="empty">暂无考勤人员数据</td></tr>`;
+function attendancePersonId(person) {
+    return String(
+        person?.personId ||
+        person?.employeeId ||
+        person?.driverId ||
+        person?.id ||
+        ""
+    );
 }
+
+function attendanceDateKey(value) {
+    if (!value) return "";
+
+    const date = new Date(value);
+
+    if (Number.isNaN(date.getTime())) {
+        return String(value).slice(0, 10);
+    }
+
+    return new Date(
+        date.getTime() -
+        date.getTimezoneOffset() * 60000
+    )
+        .toISOString()
+        .slice(0, 10);
+}
+
+function getApprovedPeopleForAttendance() {
+    return getPersonnelRecords()
+        .filter(isApproved);
+}
+
+function getAttendanceRecords() {
+    return readArray(
+        "attendanceRecords"
+    );
+}
+
+function getZeroProductionReports() {
+    return readArray(
+        "zeroProductionReports"
+    );
+}
+
+function getAttendanceRecordForPersonDate(person, date) {
+    const personId =
+        attendancePersonId(
+            person
+        );
+
+    const personName =
+        String(
+            person.name ||
+            ""
+        );
+
+    return getAttendanceRecords()
+        .find(item =>
+            (
+                String(item.personId || "") ===
+                    personId
+
+                ||
+
+                (
+                    personName &&
+                    String(item.personName || "") ===
+                        personName
+                )
+            )
+            &&
+            String(item.date || "") ===
+                date
+        ) || null;
+}
+
+function getZeroReportForPersonDate(person, date) {
+    const personId =
+        attendancePersonId(
+            person
+        );
+
+    const personName =
+        String(
+            person.name ||
+            ""
+        );
+
+    return getZeroProductionReports()
+        .find(item =>
+            (
+                String(item.personId || "") ===
+                    personId
+
+                ||
+
+                (
+                    personName &&
+                    String(item.personName || "") ===
+                        personName
+                )
+            )
+            &&
+            String(item.date || "") ===
+                date
+        ) || null;
+}
+
+function isAttendanceProductionPosition(position) {
+    return [
+        "汽车司机",
+        "挖机司机"
+    ].includes(
+        normalizePosition(
+            position
+        )
+    );
+}
+
+function getAttendanceProductionCount(person, date) {
+    const position =
+        normalizePosition(
+            person.position
+        );
+
+    const personId =
+        attendancePersonId(
+            person
+        );
+
+    const personName =
+        String(
+            person.name ||
+            ""
+        );
+
+    let total =
+        0;
+
+    const addFromKeys =
+        keys => {
+
+            keys.forEach(key => {
+                readArray(key)
+                    .forEach(item => {
+                        const samePerson =
+                            String(
+                                item.personId ||
+                                item.driverId ||
+                                item.operatorId ||
+                                item.workerId ||
+                                ""
+                            ) === personId
+                            ||
+                            (
+                                personName &&
+                                String(
+                                    item.personName ||
+                                    item.driverName ||
+                                    item.operatorName ||
+                                    item.name ||
+                                    ""
+                                ) === personName
+                            );
+
+                        const recordDate =
+                            attendanceDateKey(
+                                item.completedAt ||
+                                item.workDate ||
+                                item.date ||
+                                item.createdAt
+                            );
+
+                        const valid =
+                            item.status !== "cancelled" &&
+                            item.status !== "rejected";
+
+                        if (
+                            samePerson &&
+                            recordDate === date &&
+                            valid
+                        ) {
+                            total +=
+                                Number(
+                                    item.tripCount ||
+                                    item.loadingCount ||
+                                    item.loadCount ||
+                                    item.count ||
+                                    1
+                                );
+                        }
+                    });
+            });
+        };
+
+    if (position === "汽车司机") {
+        addFromKeys([
+            "tripRecords",
+            "driverTripRecords",
+            "transportRecords"
+        ]);
+    } else if (position === "挖机司机") {
+        addFromKeys([
+            "excavatorTripRecords",
+            "excavatorLoadingRecords",
+            "loadingRecords"
+        ]);
+    }
+
+    return total;
+}
+
+function attendanceStatusText(record) {
+    if (!record) {
+        return "未打卡";
+    }
+
+    if (
+        record.attendanceStatus ===
+            "leave_invalid"
+        ||
+        record.leaveActiveAtCheckIn
+    ) {
+        return "请假 / 打卡无效";
+    }
+
+    if (
+        record.checkInAt &&
+        record.checkOutAt
+    ) {
+        return "已完成";
+    }
+
+    if (record.checkInAt) {
+        return "已上班";
+    }
+
+    return "未打卡";
+}
+
+function renderAttendance() {
+    const selectedDate =
+        document.getElementById(
+            "attendanceDate"
+        )?.value ||
+        today();
+
+    const selectedMonth =
+        document.getElementById(
+            "attendanceMonth"
+        )?.value ||
+        selectedDate.slice(0, 7);
+
+    const positionFilter =
+        document.getElementById(
+            "attendancePositionFilter"
+        )?.value ||
+        "";
+
+    const people =
+        getApprovedPeopleForAttendance()
+            .filter(person =>
+                !positionFilter ||
+                normalizePosition(
+                    person.position
+                ) ===
+                positionFilter
+            );
+
+    let dayPresent =
+        0;
+
+    let dayLeave =
+        0;
+
+    let dayZeroPending =
+        0;
+
+    const rows =
+        people.map(person => {
+            const position =
+                normalizePosition(
+                    person.position
+                );
+
+            const record =
+                getAttendanceRecordForPersonDate(
+                    person,
+                    selectedDate
+                );
+
+            const zeroReport =
+                getZeroReportForPersonDate(
+                    person,
+                    selectedDate
+                );
+
+            const productionCount =
+                getAttendanceProductionCount(
+                    person,
+                    selectedDate
+                );
+
+            const status =
+                attendanceStatusText(
+                    record
+                );
+
+            const isLeave =
+                status.includes(
+                    "请假"
+                );
+
+            const isPresent =
+                !!record?.checkInAt &&
+                !isLeave;
+
+            if (isPresent) {
+                dayPresent +=
+                    1;
+            }
+
+            if (isLeave) {
+                dayLeave +=
+                    1;
+            }
+
+            const zeroNeeded =
+                isAttendanceProductionPosition(
+                    position
+                )
+                &&
+                isPresent
+                &&
+                productionCount === 0;
+
+            if (
+                zeroNeeded &&
+                !zeroReport
+            ) {
+                dayZeroPending +=
+                    1;
+            }
+
+            let zeroStatus =
+                "-";
+
+            if (zeroNeeded) {
+                zeroStatus =
+                    zeroReport
+                        ? "已报备"
+                        : "待报备";
+            }
+
+            return {
+                person,
+                position,
+                record,
+                zeroReport,
+                productionCount,
+                status,
+                zeroNeeded,
+                zeroStatus
+            };
+        });
+
+    /*
+     * 月度统计基于已有 attendanceRecords，
+     * 不虚构“应该打卡但没有记录”的人次。
+     */
+    const monthRecords =
+        getAttendanceRecords()
+            .filter(item =>
+                String(item.date || "")
+                    .slice(0, 7) ===
+                    selectedMonth
+            );
+
+    let monthPresent =
+        0;
+
+    let monthLeave =
+        0;
+
+    let monthZeroReported =
+        0;
+
+    let monthZeroPending =
+        0;
+
+    monthRecords.forEach(record => {
+        const person =
+            people.find(p =>
+                attendancePersonId(p) ===
+                    String(record.personId || "")
+                ||
+                (
+                    p.name &&
+                    String(p.name) ===
+                        String(record.personName || "")
+                )
+            );
+
+        if (!person) {
+            return;
+        }
+
+        const status =
+            attendanceStatusText(
+                record
+            );
+
+        const isLeave =
+            status.includes(
+                "请假"
+            );
+
+        const isPresent =
+            !!record.checkInAt &&
+            !isLeave;
+
+        if (isPresent) {
+            monthPresent +=
+                1;
+        }
+
+        if (isLeave) {
+            monthLeave +=
+                1;
+        }
+
+        if (
+            isPresent &&
+            isAttendanceProductionPosition(
+                person.position
+            )
+        ) {
+            const productionCount =
+                getAttendanceProductionCount(
+                    person,
+                    record.date
+                );
+
+            if (productionCount === 0) {
+                const report =
+                    getZeroReportForPersonDate(
+                        person,
+                        record.date
+                    );
+
+                if (report) {
+                    monthZeroReported +=
+                        1;
+                } else {
+                    monthZeroPending +=
+                        1;
+                }
+            }
+        }
+    });
+
+    const setValue =
+        (id, value) => {
+            const el =
+                document.getElementById(
+                    id
+                );
+
+            if (el) {
+                el.textContent =
+                    value;
+            }
+        };
+
+    setValue(
+        "attendanceDayPeople",
+        String(
+            people.length
+        )
+    );
+
+    setValue(
+        "attendanceDayPresent",
+        String(
+            dayPresent
+        )
+    );
+
+    setValue(
+        "attendanceDayLeave",
+        String(
+            dayLeave
+        )
+    );
+
+    setValue(
+        "attendanceDayZeroPending",
+        String(
+            dayZeroPending
+        )
+    );
+
+    setValue(
+        "attendanceMonthPresent",
+        String(
+            monthPresent
+        )
+    );
+
+    setValue(
+        "attendanceMonthLeave",
+        String(
+            monthLeave
+        )
+    );
+
+    setValue(
+        "attendanceMonthZeroReported",
+        String(
+            monthZeroReported
+        )
+    );
+
+    setValue(
+        "attendanceMonthZeroPending",
+        String(
+            monthZeroPending
+        )
+    );
+
+    const body =
+        document.getElementById(
+            "attendanceTableBody"
+        );
+
+    if (!body) {
+        return;
+    }
+
+    body.innerHTML =
+        rows.length
+            ? rows.map(item => `
+                <tr>
+                    <td>${escapeHtml(item.person.name || "-")}</td>
+                    <td>${escapeHtml(item.position || "-")}</td>
+                    <td>${
+                        item.record?.checkInAt
+                            ? new Date(item.record.checkInAt).toLocaleTimeString("zh-CN", {hour12:false})
+                            : "-"
+                    }</td>
+                    <td>${
+                        item.record?.checkOutAt
+                            ? new Date(item.record.checkOutAt).toLocaleTimeString("zh-CN", {hour12:false})
+                            : "-"
+                    }</td>
+                    <td>${escapeHtml(item.status)}</td>
+                    <td>${Number(item.productionCount || 0)}</td>
+                    <td>${escapeHtml(item.zeroStatus)}</td>
+                    <td>${escapeHtml(item.zeroReport?.reason || "-")}</td>
+                </tr>
+            `).join("")
+            : `<tr><td colspan="8" class="empty">当前筛选条件暂无人员</td></tr>`;
+}
+
 
 function renderAllReports() {
     renderSummary();
@@ -4098,6 +4733,12 @@ if (verifyAccess()) {
             "productionMonth"
         );
 
+
+    const attendanceMonth =
+        document.getElementById(
+            "attendanceMonth"
+        );
+
     if (depreciationMonth) {
         depreciationMonth.value =
             defaultMonth;
@@ -4135,6 +4776,12 @@ if (verifyAccess()) {
 
     if (productionMonth) {
         productionMonth.value =
+            defaultMonth;
+    }
+
+
+    if (attendanceMonth) {
+        attendanceMonth.value =
             defaultMonth;
     }
 
