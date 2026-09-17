@@ -12,7 +12,12 @@
 
     <meta
         name="theme-color"
-        content="#0f172a"
+        content="#0b1220"
+    >
+
+    <meta
+        name="description"
+        content="矿山管理系统岗位入口"
     >
 
     <title>
@@ -27,232 +32,1114 @@
         }
 
 
+        :root {
+
+            --bg:
+                #eef2f7;
+
+            --card:
+                #ffffff;
+
+            --text:
+                #0f172a;
+
+            --muted:
+                #64748b;
+
+            --line:
+                #e2e8f0;
+
+            --navy:
+                #0b1220;
+
+            --navy-soft:
+                #111c31;
+
+            --primary:
+                #2563eb;
+
+            --primary-soft:
+                #eff6ff;
+
+            --success:
+                #16a34a;
+
+            --shadow:
+                0 10px 30px
+                rgba(
+                    15,
+                    23,
+                    42,
+                    .08
+                );
+
+        }
+
+
         body {
-            margin: 0;
-            min-height: 100vh;
-            background: #f1f5f9;
-            color: #0f172a;
+
+            margin:
+                0;
+
+            min-height:
+                100vh;
+
+            background:
+
+                radial-gradient(
+                    circle
+                    at top right,
+                    rgba(
+                        37,
+                        99,
+                        235,
+                        .08
+                    ),
+                    transparent
+                    34%
+                ),
+
+                var(--bg);
+
+            color:
+                var(--text);
+
             font-family:
                 Arial,
                 "Microsoft YaHei",
                 sans-serif;
+
         }
 
 
-        header {
-            padding: 28px 16px 24px;
-            background: #0f172a;
-            color: #ffffff;
-            text-align: center;
+        button,
+        input,
+        select,
+        textarea {
+
+            font:
+                inherit;
+
         }
 
 
-        header h1 {
-            margin: 0;
-            font-size: 26px;
+        button {
+
+            -webkit-tap-highlight-color:
+                transparent;
+
         }
 
 
-        header p {
-            margin: 8px 0 0;
-            font-size: 13px;
-            opacity: .78;
+        .site-header {
+
+            position:
+                relative;
+
+            overflow:
+                hidden;
+
+            padding:
+                34px 18px
+                38px;
+
+            background:
+
+                linear-gradient(
+                    135deg,
+                    #08111f,
+                    #111c31 58%,
+                    #172554
+                );
+
+            color:
+                #ffffff;
+
+        }
+
+
+        .site-header::after {
+
+            content:
+                "";
+
+            position:
+                absolute;
+
+            width:
+                280px;
+
+            height:
+                280px;
+
+            right:
+                -90px;
+
+            bottom:
+                -170px;
+
+            border-radius:
+                50%;
+
+            background:
+                rgba(
+                    59,
+                    130,
+                    246,
+                    .18
+                );
+
+        }
+
+
+        .header-inner {
+
+            position:
+                relative;
+
+            z-index:
+                1;
+
+            width:
+                100%;
+
+            max-width:
+                980px;
+
+            margin:
+                0 auto;
+
+        }
+
+
+        .brand-line {
+
+            display:
+                flex;
+
+            align-items:
+                center;
+
+            gap:
+                12px;
+
+        }
+
+
+        .brand-mark {
+
+            width:
+                52px;
+
+            height:
+                52px;
+
+            display:
+                grid;
+
+            place-items:
+                center;
+
+            flex:
+                0 0 auto;
+
+            border:
+                1px solid
+                rgba(
+                    255,
+                    255,
+                    255,
+                    .18
+                );
+
+            border-radius:
+                16px;
+
+            background:
+                rgba(
+                    255,
+                    255,
+                    255,
+                    .08
+                );
+
+            font-size:
+                28px;
+
+        }
+
+
+        .brand-title {
+
+            margin:
+                0;
+
+            font-size:
+                28px;
+
+            line-height:
+                1.2;
+
+            letter-spacing:
+                .5px;
+
+        }
+
+
+        .brand-subtitle {
+
+            margin:
+                6px 0 0;
+
+            color:
+                #cbd5e1;
+
+            font-size:
+                13px;
+
+            letter-spacing:
+                .3px;
+
+        }
+
+
+        .header-description {
+
+            max-width:
+                680px;
+
+            margin:
+                22px 0 0;
+
+            color:
+                #dbe4f0;
+
+            font-size:
+                14px;
+
+            line-height:
+                1.8;
+
+        }
+
+
+        .header-tags {
+
+            display:
+                flex;
+
+            flex-wrap:
+                wrap;
+
+            gap:
+                8px;
+
+            margin-top:
+                18px;
+
+        }
+
+
+        .header-tag {
+
+            padding:
+                7px 10px;
+
+            border:
+                1px solid
+                rgba(
+                    255,
+                    255,
+                    255,
+                    .13
+                );
+
+            border-radius:
+                999px;
+
+            background:
+                rgba(
+                    255,
+                    255,
+                    255,
+                    .06
+                );
+
+            color:
+                #e2e8f0;
+
+            font-size:
+                12px;
+
         }
 
 
         main {
-            width: 100%;
-            max-width: 760px;
-            margin: 0 auto;
-            padding: 20px 14px 36px;
+
+            width:
+                100%;
+
+            max-width:
+                980px;
+
+            margin:
+                0 auto;
+
+            padding:
+                22px 14px
+                42px;
+
         }
 
 
         .welcome {
-            margin-bottom: 18px;
-            padding: 16px;
-            border-radius: 14px;
-            background: #ffffff;
+
+            display:
+                flex;
+
+            align-items:
+                flex-start;
+
+            justify-content:
+                space-between;
+
+            gap:
+                18px;
+
+            margin:
+                -24px 0 20px;
+
+            padding:
+                18px;
+
+            position:
+                relative;
+
+            z-index:
+                3;
+
+            border:
+                1px solid
+                rgba(
+                    226,
+                    232,
+                    240,
+                    .9
+                );
+
+            border-radius:
+                18px;
+
+            background:
+                rgba(
+                    255,
+                    255,
+                    255,
+                    .97
+                );
+
             box-shadow:
-                0 5px 20px
-                rgba(15, 23, 42, .06);
+                var(--shadow);
+
         }
 
 
         .welcome-title {
-            margin: 0 0 6px;
-            font-size: 17px;
-            font-weight: 700;
+
+            margin:
+                0 0 6px;
+
+            font-size:
+                18px;
+
+            font-weight:
+                800;
+
         }
 
 
         .welcome-text {
-            margin: 0;
-            color: #64748b;
-            font-size: 13px;
-            line-height: 1.65;
+
+            margin:
+                0;
+
+            color:
+                var(--muted);
+
+            font-size:
+                13px;
+
+            line-height:
+                1.75;
+
+        }
+
+
+        .welcome-badge {
+
+            flex:
+                0 0 auto;
+
+            padding:
+                7px 10px;
+
+            border-radius:
+                999px;
+
+            background:
+                #ecfdf5;
+
+            color:
+                #166534;
+
+            font-size:
+                12px;
+
+            font-weight:
+                700;
+
+        }
+
+
+        .section-heading {
+
+            display:
+                flex;
+
+            align-items:
+                flex-end;
+
+            justify-content:
+                space-between;
+
+            gap:
+                12px;
+
+            margin:
+                0 2px 12px;
+
+        }
+
+
+        .section-heading h2 {
+
+            margin:
+                0;
+
+            font-size:
+                17px;
+
+        }
+
+
+        .section-heading p {
+
+            margin:
+                0;
+
+            color:
+                #94a3b8;
+
+            font-size:
+                12px;
+
         }
 
 
         .portal-grid {
-            display: grid;
+
+            display:
+                grid;
+
             grid-template-columns:
-                repeat(2, minmax(0, 1fr));
-            gap: 14px;
+                repeat(
+                    2,
+                    minmax(
+                        0,
+                        1fr
+                    )
+                );
+
+            gap:
+                13px;
+
         }
 
 
         .portal-card {
-            min-height: 126px;
-            padding: 18px 14px;
-            border: 0;
-            border-radius: 16px;
-            background: #ffffff;
-            color: #0f172a;
+
+            position:
+                relative;
+
+            min-height:
+                132px;
+
+            padding:
+                17px;
+
+            overflow:
+                hidden;
+
+            border:
+                1px solid
+                var(--line);
+
+            border-radius:
+                17px;
+
+            background:
+                var(--card);
+
+            color:
+                var(--text);
+
             box-shadow:
-                0 5px 20px
-                rgba(15, 23, 42, .06);
-            text-align: center;
-            cursor: pointer;
+                0 5px 18px
+                rgba(
+                    15,
+                    23,
+                    42,
+                    .045
+                );
+
+            text-align:
+                left;
+
+            cursor:
+                pointer;
+
             transition:
-                transform .15s ease,
-                box-shadow .15s ease;
+                transform
+                .15s ease,
+                border-color
+                .15s ease,
+                box-shadow
+                .15s ease;
+
+        }
+
+
+        .portal-card::after {
+
+            content:
+                "›";
+
+            position:
+                absolute;
+
+            right:
+                16px;
+
+            top:
+                16px;
+
+            color:
+                #cbd5e1;
+
+            font-size:
+                26px;
+
+            font-weight:
+                300;
+
+        }
+
+
+        .portal-card:hover {
+
+            transform:
+                translateY(
+                    -2px
+                );
+
+            border-color:
+                #bfdbfe;
+
+            box-shadow:
+                0 12px 28px
+                rgba(
+                    15,
+                    23,
+                    42,
+                    .08
+                );
+
         }
 
 
         .portal-card:active {
-            transform: scale(.98);
+
+            transform:
+                scale(
+                    .985
+                );
+
         }
 
 
         .portal-icon {
-            display: block;
-            margin-bottom: 9px;
-            font-size: 36px;
+
+            width:
+                46px;
+
+            height:
+                46px;
+
+            display:
+                grid;
+
+            place-items:
+                center;
+
+            margin-bottom:
+                11px;
+
+            border-radius:
+                14px;
+
+            background:
+                var(--primary-soft);
+
+            font-size:
+                26px;
+
         }
 
 
         .portal-title {
-            display: block;
-            margin-bottom: 5px;
-            font-size: 17px;
-            font-weight: 700;
+
+            display:
+                block;
+
+            margin-bottom:
+                5px;
+
+            font-size:
+                16px;
+
+            font-weight:
+                800;
+
         }
 
 
         .portal-subtitle {
-            display: block;
-            color: #64748b;
-            font-size: 12px;
-            line-height: 1.45;
+
+            display:
+                block;
+
+            max-width:
+                88%;
+
+            color:
+                var(--muted);
+
+            font-size:
+                12px;
+
+            line-height:
+                1.5;
+
         }
 
 
-        .admin-card {
-            border: 1px solid #cbd5e1;
+        .portal-card.protected {
+
+            background:
+                linear-gradient(
+                    180deg,
+                    #ffffff,
+                    #f8fafc
+                );
+
+        }
+
+
+        .portal-card.protected
+        .portal-icon {
+
+            background:
+                #f5f3ff;
+
+        }
+
+
+        .admin-card
+        .portal-icon {
+
+            background:
+                #fff7ed;
+
+        }
+
+
+        .helper-note {
+
+            margin-top:
+                16px;
+
+            padding:
+                14px 15px;
+
+            border:
+                1px dashed
+                #cbd5e1;
+
+            border-radius:
+                13px;
+
+            color:
+                #64748b;
+
+            font-size:
+                12px;
+
+            line-height:
+                1.75;
+
         }
 
 
         footer {
-            padding: 20px 15px;
-            text-align: center;
-            color: #94a3b8;
-            font-size: 12px;
+
+            padding:
+                20px 15px
+                28px;
+
+            text-align:
+                center;
+
+            color:
+                #94a3b8;
+
+            font-size:
+                12px;
+
         }
 
 
         .modal {
-            display: none;
-            position: fixed;
-            inset: 0;
-            z-index: 1000;
-            padding: 20px 14px;
-            background: rgba(15, 23, 42, .6);
-            overflow-y: auto;
+
+            display:
+                none;
+
+            position:
+                fixed;
+
+            inset:
+                0;
+
+            z-index:
+                1000;
+
+            padding:
+                20px 14px;
+
+            background:
+                rgba(
+                    2,
+                    6,
+                    23,
+                    .68
+                );
+
+            backdrop-filter:
+                blur(
+                    4px
+                );
+
+            overflow-y:
+                auto;
+
         }
 
 
         .modal.show {
-            display: flex;
-            align-items: center;
-            justify-content: center;
+
+            display:
+                flex;
+
+            align-items:
+                center;
+
+            justify-content:
+                center;
+
         }
 
 
         .modal-card {
-            width: 100%;
-            max-width: 480px;
-            max-height: 90vh;
-            overflow-y: auto;
-            padding: 20px;
-            border-radius: 18px;
-            background: #ffffff;
+
+            width:
+                100%;
+
+            max-width:
+                500px;
+
+            max-height:
+                90vh;
+
+            overflow-y:
+                auto;
+
+            padding:
+                20px;
+
+            border:
+                1px solid
+                rgba(
+                    226,
+                    232,
+                    240,
+                    .9
+                );
+
+            border-radius:
+                20px;
+
+            background:
+                #ffffff;
+
+            box-shadow:
+                0 22px 60px
+                rgba(
+                    2,
+                    6,
+                    23,
+                    .28
+                );
+
         }
 
 
         .modal-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 12px;
-            margin-bottom: 16px;
+
+            display:
+                flex;
+
+            align-items:
+                center;
+
+            justify-content:
+                space-between;
+
+            gap:
+                12px;
+
+            margin-bottom:
+                16px;
+
         }
 
 
         .modal-title {
-            margin: 0;
-            font-size: 20px;
+
+            margin:
+                0;
+
+            font-size:
+                20px;
+
         }
 
 
         .close-btn {
-            width: 38px;
-            height: 38px;
-            padding: 0;
-            border: 0;
-            border-radius: 999px;
-            background: #f1f5f9;
-            color: #334155;
-            font-size: 20px;
-            cursor: pointer;
+
+            width:
+                40px;
+
+            height:
+                40px;
+
+            padding:
+                0;
+
+            border:
+                0;
+
+            border-radius:
+                999px;
+
+            background:
+                #f1f5f9;
+
+            color:
+                #334155;
+
+            font-size:
+                21px;
+
+            cursor:
+                pointer;
+
         }
 
 
         .role-list {
-            display: grid;
-            gap: 10px;
+
+            display:
+                grid;
+
+            grid-template-columns:
+                repeat(
+                    2,
+                    minmax(
+                        0,
+                        1fr
+                    )
+                );
+
+            gap:
+                10px;
+
         }
 
 
         .role-btn {
-            width: 100%;
-            min-height: 52px;
-            padding: 12px 14px;
-            border: 1px solid #cbd5e1;
-            border-radius: 11px;
-            background: #ffffff;
-            color: #0f172a;
-            text-align: left;
-            font-size: 15px;
-            font-weight: 700;
-            cursor: pointer;
+
+            width:
+                100%;
+
+            min-height:
+                54px;
+
+            padding:
+                12px 14px;
+
+            border:
+                1px solid
+                #cbd5e1;
+
+            border-radius:
+                11px;
+
+            background:
+                #ffffff;
+
+            color:
+                #0f172a;
+
+            text-align:
+                left;
+
+            font-size:
+                14px;
+
+            font-weight:
+                700;
+
+            cursor:
+                pointer;
+
+        }
+
+
+        .role-btn:hover {
+
+            border-color:
+                #93c5fd;
+
+            background:
+                #f8fbff;
+
         }
 
 
         .role-btn:active {
-            background: #f8fafc;
+
+            background:
+                #eff6ff;
+
         }
 
 
-        @media (max-width: 520px) {
+        @media (
+            max-width:
+                620px
+        ) {
+
+            .site-header {
+
+                padding:
+                    26px 16px
+                    34px;
+
+            }
+
+
+            .brand-title {
+
+                font-size:
+                    23px;
+
+            }
+
+
+            .brand-mark {
+
+                width:
+                    46px;
+
+                height:
+                    46px;
+
+                border-radius:
+                    14px;
+
+                font-size:
+                    25px;
+
+            }
+
+
+            .header-description {
+
+                font-size:
+                    13px;
+
+            }
+
+
+            .welcome {
+
+                flex-direction:
+                    column;
+
+                gap:
+                    10px;
+
+            }
+
 
             .portal-grid {
-                grid-template-columns: 1fr;
+
+                grid-template-columns:
+                    1fr;
+
             }
 
 
             .portal-card {
-                min-height: 105px;
+
+                min-height:
+                    112px;
+
+            }
+
+
+            .role-list {
+
+                grid-template-columns:
+                    1fr;
+
+            }
+
+
+            .section-heading p {
+
+                display:
+                    none;
+
             }
 
         }
@@ -265,15 +1152,54 @@
 <body>
 
 
-<header>
+<header class="site-header">
 
-    <h1>
-        ⛏️ 矿山管理系统
-    </h1>
+    <div class="header-inner">
 
-    <p>
-        Mine Management System
-    </p>
+        <div class="brand-line">
+
+            <div class="brand-mark">
+                ⛏️
+            </div>
+
+            <div>
+
+                <h1 class="brand-title">
+                    矿山管理系统
+                </h1>
+
+                <p class="brand-subtitle">
+                    Mine Operations Management System
+                </p>
+
+            </div>
+
+        </div>
+
+
+        <p class="header-description">
+            面向矿山现场的人员、生产、车辆、设备与管理岗位统一入口。
+            系统根据人员审核状态自动进入登记、等待审核或对应工作页面。
+        </p>
+
+
+        <div class="header-tags">
+
+            <span class="header-tag">
+                人员统一登记
+            </span>
+
+            <span class="header-tag">
+                管理员审核
+            </span>
+
+            <span class="header-tag">
+                岗位自动分流
+            </span>
+
+        </div>
+
+    </div>
 
 </header>
 
@@ -283,26 +1209,43 @@
 
     <section class="welcome">
 
-        <p class="welcome-title">
-            请选择您的工作岗位
-        </p>
+        <div>
 
-        <p class="welcome-text">
+            <p class="welcome-title">
+                请选择您的工作岗位
+            </p>
 
-            首次使用需要填写个人资料并提交管理员审核。
+            <p class="welcome-text">
+                首次使用需填写个人资料并提交管理员审核。
+                审核通过后，再次选择自己的岗位即可进入对应工作页面。
+                总经理和管理员需进行二次权限验证。
+            </p>
 
-            审核通过后，再次点击自己的岗位即可进入对应工作页面。
+        </div>
 
-        </p>
+
+        <span class="welcome-badge">
+            正式入口
+        </span>
 
     </section>
 
 
+    <div class="section-heading">
+
+        <h2>
+            岗位入口
+        </h2>
+
+        <p>
+            请选择与本人实际岗位一致的入口
+        </p>
+
+    </div>
+
 
     <section class="portal-grid">
 
-
-        <!-- 挖机司机 -->
 
         <button
             type="button"
@@ -319,14 +1262,11 @@
             </span>
 
             <span class="portal-subtitle">
-                挖掘机作业端
+                挖掘机装车与生产作业端
             </span>
 
         </button>
 
-
-
-        <!-- 汽车司机 -->
 
         <button
             type="button"
@@ -343,14 +1283,11 @@
             </span>
 
             <span class="portal-subtitle">
-                运输车辆司机端
+                运输车辆作业与运输记录
             </span>
 
         </button>
 
-
-
-        <!-- 辅助车辆 -->
 
         <button
             type="button"
@@ -363,18 +1300,15 @@
             </span>
 
             <span class="portal-title">
-                辅助车辆司机
+                辅助车辆
             </span>
 
             <span class="portal-subtitle">
-                铲车 · 加油车 · 大巴 · 平路机等
+                铲车 · 加油车 · 大巴 · 平路机 · 洒水车 · 推土机
             </span>
 
         </button>
 
-
-
-        <!-- 调度 -->
 
         <button
             type="button"
@@ -391,14 +1325,11 @@
             </span>
 
             <span class="portal-subtitle">
-                生产任务与车辆调度
+                生产任务、车辆调度与异常管理
             </span>
 
         </button>
 
-
-
-        <!-- 维修 -->
 
         <button
             type="button"
@@ -421,9 +1352,6 @@
         </button>
 
 
-
-        <!-- 中层管理 -->
-
         <button
             type="button"
             class="portal-card"
@@ -439,18 +1367,15 @@
             </span>
 
             <span class="portal-subtitle">
-                测量 · 安全 · 统计 · 会计 · 后勤等
+                测量 · 安全 · 统计 · 会计 · 后勤 · 库房管理
             </span>
 
         </button>
 
 
-
-        <!-- 总经理 -->
-
         <button
             type="button"
-            class="portal-card"
+            class="portal-card protected"
             onclick="selectPosition('总经理')"
         >
 
@@ -463,18 +1388,15 @@
             </span>
 
             <span class="portal-subtitle">
-                高权限管理与审批
+                经营驾驶舱、审批与综合管理
             </span>
 
         </button>
 
 
-
-        <!-- 管理员 -->
-
         <button
             type="button"
-            class="portal-card admin-card"
+            class="portal-card protected admin-card"
             onclick="selectPosition('管理员')"
         >
 
@@ -487,7 +1409,7 @@
             </span>
 
             <span class="portal-subtitle">
-                人员审核与基础资料管理
+                人员审核、基础资料与系统管理
             </span>
 
         </button>
@@ -496,18 +1418,22 @@
     </section>
 
 
+    <div class="helper-note">
+        系统会自动识别当前浏览器中的人员资料状态：
+        未登记进入人员登记页；
+        待审核进入审核等待页；
+        已审核进入对应岗位工作页。
+        请不要选择与本人实际岗位不一致的入口。
+    </div>
+
+
 </main>
 
 
 <footer>
-    矿山管理系统 · 首页 V2.10.0E
+    矿山管理系统 · 首页最终优化版 V2.10.2C
 </footer>
 
-
-
-<!-- =====================================================
-     岗位选择弹窗
-===================================================== -->
 
 <div
     class="modal"
@@ -516,7 +1442,6 @@
 >
 
     <div class="modal-card">
-
 
         <div class="modal-header">
 
@@ -527,11 +1452,11 @@
                 选择岗位
             </h2>
 
-
             <button
                 type="button"
                 class="close-btn"
                 onclick="closeRoleModal()"
+                aria-label="关闭"
             >
                 ×
             </button>
@@ -545,112 +1470,73 @@
         >
         </div>
 
-
     </div>
 
 </div>
 
 
-
 <script>
+
+/* 首页最终优化版 V2.10.2C：保留原登记 / 审核 / 分流 / 高权限验证业务逻辑 */
 
 "use strict";
 
 
-/* =========================================================
-   岗位页面
-
-   V2.10.0E
-
-   正式维修岗位只保留：
-
-   维修管理 → maintenance.html
-
-   维修员 → maintenance-worker.html
-========================================================= */
-
 const POSITION_PAGES = {
-
 
     "挖机司机":
         "excavator.html",
 
-
     "汽车司机":
         "driver-work.html",
-
 
     "铲车司机":
         "auxiliary.html",
 
-
     "加油车司机":
         "fuel.html",
-
 
     "大巴司机":
         "auxiliary.html",
 
-
     "平路机司机":
         "auxiliary.html",
-
 
     "洒水车司机":
         "auxiliary.html",
 
-
     "推土机司机":
         "auxiliary.html",
-
 
     "车队长":
         "dispatch.html",
 
-
-
-    /* =====================================================
-       维修端
-
-       正式只保留两个端口
-    ====================================================== */
-
     "维修管理":
         "maintenance.html",
-
 
     "维修员":
         "maintenance-worker.html",
 
-
-
     "测量员":
         "management.html",
-
 
     "安全员":
         "management.html",
 
-
     "统计":
         "management.html",
-
 
     "会计":
         "management.html",
 
-
     "后勤":
         "management.html",
-
 
     "库房管理":
         "warehouse.html",
 
-
     "总经理":
         "general-manager.html",
-
 
     "管理员":
         "admin-review.html"
@@ -658,78 +1544,42 @@ const POSITION_PAGES = {
 };
 
 
-
-/* =========================================================
-   二次密码验证岗位
-
-   只有：
-   总经理
-   管理员
-========================================================= */
-
 const PASSWORD_PROTECTED_POSITIONS = [
-
     "总经理",
-
     "管理员"
-
 ];
 
 
-
-/* =========================================================
-   岗位分组
-========================================================= */
-
 const ROLE_GROUPS = {
-
 
     auxiliary: {
 
         title:
             "选择辅助车辆岗位",
 
-
         roles: [
-
             "铲车司机",
-
             "加油车司机",
-
             "大巴司机",
-
             "平路机司机",
-
             "洒水车司机",
-
             "推土机司机"
-
         ]
 
     },
 
-
-
-    /* =====================================================
-       维修岗位只显示两个正式入口
-    ====================================================== */
 
     maintenance: {
 
         title:
             "选择维修岗位",
 
-
         roles: [
-
             "维修管理",
-
             "维修员"
-
         ]
 
     },
-
 
 
     management: {
@@ -737,21 +1587,13 @@ const ROLE_GROUPS = {
         title:
             "选择中层管理岗位",
 
-
         roles: [
-
             "测量员",
-
             "安全员",
-
             "统计",
-
             "会计",
-
             "后勤",
-
             "库房管理"
-
         ]
 
     }
@@ -759,76 +1601,39 @@ const ROLE_GROUPS = {
 };
 
 
-
-/* =========================================================
-   岗位标准化
-
-   新系统正式名称：
-
-   维修管理
-   维修员
-
-   老名称只用于兼容历史数据。
-========================================================= */
-
-function normalizePosition(
-    position
-) {
-
+function normalizePosition(position) {
 
     const map = {
-
 
         "卡车司机":
             "汽车司机",
 
-
         "装载机司机":
             "铲车司机",
-
 
         "大巴":
             "大巴司机",
 
-
         "测量人员":
             "测量员",
-
 
         "后勤人员":
             "后勤",
 
-
         "库房管理员":
             "库房管理",
-
-
-
-        /* =================================================
-           维修管理旧名称
-        ================================================= */
 
         "维修管理员":
             "维修管理",
 
-
         "修理厂管理员":
             "维修管理",
-
-
-
-        /* =================================================
-           维修员旧名称
-        ================================================= */
 
         "修理工":
             "维修员",
 
-
         "维修人员":
             "维修员",
-
-
 
         "调度员":
             "车队长"
@@ -837,34 +1642,17 @@ function normalizePosition(
 
 
     return (
-
-        map[
-            position
-        ]
-
-        ||
-
-        position
-
-        ||
-
+        map[position] ||
+        position ||
         ""
-
     );
 
 }
 
 
-
-/* =========================================================
-   人员资料
-========================================================= */
-
 function getPersonnelRecords() {
 
-
     try {
-
 
         const data =
             JSON.parse(
@@ -874,17 +1662,12 @@ function getPersonnelRecords() {
             );
 
 
-        return Array.isArray(
-            data
-        )
+        return Array.isArray(data)
             ? data
             : [];
 
 
-    } catch (
-        error
-    ) {
-
+    } catch (error) {
 
         console.error(
             "人员资料读取失败：",
@@ -899,33 +1682,15 @@ function getPersonnelRecords() {
 }
 
 
-
-/* =========================================================
-   获取人员ID
-========================================================= */
-
-function getPersonId(
-    person
-) {
-
+function getPersonId(person) {
 
     return (
 
-        person?.personId
+        person?.personId ||
 
-        ||
+        person?.driverId ||
 
-        person?.driverId
-
-        ||
-
-        person?.employeeId
-
-        ||
-
-        person?.id
-
-        ||
+        person?.id ||
 
         ""
 
@@ -934,36 +1699,18 @@ function getPersonId(
 }
 
 
+function getApprovalState(person) {
 
-/* =========================================================
-   审核状态
-========================================================= */
-
-function getApprovalState(
-    person
-) {
-
-
-    if (
-        !person
-    ) {
+    if (!person) {
 
         return "missing";
 
     }
 
 
-
     if (
-
-        person.status ===
-            "rejected"
-
-        ||
-
-        person.approvalStatus ===
-            "rejected"
-
+        person.status === "rejected" ||
+        person.approvalStatus === "rejected"
     ) {
 
         return "rejected";
@@ -971,27 +1718,11 @@ function getApprovalState(
     }
 
 
-
     if (
-
-        person.status ===
-            "disabled"
-
-        ||
-
-        person.status ===
-            "resigned"
-
-        ||
-
-        person.personnelStatus ===
-            "停用"
-
-        ||
-
-        person.personnelStatus ===
-            "离职"
-
+        person.status === "disabled" ||
+        person.status === "resigned" ||
+        person.personnelStatus === "停用" ||
+        person.personnelStatus === "离职"
     ) {
 
         return "disabled";
@@ -999,43 +1730,28 @@ function getApprovalState(
     }
 
 
-
     const approved = (
 
         person.approvalStatus ===
-            "approved"
-
-        ||
+            "approved" ||
 
         person.status ===
-            "approved"
-
-        ||
+            "approved" ||
 
         person.status ===
-            "active"
-
-        ||
+            "active" ||
 
         person.status ===
-            "working"
-
-        ||
+            "working" ||
 
         person.status ===
-            "leave"
-
-        ||
+            "leave" ||
 
         person.personnelStatus ===
-            "在职可用"
-
-        ||
+            "在职可用" ||
 
         person.personnelStatus ===
-            "作业中"
-
-        ||
+            "作业中" ||
 
         person.personnelStatus ===
             "请假"
@@ -1043,9 +1759,7 @@ function getApprovalState(
     );
 
 
-    if (
-        approved
-    ) {
+    if (approved) {
 
         return "approved";
 
@@ -1057,45 +1771,33 @@ function getApprovalState(
 }
 
 
-
 /* =========================================================
-   是否已经存在管理员
+   是否已经存在已审核管理员
 ========================================================= */
 
 function hasApprovedAdministrator() {
 
-
     return getPersonnelRecords()
         .some(
-
             person =>
 
                 normalizePosition(
                     person.position
-                ) ===
-                    "管理员"
-
-                &&
+                ) === "管理员" &&
 
                 getApprovalState(
                     person
-                ) ===
-                    "approved"
-
+                ) === "approved"
         );
 
 }
-
 
 
 /* =========================================================
    查找当前岗位人员
 ========================================================= */
 
-function findCurrentProfile(
-    position
-) {
-
+function findCurrentProfile(position) {
 
     const normalizedPosition =
         normalizePosition(
@@ -1113,39 +1815,23 @@ function findCurrentProfile(
         );
 
 
-
-    /*
-     * 优先使用当前人员ID
-     */
-
-    if (
-        currentPersonId
-    ) {
-
+    if (currentPersonId) {
 
         const person =
             records.find(
-
                 item =>
 
-                    getPersonId(
-                        item
-                    ) ===
-                        currentPersonId
-
-                    &&
+                    getPersonId(item) ===
+                        currentPersonId &&
 
                     normalizePosition(
                         item.position
                     ) ===
                         normalizedPosition
-
             );
 
 
-        if (
-            person
-        ) {
+        if (person) {
 
             return person;
 
@@ -1154,35 +1840,21 @@ function findCurrentProfile(
     }
 
 
-
-    /*
-     * 当前 localStorage 测试阶段：
-     *
-     * 如果当前岗位只有一名人员，
-     * 自动识别。
-     */
-
     const samePosition =
         records.filter(
-
             item =>
-
                 normalizePosition(
                     item.position
                 ) ===
                     normalizedPosition
-
         );
 
 
     if (
-        samePosition.length ===
-        1
+        samePosition.length === 1
     ) {
 
-        return samePosition[
-            0
-        ];
+        return samePosition[0];
 
     }
 
@@ -1192,15 +1864,11 @@ function findCurrentProfile(
 }
 
 
-
 /* =========================================================
-   选择岗位
+   点击岗位
 ========================================================= */
 
-function selectPosition(
-    position
-) {
-
+function selectPosition(position) {
 
     const normalizedPosition =
         normalizePosition(
@@ -1208,9 +1876,7 @@ function selectPosition(
         );
 
 
-    if (
-        !normalizedPosition
-    ) {
+    if (!normalizedPosition) {
 
         return;
 
@@ -1220,47 +1886,31 @@ function selectPosition(
     closeRoleModal();
 
 
-
-    /*
-     * 保存的永远是标准岗位名称。
-     *
-     * 例如：
-     *
-     * 修理工
-     * ↓
-     * 维修员
-     */
-
     localStorage.setItem(
         "selectedPosition",
         normalizedPosition
     );
 
 
-
     /* =====================================================
-       第一个管理员特殊入口
+       首个管理员特殊入口
 
-       系统没有已审核管理员时：
+       如果系统当前没有任何已审核管理员：
 
-       点击管理员
-       →
+       点击“管理员”
+       不进入注册页
+       直接进入管理员密码验证页。
+
        management-login.html
-
-       由管理员密码流程建立第一个管理员。
+       会负责建立首个管理员。
     ====================================================== */
 
     if (
-
         normalizedPosition ===
-            "管理员"
-
-        &&
+            "管理员" &&
 
         !hasApprovedAdministrator()
-
     ) {
-
 
         clearManagementSession();
 
@@ -1278,9 +1928,7 @@ function selectPosition(
 
         location.href =
 
-            "management-login.html?position="
-
-            +
+            "management-login.html?position=" +
 
             encodeURIComponent(
                 "管理员"
@@ -1290,7 +1938,6 @@ function selectPosition(
         return;
 
     }
-
 
 
     const person =
@@ -1305,25 +1952,23 @@ function selectPosition(
         );
 
 
+    /*
+       没有档案：
 
-    /* =====================================================
-       没有注册资料
-    ====================================================== */
+       普通人员和后续管理员
+       都进入统一人员登记页。
+    */
 
     if (
-        state ===
-        "missing"
+        state === "missing"
     ) {
-
 
         clearManagementSession();
 
 
         location.href =
 
-            "person-register.html?position="
-
-            +
+            "person-register.html?position=" +
 
             encodeURIComponent(
                 normalizedPosition
@@ -1335,17 +1980,13 @@ function selectPosition(
     }
 
 
-
     const personId =
         getPersonId(
             person
         );
 
 
-    if (
-        personId
-    ) {
-
+    if (personId) {
 
         localStorage.setItem(
             "currentPersonId",
@@ -1355,31 +1996,20 @@ function selectPosition(
     }
 
 
-
-    /* =====================================================
-       已驳回
-    ====================================================== */
-
     if (
-        state ===
-        "rejected"
+        state === "rejected"
     ) {
-
 
         clearManagementSession();
 
 
         location.href =
 
-            "person-register.html?position="
-
-            +
+            "person-register.html?position=" +
 
             encodeURIComponent(
                 normalizedPosition
-            )
-
-            +
+            ) +
 
             "&rejected=1";
 
@@ -1389,16 +2019,9 @@ function selectPosition(
     }
 
 
-
-    /* =====================================================
-       停用 / 离职
-    ====================================================== */
-
     if (
-        state ===
-        "disabled"
+        state === "disabled"
     ) {
-
 
         clearManagementSession();
 
@@ -1413,25 +2036,16 @@ function selectPosition(
     }
 
 
-
-    /* =====================================================
-       等待管理员审核
-    ====================================================== */
-
     if (
-        state ===
-        "pending"
+        state === "pending"
     ) {
-
 
         clearManagementSession();
 
 
         location.href =
 
-            "person-waiting.html?position="
-
-            +
+            "person-waiting.html?position=" +
 
             encodeURIComponent(
                 normalizedPosition
@@ -1443,16 +2057,9 @@ function selectPosition(
     }
 
 
-
-    /* =====================================================
-       已审核
-    ====================================================== */
-
     if (
-        state ===
-        "approved"
+        state === "approved"
     ) {
-
 
         enterApprovedPosition(
             person,
@@ -1464,7 +2071,6 @@ function selectPosition(
 }
 
 
-
 /* =========================================================
    审核通过后进入岗位
 ========================================================= */
@@ -1474,23 +2080,13 @@ function enterApprovedPosition(
     position
 ) {
 
-
-    const normalizedPosition =
-        normalizePosition(
-            position
-        );
-
-
     const personId =
         getPersonId(
             person
         );
 
 
-    if (
-        !personId
-    ) {
-
+    if (!personId) {
 
         alert(
             "当前人员缺少人员ID，请重新提交人员资料。"
@@ -1502,7 +2098,6 @@ function enterApprovedPosition(
     }
 
 
-
     localStorage.setItem(
         "currentPersonId",
         personId
@@ -1511,40 +2106,28 @@ function enterApprovedPosition(
 
     localStorage.setItem(
         "selectedPosition",
-        normalizedPosition
+        position
     );
 
 
-
-    /* =====================================================
-       总经理 / 管理员
-       需要二次密码验证
-    ====================================================== */
-
     if (
         PASSWORD_PROTECTED_POSITIONS.includes(
-            normalizedPosition
+            position
         )
     ) {
-
 
         if (
             hasValidManagementSession(
                 personId,
-                normalizedPosition
+                position
             )
         ) {
 
-
             const page =
-                POSITION_PAGES[
-                    normalizedPosition
-                ];
+                POSITION_PAGES[position];
 
 
-            if (
-                page
-            ) {
+            if (page) {
 
                 location.href =
                     page;
@@ -1557,7 +2140,6 @@ function enterApprovedPosition(
         }
 
 
-
         localStorage.setItem(
             "pendingProtectedPersonId",
             personId
@@ -1566,18 +2148,16 @@ function enterApprovedPosition(
 
         localStorage.setItem(
             "pendingProtectedPosition",
-            normalizedPosition
+            position
         );
 
 
         location.href =
 
-            "management-login.html?position="
-
-            +
+            "management-login.html?position=" +
 
             encodeURIComponent(
-                normalizedPosition
+                position
             );
 
 
@@ -1586,24 +2166,14 @@ function enterApprovedPosition(
     }
 
 
-
-    /* =====================================================
-       普通岗位直接进入对应工作端
-    ====================================================== */
-
     clearManagementSession();
 
 
     const page =
-        POSITION_PAGES[
-            normalizedPosition
-        ];
+        POSITION_PAGES[position];
 
 
-    if (
-        !page
-    ) {
-
+    if (!page) {
 
         alert(
             "该岗位工作页面正在建设中。"
@@ -1621,9 +2191,8 @@ function enterApprovedPosition(
 }
 
 
-
 /* =========================================================
-   管理会话
+   检查管理会话
 ========================================================= */
 
 function hasValidManagementSession(
@@ -1631,9 +2200,7 @@ function hasValidManagementSession(
     position
 ) {
 
-
     try {
-
 
         const session =
             JSON.parse(
@@ -1643,9 +2210,7 @@ function hasValidManagementSession(
             );
 
 
-        if (
-            !session
-        ) {
+        if (!session) {
 
             return false;
 
@@ -1654,24 +2219,17 @@ function hasValidManagementSession(
 
         return (
 
-            session.verified ===
-                true
-
-            &&
+            session.verified === true &&
 
             session.personId ===
-                personId
-
-            &&
+                personId &&
 
             normalizePosition(
                 session.position
             ) ===
                 normalizePosition(
                     position
-                )
-
-            &&
+                ) &&
 
             Number(
                 session.expiresAt
@@ -1681,10 +2239,7 @@ function hasValidManagementSession(
         );
 
 
-    } catch (
-        error
-    ) {
-
+    } catch (error) {
 
         sessionStorage.removeItem(
             "managementSession"
@@ -1698,13 +2253,11 @@ function hasValidManagementSession(
 }
 
 
-
 /* =========================================================
    清理管理会话
 ========================================================= */
 
 function clearManagementSession() {
-
 
     sessionStorage.removeItem(
         "managementSession"
@@ -1723,25 +2276,17 @@ function clearManagementSession() {
 }
 
 
-
 /* =========================================================
-   打开岗位弹窗
+   打开岗位选择弹窗
 ========================================================= */
 
-function openRoleModal(
-    groupName
-) {
-
+function openRoleModal(groupName) {
 
     const group =
-        ROLE_GROUPS[
-            groupName
-        ];
+        ROLE_GROUPS[groupName];
 
 
-    if (
-        !group
-    ) {
+    if (!group) {
 
         return;
 
@@ -1763,7 +2308,6 @@ function openRoleModal(
     container.innerHTML =
         group.roles
             .map(
-
                 role => `
 
                     <button
@@ -1775,11 +2319,8 @@ function openRoleModal(
                     </button>
 
                 `
-
             )
-            .join(
-                ""
-            );
+            .join("");
 
 
     document.getElementById(
@@ -1791,13 +2332,11 @@ function openRoleModal(
 }
 
 
-
 /* =========================================================
    关闭岗位弹窗
 ========================================================= */
 
 function closeRoleModal() {
-
 
     document.getElementById(
         "roleModal"
@@ -1808,15 +2347,11 @@ function closeRoleModal() {
 }
 
 
-
 /* =========================================================
    点击背景关闭
 ========================================================= */
 
-function handleModalBackground(
-    event
-) {
-
+function handleModalBackground(event) {
 
     if (
         event.target.id ===
@@ -1830,23 +2365,16 @@ function handleModalBackground(
 }
 
 
-
 /* =========================================================
    ESC关闭
 ========================================================= */
 
 document.addEventListener(
-
     "keydown",
-
-    function (
-        event
-    ) {
-
+    function(event) {
 
         if (
-            event.key ===
-            "Escape"
+            event.key === "Escape"
         ) {
 
             closeRoleModal();
@@ -1854,12 +2382,10 @@ document.addEventListener(
         }
 
     }
-
 );
 
 </script>
 
 
 </body>
-
 </html>
