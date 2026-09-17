@@ -70,6 +70,154 @@
             font-size: 12px;
             font-weight: 700;
         }
+
+        /* =====================================================
+           V2.10.2D 运输区域管理
+        ====================================================== */
+
+        .transport-zone-note {
+            margin: 10px 0 14px;
+            padding: 12px 14px;
+            border: 1px solid #bfdbfe;
+            border-radius: 12px;
+            background: #eff6ff;
+            color: #1e40af;
+            font-size: 13px;
+            line-height: 1.7;
+        }
+
+        .zone-form-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 12px;
+        }
+
+        .zone-form-grid .full-row {
+            grid-column: 1 / -1;
+        }
+
+        .zone-location-box {
+            margin-top: 10px;
+            padding: 12px;
+            border-radius: 12px;
+            background: #f8fafc;
+            color: #475569;
+            font-size: 13px;
+            line-height: 1.75;
+        }
+
+        .zone-location-box strong {
+            color: #0f172a;
+        }
+
+        .zone-list-card {
+            margin-top: 10px;
+            padding: 13px;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            background: #ffffff;
+        }
+
+        .zone-list-top {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+        .zone-list-title {
+            font-weight: 800;
+            color: #0f172a;
+        }
+
+        .zone-list-info {
+            margin-top: 7px;
+            color: #64748b;
+            font-size: 12px;
+            line-height: 1.7;
+        }
+
+        .zone-type-badge {
+            flex: 0 0 auto;
+            padding: 5px 8px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .zone-type-load {
+            background: #dbeafe;
+            color: #1d4ed8;
+        }
+
+        .zone-type-unload {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .zone-selector-box {
+            margin: 10px 0 14px;
+            padding: 12px;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            background: #f8fafc;
+        }
+
+        .zone-selector-title {
+            margin-bottom: 8px;
+            font-size: 13px;
+            font-weight: 800;
+            color: #334155;
+        }
+
+        .unload-zone-options {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 8px;
+        }
+
+        .unload-zone-option {
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+            padding: 10px;
+            border: 1px solid #cbd5e1;
+            border-radius: 10px;
+            background: #ffffff;
+            cursor: pointer;
+        }
+
+        .unload-zone-option input {
+            width: auto;
+            margin-top: 3px;
+        }
+
+        .unload-zone-option strong {
+            display: block;
+            font-size: 13px;
+        }
+
+        .unload-zone-option span {
+            display: block;
+            margin-top: 3px;
+            color: #64748b;
+            font-size: 11px;
+        }
+
+        .zone-empty {
+            padding: 16px 10px;
+            text-align: center;
+            color: #94a3b8;
+            font-size: 13px;
+        }
+
+        @media (max-width: 700px) {
+            .zone-form-grid,
+            .unload-zone-options {
+                grid-template-columns: 1fr;
+            }
+        }
+
     </style>
 </head>
 
@@ -83,7 +231,7 @@
         </div>
 
         <div class="dispatch-header-badge">
-            📋 调度端 V2.10.0O
+            📋 调度端 V2.10.2D
         </div>
     </div>
 </header>
@@ -206,6 +354,10 @@
                     👔 总经理审批
                 </button>
 
+                <button id="transportZoneButton" type="button" class="management-button">
+                    📍 运输区域管理
+                </button>
+
                 <button id="historyTaskButton" type="button" class="history-button">
                     📚 历史任务
                 </button>
@@ -308,11 +460,50 @@
         <label for="taskArea">作业区域 *</label>
         <input id="taskArea" type="text" placeholder="例如：马西四采区">
 
-        <label for="taskLoadingPoint">装载点</label>
-        <input id="taskLoadingPoint" type="text" placeholder="例如：马西四采区工作面">
+        <div class="zone-selector-box">
 
-        <label for="taskUnloadingPoint">卸载点</label>
-        <input id="taskUnloadingPoint" type="text" placeholder="例如：4H煤场 / 排土场">
+            <div class="zone-selector-title">
+                装载区域 *
+            </div>
+
+            <select id="taskLoadingZoneSelect">
+                <option value="">请选择已保存的装载区域</option>
+            </select>
+
+            <!--
+                保留旧字段供现有 js/dispatch.js 使用。
+                新版界面选择区域后自动写入该字段。
+            -->
+            <input
+                id="taskLoadingPoint"
+                type="hidden"
+            >
+
+        </div>
+
+
+        <div class="zone-selector-box">
+
+            <div class="zone-selector-title">
+                允许卸载区域（可多选） *
+            </div>
+
+            <div id="taskUnloadZoneOptions" class="unload-zone-options">
+                <div class="zone-empty">
+                    请先在“运输区域管理”中建立卸载区
+                </div>
+            </div>
+
+            <!--
+                兼容旧任务结构：
+                多个卸载区名称以“、”连接保存。
+            -->
+            <input
+                id="taskUnloadingPoint"
+                type="hidden"
+            >
+
+        </div>
 
         <label for="taskRemark">调度说明</label>
         <textarea id="taskRemark" placeholder="输入调度要求"></textarea>
@@ -497,6 +688,160 @@
     </button>
 
 </main>
+
+
+<!-- =====================================================
+     V2.10.2D 运输区域管理
+===================================================== -->
+<div id="transportZoneModal" class="dispatch-modal hidden">
+
+    <div class="dispatch-modal-card large-modal">
+
+        <h3>📍 运输区域管理</h3>
+
+        <div class="transport-zone-note">
+            调度人员到区域中心位置后获取当前 GPS 并保存。
+            装载区只表示装车位置，不设置物料；
+            卸载区必须设置物料类型。
+            司机后续进入装载区点击“开始装车”，进入卸载区点击“开始卸料”，
+            最终运输物料由所在卸载区自动判断。
+        </div>
+
+
+        <div class="zone-form-grid">
+
+            <div>
+                <label for="zoneName">区域名称 *</label>
+                <input
+                    id="zoneName"
+                    type="text"
+                    placeholder="例如：山2采区1450装载区 / 7号煤场"
+                >
+            </div>
+
+
+            <div>
+                <label for="zoneType">区域类型 *</label>
+                <select id="zoneType">
+                    <option value="loading">装载区</option>
+                    <option value="unloading">卸载区</option>
+                </select>
+            </div>
+
+
+            <div id="zoneMaterialField">
+                <label for="zoneMaterialType">卸载物料类型 *</label>
+                <input
+                    id="zoneMaterialType"
+                    type="text"
+                    placeholder="例如：渣 / B煤 / 原煤"
+                >
+            </div>
+
+
+            <div>
+                <label for="zoneRadius">有效半径（米） *</label>
+                <input
+                    id="zoneRadius"
+                    type="number"
+                    min="10"
+                    step="10"
+                    value="80"
+                >
+            </div>
+
+
+            <div class="full-row">
+                <label for="zoneRemark">备注</label>
+                <textarea
+                    id="zoneRemark"
+                    placeholder="区域用途、注意事项等"
+                ></textarea>
+            </div>
+
+        </div>
+
+
+        <div class="zone-location-box">
+
+            <div>
+                纬度：
+                <strong id="zoneLatitude">-</strong>
+            </div>
+
+            <div>
+                经度：
+                <strong id="zoneLongitude">-</strong>
+            </div>
+
+            <div>
+                GPS 精度：
+                <strong id="zoneGpsAccuracy">-</strong>
+            </div>
+
+            <div>
+                定位时间：
+                <strong id="zoneGpsTime">-</strong>
+            </div>
+
+        </div>
+
+
+        <div class="modal-action-row">
+
+            <button
+                id="captureZoneLocationButton"
+                class="primary-button"
+                type="button"
+            >
+                📍 获取当前位置作为区域中心
+            </button>
+
+            <button
+                id="saveTransportZoneButton"
+                class="success-button"
+                type="button"
+            >
+                保存区域
+            </button>
+
+        </div>
+
+
+        <div style="margin-top:18px;">
+
+            <div class="dispatch-section-title">
+                <div>
+                    <h3 style="margin:0;">已保存区域</h3>
+                    <p>同一任务可选择 1 个装载区和多个卸载区</p>
+                </div>
+
+                <span id="transportZoneCount" class="count-badge">
+                    0 个区域
+                </span>
+            </div>
+
+            <div id="transportZoneList">
+                <div class="zone-empty">
+                    暂无运输区域
+                </div>
+            </div>
+
+        </div>
+
+
+        <button
+            id="closeTransportZoneModal"
+            class="secondary-button full-button"
+            type="button"
+            style="margin-top:14px;"
+        >
+            关闭
+        </button>
+
+    </div>
+
+</div>
 
 
 <!-- 任务详情 -->
@@ -717,7 +1062,7 @@
 
 
 <footer>
-    矿山管理系统 · 调度端 V2.10.0O
+    矿山管理系统 · 调度端 V2.10.2D
 </footer>
 
 <script src="js/dispatch.js?v=2.9.3"></script>
@@ -726,7 +1071,7 @@
 "use strict";
 
 /* =========================================================
-   V2.10.0O
+   V2.10.2D
    调度端维修审批接入
    本段独立于现有 js/dispatch.js，
    不影响原生产调度、换车、GPS、请假、罚单逻辑。
@@ -1496,6 +1841,1415 @@ setInterval(
     refreshMaintenanceReviewTodo,
     5000
 );
+
+
+
+/* =========================================================
+   V2.10.2D
+   运输区域管理 + 生产任务多卸载点兼容层
+
+   数据键：
+   transportZones
+
+   规则：
+   - 装载区不设置物料
+   - 卸载区设置 materialType
+   - 一个任务选择 1 个装载区 + 多个卸载区
+   - 兼容原 dispatch.js：
+     taskLoadingPoint 保存装载区名称
+     taskUnloadingPoint 保存多个卸载区名称（用 、 连接）
+========================================================= */
+
+const TRANSPORT_ZONE_KEY =
+    "transportZones";
+
+
+let currentTransportZoneLocation =
+    null;
+
+
+function readTransportZones() {
+
+    try {
+
+        const data =
+            JSON.parse(
+                localStorage.getItem(
+                    TRANSPORT_ZONE_KEY
+                )
+            );
+
+
+        return Array.isArray(
+            data
+        )
+            ? data
+            : [];
+
+    } catch (
+        error
+    ) {
+
+        console.error(
+            "读取运输区域失败：",
+            error
+        );
+
+
+        return [];
+    }
+}
+
+
+function saveTransportZones(
+    zones
+) {
+
+    localStorage.setItem(
+        TRANSPORT_ZONE_KEY,
+        JSON.stringify(
+            zones
+        )
+    );
+}
+
+
+function createTransportZoneId() {
+
+    return (
+        "ZONE_" +
+        Date.now() +
+        "_" +
+        Math.random()
+            .toString(36)
+            .slice(2, 8)
+    );
+}
+
+
+function openTransportZoneModal() {
+
+    renderTransportZoneList();
+
+    renderTaskZoneSelectors();
+
+    document
+        .getElementById(
+            "transportZoneModal"
+        )
+        ?.classList
+        .remove(
+            "hidden"
+        );
+}
+
+
+function closeTransportZoneModalFn() {
+
+    document
+        .getElementById(
+            "transportZoneModal"
+        )
+        ?.classList
+        .add(
+            "hidden"
+        );
+}
+
+
+function toggleZoneMaterialField() {
+
+    const type =
+        document
+            .getElementById(
+                "zoneType"
+            )
+            ?.value;
+
+
+    const field =
+        document
+            .getElementById(
+                "zoneMaterialField"
+            );
+
+
+    if (
+        field
+    ) {
+
+        field.style.display =
+            type === "unloading"
+                ? ""
+                : "none";
+    }
+
+
+    if (
+        type !== "unloading"
+    ) {
+
+        const material =
+            document
+                .getElementById(
+                    "zoneMaterialType"
+                );
+
+
+        if (
+            material
+        ) {
+
+            material.value =
+                "";
+        }
+    }
+}
+
+
+function captureTransportZoneLocation() {
+
+    if (
+        !navigator.geolocation
+    ) {
+
+        alert(
+            "当前浏览器不支持 GPS 定位。"
+        );
+
+        return;
+    }
+
+
+    const button =
+        document
+            .getElementById(
+                "captureZoneLocationButton"
+            );
+
+
+    if (
+        button
+    ) {
+
+        button.disabled =
+            true;
+
+        button.textContent =
+            "正在获取定位…";
+    }
+
+
+    navigator.geolocation
+        .getCurrentPosition(
+
+            position => {
+
+                currentTransportZoneLocation = {
+
+                    latitude:
+                        Number(
+                            position.coords.latitude
+                        ),
+
+                    longitude:
+                        Number(
+                            position.coords.longitude
+                        ),
+
+                    accuracy:
+                        Number(
+                            position.coords.accuracy ||
+                            0
+                        ),
+
+                    capturedAt:
+                        new Date()
+                            .toISOString()
+                };
+
+
+                document
+                    .getElementById(
+                        "zoneLatitude"
+                    )
+                    .textContent =
+                        currentTransportZoneLocation
+                            .latitude
+                            .toFixed(
+                                6
+                            );
+
+
+                document
+                    .getElementById(
+                        "zoneLongitude"
+                    )
+                    .textContent =
+                        currentTransportZoneLocation
+                            .longitude
+                            .toFixed(
+                                6
+                            );
+
+
+                document
+                    .getElementById(
+                        "zoneGpsAccuracy"
+                    )
+                    .textContent =
+                        currentTransportZoneLocation
+                            .accuracy
+                            .toFixed(
+                                1
+                            ) +
+                        " m";
+
+
+                document
+                    .getElementById(
+                        "zoneGpsTime"
+                    )
+                    .textContent =
+                        new Date(
+                            currentTransportZoneLocation
+                                .capturedAt
+                        )
+                            .toLocaleString(
+                                "zh-CN"
+                            );
+
+
+                if (
+                    button
+                ) {
+
+                    button.disabled =
+                        false;
+
+                    button.textContent =
+                        "📍 重新获取当前位置";
+                }
+
+            },
+
+            error => {
+
+                console.error(
+                    "区域定位失败：",
+                    error
+                );
+
+
+                if (
+                    button
+                ) {
+
+                    button.disabled =
+                        false;
+
+                    button.textContent =
+                        "📍 获取当前位置作为区域中心";
+                }
+
+
+                alert(
+                    "定位失败，请检查位置权限和手机 GPS 后重试。"
+                );
+            },
+
+            {
+                enableHighAccuracy:
+                    true,
+
+                timeout:
+                    15000,
+
+                maximumAge:
+                    0
+            }
+        );
+}
+
+
+function saveTransportZone() {
+
+    const name =
+        document
+            .getElementById(
+                "zoneName"
+            )
+            ?.value
+            .trim();
+
+
+    const type =
+        document
+            .getElementById(
+                "zoneType"
+            )
+            ?.value;
+
+
+    const materialType =
+        document
+            .getElementById(
+                "zoneMaterialType"
+            )
+            ?.value
+            .trim()
+        ||
+        "";
+
+
+    const radius =
+        Number(
+            document
+                .getElementById(
+                    "zoneRadius"
+                )
+                ?.value
+            ||
+            0
+        );
+
+
+    const remark =
+        document
+            .getElementById(
+                "zoneRemark"
+            )
+            ?.value
+            .trim()
+        ||
+        "";
+
+
+    if (
+        !name
+    ) {
+
+        alert(
+            "请输入区域名称。"
+        );
+
+        return;
+    }
+
+
+    if (
+        ![
+            "loading",
+            "unloading"
+        ]
+            .includes(
+                type
+            )
+    ) {
+
+        alert(
+            "请选择正确的区域类型。"
+        );
+
+        return;
+    }
+
+
+    if (
+        type === "unloading" &&
+        !materialType
+    ) {
+
+        alert(
+            "卸载区必须填写卸载物料类型。"
+        );
+
+        return;
+    }
+
+
+    if (
+        radius <
+        10
+    ) {
+
+        alert(
+            "区域有效半径不能小于 10 米。"
+        );
+
+        return;
+    }
+
+
+    if (
+        !currentTransportZoneLocation
+    ) {
+
+        alert(
+            "请先到区域中心位置获取 GPS 定位。"
+        );
+
+        return;
+    }
+
+
+    const zones =
+        readTransportZones();
+
+
+    const duplicate =
+        zones.some(
+            item =>
+                String(
+                    item.name ||
+                    ""
+                )
+                    .trim()
+                    .toLowerCase()
+                ===
+                name
+                    .toLowerCase()
+        );
+
+
+    if (
+        duplicate
+    ) {
+
+        alert(
+            "已经存在同名运输区域，请使用不同名称。"
+        );
+
+        return;
+    }
+
+
+    zones.push({
+
+        zoneId:
+            createTransportZoneId(),
+
+        name,
+
+        zoneType:
+            type,
+
+        materialType:
+            type === "unloading"
+                ? materialType
+                : "",
+
+        radius,
+
+        latitude:
+            currentTransportZoneLocation
+                .latitude,
+
+        longitude:
+            currentTransportZoneLocation
+                .longitude,
+
+        gpsAccuracy:
+            currentTransportZoneLocation
+                .accuracy,
+
+        remark,
+
+        enabled:
+            true,
+
+        createdAt:
+            new Date()
+                .toISOString(),
+
+        updatedAt:
+            new Date()
+                .toISOString()
+    });
+
+
+    saveTransportZones(
+        zones
+    );
+
+
+    document
+        .getElementById(
+            "zoneName"
+        )
+        .value =
+            "";
+
+
+    document
+        .getElementById(
+            "zoneMaterialType"
+        )
+        .value =
+            "";
+
+
+    document
+        .getElementById(
+            "zoneRemark"
+        )
+        .value =
+            "";
+
+
+    currentTransportZoneLocation =
+        null;
+
+
+    [
+        "zoneLatitude",
+        "zoneLongitude",
+        "zoneGpsAccuracy",
+        "zoneGpsTime"
+    ]
+        .forEach(
+            id => {
+
+                const element =
+                    document
+                        .getElementById(
+                            id
+                        );
+
+
+                if (
+                    element
+                ) {
+
+                    element.textContent =
+                        "-";
+                }
+            }
+        );
+
+
+    const captureButton =
+        document
+            .getElementById(
+                "captureZoneLocationButton"
+            );
+
+
+    if (
+        captureButton
+    ) {
+
+        captureButton.textContent =
+            "📍 获取当前位置作为区域中心";
+    }
+
+
+    renderTransportZoneList();
+
+    renderTaskZoneSelectors();
+
+
+    alert(
+        "运输区域已保存。"
+    );
+}
+
+
+function deleteTransportZone(
+    zoneId
+) {
+
+    const zones =
+        readTransportZones();
+
+
+    const item =
+        zones.find(
+            zone =>
+                String(
+                    zone.zoneId
+                ) ===
+                String(
+                    zoneId
+                )
+        );
+
+
+    if (
+        !item
+    ) {
+
+        return;
+    }
+
+
+    if (
+        !confirm(
+            "确认删除运输区域“" +
+            (
+                item.name ||
+                ""
+            ) +
+            "”？"
+        )
+    ) {
+
+        return;
+    }
+
+
+    saveTransportZones(
+        zones.filter(
+            zone =>
+                String(
+                    zone.zoneId
+                ) !==
+                String(
+                    zoneId
+                )
+        )
+    );
+
+
+    renderTransportZoneList();
+
+    renderTaskZoneSelectors();
+}
+
+
+function renderTransportZoneList() {
+
+    const box =
+        document
+            .getElementById(
+                "transportZoneList"
+            );
+
+
+    if (
+        !box
+    ) {
+
+        return;
+    }
+
+
+    const zones =
+        readTransportZones();
+
+
+    const count =
+        document
+            .getElementById(
+                "transportZoneCount"
+            );
+
+
+    if (
+        count
+    ) {
+
+        count.textContent =
+            zones.length +
+            " 个区域";
+    }
+
+
+    if (
+        !zones.length
+    ) {
+
+        box.innerHTML = `
+            <div class="zone-empty">
+                暂无运输区域，请到区域中心位置后创建。
+            </div>
+        `;
+
+        return;
+    }
+
+
+    box.innerHTML =
+        zones
+            .map(
+                item => {
+
+                    const isLoading =
+                        item.zoneType ===
+                        "loading";
+
+
+                    return `
+                        <div class="zone-list-card">
+
+                            <div class="zone-list-top">
+
+                                <div>
+                                    <div class="zone-list-title">
+                                        ${escapeTransportZoneHtml(item.name || "-")}
+                                    </div>
+
+                                    <div class="zone-list-info">
+                                        ${
+                                            isLoading
+                                                ? "装载区不预设物料"
+                                                : "卸载物料：" +
+                                                  escapeTransportZoneHtml(
+                                                      item.materialType ||
+                                                      "-"
+                                                  )
+                                        }
+
+                                        <br>
+
+                                        半径：
+                                        ${Number(item.radius || 0)} m
+
+                                        · GPS精度：
+                                        ${Number(item.gpsAccuracy || 0).toFixed(1)} m
+
+                                        <br>
+
+                                        坐标：
+                                        ${Number(item.latitude || 0).toFixed(6)},
+                                        ${Number(item.longitude || 0).toFixed(6)}
+                                    </div>
+                                </div>
+
+                                <span class="zone-type-badge ${
+                                    isLoading
+                                        ? "zone-type-load"
+                                        : "zone-type-unload"
+                                }">
+                                    ${
+                                        isLoading
+                                            ? "装载区"
+                                            : "卸载区"
+                                    }
+                                </span>
+
+                            </div>
+
+
+                            <div class="maintenance-review-actions">
+
+                                <button
+                                    type="button"
+                                    class="danger-button"
+                                    onclick="deleteTransportZone('${escapeTransportZoneJs(item.zoneId)}')"
+                                >
+                                    删除
+                                </button>
+
+                            </div>
+
+                        </div>
+                    `;
+                }
+            )
+            .join(
+                ""
+            );
+}
+
+
+function renderTaskZoneSelectors() {
+
+    const zones =
+        readTransportZones()
+            .filter(
+                item =>
+                    item.enabled !==
+                    false
+            );
+
+
+    const loadingSelect =
+        document
+            .getElementById(
+                "taskLoadingZoneSelect"
+            );
+
+
+    const unloadingBox =
+        document
+            .getElementById(
+                "taskUnloadZoneOptions"
+            );
+
+
+    if (
+        loadingSelect
+    ) {
+
+        const currentValue =
+            loadingSelect.value;
+
+
+        const loadingZones =
+            zones.filter(
+                item =>
+                    item.zoneType ===
+                    "loading"
+            );
+
+
+        loadingSelect.innerHTML =
+            `
+                <option value="">
+                    请选择已保存的装载区域
+                </option>
+            `
+            +
+            loadingZones
+                .map(
+                    item => `
+                        <option value="${escapeTransportZoneAttribute(item.zoneId)}">
+                            ${escapeTransportZoneHtml(item.name || "-")}
+                        </option>
+                    `
+                )
+                .join(
+                    ""
+                );
+
+
+        if (
+            loadingZones.some(
+                item =>
+                    String(
+                        item.zoneId
+                    ) ===
+                    String(
+                        currentValue
+                    )
+            )
+        ) {
+
+            loadingSelect.value =
+                currentValue;
+        }
+    }
+
+
+    if (
+        unloadingBox
+    ) {
+
+        const checkedIds =
+            new Set(
+                Array
+                    .from(
+                        unloadingBox.querySelectorAll(
+                            'input[type="checkbox"]:checked'
+                        )
+                    )
+                    .map(
+                        item =>
+                            String(
+                                item.value
+                            )
+                    )
+            );
+
+
+        const unloadingZones =
+            zones.filter(
+                item =>
+                    item.zoneType ===
+                    "unloading"
+            );
+
+
+        if (
+            !unloadingZones.length
+        ) {
+
+            unloadingBox.innerHTML = `
+                <div class="zone-empty">
+                    暂无卸载区域，请先建立煤场、渣场等卸载区。
+                </div>
+            `;
+
+        } else {
+
+            unloadingBox.innerHTML =
+                unloadingZones
+                    .map(
+                        item => `
+                            <label class="unload-zone-option">
+
+                                <input
+                                    type="checkbox"
+                                    class="task-unload-zone-checkbox"
+                                    value="${escapeTransportZoneAttribute(item.zoneId)}"
+                                    ${
+                                        checkedIds.has(
+                                            String(
+                                                item.zoneId
+                                            )
+                                        )
+                                            ? "checked"
+                                            : ""
+                                    }
+                                >
+
+                                <span>
+                                    <strong>
+                                        ${escapeTransportZoneHtml(item.name || "-")}
+                                    </strong>
+
+                                    <span>
+                                        物料：
+                                        ${escapeTransportZoneHtml(item.materialType || "-")}
+                                        · 半径：
+                                        ${Number(item.radius || 0)}m
+                                    </span>
+                                </span>
+
+                            </label>
+                        `
+                    )
+                    .join(
+                        ""
+                    );
+        }
+    }
+
+
+    syncTaskZoneCompatibilityFields();
+}
+
+
+function syncTaskZoneCompatibilityFields() {
+
+    const zones =
+        readTransportZones();
+
+
+    const loadingSelect =
+        document
+            .getElementById(
+                "taskLoadingZoneSelect"
+            );
+
+
+    const loadingZone =
+        zones.find(
+            item =>
+                String(
+                    item.zoneId
+                ) ===
+                String(
+                    loadingSelect?.value ||
+                    ""
+                )
+        );
+
+
+    const loadingInput =
+        document
+            .getElementById(
+                "taskLoadingPoint"
+            );
+
+
+    if (
+        loadingInput
+    ) {
+
+        loadingInput.value =
+            loadingZone?.name ||
+            "";
+
+        loadingInput.dataset.zoneId =
+            loadingZone?.zoneId ||
+            "";
+    }
+
+
+    const selectedUnloadIds =
+        Array
+            .from(
+                document
+                    .querySelectorAll(
+                        ".task-unload-zone-checkbox:checked"
+                    )
+            )
+            .map(
+                item =>
+                    String(
+                        item.value
+                    )
+            );
+
+
+    const selectedUnloadZones =
+        selectedUnloadIds
+            .map(
+                id =>
+                    zones.find(
+                        zone =>
+                            String(
+                                zone.zoneId
+                            ) ===
+                            id
+                    )
+            )
+            .filter(
+                Boolean
+            );
+
+
+    const unloadingInput =
+        document
+            .getElementById(
+                "taskUnloadingPoint"
+            );
+
+
+    if (
+        unloadingInput
+    ) {
+
+        unloadingInput.value =
+            selectedUnloadZones
+                .map(
+                    item =>
+                        item.name
+                )
+                .join(
+                    "、"
+                );
+
+        unloadingInput.dataset.zoneIds =
+            selectedUnloadZones
+                .map(
+                    item =>
+                        item.zoneId
+                )
+                .join(
+                    ","
+                );
+    }
+
+
+    /*
+     * 保存当前任务的区域选择快照。
+     * 后续 driver-work.html 接入 GPS 装卸逻辑时直接读取。
+     */
+    localStorage.setItem(
+        "pendingTransportZoneSelection",
+        JSON.stringify({
+
+            loadingZoneId:
+                loadingZone?.zoneId ||
+                "",
+
+            loadingZoneName:
+                loadingZone?.name ||
+                "",
+
+            unloadingZoneIds:
+                selectedUnloadZones
+                    .map(
+                        item =>
+                            item.zoneId
+                    ),
+
+            unloadingZones:
+                selectedUnloadZones
+                    .map(
+                        item => ({
+
+                            zoneId:
+                                item.zoneId,
+
+                            name:
+                                item.name,
+
+                            materialType:
+                                item.materialType,
+
+                            radius:
+                                item.radius,
+
+                            latitude:
+                                item.latitude,
+
+                            longitude:
+                                item.longitude
+                        })
+                    ),
+
+            updatedAt:
+                new Date()
+                    .toISOString()
+        })
+    );
+}
+
+
+function validateTaskZoneSelection() {
+
+    syncTaskZoneCompatibilityFields();
+
+
+    const loadingPoint =
+        document
+            .getElementById(
+                "taskLoadingPoint"
+            )
+            ?.value
+            .trim();
+
+
+    const unloadingPoint =
+        document
+            .getElementById(
+                "taskUnloadingPoint"
+            )
+            ?.value
+            .trim();
+
+
+    if (
+        !loadingPoint
+    ) {
+
+        alert(
+            "请选择一个装载区域。"
+        );
+
+        return false;
+    }
+
+
+    if (
+        !unloadingPoint
+    ) {
+
+        alert(
+            "请至少选择一个卸载区域。"
+        );
+
+        return false;
+    }
+
+
+    return true;
+}
+
+
+function escapeTransportZoneHtml(
+    value
+) {
+
+    const div =
+        document.createElement(
+            "div"
+        );
+
+
+    div.textContent =
+        String(
+            value ??
+            ""
+        );
+
+
+    return div.innerHTML;
+}
+
+
+function escapeTransportZoneAttribute(
+    value
+) {
+
+    return escapeTransportZoneHtml(
+        value
+    )
+        .replaceAll(
+            '"',
+            "&quot;"
+        );
+}
+
+
+function escapeTransportZoneJs(
+    value
+) {
+
+    return String(
+        value ??
+        ""
+    )
+        .replaceAll(
+            "\\",
+            "\\\\"
+        )
+        .replaceAll(
+            "'",
+            "\\'"
+        )
+        .replaceAll(
+            "\n",
+            "\\n"
+        )
+        .replaceAll(
+            "\r",
+            "\\r"
+        );
+}
+
+
+/* =========================================================
+   事件
+========================================================= */
+
+document
+    .getElementById(
+        "transportZoneButton"
+    )
+    ?.addEventListener(
+        "click",
+        openTransportZoneModal
+    );
+
+
+document
+    .getElementById(
+        "closeTransportZoneModal"
+    )
+    ?.addEventListener(
+        "click",
+        closeTransportZoneModalFn
+    );
+
+
+document
+    .getElementById(
+        "transportZoneModal"
+    )
+    ?.addEventListener(
+        "click",
+        function (
+            event
+        ) {
+
+            if (
+                event.target ===
+                this
+            ) {
+
+                closeTransportZoneModalFn();
+            }
+        }
+    );
+
+
+document
+    .getElementById(
+        "zoneType"
+    )
+    ?.addEventListener(
+        "change",
+        toggleZoneMaterialField
+    );
+
+
+document
+    .getElementById(
+        "captureZoneLocationButton"
+    )
+    ?.addEventListener(
+        "click",
+        captureTransportZoneLocation
+    );
+
+
+document
+    .getElementById(
+        "saveTransportZoneButton"
+    )
+    ?.addEventListener(
+        "click",
+        saveTransportZone
+    );
+
+
+document
+    .getElementById(
+        "taskLoadingZoneSelect"
+    )
+    ?.addEventListener(
+        "change",
+        syncTaskZoneCompatibilityFields
+    );
+
+
+document
+    .getElementById(
+        "taskUnloadZoneOptions"
+    )
+    ?.addEventListener(
+        "change",
+        syncTaskZoneCompatibilityFields
+    );
+
+
+/*
+ * 捕获阶段先校验区域，再让原 js/dispatch.js 的“下一步”逻辑执行。
+ */
+document
+    .getElementById(
+        "generateTaskButton"
+    )
+    ?.addEventListener(
+        "click",
+        function (
+            event
+        ) {
+
+            if (
+                !validateTaskZoneSelection()
+            ) {
+
+                event.preventDefault();
+
+                event.stopImmediatePropagation();
+            }
+        },
+        true
+    );
+
+
+/*
+ * 打开创建任务时刷新区域，
+ * 防止刚刚新增的区域没有显示。
+ */
+document
+    .getElementById(
+        "newTaskButton"
+    )
+    ?.addEventListener(
+        "click",
+        function () {
+
+            setTimeout(
+                renderTaskZoneSelectors,
+                0
+            );
+        }
+    );
+
+
+toggleZoneMaterialField();
+
+renderTransportZoneList();
+
+renderTaskZoneSelectors();
+
 
 </script>
 
