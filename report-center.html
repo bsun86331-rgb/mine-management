@@ -331,7 +331,7 @@
     <div class="header-inner">
         <div>
             <h1>📊 综合报表中心</h1>
-            <p>Report Center · V2.10.1T</p>
+            <p>Report Center · V2.10.2C</p>
         </div>
 
         <button type="button" class="header-btn" onclick="goHome()">返回首页</button>
@@ -341,7 +341,8 @@
 <main>
 
     <div class="notice">
-        当前版本先完成八大报表的界面、权限和计算规则框架。真实跨设备数据汇总将在 V3.0 接入统一数据库后启用。
+        当前系统继续保留工资、生产、维修、燃油、财务费用、绩效排名和考勤等管理功能。
+        折旧费用只作为财务费用的一部分保留，不建立自动折旧计算模块，由财务按月填写后进入报表汇总。
     </div>
 
     <section class="card">
@@ -447,7 +448,7 @@
             <div class="section-title">
                 <div>
                     <h2>🚚 生产报表</h2>
-                    <p>自动读取运输记录，按日期、物料类型和车辆型号汇总车数并换算产量。</p>
+                    <p>自动读取运输记录，统一统计总车数、煤车数、渣车数，并按车辆单车均方换算煤方量和渣方量。</p>
                 </div>
 
                 <span
@@ -459,9 +460,9 @@
             </div>
 
             <div class="formula">
-                煤产量 = 有效拉煤车数 × 对应车辆单车均方<br>
-                剥离量 = 有效拉渣/废石车数 × 对应车辆单车均方<br>
-                未设置车辆型号均方时，自动使用默认单车均方
+                煤方量 = 有效煤车数 × 对应车辆单车均方<br>
+                渣方量 = 有效渣车数 × 对应车辆单车均方<br>
+                “只记车数”仅进入总车数，不换算方量；未设置车辆型号均方时使用默认单车均方
             </div>
 
             <div class="toolbar">
@@ -579,18 +580,40 @@
                 </div>
 
                 <div class="summary-box">
-                    <span>当日拉煤车数</span>
+                    <span>当日煤车数</span>
                     <strong id="productionDayCoalTrips">0</strong>
                 </div>
 
                 <div class="summary-box">
-                    <span>当日拉渣车数</span>
+                    <span>当日渣车数</span>
                     <strong id="productionDayWasteTrips">0</strong>
                 </div>
 
                 <div class="summary-box">
-                    <span>当日总产量</span>
+                    <span>当日只记车数</span>
+                    <strong id="productionDayCountOnlyTrips">0</strong>
+                </div>
+            </div>
+
+            <div class="summary-grid" style="margin-bottom:14px;">
+                <div class="summary-box">
+                    <span>当日煤方量</span>
+                    <strong id="productionDayCoalVolume">0</strong>
+                </div>
+
+                <div class="summary-box">
+                    <span>当日渣方量</span>
+                    <strong id="productionDayWasteVolume">0</strong>
+                </div>
+
+                <div class="summary-box">
+                    <span>当日生产方量</span>
                     <strong id="productionDayTotalVolume">0</strong>
+                </div>
+
+                <div class="summary-box">
+                    <span>统计口径</span>
+                    <strong style="font-size:15px;">煤 + 渣</strong>
                 </div>
             </div>
 
@@ -601,18 +624,40 @@
                 </div>
 
                 <div class="summary-box">
-                    <span>本月煤产量</span>
+                    <span>本月煤车数</span>
+                    <strong id="productionMonthCoalTrips">0</strong>
+                </div>
+
+                <div class="summary-box">
+                    <span>本月渣车数</span>
+                    <strong id="productionMonthWasteTrips">0</strong>
+                </div>
+
+                <div class="summary-box">
+                    <span>本月只记车数</span>
+                    <strong id="productionMonthCountOnlyTrips">0</strong>
+                </div>
+            </div>
+
+            <div class="summary-grid" style="margin-bottom:14px;">
+                <div class="summary-box">
+                    <span>本月煤方量</span>
                     <strong id="productionMonthCoalVolume">0</strong>
                 </div>
 
                 <div class="summary-box">
-                    <span>本月剥离量</span>
+                    <span>本月渣方量</span>
                     <strong id="productionMonthWasteVolume">0</strong>
                 </div>
 
                 <div class="summary-box">
-                    <span>本月总产量</span>
+                    <span>本月生产方量</span>
                     <strong id="productionMonthTotalVolume">0</strong>
+                </div>
+
+                <div class="summary-box">
+                    <span>“只记车数”方量</span>
+                    <strong>不换算</strong>
                 </div>
             </div>
 
@@ -625,7 +670,7 @@
                             <th>车辆型号</th>
                             <th>有效车数</th>
                             <th>单车均方</th>
-                            <th>换算产量</th>
+                            <th>换算方量</th>
                         </tr>
                     </thead>
 
@@ -750,15 +795,15 @@
         <section class="card">
             <div class="section-title">
                 <div>
-                    <h2>📉 折旧费用表</h2>
-                    <p>自动读取财务费用中心中“折旧费用”记录。</p>
+                    <h2>📉 折旧费用表（财务填写）</h2>
+                    <p>折旧费用不做自动计算，由财务在财务费用中心按月填写，本表只负责读取和汇总。</p>
                 </div>
                 <span class="badge blue" id="depreciationTotalBadge">本月折旧 0</span>
             </div>
 
             <div class="toolbar">
                 <input type="month" id="depreciationMonth" onchange="renderDepreciation()">
-                <button type="button" class="secondary-btn" onclick="openFinanceCostCenter()">🧮 财务费用录入</button>
+                <button type="button" class="secondary-btn" onclick="openFinanceCostCenter()">🧮 财务填写折旧费用</button>
             </div>
 
             <div class="table-wrap">
@@ -785,7 +830,7 @@
             <div class="section-title">
                 <div>
                     <h2>🧮 财务费用表</h2>
-                    <p>自动读取税费、均摊、财务、保险、住宿、餐饮、运输、管理及其他费用。</p>
+                    <p>自动读取财务填写的折旧、税费、均摊、财务、保险、住宿、餐饮、运输、管理及其他费用。</p>
                 </div>
                 <button type="button" class="primary-btn" onclick="openFinanceCostCenter()">财务费用录入</button>
             </div>
@@ -1095,7 +1140,7 @@
 </main>
 
 <footer>
-    矿山管理系统 · 综合报表中心 V2.10.1T
+    矿山管理系统 · 综合报表中心 V2.10.2C
 </footer>
 
 <script>
@@ -2296,20 +2341,31 @@ function renderVehicleModelVolumeSettings() {
 }
 
 function normalizeMaterialType(item) {
+    const source =
+        item.materialType ||
+        item.material ||
+        item.cargoType ||
+        item.loadType ||
+        item.taskType ||
+        item.transportType ||
+        "";
+
     const raw =
-        String(
-            item.materialType ||
-            item.material ||
-            item.cargoType ||
-            item.loadType ||
-            item.taskType ||
-            item.transportType ||
-            ""
-        )
-        .trim()
-        .toLowerCase();
+        String(source)
+            .trim()
+            .toLowerCase();
 
     if (
+        raw === "只记车数" ||
+        raw.includes("只记车数") ||
+        raw === "count_only" ||
+        raw === "count-only"
+    ) {
+        return "只记车数";
+    }
+
+    if (
+        raw === "煤" ||
         raw.includes("煤") ||
         raw.includes("coal")
     ) {
@@ -2317,26 +2373,17 @@ function normalizeMaterialType(item) {
     }
 
     if (
+        raw === "渣" ||
         raw.includes("渣") ||
         raw.includes("废石") ||
-        raw.includes("岩") ||
-        raw.includes("土") ||
         raw.includes("waste") ||
-        raw.includes("rock") ||
-        raw.includes("overburden")
+        raw.includes("rock")
     ) {
-        return "渣/废石";
+        return "渣";
     }
 
     return raw
-        ? String(
-            item.materialType ||
-            item.material ||
-            item.cargoType ||
-            item.loadType ||
-            item.taskType ||
-            item.transportType
-        )
+        ? String(source)
         : "其他";
 }
 
@@ -2375,36 +2422,62 @@ function isValidProductionRecord(item) {
     return (
         item.status !== "cancelled" &&
         item.status !== "rejected" &&
-        item.confirmationStatus !== "rejected"
+        item.confirmationStatus !== "rejected" &&
+        item.dispatchConfirmation !== "rejected" &&
+        item.officialCountEligible !== false
     );
 }
 
 function getAllProductionTripRecords() {
-    const keys = [
-        "tripRecords",
-        "driverTripRecords",
-        "transportRecords"
-    ];
+    /*
+     * 新版正式数据优先使用 tripRecords。
+     * driver-work V2.10.2E1 为兼容旧挖机统计会镜像到 driverTripRecords，
+     * 因此不能再把两套记录直接相加，否则会重复统计。
+     */
+    const canonical =
+        readArray("tripRecords")
+            .filter(isValidProductionRecord);
 
-    const records = [];
+    if (canonical.length) {
+        return canonical.map(item => ({
+            ...item,
+            __sourceKey: "tripRecords"
+        }));
+    }
 
-    keys.forEach(key => {
-        readArray(key)
-            .forEach(item => {
-                if (
-                    isValidProductionRecord(
-                        item
-                    )
-                ) {
-                    records.push({
-                        ...item,
-                        __sourceKey: key
-                    });
-                }
-            });
+    /*
+     * 旧数据兼容：没有 tripRecords 时才读取旧运输键，
+     * 并按 tripId / recordId 去重。
+     */
+    const fallback = [
+        ...readArray("driverTripRecords"),
+        ...readArray("transportRecords")
+    ]
+        .filter(isValidProductionRecord);
+
+    const seen =
+        new Set();
+
+    return fallback.filter(item => {
+        const id =
+            String(
+                item.tripId ||
+                item.recordId ||
+                item.id ||
+                ""
+            );
+
+        if (!id) {
+            return true;
+        }
+
+        if (seen.has(id)) {
+            return false;
+        }
+
+        seen.add(id);
+        return true;
     });
-
-    return records;
 }
 
 function getVolumePerTripForRecord(item) {
@@ -2470,9 +2543,12 @@ function aggregateProductionRecords(records) {
             ) || "未设置型号";
 
         const volumePerTrip =
-            getVolumePerTripForRecord(
-                item
-            );
+            material === "只记车数" ||
+            material === "其他"
+                ? 0
+                : getVolumePerTripForRecord(
+                    item
+                );
 
         const key =
             [
@@ -2533,52 +2609,57 @@ function sumProductionStats(groups) {
         totalTrips: 0,
         coalTrips: 0,
         wasteTrips: 0,
+        countOnlyTrips: 0,
         totalVolume: 0,
         coalVolume: 0,
         wasteVolume: 0
     };
 
     groups.forEach(item => {
-        result.totalTrips +=
+        const trips =
             Number(
                 item.tripCount ||
                 0
             );
 
-        result.totalVolume +=
+        const volume =
             Number(
                 item.volume ||
                 0
             );
 
+        result.totalTrips +=
+            trips;
+
         if (item.material === "煤") {
             result.coalTrips +=
-                Number(
-                    item.tripCount ||
-                    0
-                );
+                trips;
 
             result.coalVolume +=
-                Number(
-                    item.volume ||
-                    0
-                );
+                volume;
         } else if (
-            item.material === "渣/废石"
+            item.material === "渣"
         ) {
             result.wasteTrips +=
-                Number(
-                    item.tripCount ||
-                    0
-                );
+                trips;
 
             result.wasteVolume +=
-                Number(
-                    item.volume ||
-                    0
-                );
+                volume;
+        } else if (
+            item.material === "只记车数"
+        ) {
+            result.countOnlyTrips +=
+                trips;
         }
     });
+
+    /*
+     * 生产方量只由煤 + 渣构成。
+     * “只记车数”不换算方量。
+     */
+    result.totalVolume =
+        result.coalVolume +
+        result.wasteVolume;
 
     return result;
 }
@@ -2660,6 +2741,25 @@ function renderProduction() {
     );
 
     setValue(
+        "productionDayCountOnlyTrips",
+        String(
+            dayStats.countOnlyTrips
+        )
+    );
+
+    setValue(
+        "productionDayCoalVolume",
+        dayStats.coalVolume.toFixed(1) +
+        " m³"
+    );
+
+    setValue(
+        "productionDayWasteVolume",
+        dayStats.wasteVolume.toFixed(1) +
+        " m³"
+    );
+
+    setValue(
         "productionDayTotalVolume",
         dayStats.totalVolume.toFixed(1) +
         " m³"
@@ -2669,6 +2769,27 @@ function renderProduction() {
         "productionMonthTotalTrips",
         String(
             monthStats.totalTrips
+        )
+    );
+
+    setValue(
+        "productionMonthCoalTrips",
+        String(
+            monthStats.coalTrips
+        )
+    );
+
+    setValue(
+        "productionMonthWasteTrips",
+        String(
+            monthStats.wasteTrips
+        )
+    );
+
+    setValue(
+        "productionMonthCountOnlyTrips",
+        String(
+            monthStats.countOnlyTrips
         )
     );
 
@@ -2705,8 +2826,16 @@ function renderProduction() {
                     <td>${escapeHtml(item.material)}</td>
                     <td>${escapeHtml(item.model)}</td>
                     <td>${Number(item.tripCount || 0)}</td>
-                    <td>${Number(item.volumePerTrip || 0).toFixed(2)} m³/车</td>
-                    <td>${Number(item.volume || 0).toFixed(1)} m³</td>
+                    <td>${
+                        item.material === "只记车数"
+                            ? "不换算"
+                            : Number(item.volumePerTrip || 0).toFixed(2) + " m³/车"
+                    }</td>
+                    <td>${
+                        item.material === "只记车数"
+                            ? "-"
+                            : Number(item.volume || 0).toFixed(1) + " m³"
+                    }</td>
                 </tr>
             `).join("")
             : `<tr><td colspan="6" class="empty">当前日期暂无有效运输记录</td></tr>`;
