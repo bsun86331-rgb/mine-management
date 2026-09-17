@@ -22,7 +22,7 @@
 
 <style>
 /* =========================================================
-   V2.10.2E GPS区域装卸计数
+   V2.10.2E1 GPS区域装卸计数
 ========================================================= */
 #addTripButton{
     display:none !important;
@@ -602,6 +602,7 @@
                 <div class="offline-tip">
                     离线优先：装卸记录先保存到当前手机，本机立即计数；
                     后续接入数据库后再自动上传。手动补录会标记为“待调度复核”。
+                    卸载区类型为“只记车数”时，只增加今日总车数，不归入煤或渣。
                 </div>
 
                 <div id="gpsTripMessage" class="zone-warning" style="display:none;"></div>
@@ -955,7 +956,7 @@
 
 
 <footer>
-    矿山管理系统 · 司机端 V2.10.2E
+    矿山管理系统 · 司机端 V2.10.2E1
 </footer>
 
 <script src="js/driver-work.js?v=2.9.2"></script>
@@ -964,7 +965,7 @@
 "use strict";
 
 /* =========================================================
-   driver-work.html V2.10.2E
+   driver-work.html V2.10.2E1
    GPS区域装卸计数兼容层
 
    核心原则：
@@ -1827,6 +1828,15 @@ function gpsRenderMaterialStats(){
 
     records.forEach(item => {
         const type = item.materialType || item.material || "未分类";
+
+        /*
+         * “只记车数”只进入总车数，
+         * 不进入煤 / 渣分类统计。
+         */
+        if(type === "只记车数"){
+            return;
+        }
+
         map.set(type,(map.get(type)||0)+1);
     });
 
@@ -1836,6 +1846,23 @@ function gpsRenderMaterialStats(){
             <strong>${records.length} 车</strong>
         </div>`
     ];
+
+    /*
+     * 正式分类只显示煤 / 渣。
+     * 若存在历史异常分类，仍放在后面显示，方便发现旧数据。
+     */
+    ["煤","渣"].forEach(type=>{
+        if(map.has(type)){
+            items.push(
+                `<div class="trip-material-item">
+                    <span>${gpsEscapeHtml(type)}</span>
+                    <strong>${map.get(type)} 车</strong>
+                </div>`
+            );
+
+            map.delete(type);
+        }
+    });
 
     [...map.entries()]
         .sort((a,b)=>b[1]-a[1])
