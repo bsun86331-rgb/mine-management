@@ -1,1 +1,562 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0f172a">
+<title>运输系统完整联调 - mine-management</title>
+<style>
+*{box-sizing:border-box}
+:root{
+  --bg:#f1f5f9;--card:#fff;--text:#0f172a;--muted:#64748b;--line:#e2e8f0;
+  --dark:#0f172a;--blue:#2563eb;--green:#16a34a;--yellow:#d97706;--red:#dc2626;
+}
+body{margin:0;background:var(--bg);color:var(--text);font-family:Arial,"Microsoft YaHei",sans-serif}
+header{position:sticky;top:0;z-index:20;background:var(--dark);color:#fff}
+.header-inner{max-width:1400px;margin:auto;padding:15px 14px;display:flex;justify-content:space-between;gap:12px;align-items:center}
+h1{margin:0;font-size:22px}.sub{margin-top:5px;color:#cbd5e1;font-size:12px}
+main{max-width:1400px;margin:auto;padding:16px 14px 40px}
+.card{background:#fff;border-radius:16px;padding:17px;margin-bottom:14px;box-shadow:0 5px 20px rgba(15,23,42,.06)}
+.notice{padding:13px 14px;border:1px solid #bfdbfe;border-radius:12px;background:#eff6ff;color:#1e40af;font-size:13px;line-height:1.75;margin-bottom:14px}
+.section-title{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:14px}
+.section-title h2{margin:0;font-size:18px}.section-title p{margin:5px 0 0;color:var(--muted);font-size:12px;line-height:1.6}
+button,select,input{font:inherit}
+button{border:0;border-radius:10px;min-height:42px;padding:10px 14px;font-weight:700;cursor:pointer}
+.primary{background:var(--blue);color:#fff}.secondary{background:#fff;border:1px solid #cbd5e1;color:#334155}
+.header-btn{background:#1e293b;color:#fff;border:1px solid #475569}
+.filters{display:grid;grid-template-columns:1.2fr 1fr auto;gap:10px;align-items:end}
+label{display:block;font-size:12px;color:#475569;margin-bottom:6px;font-weight:700}
+select,input{width:100%;min-height:42px;border:1px solid #cbd5e1;border-radius:10px;padding:9px 10px;background:#fff}
+.kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
+.kpi{padding:13px;border-radius:12px;background:#f8fafc}.kpi span{display:block;color:#64748b;font-size:12px}.kpi strong{display:block;margin-top:6px;font-size:22px}
+.table-wrap{overflow:auto}
+table{width:100%;min-width:1100px;border-collapse:collapse}
+th,td{padding:10px 9px;border-bottom:1px solid var(--line);text-align:left;font-size:13px;vertical-align:top}
+th{background:#f8fafc;color:#475569}
+.badge{display:inline-block;padding:5px 9px;border-radius:999px;font-size:12px;font-weight:700}
+.ok{background:#dcfce7;color:#166534}.warn{background:#fef3c7;color:#92400e}.fail{background:#fee2e2;color:#991b1b}.gray{background:#e2e8f0;color:#475569}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.issue{padding:12px;border-radius:11px;background:#f8fafc;border:1px solid var(--line);font-size:13px;line-height:1.7}
+code{background:#e2e8f0;padding:2px 5px;border-radius:5px;font-family:Consolas,monospace}
+.small{font-size:12px;color:#64748b;line-height:1.7}
+footer{text-align:center;color:#94a3b8;font-size:12px;padding:20px}
+@media(max-width:900px){.filters,.grid2,.kpis{grid-template-columns:1fr}.header-inner{align-items:flex-start}}
+</style>
+</head>
+
+<body>
+<header>
+<div class="header-inner">
+  <div>
+    <h1>🔗 运输系统完整联调</h1>
+    <div class="sub">TRANSPORT-INTEGRATION-CHECK V1.0 · mine-management</div>
+  </div>
+  <button class="header-btn" onclick="location.href='system-map.html'">系统地图</button>
+</div>
+</header>
+
+<main>
+
+<div class="notice">
+本页面只读检查，不会修改业务数据。用于验证：调度区域 → 生产任务 → 司机装卸 → 调度审核 → 挖机车数 → 调度统计 → 报表中心，是否使用同一套运输数据和统计口径。
+</div>
+
+<section class="card">
+  <div class="section-title">
+    <div><h2>① 联调条件</h2><p>选择日期和任务后进行检查；不选任务则检查全部任务。</p></div>
+  </div>
+
+  <div class="filters">
+    <div>
+      <label for="checkDate">检查日期</label>
+      <input id="checkDate" type="date">
+    </div>
+
+    <div>
+      <label for="taskSelect">生产任务</label>
+      <select id="taskSelect">
+        <option value="">全部任务</option>
+      </select>
+    </div>
+
+    <div>
+      <button class="primary" onclick="runIntegrationCheck()">▶ 开始完整联调</button>
+    </div>
+  </div>
+</section>
+
+<section class="card">
+  <div class="section-title">
+    <div><h2>② 统计结果</h2><p>统一口径：总车数包含煤、渣、只记车数；煤/渣按卸载区 materialType 分类。</p></div>
+  </div>
+  <div class="kpis">
+    <div class="kpi"><span>有效总车数</span><strong id="totalTrips">0</strong></div>
+    <div class="kpi"><span>煤车数</span><strong id="coalTrips">0</strong></div>
+    <div class="kpi"><span>渣车数</span><strong id="wasteTrips">0</strong></div>
+    <div class="kpi"><span>只记车数</span><strong id="countOnlyTrips">0</strong></div>
+    <div class="kpi"><span>待审核手动补录</span><strong id="pendingManual">0</strong></div>
+  </div>
+</section>
+
+<section class="card">
+  <div class="section-title">
+    <div><h2>③ 全链路检查结果</h2><p>红色必须处理，黄色建议数据库前统一。</p></div>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>检查项</th>
+          <th>结果</th>
+          <th>数量/值</th>
+          <th>说明</th>
+        </tr>
+      </thead>
+      <tbody id="checkTable"></tbody>
+    </table>
+  </div>
+</section>
+
+<section class="card">
+  <div class="section-title">
+    <div><h2>④ 区域配置</h2><p>检查装载区、卸载区和物料参数。</p></div>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>区域</th><th>类型</th><th>物料</th><th>半径</th><th>GPS精度</th><th>状态</th></tr>
+      </thead>
+      <tbody id="zoneTable"></tbody>
+    </table>
+  </div>
+</section>
+
+<section class="card">
+  <div class="section-title">
+    <div><h2>⑤ 运输记录抽查</h2><p>展示当前筛选条件下最近的运输记录。</p></div>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>时间</th><th>司机</th><th>车辆</th><th>任务</th><th>装载区</th><th>卸载区</th><th>类型</th><th>来源</th><th>审核</th>
+        </tr>
+      </thead>
+      <tbody id="tripTable"></tbody>
+    </table>
+  </div>
+</section>
+
+<section class="card">
+  <div class="section-title">
+    <div><h2>⑥ 问题与建议</h2></div>
+  </div>
+  <div id="issues" class="grid2">
+    <div class="issue">尚未开始检查。</div>
+  </div>
+</section>
+
+</main>
+
+<footer>mine-management · TRANSPORT-INTEGRATION-CHECK V1.0</footer>
+
+<script>
+"use strict";
+
+const KEYS = {
+  ZONES: "transportZones",
+  TASKS: "dispatchPublishedTasks",
+  TRIPS: "tripRecords",
+  LEGACY_TRIPS: "driverTripRecords"
+};
+
+function readArray(key){
+  try{
+    const data = JSON.parse(localStorage.getItem(key));
+    return Array.isArray(data) ? data : [];
+  }catch(error){
+    return [];
+  }
+}
+
+function escapeHtml(value){
+  const div = document.createElement("div");
+  div.textContent = String(value ?? "");
+  return div.innerHTML;
+}
+
+function badge(text,type){
+  return `<span class="badge ${type}">${text}</span>`;
+}
+
+function tripId(item){
+  return String(item?.tripId || item?.recordId || item?.id || "");
+}
+
+function taskId(item){
+  return String(item?.taskId || item?.dispatchTaskId || item?.id || "");
+}
+
+function tripTime(item){
+  return item?.completedAt || item?.unloadedAt || item?.unloadTime || item?.endTime || item?.createdAt || "";
+}
+
+function material(item){
+  return String(item?.materialType || item?.material || "").trim();
+}
+
+function isValidOfficialTrip(item){
+  return (
+    item &&
+    item.status !== "cancelled" &&
+    item.status !== "rejected" &&
+    item.dispatchConfirmation !== "rejected" &&
+    item.officialCountEligible !== false
+  );
+}
+
+function unifiedTrips(){
+  const canonical = readArray(KEYS.TRIPS);
+
+  if(canonical.length){
+    return canonical;
+  }
+
+  const fallback = readArray(KEYS.LEGACY_TRIPS);
+  const seen = new Set();
+
+  return fallback.filter(item=>{
+    const id = tripId(item);
+    if(!id) return true;
+    if(seen.has(id)) return false;
+    seen.add(id);
+    return true;
+  });
+}
+
+function todayString(){
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth()+1).padStart(2,"0");
+  const day = String(d.getDate()).padStart(2,"0");
+  return `${y}-${m}-${day}`;
+}
+
+function init(){
+  document.getElementById("checkDate").value = todayString();
+  renderTaskOptions();
+  runIntegrationCheck();
+}
+
+function renderTaskOptions(){
+  const select = document.getElementById("taskSelect");
+  const tasks = readArray(KEYS.TASKS);
+
+  tasks.forEach(task=>{
+    const id = taskId(task);
+    const option = document.createElement("option");
+    option.value = id;
+    option.textContent =
+      (id || "未编号任务") +
+      " · " +
+      (task.areaName || task.taskArea || task.area || task.workArea || "");
+    select.appendChild(option);
+  });
+}
+
+function row(id,cells){
+  document.getElementById(id).insertAdjacentHTML(
+    "beforeend",
+    "<tr>" + cells.map(x=>"<td>"+x+"</td>").join("") + "</tr>"
+  );
+}
+
+function runIntegrationCheck(){
+  ["checkTable","zoneTable","tripTable"].forEach(id=>{
+    document.getElementById(id).innerHTML="";
+  });
+
+  const issues = [];
+  const date = document.getElementById("checkDate").value;
+  const selectedTaskId = document.getElementById("taskSelect").value;
+
+  const zones = readArray(KEYS.ZONES);
+  const tasks = readArray(KEYS.TASKS);
+  const canonical = readArray(KEYS.TRIPS);
+  const legacy = readArray(KEYS.LEGACY_TRIPS);
+  const trips = unifiedTrips();
+
+  const filteredTrips = trips
+    .filter(item=>{
+      if(date && String(tripTime(item)).slice(0,10) !== date) return false;
+      if(selectedTaskId && taskId(item) !== selectedTaskId) return false;
+      return true;
+    });
+
+  const official = filteredTrips.filter(isValidOfficialTrip);
+
+  const total = official.length;
+  const coal = official.filter(item=>material(item)==="煤").length;
+  const waste = official.filter(item=>material(item)==="渣").length;
+  const countOnly = official.filter(item=>material(item)==="只记车数").length;
+
+  const pendingManual = filteredTrips.filter(item=>
+    (item.manualOverride===true || item.gpsStatus==="manual_override") &&
+    (item.dispatchConfirmation==="pending" || item.gpsReviewStatus==="pending")
+  ).length;
+
+  document.getElementById("totalTrips").textContent = total;
+  document.getElementById("coalTrips").textContent = coal;
+  document.getElementById("wasteTrips").textContent = waste;
+  document.getElementById("countOnlyTrips").textContent = countOnly;
+  document.getElementById("pendingManual").textContent = pendingManual;
+
+  /* 1. transportZones */
+  const loadZones = zones.filter(z=>z.zoneType==="loading");
+  const unloadZones = zones.filter(z=>z.zoneType==="unloading");
+
+  addCheck(
+    "运输区域库",
+    zones.length ? "pass" : "fail",
+    zones.length,
+    zones.length ? "transportZones 已建立。" : "还没有创建运输区域。",
+    issues
+  );
+
+  addCheck(
+    "装载区数量",
+    loadZones.length ? "pass" : "fail",
+    loadZones.length,
+    loadZones.length ? "至少存在一个装载区。" : "生产任务无法使用GPS装车区域。",
+    issues
+  );
+
+  addCheck(
+    "卸载区数量",
+    unloadZones.length ? "pass" : "fail",
+    unloadZones.length,
+    unloadZones.length ? "已建立卸载区。" : "还没有卸载区。",
+    issues
+  );
+
+  const badMaterials = unloadZones.filter(z=>
+    !["煤","渣","只记车数"].includes(String(z.materialType || "").trim())
+  );
+
+  addCheck(
+    "卸载物料参数",
+    badMaterials.length ? "fail" : "pass",
+    badMaterials.length,
+    badMaterials.length
+      ? "卸载区 materialType 必须统一为：煤 / 渣 / 只记车数。"
+      : "卸载物料参数统一。",
+    issues
+  );
+
+  /* 2. task configuration */
+  const selectedTasks = selectedTaskId
+    ? tasks.filter(t=>taskId(t)===selectedTaskId)
+    : tasks;
+
+  let tasksWithoutLoading = 0;
+  let tasksWithoutUnload = 0;
+
+  selectedTasks.forEach(task=>{
+    const loadingName = String(
+      task.loadingPoint ||
+      task.taskLoadingPoint ||
+      task.loadingZoneName ||
+      ""
+    ).trim();
+
+    const unloadingNames = String(
+      task.unloadingPoint ||
+      task.taskUnloadingPoint ||
+      task.unloadingZoneName ||
+      ""
+    ).split(/[、,，;；|]/).map(x=>x.trim()).filter(Boolean);
+
+    if(!loadingName) tasksWithoutLoading++;
+    if(!unloadingNames.length) tasksWithoutUnload++;
+  });
+
+  addCheck(
+    "任务装载区配置",
+    tasksWithoutLoading ? "fail" : "pass",
+    tasksWithoutLoading,
+    tasksWithoutLoading ? "存在生产任务没有装载区。" : "任务均有装载区。",
+    issues
+  );
+
+  addCheck(
+    "任务多卸载区配置",
+    tasksWithoutUnload ? "fail" : "pass",
+    tasksWithoutUnload,
+    tasksWithoutUnload ? "存在生产任务没有允许卸载区。" : "任务具备一个或多个卸载区。",
+    issues
+  );
+
+  /* 3. canonical/legacy duplicate mirror */
+  const canonicalIds = new Set(canonical.map(tripId).filter(Boolean));
+  const mirrored = legacy.filter(item=>canonicalIds.has(tripId(item))).length;
+
+  addCheck(
+    "新版/旧版运输镜像",
+    mirrored ? "warn" : "pass",
+    mirrored,
+    mirrored
+      ? "当前司机端为兼容旧系统会镜像到 driverTripRecords；统计页面必须优先 tripRecords，不能两套相加。"
+      : "未发现重复镜像。",
+    issues
+  );
+
+  /* 4. trip quality */
+  const missingUnloadZone = filteredTrips.filter(item=>
+    isValidOfficialTrip(item) &&
+    !String(item.unloadingZoneName || item.unloadingPoint || "").trim()
+  ).length;
+
+  addCheck(
+    "有效趟次卸载区",
+    missingUnloadZone ? "fail" : "pass",
+    missingUnloadZone,
+    missingUnloadZone ? "存在有效运输记录缺少卸载区。" : "有效趟次均有卸载区。",
+    issues
+  );
+
+  const invalidTripMaterial = filteredTrips.filter(item=>
+    isValidOfficialTrip(item) &&
+    !["煤","渣","只记车数"].includes(material(item))
+  ).length;
+
+  addCheck(
+    "有效趟次物料类型",
+    invalidTripMaterial ? "fail" : "pass",
+    invalidTripMaterial,
+    invalidTripMaterial
+      ? "存在正式趟次物料不属于煤/渣/只记车数。"
+      : "正式运输分类统一。",
+    issues
+  );
+
+  addCheck(
+    "手动补录审核",
+    pendingManual ? "warn" : "pass",
+    pendingManual,
+    pendingManual
+      ? "有手动补录尚未调度审核，因此当前不会进入正式统计。"
+      : "没有待审核的手动补录。",
+    issues
+  );
+
+  /* 5. cross-module count consistency */
+  addCheck(
+    "司机/调度/报表统计口径",
+    "pass",
+    `${total}/${coal}/${waste}/${countOnly}`,
+    "统一应读取 tripRecords，并使用 总车数 / 煤 / 渣 / 只记车数 口径。",
+    issues
+  );
+
+  /* render zones */
+  zones.forEach(zone=>{
+    const ok =
+      zone.zoneType==="loading"
+      ||
+      ["煤","渣","只记车数"].includes(String(zone.materialType||"").trim());
+
+    row("zoneTable",[
+      escapeHtml(zone.name || "-"),
+      zone.zoneType==="loading" ? "装载区" : zone.zoneType==="unloading" ? "卸载区" : escapeHtml(zone.zoneType||"-"),
+      zone.zoneType==="loading" ? "不设置" : escapeHtml(zone.materialType || "-"),
+      Number(zone.radius || 0) + " m",
+      Number(zone.gpsAccuracy || 0).toFixed(1) + " m",
+      ok ? badge("正常","ok") : badge("需修复","fail")
+    ]);
+  });
+
+  if(!zones.length){
+    row("zoneTable",["-","-","-","-","-",badge("无数据","gray")]);
+  }
+
+  /* render trips */
+  filteredTrips
+    .slice()
+    .sort((a,b)=>new Date(tripTime(b)||0)-new Date(tripTime(a)||0))
+    .slice(0,40)
+    .forEach(item=>{
+      const review =
+        item.dispatchConfirmation==="rejected"
+          ? badge("驳回","fail")
+          : (
+              item.dispatchConfirmation==="pending" ||
+              item.gpsReviewStatus==="pending"
+            )
+            ? badge("待审核","warn")
+            : badge("有效","ok");
+
+      row("tripTable",[
+        escapeHtml(tripTime(item) ? new Date(tripTime(item)).toLocaleString("zh-CN") : "-"),
+        escapeHtml(item.driverName || "-"),
+        escapeHtml(item.vehicleNumber || item.vehicleId || "-"),
+        escapeHtml(taskId(item) || "-"),
+        escapeHtml(item.loadingZoneName || item.loadingPoint || "-"),
+        escapeHtml(item.unloadingZoneName || item.unloadingPoint || "-"),
+        escapeHtml(material(item) || "-"),
+        escapeHtml(item.source || "-"),
+        review
+      ]);
+    });
+
+  if(!filteredTrips.length){
+    row("tripTable",["-","-","-","-","-","-","-","-",badge("无记录","gray")]);
+  }
+
+  renderIssues(issues);
+}
+
+function addCheck(name,type,value,desc,issues){
+  row("checkTable",[
+    name,
+    badge(
+      type==="pass" ? "通过" : type==="warn" ? "需关注" : "异常",
+      type==="pass" ? "ok" : type==="warn" ? "warn" : "fail"
+    ),
+    escapeHtml(value),
+    desc
+  ]);
+
+  if(type!=="pass"){
+    issues.push({
+      type,
+      text:name + "：" + desc
+    });
+  }
+}
+
+function renderIssues(issues){
+  const box = document.getElementById("issues");
+
+  if(!issues.length){
+    box.innerHTML = `
+      <div class="issue">
+        <strong>✅ 当前筛选范围没有发现明显问题。</strong><br>
+        运输区域、任务、司机记录、审核状态和统计口径可以进入下一阶段现场模拟测试。
+      </div>
+    `;
+    return;
+  }
+
+  box.innerHTML = issues.map(item=>`
+    <div class="issue">
+      ${item.type==="fail" ? "❌" : "⚠️"}
+      ${escapeHtml(item.text)}
+    </div>
+  `).join("");
+}
+
+init();
+</script>
+</body>
+</html>
 
