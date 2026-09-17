@@ -404,32 +404,6 @@
         }
 
 
-        .action-grid {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 10px;
-        }
-
-
-        .maintenance-button {
-            width: 100%;
-            min-height: 52px;
-            padding: 13px 16px;
-            border: 1px solid #fecaca;
-            border-radius: 11px;
-            background: #fff1f2;
-            color: #b91c1c;
-            font-size: 15px;
-            font-weight: 700;
-            cursor: pointer;
-        }
-
-
-        .maintenance-button:active {
-            transform: translateY(1px);
-        }
-
-
         .warning-box {
             padding: 13px;
             border: 1px solid #fed7aa;
@@ -479,7 +453,7 @@
                 </h1>
 
                 <p>
-                    Excavator Operator · V2.10.0L
+                    Excavator Operator · V2.10.2F
                 </p>
 
             </div>
@@ -650,58 +624,6 @@
 
 
     <!-- =====================================================
-         异常上报 / 设备维修
-    ====================================================== -->
-
-    <section class="card">
-
-        <div class="section-title">
-
-            <div>
-
-                <h2>
-                    ⚠️ 异常上报
-                </h2>
-
-                <p>
-                    挖机发生故障时提交设备维修申请
-                </p>
-
-            </div>
-
-        </div>
-
-
-        <div class="action-grid">
-
-            <button
-                type="button"
-                class="maintenance-button"
-                onclick="openMaintenanceReport()"
-            >
-                🔧 设备故障 / 申请维修
-            </button>
-
-        </div>
-
-
-        <div class="task-note">
-
-            生产设备维修申请提交后，
-            先进入调度审批。
-
-            <br>
-
-            调度批准后，
-            再进入维修管理和维修员流程。
-
-        </div>
-
-    </section>
-
-
-
-    <!-- =====================================================
          自动车数
     ====================================================== -->
 
@@ -720,7 +642,7 @@
                 </h2>
 
                 <p>
-                    自动读取汽车有效运输趟数
+                    优先读取统一 tripRecords，自动统计汽车有效运输趟数
                 </p>
 
             </div>
@@ -746,6 +668,30 @@
             <small>
                 车
             </small>
+
+        </div>
+
+        <div class="summary-grid" style="margin-top:12px;">
+
+            <div class="info-box">
+                <span>煤车数</span>
+                <strong id="excavatorCoalTripCount">0</strong>
+            </div>
+
+            <div class="info-box">
+                <span>渣车数</span>
+                <strong id="excavatorWasteTripCount">0</strong>
+            </div>
+
+            <div class="info-box">
+                <span>只记车数</span>
+                <strong id="excavatorCountOnlyTripCount">0</strong>
+            </div>
+
+            <div class="info-box">
+                <span>统计口径</span>
+                <strong style="font-size:14px;">全部有效装车趟次</strong>
+            </div>
 
         </div>
 
@@ -802,7 +748,7 @@
 
 <footer>
 
-    矿山管理系统 · 挖机司机端 V2.10.0L
+    矿山管理系统 · 挖机司机端 V2.10.2F
 
 </footer>
 
@@ -825,6 +771,9 @@ const STORAGE = {
         "dispatchPublishedTasks",
 
     TRIPS:
+        "tripRecords",
+
+    LEGACY_TRIPS:
         "driverTripRecords"
 };
 
@@ -1818,8 +1767,20 @@ function findExcavatorBinding(
 
 function getTrips() {
 
+    const canonical =
+        readArray(
+            STORAGE.TRIPS
+        );
+
+    if (
+        canonical.length
+    ) {
+
+        return canonical;
+    }
+
     return readArray(
-        STORAGE.TRIPS
+        STORAGE.LEGACY_TRIPS
     );
 }
 
@@ -1862,6 +1823,11 @@ function getValidTaskTrips(
     )
         .filter(
             trip =>
+
+                trip.status !==
+                    "cancelled"
+
+                &&
 
                 trip.dispatchConfirmation !==
                     "rejected"
@@ -2004,10 +1970,20 @@ function getExcavatorTripStats(
     let total =
         0;
 
+    let coalTrips =
+        0;
+
+    let wasteTrips =
+        0;
+
+    let countOnlyTrips =
+        0;
+
 
 
     function addTrip(
-        truckId
+        truckId,
+        trip
     ) {
 
         total +=
@@ -2022,8 +1998,43 @@ function getExcavatorTripStats(
                 ) ||
                 0
             ) +
-            1
+                1
         );
+
+
+        const material =
+            String(
+                trip?.materialType ||
+                trip?.material ||
+                ""
+            )
+                .trim();
+
+
+        if (
+            material ===
+            "煤"
+        ) {
+
+            coalTrips +=
+                1;
+
+        } else if (
+            material ===
+            "渣"
+        ) {
+
+            wasteTrips +=
+                1;
+
+        } else if (
+            material ===
+            "只记车数"
+        ) {
+
+            countOnlyTrips +=
+                1;
+        }
     }
 
 
@@ -2073,7 +2084,8 @@ function getExcavatorTripStats(
                 ) {
 
                     addTrip(
-                        truckId
+                        truckId,
+                        trip
                     );
                 }
 
@@ -2197,7 +2209,8 @@ function getExcavatorTripStats(
                 ) {
 
                     addTrip(
-                        truckId
+                        truckId,
+                        trip
                     );
                 }
 
@@ -2218,8 +2231,9 @@ function getExcavatorTripStats(
             ) {
 
                 addTrip(
-                    truckId
-                );
+                        truckId,
+                        trip
+                    );
             }
         }
     );
@@ -2228,6 +2242,12 @@ function getExcavatorTripStats(
     return {
 
         total,
+
+        coalTrips,
+
+        wasteTrips,
+
+        countOnlyTrips,
 
         trucks:
             [
@@ -2311,6 +2331,24 @@ function renderTripStatistics() {
     setText(
         "totalTripCount",
         stats.total
+    );
+
+
+    setText(
+        "excavatorCoalTripCount",
+        stats.coalTrips
+    );
+
+
+    setText(
+        "excavatorWasteTripCount",
+        stats.wasteTrips
+    );
+
+
+    setText(
+        "excavatorCountOnlyTripCount",
+        stats.countOnlyTrips
     );
 
 
@@ -2931,46 +2969,6 @@ function escapeHtml(
 
 
     return div.innerHTML;
-}
-
-
-
-/* =========================================================
-   设备维修上报
-========================================================= */
-
-function openMaintenanceReport() {
-
-    if (
-        currentPerson
-    ) {
-
-        const personId =
-            getPersonId(
-                currentPerson
-            );
-
-
-        if (
-            personId
-        ) {
-
-            localStorage.setItem(
-                "currentPersonId",
-                personId
-            );
-        }
-
-
-        localStorage.setItem(
-            "selectedPosition",
-            "挖机司机"
-        );
-    }
-
-
-    location.href =
-        "maintenance-report.html";
 }
 
 
