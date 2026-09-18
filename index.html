@@ -1431,7 +1431,7 @@
 
 
 <footer>
-    矿山管理系统 · 首页最终优化版 V2.10.2C
+    矿山管理系统 · 首页最终优化版 V2.10.2I
 </footer>
 
 
@@ -1477,7 +1477,7 @@
 
 <script>
 
-/* 首页最终优化版 V2.10.2C：保留原登记 / 审核 / 分流 / 高权限验证业务逻辑 */
+/* 首页最终优化版 V2.10.2I：保留原登记 / 审核 / 分流 / 高权限验证业务逻辑 */
 
 "use strict";
 
@@ -1794,6 +1794,331 @@ function hasApprovedAdministrator() {
 
 
 /* =========================================================
+   V2.10.2I
+   普通岗位身份映射
+
+   解决：
+   管理员 / 总经理登录与普通员工身份互相覆盖的问题。
+
+   rolePersonIds:
+   {
+       "汽车司机": "PERSON-...",
+       "挖机司机": "PERSON-..."
+   }
+========================================================= */
+
+const ROLE_PERSON_MAP_KEY =
+    "rolePersonIds";
+
+
+function getRolePersonMap() {
+
+    try {
+
+        const data =
+            JSON.parse(
+                localStorage.getItem(
+                    ROLE_PERSON_MAP_KEY
+                )
+            );
+
+
+        return (
+            data &&
+            typeof data ===
+                "object" &&
+            !Array.isArray(data)
+        )
+            ? data
+            : {};
+
+    } catch (error) {
+
+        return {};
+    }
+
+}
+
+
+function rememberRolePerson(
+    position,
+    personId
+) {
+
+    const normalizedPosition =
+        normalizePosition(
+            position
+        );
+
+
+    if (
+        !normalizedPosition ||
+        !personId ||
+        PASSWORD_PROTECTED_POSITIONS.includes(
+            normalizedPosition
+        )
+    ) {
+
+        return;
+    }
+
+
+    const map =
+        getRolePersonMap();
+
+
+    map[
+        normalizedPosition
+    ] =
+        String(
+            personId
+        );
+
+
+    localStorage.setItem(
+        ROLE_PERSON_MAP_KEY,
+        JSON.stringify(
+            map
+        )
+    );
+
+
+    /*
+     * workerPersonId / workerPosition
+     * 作为当前设备普通员工身份的快捷恢复键。
+     */
+    localStorage.setItem(
+        "workerPersonId",
+        String(personId)
+    );
+
+    localStorage.setItem(
+        "workerPosition",
+        normalizedPosition
+    );
+
+}
+
+
+function getMappedPersonForPosition(
+    records,
+    position
+) {
+
+    const normalizedPosition =
+        normalizePosition(
+            position
+        );
+
+
+    const map =
+        getRolePersonMap();
+
+
+    const mappedId =
+        map[
+            normalizedPosition
+        ] ||
+        "";
+
+
+    if (mappedId) {
+
+        const found =
+            records.find(
+                item =>
+                    String(
+                        getPersonId(item)
+                    ) ===
+                        String(mappedId) &&
+
+                    normalizePosition(
+                        item.position
+                    ) ===
+                        normalizedPosition
+            );
+
+
+        if (found) {
+
+            return found;
+        }
+
+    }
+
+
+    const workerPersonId =
+        localStorage.getItem(
+            "workerPersonId"
+        ) ||
+        "";
+
+
+    const workerPosition =
+        normalizePosition(
+            localStorage.getItem(
+                "workerPosition"
+            ) ||
+            ""
+        );
+
+
+    if (
+        workerPersonId &&
+        workerPosition ===
+            normalizedPosition
+    ) {
+
+        const found =
+            records.find(
+                item =>
+                    String(
+                        getPersonId(item)
+                    ) ===
+                        String(
+                            workerPersonId
+                        ) &&
+
+                    normalizePosition(
+                        item.position
+                    ) ===
+                        normalizedPosition
+            );
+
+
+        if (found) {
+
+            return found;
+        }
+
+    }
+
+
+    return null;
+}
+
+
+/*
+ * 同一浏览器存在多个相同岗位人员时，
+ * 不再误判为“未注册”。
+ *
+ * 让测试设备选择一次人员，
+ * 以后通过 rolePersonIds 自动恢复。
+ */
+function chooseExistingProfile(
+    persons,
+    position
+) {
+
+    if (
+        !Array.isArray(
+            persons
+        ) ||
+        !persons.length
+    ) {
+
+        return null;
+    }
+
+
+    if (
+        persons.length ===
+        1
+    ) {
+
+        return persons[0];
+    }
+
+
+    const lines =
+        persons.map(
+            (
+                person,
+                index
+            ) => {
+
+                const state =
+                    getApprovalState(
+                        person
+                    );
+
+
+                const stateText =
+                    state === "approved"
+                        ? "已审核"
+                        : state === "pending"
+                            ? "待审核"
+                            : state === "rejected"
+                                ? "已驳回"
+                                : "不可用";
+
+
+                return (
+                    (index + 1) +
+                    ". " +
+                    (
+                        person.name ||
+                        "未命名人员"
+                    ) +
+                    "（" +
+                    stateText +
+                    "）"
+                );
+            }
+        );
+
+
+    const answer =
+        prompt(
+            "当前浏览器中存在多名“" +
+            position +
+            "”人员。\n\n" +
+            "请选择本机当前使用人员：\n\n" +
+            lines.join("\n") +
+            "\n\n请输入序号："
+        );
+
+
+    if (
+        answer ===
+        null
+    ) {
+
+        return null;
+    }
+
+
+    const index =
+        Number(
+            answer
+        ) -
+        1;
+
+
+    if (
+        !Number.isInteger(
+            index
+        ) ||
+        !persons[
+            index
+        ]
+    ) {
+
+        alert(
+            "人员序号无效，请重新选择。"
+        );
+
+        return null;
+    }
+
+
+    return persons[
+        index
+    ];
+}
+
+
+/* =========================================================
    查找当前岗位人员
 ========================================================= */
 
@@ -1809,37 +2134,170 @@ function findCurrentProfile(position) {
         getPersonnelRecords();
 
 
-    const currentPersonId =
-        localStorage.getItem(
-            "currentPersonId"
-        );
+    /*
+     * 1. 普通岗位优先使用当前员工 currentPersonId。
+     *    高权限岗位不使用它，避免管理员覆盖司机身份。
+     */
+    if (
+        !PASSWORD_PROTECTED_POSITIONS.includes(
+            normalizedPosition
+        )
+    ) {
 
-
-    if (currentPersonId) {
-
-        const person =
-            records.find(
-                item =>
-
-                    getPersonId(item) ===
-                        currentPersonId &&
-
-                    normalizePosition(
-                        item.position
-                    ) ===
-                        normalizedPosition
+        const currentPersonId =
+            localStorage.getItem(
+                "currentPersonId"
             );
 
 
-        if (person) {
+        if (currentPersonId) {
 
-            return person;
+            const person =
+                records.find(
+                    item =>
+
+                        String(
+                            getPersonId(item)
+                        ) ===
+                            String(
+                                currentPersonId
+                            ) &&
+
+                        normalizePosition(
+                            item.position
+                        ) ===
+                            normalizedPosition
+                );
+
+
+            if (person) {
+
+                rememberRolePerson(
+                    normalizedPosition,
+                    getPersonId(
+                        person
+                    )
+                );
+
+                return person;
+            }
+
+        }
+
+
+        /*
+         * 2. 岗位独立身份映射。
+         */
+        const mapped =
+            getMappedPersonForPosition(
+                records,
+                normalizedPosition
+            );
+
+
+        if (mapped) {
+
+            return mapped;
+        }
+
+    }
+
+
+    /*
+     * 3. 高权限岗位使用独立身份键。
+     */
+    if (
+        normalizedPosition ===
+        "管理员"
+    ) {
+
+        const adminPersonId =
+            localStorage.getItem(
+                "adminPersonId"
+            ) ||
+            "";
+
+
+        if (adminPersonId) {
+
+            const admin =
+                records.find(
+                    item =>
+                        String(
+                            getPersonId(item)
+                        ) ===
+                            String(
+                                adminPersonId
+                            ) &&
+
+                        normalizePosition(
+                            item.position
+                        ) ===
+                            "管理员"
+                );
+
+
+            if (admin) {
+
+                return admin;
+            }
 
         }
 
     }
 
 
+    if (
+        normalizedPosition ===
+        "总经理"
+    ) {
+
+        const managerPersonId =
+            localStorage.getItem(
+                "managerPersonId"
+            ) ||
+            "";
+
+
+        if (managerPersonId) {
+
+            const manager =
+                records.find(
+                    item =>
+                        String(
+                            getPersonId(item)
+                        ) ===
+                            String(
+                                managerPersonId
+                            ) &&
+
+                        normalizePosition(
+                            item.position
+                        ) ===
+                            "总经理"
+                );
+
+
+            if (manager) {
+
+                return manager;
+            }
+
+        }
+
+    }
+
+
+    /*
+     * 4. 从人员库恢复岗位人员。
+     *
+     * 以前这里仅在 samePosition.length === 1 时返回，
+     * 多名汽车司机时会错误进入注册页。
+     *
+     * 现在：
+     * - 只有1人：自动恢复
+     * - 多人：让当前设备选择一次
+     */
     const samePosition =
         records.filter(
             item =>
@@ -1850,12 +2308,55 @@ function findCurrentProfile(position) {
         );
 
 
-    if (
-        samePosition.length === 1
-    ) {
+    const person =
+        chooseExistingProfile(
+            samePosition,
+            normalizedPosition
+        );
 
-        return samePosition[0];
 
+    if (person) {
+
+        if (
+            !PASSWORD_PROTECTED_POSITIONS.includes(
+                normalizedPosition
+            )
+        ) {
+
+            rememberRolePerson(
+                normalizedPosition,
+                getPersonId(
+                    person
+                )
+            );
+
+        } else if (
+            normalizedPosition ===
+            "管理员"
+        ) {
+
+            localStorage.setItem(
+                "adminPersonId",
+                getPersonId(
+                    person
+                )
+            );
+
+        } else if (
+            normalizedPosition ===
+            "总经理"
+        ) {
+
+            localStorage.setItem(
+                "managerPersonId",
+                getPersonId(
+                    person
+                )
+            );
+        }
+
+
+        return person;
     }
 
 
@@ -1886,10 +2387,30 @@ function selectPosition(position) {
     closeRoleModal();
 
 
-    localStorage.setItem(
-        "selectedPosition",
-        normalizedPosition
-    );
+    /*
+     * 普通岗位保存 selectedPosition。
+     * 管理员 / 总经理只保存 pendingProtectedPosition，
+     * 避免高权限入口覆盖司机岗位身份。
+     */
+    if (
+        PASSWORD_PROTECTED_POSITIONS.includes(
+            normalizedPosition
+        )
+    ) {
+
+        localStorage.setItem(
+            "pendingProtectedPosition",
+            normalizedPosition
+        );
+
+    } else {
+
+        localStorage.setItem(
+            "selectedPosition",
+            normalizedPosition
+        );
+
+    }
 
 
     /* =====================================================
@@ -1986,10 +2507,27 @@ function selectPosition(position) {
         );
 
 
-    if (personId) {
+    if (
+        personId &&
+        !PASSWORD_PROTECTED_POSITIONS.includes(
+            normalizedPosition
+        )
+    ) {
 
         localStorage.setItem(
             "currentPersonId",
+            personId
+        );
+
+
+        localStorage.setItem(
+            "selectedPosition",
+            normalizedPosition
+        );
+
+
+        rememberRolePerson(
+            normalizedPosition,
             personId
         );
 
@@ -2098,16 +2636,53 @@ function enterApprovedPosition(
     }
 
 
-    localStorage.setItem(
-        "currentPersonId",
-        personId
-    );
+    /*
+     * 普通岗位与高权限岗位身份彻底隔离。
+     */
+    if (
+        !PASSWORD_PROTECTED_POSITIONS.includes(
+            position
+        )
+    ) {
+
+        localStorage.setItem(
+            "currentPersonId",
+            personId
+        );
 
 
-    localStorage.setItem(
-        "selectedPosition",
-        position
-    );
+        localStorage.setItem(
+            "selectedPosition",
+            position
+        );
+
+
+        rememberRolePerson(
+            position,
+            personId
+        );
+
+    } else if (
+        position ===
+        "管理员"
+    ) {
+
+        localStorage.setItem(
+            "adminPersonId",
+            personId
+        );
+
+    } else if (
+        position ===
+        "总经理"
+    ) {
+
+        localStorage.setItem(
+            "managerPersonId",
+            personId
+        );
+
+    }
 
 
     if (
