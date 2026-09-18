@@ -18,12 +18,13 @@
     <!-- =====================================================
          管理员登录保护
 
-         V2.10.0S 本地测试版：
+         V2.10.2H 本地测试版：
          1. 必须存在 managementSession
          2. 必须是管理员
          3. 必须在30分钟有效期内
          4. 必须能在 personnelRecords 找到本人
          5. 本人仍然必须处于审核通过状态
+         6. 管理员身份使用 adminPersonId，与普通员工 currentPersonId 隔离
     ====================================================== -->
 
     <script>
@@ -35,7 +36,7 @@
 
             function getPersonId(person) {
 
-                return String(
+                return (
                     person?.personId ||
                     person?.driverId ||
                     person?.employeeId ||
@@ -152,12 +153,33 @@
                 );
 
 
+                const adminPersonId =
+                    localStorage.getItem(
+                        "adminPersonId"
+                    ) ||
+                    "";
+
+
+                if (adminPersonId) {
+
+                    localStorage.setItem(
+                        "pendingProtectedPersonId",
+                        adminPersonId
+                    );
+
+                }
+
+
                 localStorage.setItem(
                     "pendingProtectedPosition",
                     "管理员"
                 );
 
 
+                /*
+                 * 不修改 currentPersonId / selectedPosition。
+                 * 这两个键继续保留司机等普通岗位身份。
+                 */
                 location.replace(
                     "management-login.html?position=" +
                     encodeURIComponent(
@@ -214,12 +236,8 @@
                 records.find(
                     person =>
 
-                        String(
-                            getPersonId(person)
-                        ) ===
-                            String(
-                                session.personId
-                            ) &&
+                        getPersonId(person) ===
+                            session.personId &&
 
                         normalizePosition(
                             person.position
@@ -243,19 +261,12 @@
 
 
             /*
-             * V2.10.0S 关键修复：
-             * 管理员身份只保存在 sessionStorage。
-             *
-             * 不再写 localStorage.currentPersonId，
-             * 避免把正在等待审核的申请人ID覆盖成管理员ID。
-             * 这样 person-waiting.html 才能继续识别原申请人，
-             * 审核通过后自动进入其对应工作端。
+             * V2.10.2H
+             * 管理员身份独立保存，不再覆盖普通员工 currentPersonId。
              */
-            sessionStorage.setItem(
+            localStorage.setItem(
                 "adminPersonId",
-                String(
-                    session.personId
-                )
+                session.personId
             );
 
 
@@ -742,7 +753,7 @@
                 </h1>
 
                 <p>
-                    统一人员入职审核 · V2.10.0S
+                    统一人员入职审核 · V2.10.0G
                 </p>
 
             </div>
@@ -998,7 +1009,7 @@
     color:#94a3b8;
     font-size:12px;
 ">
-    矿山管理系统 · 管理员审核中心 V2.10.0S
+    矿山管理系统 · 管理员审核中心 V2.10.2H
 </footer>
 
 
@@ -1466,9 +1477,6 @@ function normalizePosition(position) {
         "卡车司机":
             "汽车司机",
 
-        "挖掘机司机":
-            "挖机司机",
-
         "装载机司机":
             "铲车司机",
 
@@ -1525,7 +1533,7 @@ function normalizePosition(position) {
 
 function getPersonId(person) {
 
-    return String(
+    return (
         person?.personId ||
         person?.driverId ||
         person?.employeeId ||
@@ -2111,12 +2119,8 @@ function findPerson(personId) {
         getPersonnelRecords()
             .find(
                 person =>
-                    String(
-                        getPersonId(person)
-                    ) ===
-                    String(
-                        personId
-                    )
+                    getPersonId(person) ===
+                    personId
             ) ||
         null
     );
@@ -2425,12 +2429,8 @@ function approveCurrentPerson() {
     const index =
         records.findIndex(
             person =>
-                String(
-                    getPersonId(person)
-                ) ===
-                String(
-                    selectedPersonId
-                )
+                getPersonId(person) ===
+                selectedPersonId
         );
 
 
@@ -2612,12 +2612,8 @@ function confirmReject() {
     const index =
         records.findIndex(
             person =>
-                String(
-                    getPersonId(person)
-                ) ===
-                String(
-                    selectedPersonId
-                )
+                getPersonId(person) ===
+                selectedPersonId
         );
 
 
@@ -3195,11 +3191,6 @@ function logoutAdmin() {
     );
 
 
-    sessionStorage.removeItem(
-        "adminPersonId"
-    );
-
-
     localStorage.removeItem(
         "pendingProtectedPersonId"
     );
@@ -3210,6 +3201,14 @@ function logoutAdmin() {
     );
 
 
+    /*
+     * 只退出管理员会话。
+     * 不删除 currentPersonId / selectedPosition，
+     * 因此司机等普通员工身份仍然可以继续使用。
+     *
+     * adminPersonId 保留用于下次管理员身份恢复，
+     * 不影响普通岗位。
+     */
     location.href =
         "index.html";
 
