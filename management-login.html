@@ -362,7 +362,7 @@
 
         <div class="notice">
 
-            当前为 V2.10.0T 本地测试版。
+            当前为 V2.10.2G 本地测试版。
 
             管理密码暂时只用于测试整个权限流程。
 
@@ -378,7 +378,7 @@
 
 
 <footer>
-    矿山管理系统 · 管理权限验证 V2.10.0T
+    矿山管理系统 · 管理权限验证 V2.10.2G
 </footer>
 
 
@@ -480,13 +480,11 @@ if (
 
 function getPersonId(person) {
 
-    return String(
+    return (
 
         person?.personId ||
 
         person?.driverId ||
-
-        person?.employeeId ||
 
         person?.id ||
 
@@ -669,12 +667,8 @@ function getCurrentPerson() {
             records.find(
                 item =>
 
-                    String(
-                        getPersonId(item)
-                    ) ===
-                        String(
-                            pendingId
-                        ) &&
+                    getPersonId(item) ===
+                        pendingId &&
 
                     item.position ===
                         position
@@ -690,6 +684,56 @@ function getCurrentPerson() {
     }
 
 
+    /*
+     * V2.10.2G
+     * 高权限身份与普通员工身份隔离。
+     *
+     * 管理员：adminPersonId
+     * 总经理：managerPersonId
+     *
+     * 不再依赖 currentPersonId 作为高权限登录的主要身份，
+     * 避免管理员登录后覆盖司机/挖机司机等普通岗位身份。
+     */
+    const protectedPersonId =
+        position === "管理员"
+            ? localStorage.getItem(
+                "adminPersonId"
+            )
+            : position === "总经理"
+                ? localStorage.getItem(
+                    "managerPersonId"
+                )
+                : "";
+
+
+    if (protectedPersonId) {
+
+        const person =
+            records.find(
+                item =>
+
+                    getPersonId(item) ===
+                        protectedPersonId &&
+
+                    item.position ===
+                        position
+            );
+
+
+        if (person) {
+
+            return person;
+
+        }
+
+    }
+
+
+    /*
+     * 历史版本兼容：
+     * 老版本曾把高权限人员写入 currentPersonId。
+     * 这里仍允许读取，但新版不再写入。
+     */
     const currentPersonId =
         localStorage.getItem(
             "currentPersonId"
@@ -702,12 +746,8 @@ function getCurrentPerson() {
             records.find(
                 item =>
 
-                    String(
-                        getPersonId(item)
-                    ) ===
-                        String(
-                            currentPersonId
-                        ) &&
+                    getPersonId(item) ===
+                        currentPersonId &&
 
                     item.position ===
                         position
@@ -804,9 +844,40 @@ if (
 
     if (personId) {
 
+        if (
+            position ===
+            "管理员"
+        ) {
+
+            localStorage.setItem(
+                "adminPersonId",
+                personId
+            );
+
+        } else if (
+            position ===
+            "总经理"
+        ) {
+
+            localStorage.setItem(
+                "managerPersonId",
+                personId
+            );
+
+        }
+
+        /*
+         * 保留待验证人员ID，
+         * 不覆盖普通员工 currentPersonId。
+         */
         localStorage.setItem(
-            "currentPersonId",
+            "pendingProtectedPersonId",
             personId
+        );
+
+        localStorage.setItem(
+            "pendingProtectedPosition",
+            position
         );
 
     }
@@ -1223,11 +1294,6 @@ document.getElementById(
 
 /* =========================================================
    建立30分钟管理会话
-
-   V2.10.0T：
-   管理员身份与普通申请人身份隔离。
-   管理员只使用 sessionStorage.managementSession，
-   不覆盖 localStorage.currentPersonId。
 ========================================================= */
 
 function establishSession(
@@ -1292,50 +1358,33 @@ function establishSession(
 
 
     /*
-     * V2.10.0T 管理员身份隔离
+     * V2.10.2G
+     * 高权限会话身份单独保存。
      *
-     * 管理员审核别人时，不能覆盖普通申请人的
-     * localStorage.currentPersonId / selectedPosition。
-     *
-     * 否则申请人的 person-waiting.html 会失去原人员身份，
-     * 即使管理员已经审核通过，也无法继续自动进入工作端。
-     *
-     * 管理员身份只使用 managementSession / adminPersonId。
+     * 重要：
+     * 不再修改 currentPersonId / selectedPosition，
+     * 这两个键继续保留普通员工（例如汽车司机）的身份。
      */
     if (
         targetPosition ===
-            "管理员"
+        "管理员"
     ) {
 
-        sessionStorage.setItem(
-            "adminPersonId",
-            String(
-                personId
-            )
-        );
-
-
-        sessionStorage.setItem(
-            "adminPosition",
-            "管理员"
-        );
-
-    } else {
-
-        /*
-         * 总经理当前其他页面仍可能依赖旧的全局身份，
-         * 这里先保持兼容，后续再统一拆分身份系统。
-         */
         localStorage.setItem(
-            "currentPersonId",
+            "adminPersonId",
             personId
         );
 
+    } else if (
+        targetPosition ===
+        "总经理"
+    ) {
 
         localStorage.setItem(
-            "selectedPosition",
-            targetPosition
+            "managerPersonId",
+            personId
         );
+
     }
 
 
@@ -1395,16 +1444,6 @@ function goHome() {
 
     sessionStorage.removeItem(
         "managementSession"
-    );
-
-
-    sessionStorage.removeItem(
-        "adminPersonId"
-    );
-
-
-    sessionStorage.removeItem(
-        "adminPosition"
     );
 
 
