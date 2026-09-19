@@ -22,7 +22,7 @@
 
 <style>
 /* =========================================================
-   V2.10.2E1 GPS区域装卸计数
+   V2.10.2E2 GPS区域装卸计数
 ========================================================= */
 #addTripButton{
     display:none !important;
@@ -956,16 +956,316 @@
 
 
 <footer>
-    矿山管理系统 · 司机端 V2.10.2E1
+    矿山管理系统 · 司机端 V2.10.2E2
 </footer>
 
-<script src="js/driver-work.js?v=2.9.2"></script>
 
 <script>
 "use strict";
 
 /* =========================================================
-   driver-work.html V2.10.2E1
+   V2.10.2E2
+   司机工作页身份预修复
+
+   必须在 js/driver-work.js 加载之前执行。
+   目的：
+   - 优先恢复已审核汽车司机
+   - 修复 currentPersonId / selectedPosition
+   - 防止旧身份、管理员身份或重复待审核档案
+     导致 driver-work.js 又跳回 person-waiting.html
+========================================================= */
+
+(function repairApprovedDriverIdentityBeforeMainScript(){
+
+    const DRIVER_POSITION =
+        "汽车司机";
+
+
+    function normalizePosition(position){
+
+        const map = {
+            "卡车司机": "汽车司机"
+        };
+
+        return (
+            map[position] ||
+            position ||
+            ""
+        );
+    }
+
+
+    function getPersonId(person){
+
+        return String(
+            person?.personId ||
+            person?.employeeId ||
+            person?.driverId ||
+            person?.id ||
+            ""
+        );
+    }
+
+
+    function isApproved(person){
+
+        if (!person) {
+            return false;
+        }
+
+
+        if (
+            person.enabled === false ||
+            person.status === "rejected" ||
+            person.approvalStatus === "rejected" ||
+            person.status === "disabled" ||
+            person.status === "resigned" ||
+            person.personnelStatus === "停用" ||
+            person.personnelStatus === "离职"
+        ) {
+            return false;
+        }
+
+
+        return (
+            person.status === "approved" ||
+            person.status === "active" ||
+            person.status === "working" ||
+            person.status === "leave" ||
+            person.approvalStatus === "approved" ||
+            person.personnelStatus === "在职可用" ||
+            person.personnelStatus === "作业中" ||
+            person.personnelStatus === "请假"
+        );
+    }
+
+
+    function readPersonnel(){
+
+        try {
+
+            const data =
+                JSON.parse(
+                    localStorage.getItem(
+                        "personnelRecords"
+                    )
+                );
+
+
+            return Array.isArray(data)
+                ? data
+                : [];
+
+        } catch (error) {
+
+            return [];
+        }
+    }
+
+
+    function readRoleMap(){
+
+        try {
+
+            const data =
+                JSON.parse(
+                    localStorage.getItem(
+                        "rolePersonIds"
+                    )
+                );
+
+
+            return (
+                data &&
+                typeof data === "object" &&
+                !Array.isArray(data)
+            )
+                ? data
+                : {};
+
+        } catch (error) {
+
+            return {};
+        }
+    }
+
+
+    const records =
+        readPersonnel();
+
+
+    const approvedDrivers =
+        records.filter(
+            person =>
+                normalizePosition(
+                    person.position
+                ) ===
+                    DRIVER_POSITION &&
+                isApproved(
+                    person
+                )
+        );
+
+
+    if (!approvedDrivers.length) {
+
+        /*
+         * 没有已审核司机时不伪造状态，
+         * 交给原 driver-work.js 正常处理。
+         */
+        return;
+    }
+
+
+    const roleMap =
+        readRoleMap();
+
+
+    const candidateIds = [
+
+        roleMap[
+            DRIVER_POSITION
+        ],
+
+        localStorage.getItem(
+            "workerPersonId"
+        ),
+
+        localStorage.getItem(
+            "currentPersonId"
+        )
+
+    ]
+        .filter(Boolean)
+        .map(String);
+
+
+    let driver =
+        null;
+
+
+    for (const id of candidateIds) {
+
+        driver =
+            approvedDrivers.find(
+                person =>
+                    getPersonId(
+                        person
+                    ) ===
+                        id
+            );
+
+
+        if (driver) {
+            break;
+        }
+    }
+
+
+    /*
+     * 当前设备只有一名已审核汽车司机时，
+     * 直接自动恢复。
+     */
+    if (
+        !driver &&
+        approvedDrivers.length ===
+            1
+    ) {
+
+        driver =
+            approvedDrivers[0];
+    }
+
+
+    /*
+     * 多名已审核司机且没有任何身份映射时，
+     * 不自动猜人，避免串号。
+     * index.html 选择人员后会写 currentPersonId，
+     * 正常情况下这里一定能够命中。
+     */
+    if (!driver) {
+
+        return;
+    }
+
+
+    const personId =
+        getPersonId(
+            driver
+        );
+
+
+    if (!personId) {
+
+        return;
+    }
+
+
+    /*
+     * 在主脚本启动以前统一修复身份。
+     */
+    localStorage.setItem(
+        "currentPersonId",
+        personId
+    );
+
+
+    localStorage.setItem(
+        "selectedPosition",
+        DRIVER_POSITION
+    );
+
+
+    localStorage.setItem(
+        "workerPersonId",
+        personId
+    );
+
+
+    localStorage.setItem(
+        "workerPosition",
+        DRIVER_POSITION
+    );
+
+
+    roleMap[
+        DRIVER_POSITION
+    ] =
+        personId;
+
+
+    localStorage.setItem(
+        "rolePersonIds",
+        JSON.stringify(
+            roleMap
+        )
+    );
+
+
+    /*
+     * 清除可能残留的高权限待验证状态，
+     * 但不影响管理员独立 adminPersonId。
+     */
+    localStorage.removeItem(
+        "pendingProtectedPersonId"
+    );
+
+
+    localStorage.removeItem(
+        "pendingProtectedPosition"
+    );
+
+})();
+</script>
+
+<script src="js/driver-work.js?v=2.10.2E2"></script>
+
+
+<script>
+"use strict";
+
+/* =========================================================
+   driver-work.html V2.10.2E2
    GPS区域装卸计数兼容层
 
    核心原则：
