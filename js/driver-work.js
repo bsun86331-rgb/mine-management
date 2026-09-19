@@ -1,7 +1,7 @@
 /*
 ====================================================
 矿山管理系统
-司机端 V2.9.2
+司机端 V2.10.2K
 ====================================================
 功能：
 1. 审核通过司机才可进入
@@ -21,6 +21,8 @@ document.addEventListener("DOMContentLoaded", function () {
 
     const STORAGE = {
         PROFILE: "driverProfile",
+        PERSONNEL: "personnelRecords",
+        ROLE_PERSON_IDS: "rolePersonIds",
         CURRENT_TASK: "driverCurrentTask",
         DISPATCH_TASKS: "dispatchPublishedTasks",
         TRIPS: "driverTripRecords",
@@ -42,20 +44,64 @@ document.addEventListener("DOMContentLoaded", function () {
 
     function initialize() {
 
-        profile = readJson(
+        /*
+         * V2.10.2K
+         *
+         * 人员身份以 personnelRecords 为正式来源。
+         * driverProfile 仅作为旧司机端兼容缓存。
+         *
+         * 旧版本只读取 driverProfile：
+         * - 没有 -> driver-register.html
+         * - status != approved -> driver-waiting.html
+         *
+         * 这会导致人员已经在管理员端审核通过，
+         * 但旧 driverProfile 仍是 pending 时不断被送回审核页。
+         */
+        const identity =
+            resolveDriverIdentity();
+
+
+        if (
+            !identity.profile
+        ) {
+
+            if (
+                identity.existingPerson
+            ) {
+
+                goToUnifiedWaiting(
+                    identity.existingPerson
+                );
+
+            } else {
+
+                location.replace(
+                    "person-register.html?position=" +
+                    encodeURIComponent(
+                        "汽车司机"
+                    )
+                );
+            }
+
+            return;
+        }
+
+
+        profile =
+            identity.profile;
+
+
+        /*
+         * 已审核人员恢复成功后，
+         * 始终生成一份兼容 driverProfile。
+         */
+        localStorage.setItem(
             STORAGE.PROFILE,
-            null
+            JSON.stringify(
+                profile
+            )
         );
 
-        if (!profile) {
-            location.href = "driver-register.html";
-            return;
-        }
-
-        if (profile.status !== "approved") {
-            location.href = "driver-waiting.html";
-            return;
-        }
 
         renderProfile();
 
@@ -73,11 +119,744 @@ document.addEventListener("DOMContentLoaded", function () {
 
         setInterval(
             function () {
+
+                /*
+                 * 每5秒重新确认人员仍然可用。
+                 * 被停用/离职后不能继续生产作业。
+                 */
+                const latestIdentity =
+                    resolveDriverIdentity();
+
+
+                if (
+                    !latestIdentity.profile
+                ) {
+
+                    if (
+                        latestIdentity.existingPerson
+                    ) {
+
+                        goToUnifiedWaiting(
+                            latestIdentity.existingPerson
+                        );
+
+                    } else {
+
+                        location.replace(
+                            "index.html"
+                        );
+                    }
+
+                    return;
+                }
+
+
+                profile =
+                    latestIdentity.profile;
+
+
                 currentTask = getCurrentTask();
+
                 applyApprovedVehicleChange();
+
                 refreshAll();
+
             },
             5000
+        );
+    }
+
+
+    /*
+    ===============================================
+    V2.10.2K
+    统一司机身份恢复
+    ===============================================
+    */
+
+    function normalizeDriverPosition(
+        position
+    ) {
+
+        const map = {
+
+            "卡车司机":
+                "汽车司机",
+
+            "汽车驾驶员":
+                "汽车司机"
+
+        };
+
+
+        return (
+            map[position] ||
+            position ||
+            ""
+        );
+    }
+
+
+    function getPersonnelPersonId(
+        person
+    ) {
+
+        return String(
+
+            person?.personId ||
+
+            person?.employeeId ||
+
+            person?.driverId ||
+
+            person?.id ||
+
+            ""
+
+        );
+    }
+
+
+    function getPersonnelRecords() {
+
+        const data =
+            readJson(
+                STORAGE.PERSONNEL,
+                []
+            );
+
+
+        return Array.isArray(
+            data
+        )
+            ? data
+            : [];
+    }
+
+
+    function isApprovedPersonnel(
+        person
+    ) {
+
+        if (
+            !person
+        ) {
+
+            return false;
+        }
+
+
+        if (
+
+            person.enabled ===
+                false
+
+            ||
+
+            person.status ===
+                "rejected"
+
+            ||
+
+            person.approvalStatus ===
+                "rejected"
+
+            ||
+
+            person.status ===
+                "disabled"
+
+            ||
+
+            person.status ===
+                "resigned"
+
+            ||
+
+            person.personnelStatus ===
+                "停用"
+
+            ||
+
+            person.personnelStatus ===
+                "离职"
+
+        ) {
+
+            return false;
+        }
+
+
+        return (
+
+            person.status ===
+                "approved"
+
+            ||
+
+            person.status ===
+                "active"
+
+            ||
+
+            person.status ===
+                "working"
+
+            ||
+
+            person.status ===
+                "leave"
+
+            ||
+
+            person.approvalStatus ===
+                "approved"
+
+            ||
+
+            person.personnelStatus ===
+                "在职可用"
+
+            ||
+
+            person.personnelStatus ===
+                "作业中"
+
+            ||
+
+            person.personnelStatus ===
+                "请假"
+
+        );
+    }
+
+
+    function getRolePersonMap() {
+
+        const data =
+            readJson(
+                STORAGE.ROLE_PERSON_IDS,
+                {}
+            );
+
+
+        return (
+            data &&
+            typeof data ===
+                "object" &&
+            !Array.isArray(data)
+        )
+            ? data
+            : {};
+    }
+
+
+    function rememberApprovedDriver(
+        person
+    ) {
+
+        const personId =
+            getPersonnelPersonId(
+                person
+            );
+
+
+        if (
+            !personId
+        ) {
+
+            return;
+        }
+
+
+        localStorage.setItem(
+            "currentPersonId",
+            personId
+        );
+
+
+        localStorage.setItem(
+            "selectedPosition",
+            "汽车司机"
+        );
+
+
+        localStorage.setItem(
+            "workerPersonId",
+            personId
+        );
+
+
+        localStorage.setItem(
+            "workerPosition",
+            "汽车司机"
+        );
+
+
+        const roleMap =
+            getRolePersonMap();
+
+
+        roleMap[
+            "汽车司机"
+        ] =
+            personId;
+
+
+        localStorage.setItem(
+            STORAGE.ROLE_PERSON_IDS,
+            JSON.stringify(
+                roleMap
+            )
+        );
+
+
+        /*
+         * 清除旧高权限待验证残留，
+         * 不影响 adminPersonId / managerPersonId。
+         */
+        localStorage.removeItem(
+            "pendingProtectedPersonId"
+        );
+
+
+        localStorage.removeItem(
+            "pendingProtectedPosition"
+        );
+    }
+
+
+    function convertPersonnelToDriverProfile(
+        person
+    ) {
+
+        const personId =
+            getPersonnelPersonId(
+                person
+            );
+
+
+        return {
+
+            /*
+             * 旧司机端大量逻辑使用 driverId，
+             * 因此与 personId 使用同一个ID。
+             */
+            driverId:
+                personId,
+
+            personId:
+                personId,
+
+            employeeId:
+                person.employeeId ||
+                personId,
+
+            name:
+                person.name ||
+                "",
+
+            phone:
+                person.phone ||
+                "",
+
+            position:
+                "汽车司机",
+
+            team:
+                person.team ||
+                person.department ||
+                "",
+
+            department:
+                person.department ||
+                person.team ||
+                "",
+
+            entryDate:
+                person.entryDate ||
+                "",
+
+            idCardNumber:
+                person.idCardNumber ||
+                "",
+
+            passportNumber:
+                person.passportNumber ||
+                "",
+
+            driverLicensePhoto:
+                person.driverLicensePhoto ||
+                "",
+
+            bankCardNumber:
+                person.bankCardNumber ||
+                "",
+
+            emergencyContact:
+                person.emergencyContact ||
+                "",
+
+            emergencyPhone:
+                person.emergencyPhone ||
+                "",
+
+            /*
+             * 对旧 driver-work.js 保持兼容。
+             */
+            status:
+                "approved",
+
+            approvalStatus:
+                "approved",
+
+            personnelStatus:
+                person.personnelStatus ||
+                "在职可用",
+
+            approvedAt:
+                person.approvedAt ||
+                person.reviewedAt ||
+                "",
+
+            updatedAt:
+                person.updatedAt ||
+                new Date()
+                    .toISOString(),
+
+            source:
+                "personnelRecords",
+
+            compatibilityProfile:
+                true
+
+        };
+    }
+
+
+    function resolveDriverIdentity() {
+
+        const records =
+            getPersonnelRecords();
+
+
+        const drivers =
+            records.filter(
+                person =>
+                    normalizeDriverPosition(
+                        person.position
+                    ) ===
+                        "汽车司机"
+            );
+
+
+        const approvedDrivers =
+            drivers.filter(
+                isApprovedPersonnel
+            );
+
+
+        /*
+         * 优先级：
+         * 1. currentPersonId
+         * 2. rolePersonIds["汽车司机"]
+         * 3. workerPersonId
+         * 4. 唯一已审核汽车司机
+         */
+        const roleMap =
+            getRolePersonMap();
+
+
+        const candidateIds = [
+
+            localStorage.getItem(
+                "currentPersonId"
+            ),
+
+            roleMap[
+                "汽车司机"
+            ],
+
+            (
+                normalizeDriverPosition(
+                    localStorage.getItem(
+                        "workerPosition"
+                    ) ||
+                    ""
+                ) ===
+                    "汽车司机"
+            )
+                ? localStorage.getItem(
+                    "workerPersonId"
+                )
+                : "",
+
+        ]
+            .filter(Boolean)
+            .map(String);
+
+
+        let approvedPerson =
+            null;
+
+
+        for (
+            const candidateId
+            of candidateIds
+        ) {
+
+            approvedPerson =
+                approvedDrivers.find(
+                    person =>
+                        getPersonnelPersonId(
+                            person
+                        ) ===
+                            candidateId
+                );
+
+
+            if (
+                approvedPerson
+            ) {
+
+                break;
+            }
+        }
+
+
+        if (
+            !approvedPerson &&
+            approvedDrivers.length ===
+                1
+        ) {
+
+            approvedPerson =
+                approvedDrivers[
+                    0
+                ];
+        }
+
+
+        /*
+         * 多名已审核司机且没有身份映射时，
+         * 尝试使用旧 driverProfile 的ID匹配，
+         * 但旧 profile 的 pending 状态不再拥有否决权。
+         */
+        if (
+            !approvedPerson &&
+            approvedDrivers.length >
+                1
+        ) {
+
+            const legacyProfile =
+                readJson(
+                    STORAGE.PROFILE,
+                    null
+                );
+
+
+            const legacyId =
+                String(
+                    legacyProfile?.driverId ||
+                    legacyProfile?.personId ||
+                    ""
+                );
+
+
+            if (
+                legacyId
+            ) {
+
+                approvedPerson =
+                    approvedDrivers.find(
+                        person =>
+                            getPersonnelPersonId(
+                                person
+                            ) ===
+                                legacyId
+                    ) ||
+                    null;
+            }
+        }
+
+
+        if (
+            approvedPerson
+        ) {
+
+            rememberApprovedDriver(
+                approvedPerson
+            );
+
+
+            const compatibleProfile =
+                convertPersonnelToDriverProfile(
+                    approvedPerson
+                );
+
+
+            localStorage.setItem(
+                STORAGE.PROFILE,
+                JSON.stringify(
+                    compatibleProfile
+                )
+            );
+
+
+            return {
+
+                profile:
+                    compatibleProfile,
+
+                existingPerson:
+                    approvedPerson
+
+            };
+        }
+
+
+        /*
+         * personnelRecords 中没有已审核司机：
+         * 如果已有当前申请记录，则交给统一 person-waiting.html。
+         */
+        let existingPerson =
+            null;
+
+
+        for (
+            const candidateId
+            of candidateIds
+        ) {
+
+            existingPerson =
+                drivers.find(
+                    person =>
+                        getPersonnelPersonId(
+                            person
+                        ) ===
+                            candidateId
+                );
+
+
+            if (
+                existingPerson
+            ) {
+
+                break;
+            }
+        }
+
+
+        if (
+            !existingPerson &&
+            drivers.length ===
+                1
+        ) {
+
+            existingPerson =
+                drivers[0];
+        }
+
+
+        /*
+         * 最后才兼容旧版独立 driverProfile。
+         * 仅当 personnelRecords 中没有任何汽车司机资料时启用。
+         */
+        if (
+            !drivers.length
+        ) {
+
+            const legacyProfile =
+                readJson(
+                    STORAGE.PROFILE,
+                    null
+                );
+
+
+            if (
+                legacyProfile &&
+                legacyProfile.status ===
+                    "approved"
+            ) {
+
+                return {
+
+                    profile:
+                        legacyProfile,
+
+                    existingPerson:
+                        null
+
+                };
+            }
+        }
+
+
+        return {
+
+            profile:
+                null,
+
+            existingPerson
+
+        };
+    }
+
+
+    function goToUnifiedWaiting(
+        person
+    ) {
+
+        const personId =
+            getPersonnelPersonId(
+                person
+            );
+
+
+        if (
+            personId
+        ) {
+
+            localStorage.setItem(
+                "currentPersonId",
+                personId
+            );
+
+
+            localStorage.setItem(
+                "selectedPosition",
+                "汽车司机"
+            );
+
+
+            localStorage.setItem(
+                "waitingApplicantPersonId",
+                personId
+            );
+
+
+            localStorage.setItem(
+                "waitingApplicantPosition",
+                "汽车司机"
+            );
+        }
+
+
+        location.replace(
+
+            "person-waiting.html?position=" +
+            encodeURIComponent(
+                "汽车司机"
+            ) +
+            (
+                personId
+                    ? "&personId=" +
+                      encodeURIComponent(
+                          personId
+                      )
+                    : ""
+            )
+
         );
     }
 
@@ -1068,7 +1847,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 "",
 
             driverId:
-                profile.driverId || "",
+                profile.driverId || profile.personId || "",
 
             driverName:
                 profile.name || "",
@@ -1448,7 +2227,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 "CHANGE_" + Date.now(),
 
             driverId:
-                profile.driverId || "",
+                profile.driverId || profile.personId || "",
 
             driverName:
                 profile.name || "",
@@ -1898,10 +2677,10 @@ document.addEventListener("DOMContentLoaded", function () {
                 "LEAVE_" + Date.now(),
 
             applicantId:
-                profile.driverId || "",
+                profile.driverId || profile.personId || "",
 
             personId:
-                profile.driverId || "",
+                profile.driverId || profile.personId || "",
 
             applicantName:
                 profile.name || "",
@@ -2641,10 +3420,16 @@ document.addEventListener("DOMContentLoaded", function () {
 
         if (
             id &&
-            profile.driverId
+            (
+                profile.driverId ||
+                profile.personId
+            )
         ) {
             return String(id) ===
-                String(profile.driverId);
+                String(
+                    profile.driverId ||
+                    profile.personId
+                );
         }
 
         return (
