@@ -1431,7 +1431,7 @@
 
 
 <footer>
-    矿山管理系统 · 首页最终优化版 V2.10.2I
+    矿山管理系统 · 首页最终优化版 V2.10.2J
 </footer>
 
 
@@ -1477,7 +1477,7 @@
 
 <script>
 
-/* 首页最终优化版 V2.10.2I：保留原登记 / 审核 / 分流 / 高权限验证业务逻辑 */
+/* 首页最终优化版 V2.10.2J：保留原登记 / 审核 / 分流 / 高权限验证业务逻辑 */
 
 "use strict";
 
@@ -1794,7 +1794,7 @@ function hasApprovedAdministrator() {
 
 
 /* =========================================================
-   V2.10.2I
+   V2.10.2J
    普通岗位身份映射
 
    解决：
@@ -2021,6 +2021,122 @@ function chooseExistingProfile(
     }
 
 
+    /*
+     * V2.10.2J
+     * 已审核人员优先。
+     *
+     * 解决同一岗位存在：
+     * - 旧的待审核重复档案
+     * - 新的已审核档案
+     *
+     * 时，用户虽然选了岗位却又被送回审核页的问题。
+     */
+    const approvedPersons =
+        persons.filter(
+            person =>
+                getApprovalState(
+                    person
+                ) ===
+                    "approved"
+        );
+
+
+    /*
+     * 当前岗位只有一个已审核人员，
+     * 直接使用，不再让旧待审核记录干扰。
+     */
+    if (
+        approvedPersons.length ===
+        1
+    ) {
+
+        return approvedPersons[0];
+    }
+
+
+    /*
+     * 有多个已审核人员时，
+     * 只让用户在已审核人员中选择。
+     */
+    if (
+        approvedPersons.length >
+        1
+    ) {
+
+        const lines =
+            approvedPersons.map(
+                (
+                    person,
+                    index
+                ) => {
+
+                    return (
+                        (index + 1) +
+                        ". " +
+                        (
+                            person.name ||
+                            "未命名人员"
+                        ) +
+                        "（已审核）"
+                    );
+                }
+            );
+
+
+        const answer =
+            prompt(
+                "当前浏览器中存在多名已审核“" +
+                position +
+                "”人员。\n\n" +
+                "请选择本机当前使用人员：\n\n" +
+                lines.join("\n") +
+                "\n\n请输入序号："
+            );
+
+
+        if (
+            answer ===
+            null
+        ) {
+
+            return null;
+        }
+
+
+        const index =
+            Number(
+                answer
+            ) -
+            1;
+
+
+        if (
+            !Number.isInteger(
+                index
+            ) ||
+            !approvedPersons[
+                index
+            ]
+        ) {
+
+            alert(
+                "人员序号无效，请重新选择。"
+            );
+
+            return null;
+        }
+
+
+        return approvedPersons[
+            index
+        ];
+    }
+
+
+    /*
+     * 没有已审核人员时，
+     * 才处理待审核 / 驳回 / 停用记录。
+     */
     if (
         persons.length ===
         1
@@ -2044,13 +2160,13 @@ function chooseExistingProfile(
 
 
                 const stateText =
-                    state === "approved"
-                        ? "已审核"
-                        : state === "pending"
-                            ? "待审核"
-                            : state === "rejected"
-                                ? "已驳回"
-                                : "不可用";
+                    state === "pending"
+                        ? "待审核"
+                        : state === "rejected"
+                            ? "已驳回"
+                            : state === "disabled"
+                                ? "不可用"
+                                : "未知";
 
 
                 return (
@@ -2070,10 +2186,10 @@ function chooseExistingProfile(
 
     const answer =
         prompt(
-            "当前浏览器中存在多名“" +
+            "当前浏览器中没有已审核的“" +
             position +
             "”人员。\n\n" +
-            "请选择本机当前使用人员：\n\n" +
+            "请选择要查看的申请记录：\n\n" +
             lines.join("\n") +
             "\n\n请输入序号："
         );
@@ -2134,9 +2250,32 @@ function findCurrentProfile(position) {
         getPersonnelRecords();
 
 
+    const samePosition =
+        records.filter(
+            item =>
+                normalizePosition(
+                    item.position
+                ) ===
+                    normalizedPosition
+        );
+
+
+    const approvedPersons =
+        samePosition.filter(
+            item =>
+                getApprovalState(
+                    item
+                ) ===
+                    "approved"
+        );
+
+
     /*
-     * 1. 普通岗位优先使用当前员工 currentPersonId。
-     *    高权限岗位不使用它，避免管理员覆盖司机身份。
+     * 1. 普通岗位：
+     * currentPersonId 只有在该人员已审核时才直接采用。
+     *
+     * 如果 currentPersonId 指向旧的待审核重复档案，
+     * 但岗位里已有已审核人员，则不再被旧记录截住。
      */
     if (
         !PASSWORD_PROTECTED_POSITIONS.includes(
@@ -2153,24 +2292,24 @@ function findCurrentProfile(position) {
         if (currentPersonId) {
 
             const person =
-                records.find(
+                samePosition.find(
                     item =>
-
                         String(
                             getPersonId(item)
                         ) ===
                             String(
                                 currentPersonId
-                            ) &&
-
-                        normalizePosition(
-                            item.position
-                        ) ===
-                            normalizedPosition
+                            )
                 );
 
 
-            if (person) {
+            if (
+                person &&
+                getApprovalState(
+                    person
+                ) ===
+                    "approved"
+            ) {
 
                 rememberRolePerson(
                     normalizedPosition,
@@ -2186,7 +2325,7 @@ function findCurrentProfile(position) {
 
 
         /*
-         * 2. 岗位独立身份映射。
+         * 2. 岗位身份映射同样只优先采用已审核人员。
          */
         const mapped =
             getMappedPersonForPosition(
@@ -2195,16 +2334,108 @@ function findCurrentProfile(position) {
             );
 
 
-        if (mapped) {
+        if (
+            mapped &&
+            getApprovalState(
+                mapped
+            ) ===
+                "approved"
+        ) {
 
             return mapped;
+        }
+
+
+        /*
+         * 3. 如果该岗位只有一个已审核人员，
+         * 无条件恢复这个人员。
+         *
+         * 这是本次关键修复。
+         */
+        if (
+            approvedPersons.length ===
+            1
+        ) {
+
+            const person =
+                approvedPersons[0];
+
+
+            rememberRolePerson(
+                normalizedPosition,
+                getPersonId(
+                    person
+                )
+            );
+
+
+            localStorage.setItem(
+                "currentPersonId",
+                getPersonId(
+                    person
+                )
+            );
+
+
+            localStorage.setItem(
+                "selectedPosition",
+                normalizedPosition
+            );
+
+
+            return person;
+        }
+
+
+        /*
+         * 4. 多个已审核人员时只在已审核人员中选择。
+         */
+        if (
+            approvedPersons.length >
+            1
+        ) {
+
+            const person =
+                chooseExistingProfile(
+                    approvedPersons,
+                    normalizedPosition
+                );
+
+
+            if (person) {
+
+                rememberRolePerson(
+                    normalizedPosition,
+                    getPersonId(
+                        person
+                    )
+                );
+
+
+                localStorage.setItem(
+                    "currentPersonId",
+                    getPersonId(
+                        person
+                    )
+                );
+
+
+                localStorage.setItem(
+                    "selectedPosition",
+                    normalizedPosition
+                );
+
+            }
+
+
+            return person;
         }
 
     }
 
 
     /*
-     * 3. 高权限岗位使用独立身份键。
+     * 5. 高权限岗位使用独立身份键。
      */
     if (
         normalizedPosition ===
@@ -2221,19 +2452,14 @@ function findCurrentProfile(position) {
         if (adminPersonId) {
 
             const admin =
-                records.find(
+                samePosition.find(
                     item =>
                         String(
                             getPersonId(item)
                         ) ===
                             String(
                                 adminPersonId
-                            ) &&
-
-                        normalizePosition(
-                            item.position
-                        ) ===
-                            "管理员"
+                            )
                 );
 
 
@@ -2262,19 +2488,14 @@ function findCurrentProfile(position) {
         if (managerPersonId) {
 
             const manager =
-                records.find(
+                samePosition.find(
                     item =>
                         String(
                             getPersonId(item)
                         ) ===
                             String(
                                 managerPersonId
-                            ) &&
-
-                        normalizePosition(
-                            item.position
-                        ) ===
-                            "总经理"
+                            )
                 );
 
 
@@ -2289,25 +2510,10 @@ function findCurrentProfile(position) {
 
 
     /*
-     * 4. 从人员库恢复岗位人员。
-     *
-     * 以前这里仅在 samePosition.length === 1 时返回，
-     * 多名汽车司机时会错误进入注册页。
-     *
-     * 现在：
-     * - 只有1人：自动恢复
-     * - 多人：让当前设备选择一次
+     * 6. 没有任何已审核人员时，
+     * 才允许选择待审核/驳回记录，
+     * 进入审核页或重新提交页。
      */
-    const samePosition =
-        records.filter(
-            item =>
-                normalizePosition(
-                    item.position
-                ) ===
-                    normalizedPosition
-        );
-
-
     const person =
         chooseExistingProfile(
             samePosition,
@@ -2323,11 +2529,27 @@ function findCurrentProfile(position) {
             )
         ) {
 
-            rememberRolePerson(
-                normalizedPosition,
+            const personId =
                 getPersonId(
                     person
-                )
+                );
+
+
+            localStorage.setItem(
+                "currentPersonId",
+                personId
+            );
+
+
+            localStorage.setItem(
+                "selectedPosition",
+                normalizedPosition
+            );
+
+
+            rememberRolePerson(
+                normalizedPosition,
+                personId
             );
 
         } else if (
