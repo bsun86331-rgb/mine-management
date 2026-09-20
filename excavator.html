@@ -471,7 +471,7 @@
                 </h1>
 
                 <p>
-                    Excavator Operator · V2.10.2W
+                    Excavator Operator · V2.10.3G
                 </p>
 
             </div>
@@ -839,7 +839,7 @@
 
 <footer>
 
-    矿山管理系统 · 挖机司机端 V2.10.2W
+    矿山管理系统 · 挖机司机端 V2.10.3G
 
 </footer>
 
@@ -871,7 +871,10 @@ const STORAGE = {
         "dispatchShiftExecutions",
 
     EQUIPMENT_CHECKS:
-        "equipmentUsageChecks"
+        "equipmentUsageChecks",
+
+    OPERATIONAL_STATUS:
+        "equipmentOperationalStatus"
 };
 
 
@@ -2078,6 +2081,239 @@ function getCurrentExcavatorId() {
 }
 
 
+function getEquipmentOperationalStatusText(
+    status
+) {
+
+    const map = {
+
+        available:
+            "可用",
+
+        working:
+            "作业中",
+
+        maintenance:
+            "维修中",
+
+        service:
+            "保养中",
+
+        standby:
+            "备用",
+
+        disabled:
+            "停用"
+    };
+
+
+    return (
+        map[status] ||
+        status ||
+        "可用"
+    );
+}
+
+
+function isBlockedOperationalStatus(
+    status
+) {
+
+    return [
+        "maintenance",
+        "service",
+        "disabled"
+    ]
+    .includes(
+        String(
+            status ||
+            ""
+        )
+    );
+}
+
+
+function hasActiveExcavatorRepairFlow() {
+
+    const excavatorId =
+        getCurrentExcavatorId();
+
+
+    if (
+        !excavatorId
+    ) {
+
+        return false;
+    }
+
+
+    const requestStatuses =
+        new Set([
+            "pending_dispatch",
+            "waiting_entry",
+            "waiting_assignment",
+            "assigned",
+            "working",
+            "waiting_parts",
+            "waiting_inspection",
+            "inspection_passed",
+            "rework"
+        ]);
+
+
+    const requests =
+        readArray(
+            "maintenanceRequests"
+        );
+
+
+    const orders =
+        readArray(
+            "maintenanceWorkOrders"
+        );
+
+
+    const requestActive =
+        requests.some(
+            item =>
+                String(
+                    item.equipmentId ||
+                    item.equipmentNumber ||
+                    item.vehicleId ||
+                    item.vehicleNumber ||
+                    ""
+                ) ===
+                    excavatorId
+                &&
+                requestStatuses.has(
+                    item.status
+                )
+        );
+
+
+    const orderActive =
+        orders.some(
+            item =>
+                String(
+                    item.equipmentId ||
+                    item.equipmentNumber ||
+                    item.vehicleId ||
+                    item.vehicleNumber ||
+                    ""
+                ) ===
+                    excavatorId
+                &&
+                item.status !==
+                    "completed"
+        );
+
+
+    return (
+        requestActive ||
+        orderActive
+    );
+}
+
+
+function getCurrentExcavatorOperationalStatus() {
+
+    const excavatorId =
+        getCurrentExcavatorId();
+
+
+    if (
+        !excavatorId
+    ) {
+
+        return {
+            equipmentId:
+                "",
+
+            status:
+                "available",
+
+            source:
+                "none"
+        };
+    }
+
+
+    /*
+     * 维修流程优先。
+     * 即使维修管理端尚未打开同步状态，
+     * 只要存在活动维修流程就视为“维修中”。
+     */
+    if (
+        hasActiveExcavatorRepairFlow()
+    ) {
+
+        return {
+            equipmentId:
+                excavatorId,
+
+            status:
+                "maintenance",
+
+            source:
+                "repair_flow"
+        };
+    }
+
+
+    const record =
+        readArray(
+            STORAGE.OPERATIONAL_STATUS
+        )
+        .find(
+            item =>
+                String(
+                    item.equipmentId ||
+                    ""
+                ) ===
+                    excavatorId
+        );
+
+
+    if (
+        record?.status
+    ) {
+
+        return {
+            equipmentId:
+                excavatorId,
+
+            status:
+                record.status,
+
+            source:
+                record.source ||
+                "operational_status"
+        };
+    }
+
+
+    return {
+        equipmentId:
+            excavatorId,
+
+        status:
+            "available",
+
+        source:
+            "default"
+    };
+}
+
+
+function isCurrentExcavatorOperationallyBlocked() {
+
+    return isBlockedOperationalStatus(
+        getCurrentExcavatorOperationalStatus()
+            .status
+    );
+}
+
+
 function getCompletedEquipmentCheck() {
 
     if (
@@ -2255,6 +2491,42 @@ function renderEquipmentCheckStatus() {
         textBox.innerHTML =
             "当前还没有本班挖机任务。<br>" +
             "调度绑定本班挖机司机后，再进行设备使用检查。";
+
+        return;
+    }
+
+
+    const operationalState =
+        getCurrentExcavatorOperationalStatus();
+
+
+    if (
+        isBlockedOperationalStatus(
+            operationalState.status
+        )
+    ) {
+
+        badge.textContent =
+            getEquipmentOperationalStatusText(
+                operationalState.status
+            );
+
+
+        badge.className =
+            "badge pending";
+
+
+        textBox.innerHTML =
+            "当前挖机状态：" +
+            "<strong>" +
+            escapeHtml(
+                getEquipmentOperationalStatusText(
+                    operationalState.status
+                )
+            ) +
+            "</strong><br>" +
+            "当前不能进入正式作业统计，请等待维修 / 保养完成，或由调度调整本班设备。";
+
 
         return;
     }
@@ -2584,7 +2856,11 @@ function renderCurrentTask() {
     document.getElementById(
         "tripSection"
     ).style.display =
-        hasCompletedEquipmentCheck()
+        (
+            hasCompletedEquipmentCheck()
+            &&
+            !isCurrentExcavatorOperationallyBlocked()
+        )
             ? "block"
             : "none";
 
@@ -3241,7 +3517,8 @@ function renderTripStatistics() {
     if (
         !currentTask ||
         !currentExcavatorAssignment ||
-        !hasCompletedEquipmentCheck()
+        !hasCompletedEquipmentCheck() ||
+        isCurrentExcavatorOperationallyBlocked()
     ) {
 
         section.style.display =
