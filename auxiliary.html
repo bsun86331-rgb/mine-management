@@ -615,7 +615,7 @@
                 </h1>
 
                 <p>
-                    Auxiliary Vehicle Operator · V2.10.2U
+                    Auxiliary Vehicle Operator · V2.10.2X
                 </p>
 
             </div>
@@ -646,8 +646,8 @@
 
         <br>
 
-        使用车辆 / 设备前可进入“设备使用检查”，记录实际使用人、公里数和仪表照片；
-        发现异常时拍照留证并进入维修流程。
+        使用车辆 / 设备前必须完成“设备使用检查”，记录实际使用人、公里数和仪表照片；
+        未完成检查不能开始正式作业，发现异常时拍照留证并进入维修流程。
 
     </div>
 
@@ -1674,6 +1674,9 @@ const STORAGE = {
     FAULTS:
         "maintenanceReports",
 
+    EQUIPMENT_CHECKS:
+        "equipmentUsageChecks",
+
     MATERIALS:
         "materialRequests",
 
@@ -2262,6 +2265,186 @@ function findCurrentTask() {
 
 
 /* =========================================================
+   V2.10.2X
+   辅助车辆 / 设备使用前检查
+========================================================= */
+
+function getCurrentEquipmentCheck() {
+
+    if (
+        !currentPerson
+    ) {
+
+        return null;
+    }
+
+
+    const vehicleNumber =
+        document
+            .getElementById(
+                "vehicleNumber"
+            )
+            .value
+            .trim();
+
+
+    if (
+        !vehicleNumber
+    ) {
+
+        return null;
+    }
+
+
+    const personId =
+        getPersonId(
+            currentPerson
+        );
+
+
+    const personName =
+        String(
+            currentPerson?.name ||
+            ""
+        )
+        .trim();
+
+
+    const today =
+        getDateKey();
+
+
+    const records =
+        readArray(
+            STORAGE.EQUIPMENT_CHECKS
+        );
+
+
+    return (
+        records
+            .filter(
+                item =>
+                    item &&
+                    item.locked ===
+                        true
+            )
+            .filter(
+                item =>
+                    String(
+                        item.mode ||
+                        item.inspectionMode ||
+                        ""
+                    ) ===
+                        "usage"
+            )
+            .filter(
+                item =>
+                    String(
+                        item.equipmentId ||
+                        item.equipmentNumber ||
+                        ""
+                    ) ===
+                        vehicleNumber
+            )
+            .filter(
+                item =>
+                    getDateKey(
+                        item.createdAt
+                    ) ===
+                        today
+            )
+            .find(
+                item => {
+
+                    const recordPersonId =
+                        String(
+                            item.personId ||
+                            item.incomingPersonId ||
+                            ""
+                        );
+
+
+                    const recordPersonName =
+                        String(
+                            item.personName ||
+                            item.incomingPersonName ||
+                            ""
+                        )
+                        .trim();
+
+
+                    if (
+                        personId &&
+                        recordPersonId
+                    ) {
+
+                        return (
+                            String(
+                                personId
+                            ) ===
+                            recordPersonId
+                        );
+                    }
+
+
+                    return (
+                        personName &&
+                        recordPersonName &&
+                        personName ===
+                            recordPersonName
+                    );
+                }
+            )
+        ||
+        null
+    );
+}
+
+
+function hasCurrentEquipmentCheck() {
+
+    return Boolean(
+        getCurrentEquipmentCheck()
+    );
+}
+
+
+function requireCurrentEquipmentCheck() {
+
+    if (
+        hasCurrentEquipmentCheck()
+    ) {
+
+        return true;
+    }
+
+
+    const vehicleNumber =
+        document
+            .getElementById(
+                "vehicleNumber"
+            )
+            .value
+            .trim();
+
+
+    alert(
+        "请先完成本次设备使用检查。\\n\\n" +
+        "设备：" +
+        (
+            vehicleNumber ||
+            "-"
+        ) +
+        "\\n\\n" +
+        "请进入“设备使用检查”，填写公里数和仪表照片后再开始正式作业。"
+    );
+
+
+    return false;
+}
+
+
+/* =========================================================
    当前任务显示
 ========================================================= */
 
@@ -2320,6 +2503,10 @@ function renderCurrentTask() {
         currentTask.work ||
         currentTask.remark ||
         "辅助作业";
+
+
+    const equipmentCheck =
+        getCurrentEquipmentCheck();
 
 
     if (
@@ -2424,6 +2611,36 @@ function renderCurrentTask() {
             </div>
 
 
+            <div class="task-route">
+
+                <strong>
+                    设备使用检查
+                </strong>
+
+                <br>
+
+                ${
+                    equipmentCheck
+                        ? "✅ 已完成 · " +
+                          escapeHtml(
+                              equipmentCheck.meterReading
+                          ) +
+                          " " +
+                          escapeHtml(
+                              equipmentCheck.meterUnit ||
+                              "km"
+                          ) +
+                          " · " +
+                          escapeHtml(
+                              equipmentCheck.result ||
+                              "-"
+                          )
+                        : "⚠️ 未完成 · 请先填写公里数和仪表照片"
+                }
+
+            </div>
+
+
             ${
                 activeWork
 
@@ -2472,9 +2689,17 @@ function renderCurrentTask() {
                         <button
                             type="button"
                             class="success-btn"
-                            onclick="startCurrentWork()"
+                            onclick="${
+                                equipmentCheck
+                                    ? "startCurrentWork()"
+                                    : "goEquipmentCheck()"
+                            }"
                         >
-                            ▶ 开始作业
+                            ${
+                                equipmentCheck
+                                    ? "▶ 开始作业"
+                                    : "🧰 先完成设备使用检查"
+                            }
                         </button>
 
                     </div>
@@ -2536,6 +2761,14 @@ function startCurrentWork() {
         alert(
             "当前没有生产任务。"
         );
+
+        return;
+    }
+
+
+    if (
+        !requireCurrentEquipmentCheck()
+    ) {
 
         return;
     }
@@ -2615,6 +2848,18 @@ function startCurrentWork() {
         vehicleType,
 
         vehicleNumber,
+
+        equipmentCheckId:
+            getCurrentEquipmentCheck()?.checkId ||
+            "",
+
+        meterReading:
+            getCurrentEquipmentCheck()?.meterReading ??
+            null,
+
+        meterUnit:
+            getCurrentEquipmentCheck()?.meterUnit ||
+            "km",
 
         area:
             currentTask.area ||
