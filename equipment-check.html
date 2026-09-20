@@ -1,1 +1,366 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#0f172a">
+<title>设备使用检查 - 矿山管理系统</title>
+<style>
+*{box-sizing:border-box}
+:root{--bg:#f1f5f9;--card:#fff;--text:#0f172a;--muted:#64748b;--line:#e2e8f0;--blue:#2563eb;--green:#16a34a;--yellow:#d97706;--red:#dc2626;--dark:#0f172a}
+body{margin:0;background:var(--bg);color:var(--text);font-family:Arial,"Microsoft YaHei",sans-serif}
+header{background:var(--dark);color:#fff;position:sticky;top:0;z-index:20}
+.head{max-width:1100px;margin:auto;padding:14px 16px;display:flex;justify-content:space-between;gap:12px;align-items:center}
+h1{margin:0;font-size:21px}.ver{font-size:12px;color:#cbd5e1;margin-top:4px}
+main{max-width:1100px;margin:auto;padding:16px 14px 40px}
+.card{background:#fff;border-radius:16px;padding:16px;margin-bottom:14px;box-shadow:0 5px 20px rgba(15,23,42,.06)}
+h2{font-size:18px;margin:0 0 5px}.sub{font-size:12px;color:var(--muted);line-height:1.65;margin-bottom:12px}
+.notice{padding:12px 13px;border:1px solid #bfdbfe;background:#eff6ff;color:#1e40af;border-radius:11px;font-size:13px;line-height:1.75}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+label{display:block;font-size:12px;font-weight:700;color:#475569;margin-bottom:6px}
+input,select,textarea{width:100%;min-height:42px;border:1px solid #cbd5e1;border-radius:10px;padding:9px 10px;background:#fff;font:inherit}
+textarea{min-height:92px;resize:vertical}.ro{background:#f8fafc!important;color:#475569}
+.flex{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+.badge{display:inline-block;padding:5px 9px;border-radius:999px;font-size:12px;font-weight:800}.green{background:#dcfce7;color:#166534}.yellow{background:#fef3c7;color:#92400e}.red{background:#fee2e2;color:#991b1b}.gray{background:#e2e8f0;color:#475569}
+.mode-grid,.result-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.mode,.result{border:2px solid #e2e8f0;border-radius:13px;padding:14px;cursor:pointer;background:#fff}
+.mode b,.result b{display:block;font-size:16px}.mode small,.result small{color:#64748b}.mode.active{border-color:#2563eb;background:#eff6ff}.result.ok{border-color:#16a34a;background:#f0fdf4}.result.bad{border-color:#dc2626;background:#fef2f2}
+.hints,.parts{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}.hint,.part{padding:9px 10px;border:1px solid #e2e8f0;border-radius:9px;background:#f8fafc;font-size:12px;line-height:1.55}.part{display:flex;align-items:center;gap:7px;background:#fff}.part input{width:auto;min-height:0}
+.photos{border:1px dashed #94a3b8;border-radius:12px;padding:12px;background:#f8fafc}.previews{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px}.pv{position:relative;aspect-ratio:1/1;border-radius:10px;overflow:hidden;background:#e2e8f0}.pv img{width:100%;height:100%;object-fit:cover}.pv button{position:absolute;right:5px;top:5px;border:0;border-radius:7px;padding:5px;background:#0f172acc;color:#fff;min-height:0}
+button{min-height:42px;border:0;border-radius:10px;padding:10px 14px;font:inherit;font-weight:700;cursor:pointer}.primary{background:#2563eb;color:#fff}.secondary{background:#fff;border:1px solid #cbd5e1;color:#334155}.actions{display:flex;gap:10px;justify-content:flex-end}.header-btn{background:#1e293b;color:#fff;border:1px solid #475569}
+.metric{padding:10px;border-radius:10px;background:#f8fafc}.metric span{display:block;font-size:11px;color:#64748b}.metric strong{display:block;margin-top:5px}
+.hidden{display:none!important}.locked{padding:13px;border:1px solid #bbf7d0;background:#f0fdf4;color:#166534;border-radius:11px;font-size:13px;line-height:1.7}.hist{padding:11px 0;border-bottom:1px solid #e2e8f0;font-size:12px;line-height:1.7}.hist:last-child{border-bottom:0}
+@media(max-width:760px){.grid2,.grid3,.metrics,.mode-grid,.result-grid,.hints,.parts{grid-template-columns:1fr}.previews{grid-template-columns:repeat(2,1fr)}.actions{flex-direction:column}}
+</style>
+</head>
+<body>
+<header><div class="head"><div><h1>🧰 设备使用检查</h1><div class="ver">EQUIPMENT-CHECK V1.1 · 班次接班 + 临时用车</div></div><button class="header-btn" onclick="location.href='index.html'">返回首页</button></div></header>
 
+<main>
+<section class="card"><div class="notice">
+统一规则：<strong>挖机记录小时数 h，其他所有车辆/辅助车辆记录公里数 km</strong>。每次使用前由实际使用人检查设备，提交<strong>数字读数 + 仪表照片</strong>。班次生产设备走“接班检查”；皮卡、指挥车、维修车等没有固定交接班的车辆走“用车前检查”。发现异常必须拍照并自动生成维修单。
+</div></section>
+
+<section class="card">
+<div class="flex"><div><h2>① 使用场景</h2><div class="sub">系统优先自动判断，也可根据实际使用情况切换。</div></div><span id="modeBadge" class="badge gray">待判断</span></div>
+<div class="mode-grid">
+<div id="shiftModeBox" class="mode" onclick="setMode('shift')"><b>🔄 班次接班检查</b><small>运输汽车、挖机等按 taskId + shiftId 执行的生产设备。</small></div>
+<div id="usageModeBox" class="mode" onclick="setMode('usage')"><b>🚙 用车前检查</b><small>皮卡、指挥车、通勤车、维修车等按实际使用人记录。</small></div>
+</div>
+</section>
+
+<section class="card">
+<div class="flex"><div><h2>② 当前人员与设备</h2><div class="sub">谁使用设备，谁完成本次检查并留下用车记录。</div></div><span id="contextBadge" class="badge gray">待识别</span></div>
+<div class="grid2">
+<div><label>使用人</label><input id="personName" class="ro" readonly></div>
+<div><label>岗位</label><input id="position" class="ro" readonly></div>
+<div id="taskField"><label>主任务 taskId</label><input id="taskId" class="ro" readonly></div>
+<div id="shiftField"><label>当前班次 shiftId</label><input id="shiftId" class="ro" readonly></div>
+<div id="shiftNameField"><label>班次</label><input id="shiftName" class="ro" readonly></div>
+<div><label id="equipmentLabel">本班设备 *</label><select id="equipmentSelect" onchange="equipmentChanged()"><option value="">请选择设备</option></select></div>
+</div>
+
+<div id="usageManualFields" class="grid3 hidden" style="margin-top:12px">
+<div><label>车辆类型 *</label><select id="manualVehicleType" onchange="syncManualEquipment()">
+<option value="">请选择</option><option>皮卡</option><option>指挥车</option><option>通勤车</option><option>维修车</option><option>洒水车</option><option>加油车</option><option>大巴</option><option>其他车辆</option>
+</select></div>
+<div><label>车辆编号 *</label><input id="manualVehicleNumber" placeholder="例如：PK-01" oninput="syncManualEquipment()"></div>
+<div><label>本次用车用途 *</label><input id="usagePurpose" placeholder="例如：现场巡检 / 接送人员 / 维修保障"></div>
+</div>
+
+<div class="notice" style="margin-top:12px"><span id="previousUserLabel">上一班该设备使用人</span>：<strong id="previousUser">暂无可识别记录</strong></div>
+</section>
+
+<section id="lockedCard" class="card hidden"><h2>✅ 本次检查已完成</h2><div class="sub">该记录已锁定，不能修改。</div><div id="lockedContent" class="locked"></div></section>
+
+<div id="formWrap">
+<section class="card">
+<div class="flex"><div><h2>③ 设备读数</h2><div class="sub">数字读数和仪表照片共同形成有效记录。</div></div><span id="meterBadge" class="badge gray">待选择设备</span></div>
+<div class="grid2">
+<div><label id="meterLabel">当前读数 *</label><input id="meterReading" type="number" min="0" step=".1" oninput="renderMaintenance()"></div>
+<div><label>上一条有效读数</label><input id="previousReading" class="ro" readonly value="-"></div>
+</div>
+<div class="photos" style="margin-top:12px"><b>📷 仪表照片 *</b><div class="sub">请拍摄里程表或小时表。</div><input id="meterPhotoInput" type="file" accept="image/*" capture="environment" onchange="loadMeterPhoto(event)"><div id="meterPreview" class="previews"></div></div>
+</section>
+
+<section class="card">
+<h2>④ 使用前检查</h2><div class="sub">现场检查完成后，只选择最终结果。</div>
+<div id="hints" class="hints"></div>
+<div class="result-grid" style="margin-top:13px">
+<div id="okBox" class="result" onclick="setResult('未见异常')"><b>✅ 未见异常</b><small>检查未发现明显异常。</small></div>
+<div id="badBox" class="result" onclick="setResult('发现异常')"><b>⚠️ 发现异常</b><small>必须填写异常说明并上传照片。</small></div>
+</div>
+</section>
+
+<section id="abnormalCard" class="card hidden">
+<div class="flex"><div><h2>⑤ 异常情况</h2><div class="sub">自动生成维修单；班次模式关联上一班司机，用车模式关联上一位使用人。</div></div><span class="badge red">必须留证</span></div>
+<label>异常部位 *</label><div id="parts" class="parts"></div>
+<div style="margin-top:12px"><label>异常说明 *</label><textarea id="abnormalDescription" placeholder="请描述异常位置、现象等"></textarea></div>
+<div class="photos" style="margin-top:12px"><b>📷 异常现场照片 *</b><div class="sub">至少1张，最多4张。</div><input id="abnormalPhotoInput" type="file" accept="image/*" capture="environment" multiple onchange="loadAbnormalPhotos(event)"><div id="abnormalPreview" class="previews"></div></div>
+</section>
+
+<section class="card">
+<div class="flex"><div><h2>⑥ 保养状态</h2><div class="sub">只有正常、临近、超期；临近和超期产生提醒。</div></div><span id="maintenanceBadge" class="badge gray">未配置</span></div>
+<div class="metrics">
+<div class="metric"><span>上次保养值</span><strong id="lastMaint">-</strong></div>
+<div class="metric"><span>保养周期</span><strong id="maintInterval">-</strong></div>
+<div class="metric"><span>下次保养值</span><strong id="nextMaint">-</strong></div>
+<div class="metric"><span>距保养</span><strong id="maintRemain">-</strong></div>
+</div>
+<div id="maintenanceMessage" class="notice" style="margin-top:12px">未配置保养参数时，只记录本次读数，不影响提交。</div>
+</section>
+
+<section class="card">
+<h2>⑦ 提交检查</h2><div class="sub">提交后锁定，并形成设备使用记录。</div>
+<div class="actions"><button class="secondary" onclick="resetDraft()">清空未提交内容</button><button class="primary" onclick="submitCheck()">✅ 提交并锁定</button></div>
+</section>
+</div>
+
+<section class="card"><h2>最近设备使用记录</h2><div id="history"></div></section>
+</main>
+
+<script>
+"use strict";
+
+const K={
+ PERSONNEL:"personnelRecords",
+ TASKS:"dispatchPublishedTasks",
+ SHIFTS:"dispatchShiftExecutions",
+ AUX_PROFILE:"auxiliaryVehicleProfile",
+ CHECKS:"equipmentUsageChecks",
+ METERS:"equipmentMeterReadings",
+ USAGE_RECORDS:"equipmentUsageRecords",
+ MAINTREQ:"maintenanceRequests",
+ MAINTSET:"equipmentMaintenanceSettings",
+ ALERTS:"maintenanceAlerts"
+};
+
+let person=null,ctx=null,mode="",equipment=null,meterPhoto=null,abPhotos=[],result="";
+
+const arr=k=>{try{const d=JSON.parse(localStorage.getItem(k));return Array.isArray(d)?d:[]}catch{return[]}};
+const obj=k=>{try{const d=JSON.parse(localStorage.getItem(k));return d&&typeof d==="object"&&!Array.isArray(d)?d:null}catch{return null}};
+const save=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
+const pid=p=>String(p?.personId||p?.employeeId||p?.driverId||p?.id||"");
+const norm=p=>({"卡车司机":"汽车司机","汽车驾驶员":"汽车司机","挖掘机司机":"挖机司机","挖机操作手":"挖机司机"}[p]||p||"");
+const tid=t=>String(t?.taskId||t?.dispatchTaskId||t?.id||"");
+
+function resolvePerson(){
+ const rs=arr(K.PERSONNEL),ids=[localStorage.getItem("currentPersonId"),localStorage.getItem("workerPersonId")].filter(Boolean).map(String);
+ for(const id of ids){const p=rs.find(x=>pid(x)===id);if(p)return p}
+ try{return JSON.parse(localStorage.getItem("driverProfile")||"null")}catch{return null}
+}
+
+function activeShift(task){
+ const ss=arr(K.SHIFTS),sid=String(task?.currentShiftId||task?.shiftId||"");
+ return ss.find(x=>String(x.shiftId||"")===sid)||ss.filter(x=>String(x.taskId||"")===tid(task)&&x.status==="active").sort((a,b)=>new Date(b.startedAt||b.createdAt||0)-new Date(a.startedAt||a.createdAt||0))[0]||null;
+}
+
+function match(a,p){
+ const id=pid(p),name=String(p?.name||"").trim(),aid=String(a?.driverId||a?.personId||a?.excavatorDriverId||a?.operatorId||""),an=String(a?.driverName||a?.personName||a?.excavatorDriverName||a?.operatorName||"").trim();
+ return(id&&aid&&id===aid)||(name&&an&&name===an);
+}
+
+function resolveShiftContext(){
+ if(!person)return null;
+ const tasks=arr(K.TASKS).filter(t=>["active","pending"].includes(t.status)).sort((a,b)=>new Date(b.updatedAt||b.publishedAt||0)-new Date(a.updatedAt||a.publishedAt||0));
+ for(const task of tasks){
+  const s=activeShift(task),e=s||task,as=Array.isArray(e.driverAssignments)?e.driverAssignments:[],bs=Array.isArray(e.bindings)?e.bindings:[];
+  const va=as.find(x=>match(x,person));
+  if(va){const v=String(va.vehicleNumber||va.vehicleId||va.truckNumber||va.truckId||"");if(v)return{taskId:tid(task),shiftId:String(s?.shiftId||task.currentShiftId||task.shiftId||""),shift:String(s?.shift||task.shift||""),shiftDate:String(s?.date||task.shiftDate||""),opts:[{equipmentId:v,equipmentNumber:v,equipmentType:va.equipmentType||"车辆",category:"vehicle"}]}}
+  const eb=bs.find(x=>match(x,person));
+  if(eb){const eNo=String(eb.excavatorNumber||eb.excavatorId||eb.excavator||"");if(eNo)return{taskId:tid(task),shiftId:String(s?.shiftId||task.currentShiftId||task.shiftId||""),shift:String(s?.shift||task.shift||""),shiftDate:String(s?.date||task.shiftDate||""),opts:[{equipmentId:eNo,equipmentNumber:eNo,equipmentType:"挖机",category:"excavator"}]}}
+ }
+ return null;
+}
+
+function auxiliaryProfileOption(){
+ const p=obj(K.AUX_PROFILE);
+ if(!p?.vehicleNumber)return null;
+ return {equipmentId:String(p.vehicleNumber),equipmentNumber:String(p.vehicleNumber),equipmentType:String(p.vehicleType||"辅助车辆"),category:"vehicle",source:"auxiliaryVehicleProfile"};
+}
+
+function knownEquipment(){
+ const m=new Map();
+ [...arr(K.TASKS),...arr(K.SHIFTS)].forEach(i=>{
+  (i.driverAssignments||[]).forEach(a=>{const v=String(a.vehicleNumber||a.vehicleId||a.truckNumber||a.truckId||"");if(v)m.set("v"+v,{equipmentId:v,equipmentNumber:v,equipmentType:a.equipmentType||"车辆",category:"vehicle"})});
+  (i.bindings||[]).forEach(b=>{const e=String(b.excavatorNumber||b.excavatorId||b.excavator||"");if(e)m.set("e"+e,{equipmentId:e,equipmentNumber:e,equipmentType:"挖机",category:"excavator"});[...(b.truckIds||[]),...(b.vehicleIds||[]),...(b.trucks||[])].filter(Boolean).forEach(v=>m.set("v"+v,{equipmentId:String(v),equipmentNumber:String(v),equipmentType:"车辆",category:"vehicle"}))});
+ });
+ const aux=auxiliaryProfileOption();if(aux)m.set("v"+aux.equipmentId,aux);
+ return[...m.values()];
+}
+
+const isExc=e=>e?.category==="excavator"||String(e?.equipmentType||"").includes("挖机")||String(e?.equipmentType||"").includes("挖掘机");
+const unit=()=>isExc(equipment)?"h":"km";
+
+function setMode(next){
+ mode=next;
+ document.getElementById("shiftModeBox").classList.toggle("active",mode==="shift");
+ document.getElementById("usageModeBox").classList.toggle("active",mode==="usage");
+ document.getElementById("modeBadge").className="badge "+(mode==="shift"?"green":"yellow");
+ document.getElementById("modeBadge").textContent=mode==="shift"?"班次接班检查":"用车前检查";
+ ["taskField","shiftField","shiftNameField"].forEach(id=>document.getElementById(id).classList.toggle("hidden",mode!=="shift"));
+ document.getElementById("usageManualFields").classList.toggle("hidden",mode!=="usage");
+ document.getElementById("equipmentLabel").textContent=mode==="shift"?"本班设备 *":"使用车辆 *";
+ document.getElementById("previousUserLabel").textContent=mode==="shift"?"上一班该设备使用人":"上一位该车使用人";
+ fillEquipment();
+}
+
+function fillEquipment(){
+ const s=document.getElementById("equipmentSelect");
+ let opts=[];
+ if(mode==="shift")opts=ctx?.opts||[];
+ else{
+  const aux=auxiliaryProfileOption();
+  opts=aux?[aux,...knownEquipment().filter(x=>x.equipmentId!==aux.equipmentId)]:knownEquipment();
+ }
+ s.innerHTML='<option value="">请选择设备</option>';
+ opts.forEach((x,i)=>{const o=document.createElement("option");o.value=i;o.dataset.x=JSON.stringify(x);o.textContent=`${x.equipmentNumber} · ${x.equipmentType}`;s.appendChild(o)});
+ if(opts.length===1){s.value="0";equipment=opts[0];equipmentChanged()}else{equipment=null;renderMeter();renderPrevious();showLocked()}
+}
+
+function syncManualEquipment(){
+ if(mode!=="usage")return;
+ const type=document.getElementById("manualVehicleType").value.trim(),no=document.getElementById("manualVehicleNumber").value.trim();
+ if(!type||!no)return;
+ equipment={equipmentId:no,equipmentNumber:no,equipmentType:type,category:"vehicle",source:"manual_usage"};
+ renderMeter();renderPrevious();renderHints();renderMaintenance();showLocked();
+}
+
+function equipmentChanged(){
+ const s=document.getElementById("equipmentSelect"),o=s.options[s.selectedIndex];
+ equipment=o?.dataset.x?JSON.parse(o.dataset.x):null;
+ if(mode==="usage"&&equipment){
+  document.getElementById("manualVehicleType").value=equipment.equipmentType||"其他车辆";
+  document.getElementById("manualVehicleNumber").value=equipment.equipmentNumber||"";
+ }
+ renderMeter();renderPrevious();renderHints();renderMaintenance();showLocked();
+}
+
+function latestMeter(){
+ return equipment?arr(K.METERS).filter(x=>String(x.equipmentId||"")===String(equipment.equipmentId)).sort((a,b)=>new Date(b.createdAt||0)-new Date(a.createdAt||0))[0]||null:null;
+}
+
+function renderMeter(){
+ const b=document.getElementById("meterBadge"),l=document.getElementById("meterLabel"),p=latestMeter();
+ if(!equipment){b.className="badge gray";b.textContent="待选择设备";l.textContent="当前读数 *";document.getElementById("previousReading").value="-";return}
+ b.className="badge green";b.textContent=isExc(equipment)?"挖机 · 小时数":"车辆 · 公里数";l.textContent=isExc(equipment)?"当前小时数 h *":"当前公里数 km *";document.getElementById("previousReading").value=p?`${p.reading} ${p.unit}`:"暂无历史";
+}
+
+function previousShiftUser(){
+ if(!equipment||!ctx?.taskId)return null;
+ const ss=arr(K.SHIFTS).filter(x=>String(x.taskId||"")===String(ctx.taskId)).sort((a,b)=>new Date(b.startedAt||b.createdAt||0)-new Date(a.startedAt||a.createdAt||0));
+ const ix=ss.findIndex(x=>String(x.shiftId||"")===String(ctx.shiftId||"")),prev=ix>=0?ss.slice(ix+1):ss.filter(x=>x.status==="handed_over");
+ for(const s of prev){
+  if(isExc(equipment)){const b=(s.bindings||[]).find(x=>String(x.excavatorNumber||x.excavatorId||x.excavator||"")===String(equipment.equipmentId));if(b){const id=String(b.excavatorDriverId||b.operatorId||""),name=String(b.excavatorDriverName||b.operatorName||"");if(id||name)return{id,name,shiftId:s.shiftId,shift:s.shift}}}
+  else{const a=(s.driverAssignments||[]).find(x=>String(x.vehicleNumber||x.vehicleId||x.truckNumber||x.truckId||"")===String(equipment.equipmentId));if(a){const id=String(a.driverId||a.personId||""),name=String(a.driverName||a.personName||"");if(id||name)return{id,name,shiftId:s.shiftId,shift:s.shift}}}
+ }
+ return null;
+}
+
+function previousUsageUser(){
+ if(!equipment)return null;
+ return arr(K.USAGE_RECORDS).filter(x=>String(x.equipmentId||"")===String(equipment.equipmentId)).sort((a,b)=>new Date(b.createdAt||0)-new Date(a.createdAt||0))[0]||null;
+}
+
+function previousUser(){
+ if(mode==="shift")return previousShiftUser();
+ const u=previousUsageUser();
+ return u?{id:String(u.personId||""),name:String(u.personName||""),usageId:u.usageId||"",createdAt:u.createdAt||""}:null;
+}
+
+function renderPrevious(){
+ const p=previousUser(),el=document.getElementById("previousUser");
+ if(!p){el.textContent="暂无可识别记录";return}
+ el.textContent=mode==="shift"?`${p.name||p.id} · ${p.shift||""} · ${p.shiftId||""}`:`${p.name||p.id} · ${p.createdAt?new Date(p.createdAt).toLocaleString("zh-CN"):""}`;
+}
+
+function renderHints(){
+ const hs=isExc(equipment)?["发动机、仪表、报警","液压系统、油管、漏油","履带及行走机构","回转机构","动臂、斗杆、铲斗","驾驶室及安全设施"]:["轮胎、轮毂","制动、转向","发动机、仪表、报警","灯光、喇叭、倒车报警","液压/货箱/漏油漏液","安全带、后视镜、灭火器、车身"];
+ document.getElementById("hints").innerHTML=hs.map(x=>`<div class="hint">• ${x}</div>`).join("");
+ const ps=isExc(equipment)?["发动机","液压系统","履带/行走","回转机构","动臂/斗杆/铲斗","电气/仪表","漏油漏液","安全设施","其他"]:["轮胎/轮毂","制动系统","转向系统","发动机","电气/仪表","灯光/报警","液压/货箱","漏油漏液","安全设施","车身/驾驶室","其他"];
+ document.getElementById("parts").innerHTML=ps.map(x=>`<label class="part"><input type="checkbox" name="part" value="${x}"><span>${x}</span></label>`).join("");
+}
+
+function setResult(r){result=r;document.getElementById("okBox").classList.toggle("ok",r==="未见异常");document.getElementById("badBox").classList.toggle("bad",r==="发现异常");document.getElementById("abnormalCard").classList.toggle("hidden",r!=="发现异常")}
+
+function compress(file,max=1280,q=.76){return new Promise((res,rej)=>{const fr=new FileReader();fr.onload=()=>{const im=new Image();im.onload=()=>{let w=im.width,h=im.height,s=Math.min(1,max/Math.max(w,h));w=Math.round(w*s);h=Math.round(h*s);const c=document.createElement("canvas");c.width=w;c.height=h;c.getContext("2d").drawImage(im,0,0,w,h);res(c.toDataURL("image/jpeg",q))};im.onerror=rej;im.src=fr.result};fr.onerror=rej;fr.readAsDataURL(file)})}
+async function loadMeterPhoto(e){const f=e.target.files?.[0];if(!f)return;meterPhoto=await compress(f);document.getElementById("meterPreview").innerHTML=`<div class="pv"><img src="${meterPhoto}"><button onclick="meterPhoto=null;document.getElementById('meterPreview').innerHTML=''">删除</button></div>`}
+async function loadAbnormalPhotos(e){for(const f of [...(e.target.files||[])]){if(abPhotos.length>=4)break;abPhotos.push(await compress(f))}renderAbPhotos()}
+function renderAbPhotos(){document.getElementById("abnormalPreview").innerHTML=abPhotos.map((x,i)=>`<div class="pv"><img src="${x}"><button onclick="abPhotos.splice(${i},1);renderAbPhotos()">删除</button></div>`).join("")}
+
+function maintSetting(){return equipment?arr(K.MAINTSET).find(x=>String(x.equipmentId||x.equipmentNumber||"")===String(equipment.equipmentId))||null:null}
+function maintInfo(reading){const s=maintSetting();if(!s)return null;const last=Number(s.lastMaintenanceReading||0),intv=Number(s.maintenanceInterval||0),warn=Number(s.warningAdvance||0);if(intv<=0)return null;const due=last+intv,remain=due-reading,status=reading>=due?"超期":reading>=due-warn?"临近":"正常";return{last,intv,due,remain,status}}
+function renderMaintenance(){
+ const r=Number(document.getElementById("meterReading").value||0),i=maintInfo(r),u=equipment?unit():"",b=document.getElementById("maintenanceBadge");
+ if(!i){b.className="badge gray";b.textContent="未配置";["lastMaint","maintInterval","nextMaint","maintRemain"].forEach(id=>document.getElementById(id).textContent="-");document.getElementById("maintenanceMessage").textContent="未配置保养参数时，只记录本次读数，不影响提交。";return}
+ b.className="badge "+(i.status==="正常"?"green":i.status==="临近"?"yellow":"red");b.textContent=i.status;document.getElementById("lastMaint").textContent=`${i.last} ${u}`;document.getElementById("maintInterval").textContent=`${i.intv} ${u}`;document.getElementById("nextMaint").textContent=`${i.due} ${u}`;document.getElementById("maintRemain").textContent=i.remain>=0?`${i.remain.toFixed(1)} ${u}`:`超 ${Math.abs(i.remain).toFixed(1)} ${u}`;document.getElementById("maintenanceMessage").textContent=i.status==="正常"?"当前保养状态：正常":i.status==="临近"?`⚠️ 临近保养：剩余 ${i.remain.toFixed(1)} ${u}`:`🚨 已超期 ${Math.abs(i.remain).toFixed(1)} ${u}`;
+}
+function addAlert(reading){const i=maintInfo(reading),a=arr(K.ALERTS).filter(x=>String(x.equipmentId||"")!==String(equipment.equipmentId));if(i&&["临近","超期"].includes(i.status))a.push({alertId:"MA_"+Date.now(),equipmentId:equipment.equipmentId,equipmentNumber:equipment.equipmentNumber,status:i.status,currentReading:reading,dueReading:i.due,remaining:i.remain,createdAt:new Date().toISOString()});save(K.ALERTS,a)}
+
+function uniqueKey(){return mode==="shift"?`${ctx?.shiftId||""}|${equipment?.equipmentId||""}|${pid(person)}`:`${new Date().toISOString().slice(0,10)}|${equipment?.equipmentId||""}|${pid(person)}`}
+function existing(){if(!equipment||!person)return null;return arr(K.CHECKS).find(x=>x.uniqueKey===uniqueKey()&&x.locked===true)||null}
+function showLocked(){
+ const r=existing(),c=document.getElementById("lockedCard"),f=document.getElementById("formWrap");
+ if(!r){c.classList.add("hidden");f.classList.remove("hidden");return}
+ c.classList.remove("hidden");f.classList.add("hidden");document.getElementById("lockedContent").innerHTML=`<b>${r.equipmentNumber}</b> · ${r.mode==="shift"?(r.shift||"-"):"临时用车"} · ${r.result}<br>读数：${r.meterReading} ${r.meterUnit}<br>提交：${new Date(r.createdAt).toLocaleString("zh-CN")}<br>${r.maintenanceRequestId?"维修单："+r.maintenanceRequestId:"使用记录已建立。"}`
+}
+
+function createMaintReq(check,prev){
+ const rs=arr(K.MAINTREQ),id="MR_"+Date.now();
+ rs.push({requestId:id,maintenanceRequestId:id,source:"equipment_usage_check",checkId:check.checkId,inspectionMode:mode,taskId:check.taskId||"",shiftId:check.shiftId||"",equipmentId:check.equipmentId,equipmentNumber:check.equipmentNumber,equipmentType:check.equipmentType,reportedById:check.personId,reportedByName:check.personName,abnormalParts:check.abnormalParts,description:check.abnormalDescription,photos:check.abnormalPhotos,status:"pending_dispatch",dispatchStatus:"pending",dispatchRequired:true,maintenanceType:"故障维修",feeConfirmationStatus:"not_ready",feeConfirmationDriverId:prev?.id||prev?.personId||"",feeConfirmationDriverName:prev?.name||prev?.personName||"",feeConfirmationReference:mode==="shift"?"上一班设备使用人":"上一位车辆使用人",createdAt:new Date().toISOString()});
+ save(K.MAINTREQ,rs);return id;
+}
+
+function createUsageRecord(check){
+ const rs=arr(K.USAGE_RECORDS);
+ rs.push({usageId:"EUR_"+Date.now(),checkId:check.checkId,mode,taskId:check.taskId||"",shiftId:check.shiftId||"",shift:check.shift||"",equipmentId:check.equipmentId,equipmentNumber:check.equipmentNumber,equipmentType:check.equipmentType,personId:check.personId,personName:check.personName,purpose:check.usagePurpose||"",meterReading:check.meterReading,meterUnit:check.meterUnit,result:check.result,createdAt:check.createdAt});
+ save(K.USAGE_RECORDS,rs);
+}
+
+function submitCheck(){
+ if(!person)return alert("无法识别当前使用人。");
+ if(mode==="shift"&&!ctx?.shiftId)return alert("班次模式下无法识别 shiftId，请先由调度发布本班任务。");
+ if(mode==="usage"){syncManualEquipment();if(!document.getElementById("usagePurpose").value.trim())return alert("请填写本次用车用途。")}
+ if(!equipment)return alert("请选择或填写使用车辆。");
+ if(existing()){showLocked();return alert("本次检查已经提交并锁定。")}
+
+ const reading=Number(document.getElementById("meterReading").value);
+ if(!Number.isFinite(reading)||reading<0)return alert("请填写有效读数。");
+ const prevMeter=latestMeter();if(prevMeter&&reading<Number(prevMeter.reading||0))return alert(`当前读数不能低于上一条有效读数 ${prevMeter.reading} ${prevMeter.unit}。`);
+ if(!meterPhoto)return alert("必须上传仪表照片。");
+ if(!result)return alert("请选择检查结果。");
+
+ const parts=[...document.querySelectorAll('input[name="part"]:checked')].map(x=>x.value),desc=document.getElementById("abnormalDescription").value.trim();
+ if(result==="发现异常"&&(!parts.length||!desc||!abPhotos.length))return alert("发现异常时必须选择异常部位、填写说明并上传至少1张照片。");
+ if(!confirm("确认提交？提交后记录锁定，不能修改。"))return;
+
+ const now=new Date().toISOString(),prev=previousUser(),id=pid(person),u=unit();
+ const check={checkId:"EUC_"+Date.now(),uniqueKey:uniqueKey(),locked:true,mode,taskId:mode==="shift"?(ctx?.taskId||""):"",shiftId:mode==="shift"?(ctx?.shiftId||""):"",shift:mode==="shift"?(ctx?.shift||""):"",shiftDate:mode==="shift"?(ctx?.shiftDate||""):"",equipmentId:equipment.equipmentId,equipmentNumber:equipment.equipmentNumber,equipmentType:equipment.equipmentType,meterType:isExc(equipment)?"hours":"mileage",meterReading:reading,meterUnit:u,meterPhoto,personId:id,personName:person.name||"",position:norm(person.position||localStorage.getItem("selectedPosition")||""),previousUserId:prev?.id||prev?.personId||"",previousUserName:prev?.name||prev?.personName||"",result,abnormalParts:result==="发现异常"?parts:[],abnormalDescription:result==="发现异常"?desc:"",abnormalPhotos:result==="发现异常"?abPhotos:[],usagePurpose:mode==="usage"?document.getElementById("usagePurpose").value.trim():"",createdAt:now};
+
+ if(result==="发现异常")check.maintenanceRequestId=createMaintReq(check,prev);
+ const cs=arr(K.CHECKS);cs.push(check);save(K.CHECKS,cs);
+ const ms=arr(K.METERS);ms.push({meterRecordId:"EMR_"+Date.now(),checkId:check.checkId,equipmentId:check.equipmentId,equipmentNumber:check.equipmentNumber,equipmentType:check.equipmentType,meterType:check.meterType,reading,unit:u,photo:meterPhoto,personId:id,personName:check.personName,taskId:check.taskId,shiftId:check.shiftId,mode,createdAt:now});save(K.METERS,ms);
+ createUsageRecord(check);addAlert(reading);renderHistory();showLocked();
+ alert(result==="发现异常"?`检查已锁定，已自动生成维修单：${check.maintenanceRequestId}`:"检查已锁定，设备使用记录已建立。");
+}
+
+function resetDraft(){if(!confirm("确认清空当前未提交内容？"))return;document.getElementById("meterReading").value="";document.getElementById("abnormalDescription").value="";document.querySelectorAll('input[name="part"]').forEach(x=>x.checked=false);meterPhoto=null;abPhotos=[];result="";document.getElementById("meterPreview").innerHTML="";renderAbPhotos();setResult("");renderMaintenance()}
+
+function renderHistory(){
+ const h=arr(K.USAGE_RECORDS).slice().sort((a,b)=>new Date(b.createdAt||0)-new Date(a.createdAt||0)).slice(0,10);
+ document.getElementById("history").innerHTML=h.length?h.map(x=>`<div class="hist"><b>${x.equipmentNumber||"-"}</b> · ${x.mode==="shift"?(x.shift||"班次"):"临时用车"} · ${x.result}<br>读数：${x.meterReading} ${x.meterUnit} · 使用人：${x.personName||"-"}${x.purpose?" · 用途："+x.purpose:""} · ${new Date(x.createdAt).toLocaleString("zh-CN")}</div>`).join(""):'<div class="hist">暂无设备使用记录。</div>';
+}
+
+function init(){
+ person=resolvePerson();ctx=resolveShiftContext();
+ document.getElementById("personName").value=person?.name||"未识别";document.getElementById("position").value=norm(person?.position||localStorage.getItem("selectedPosition")||"")||"未识别";document.getElementById("taskId").value=ctx?.taskId||"";document.getElementById("shiftId").value=ctx?.shiftId||"";document.getElementById("shiftName").value=ctx?.shift||"";
+ const b=document.getElementById("contextBadge");if(person){b.className="badge green";b.textContent="已识别使用人"}else{b.className="badge red";b.textContent="未识别人员"}
+ const aux=obj(K.AUX_PROFILE);
+ mode=ctx?.shiftId?"shift":aux?.vehicleNumber?"usage":"usage";
+ if(aux?.vehicleType)document.getElementById("manualVehicleType").value=aux.vehicleType;if(aux?.vehicleNumber)document.getElementById("manualVehicleNumber").value=aux.vehicleNumber;
+ setMode(mode);renderHints();renderHistory();renderMeter();renderMaintenance();
+}
+
+init();
+</script>
+</body>
+</html>
