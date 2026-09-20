@@ -1,7 +1,7 @@
 /*
 ====================================================
 矿山管理系统
-司机端 V2.10.2V
+司机端 V2.10.3F
 ====================================================
 功能：
 1. 审核通过司机才可进入
@@ -32,11 +32,18 @@ document.addEventListener("DOMContentLoaded", function () {
         GPS: "driverLastGpsPosition",
 
         /*
-         * V2.10.2V
+         * V2.10.3F
          * 设备使用检查
          */
         EQUIPMENT_CHECKS:
-            "equipmentUsageChecks"
+            "equipmentUsageChecks",
+
+        /*
+         * V2.10.3F
+         * 设备运行状态
+         */
+        OPERATIONAL_STATUS:
+            "equipmentOperationalStatus"
     };
 
     const $ = id => document.getElementById(id);
@@ -1668,7 +1675,319 @@ document.addEventListener("DOMContentLoaded", function () {
 
     /*
     ===============================================
-    V2.10.2V
+    V2.10.3F
+    设备运行状态联动
+    ===============================================
+    */
+
+    function getEquipmentOperationalRecords() {
+
+        const data =
+            readJson(
+                STORAGE.OPERATIONAL_STATUS,
+                []
+            );
+
+
+        return Array.isArray(data)
+            ? data
+            : [];
+    }
+
+
+    function getEquipmentOperationalStatusText(
+        status
+    ) {
+
+        const map = {
+
+            available:
+                "可用",
+
+            working:
+                "作业中",
+
+            maintenance:
+                "维修中",
+
+            service:
+                "保养中",
+
+            standby:
+                "备用",
+
+            disabled:
+                "停用"
+        };
+
+
+        return (
+            map[status] ||
+            status ||
+            "可用"
+        );
+    }
+
+
+    function isEquipmentOperationallyBlockedStatus(
+        status
+    ) {
+
+        return [
+            "maintenance",
+            "service",
+            "disabled"
+        ]
+        .includes(
+            String(
+                status ||
+                ""
+            )
+        );
+    }
+
+
+    function hasActiveRepairFlow(
+        vehicleNumber
+    ) {
+
+        const vehicle =
+            String(
+                vehicleNumber ||
+                ""
+            );
+
+
+        if (
+            !vehicle
+        ) {
+
+            return false;
+        }
+
+
+        const requests =
+            readJson(
+                "maintenanceRequests",
+                []
+            );
+
+
+        const orders =
+            readJson(
+                "maintenanceWorkOrders",
+                []
+            );
+
+
+        const requestStatuses =
+            new Set([
+                "pending_dispatch",
+                "waiting_entry",
+                "waiting_assignment",
+                "assigned",
+                "working",
+                "waiting_parts",
+                "waiting_inspection",
+                "inspection_passed",
+                "rework"
+            ]);
+
+
+        const requestActive =
+            Array.isArray(requests)
+            &&
+            requests.some(
+                item =>
+                    String(
+                        item.equipmentId ||
+                        item.equipmentNumber ||
+                        item.vehicleId ||
+                        item.vehicleNumber ||
+                        ""
+                    ) ===
+                        vehicle
+                    &&
+                    requestStatuses.has(
+                        item.status
+                    )
+            );
+
+
+        const orderActive =
+            Array.isArray(orders)
+            &&
+            orders.some(
+                item =>
+                    String(
+                        item.equipmentId ||
+                        item.equipmentNumber ||
+                        item.vehicleId ||
+                        item.vehicleNumber ||
+                        ""
+                    ) ===
+                        vehicle
+                    &&
+                    item.status !==
+                        "completed"
+            );
+
+
+        return (
+            requestActive ||
+            orderActive
+        );
+    }
+
+
+    function getCurrentVehicleOperationalStatus() {
+
+        const vehicle =
+            String(
+                getVehicleNumber(
+                    currentTask
+                ) ||
+                ""
+            );
+
+
+        if (
+            !vehicle
+        ) {
+
+            return {
+                vehicle:
+                    "",
+
+                status:
+                    "available",
+
+                source:
+                    "none"
+            };
+        }
+
+
+        /*
+         * 维修流程优先。
+         * 即使维修管理页尚未打开同步状态，
+         * 司机端也不能继续使用已进入维修流程的车辆。
+         */
+        if (
+            hasActiveRepairFlow(
+                vehicle
+            )
+        ) {
+
+            return {
+                vehicle,
+
+                status:
+                    "maintenance",
+
+                source:
+                    "repair_flow"
+            };
+        }
+
+
+        const record =
+            getEquipmentOperationalRecords()
+                .find(
+                    item =>
+                        String(
+                            item.equipmentId ||
+                            ""
+                        ) ===
+                            vehicle
+                );
+
+
+        if (
+            record?.status
+        ) {
+
+            return {
+                vehicle,
+
+                status:
+                    record.status,
+
+                source:
+                    record.source ||
+                    "operational_status"
+            };
+        }
+
+
+        return {
+            vehicle,
+
+            status:
+                "available",
+
+            source:
+                "default"
+        };
+    }
+
+
+    function isCurrentVehicleOperationallyBlocked() {
+
+        return isEquipmentOperationallyBlockedStatus(
+            getCurrentVehicleOperationalStatus()
+                .status
+        );
+    }
+
+
+    function requireCurrentVehicleOperational(
+        actionText
+    ) {
+
+        const state =
+            getCurrentVehicleOperationalStatus();
+
+
+        if (
+            !isEquipmentOperationallyBlockedStatus(
+                state.status
+            )
+        ) {
+
+            return true;
+        }
+
+
+        alert(
+            "当前车辆不能继续作业。\\n\\n" +
+            "车辆：" +
+            (
+                state.vehicle ||
+                "-"
+            ) +
+            "\\n" +
+            "状态：" +
+            getEquipmentOperationalStatusText(
+                state.status
+            ) +
+            "\\n\\n" +
+            "请等待维修 / 保养完成，或联系调度更换车辆后再" +
+            (
+                actionText ||
+                "继续作业"
+            ) +
+            "。"
+        );
+
+
+        return false;
+    }
+
+
+    /*
+    ===============================================
+    V2.10.3F
     本班设备使用检查
     ===============================================
     */
@@ -1915,6 +2234,14 @@ document.addEventListener("DOMContentLoaded", function () {
         }
 
         if (
+            !requireCurrentVehicleOperational(
+                "领取车辆"
+            )
+        ) {
+            return;
+        }
+
+        if (
             !requireEquipmentCheck(
                 "领取车辆"
             )
@@ -1967,8 +2294,47 @@ document.addEventListener("DOMContentLoaded", function () {
             hasCompletedEquipmentCheck();
 
 
+        const operationalState =
+            getCurrentVehicleOperationalStatus();
+
+
         const claimButton =
             $("claimVehicleButton");
+
+
+        if (
+            isEquipmentOperationallyBlockedStatus(
+                operationalState.status
+            )
+        ) {
+
+            setText(
+                "vehicleClaimText",
+                vehicle
+                    ? vehicle +
+                      " · " +
+                      getEquipmentOperationalStatusText(
+                          operationalState.status
+                      ) +
+                      " · 不可领取"
+                    : "当前车辆不可使用"
+            );
+
+
+            if (
+                claimButton
+            ) {
+
+                claimButton.disabled =
+                    true;
+
+                claimButton.classList
+                    .remove("hidden");
+            }
+
+
+            return;
+        }
 
 
         if (
@@ -2050,6 +2416,14 @@ document.addEventListener("DOMContentLoaded", function () {
         }
 
         if (
+            !requireCurrentVehicleOperational(
+                "开始作业"
+            )
+        ) {
+            return;
+        }
+
+        if (
             !requireEquipmentCheck(
                 "开始作业"
             )
@@ -2110,6 +2484,14 @@ document.addEventListener("DOMContentLoaded", function () {
         }
 
         if (
+            !requireCurrentVehicleOperational(
+                "恢复作业"
+            )
+        ) {
+            return;
+        }
+
+        if (
             !requireEquipmentCheck(
                 "恢复作业"
             )
@@ -2162,6 +2544,12 @@ document.addEventListener("DOMContentLoaded", function () {
         );
 
         if (!currentTask) {
+            return;
+        }
+
+        if (
+            isCurrentVehicleOperationallyBlocked()
+        ) {
             return;
         }
 
@@ -2435,6 +2823,14 @@ document.addEventListener("DOMContentLoaded", function () {
             currentTask.status !== "working"
         ) {
             alert("请先开始作业。");
+            return;
+        }
+
+        if (
+            !requireCurrentVehicleOperational(
+                "记录运输趟次"
+            )
+        ) {
             return;
         }
 
