@@ -530,7 +530,7 @@ footer {
             </h1>
 
             <p>
-                Workshop Maintenance · V2.10.3A
+                Workshop Maintenance · V2.10.3B
             </p>
 
         </div>
@@ -1112,6 +1112,291 @@ footer {
         <div>
 
             <h2>
+                ⚙️ 保养周期设置
+            </h2>
+
+            <p>
+                维修管理统一设置每台设备的保养周期和提前预警值
+            </p>
+
+        </div>
+
+        <span class="badge blue">
+            维修管理设置
+        </span>
+
+    </div>
+
+
+    <div class="notice">
+
+        计量规则固定：
+        <strong>只有挖机使用小时数 h，其他所有车辆 / 辅助车辆使用公里数 km。</strong>
+
+        <br>
+
+        保养状态固定为：
+        <strong>正常 / 临近 / 超期</strong>。
+
+    </div>
+
+
+    <div class="form-grid">
+
+        <div class="form-group">
+
+            <label for="maintenanceSettingEquipment">
+                已识别设备
+            </label>
+
+            <select
+                id="maintenanceSettingEquipment"
+                onchange="loadMaintenanceSettingEquipment()"
+            >
+                <option value="">
+                    手动填写 / 选择设备
+                </option>
+            </select>
+
+        </div>
+
+
+        <div class="form-group">
+
+            <label for="maintenanceSettingEquipmentNumber">
+                设备编号 *
+            </label>
+
+            <input
+                id="maintenanceSettingEquipmentNumber"
+                type="text"
+                placeholder="例如：101 / EX-01 / PK-01"
+                oninput="refreshMaintenanceSettingUnit()"
+            >
+
+        </div>
+
+
+        <div class="form-group">
+
+            <label for="maintenanceSettingEquipmentType">
+                设备类型 *
+            </label>
+
+            <select
+                id="maintenanceSettingEquipmentType"
+                onchange="refreshMaintenanceSettingUnit()"
+            >
+                <option value="">
+                    请选择
+                </option>
+
+                <option value="挖机">
+                    挖机
+                </option>
+
+                <option value="汽车">
+                    汽车
+                </option>
+
+                <option value="矿卡">
+                    矿卡
+                </option>
+
+                <option value="铲车">
+                    铲车
+                </option>
+
+                <option value="推土机">
+                    推土机
+                </option>
+
+                <option value="平路机">
+                    平路机
+                </option>
+
+                <option value="洒水车">
+                    洒水车
+                </option>
+
+                <option value="加油车">
+                    加油车
+                </option>
+
+                <option value="皮卡">
+                    皮卡
+                </option>
+
+                <option value="指挥车">
+                    指挥车
+                </option>
+
+                <option value="通勤车">
+                    通勤车
+                </option>
+
+                <option value="维修车">
+                    维修车
+                </option>
+
+                <option value="大巴">
+                    大巴
+                </option>
+
+                <option value="其他车辆">
+                    其他车辆
+                </option>
+            </select>
+
+        </div>
+
+
+        <div class="form-group">
+
+            <label for="maintenanceSettingMeterType">
+                计量方式
+            </label>
+
+            <input
+                id="maintenanceSettingMeterType"
+                type="text"
+                readonly
+                value="自动判断"
+            >
+
+        </div>
+
+
+        <div class="form-group">
+
+            <label for="maintenanceSettingLastReading">
+                上次保养读数 *
+            </label>
+
+            <input
+                id="maintenanceSettingLastReading"
+                type="number"
+                min="0"
+                step="0.1"
+                placeholder="上次保养时的公里数 / 小时数"
+            >
+
+        </div>
+
+
+        <div class="form-group">
+
+            <label for="maintenanceSettingInterval">
+                保养周期 *
+            </label>
+
+            <input
+                id="maintenanceSettingInterval"
+                type="number"
+                min="0.1"
+                step="0.1"
+                placeholder="例如：10000 km / 500 h"
+            >
+
+        </div>
+
+
+        <div class="form-group">
+
+            <label for="maintenanceSettingWarning">
+                提前预警值 *
+            </label>
+
+            <input
+                id="maintenanceSettingWarning"
+                type="number"
+                min="0"
+                step="0.1"
+                placeholder="例如：1000 km / 50 h"
+            >
+
+        </div>
+
+
+        <div class="form-group">
+
+            <label>
+                最新设备读数
+            </label>
+
+            <div
+                id="maintenanceSettingLatestReading"
+                class="record-card"
+                style="min-height:46px;"
+            >
+                暂无
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <div class="actions">
+
+        <button
+            type="button"
+            class="secondary-btn"
+            onclick="clearMaintenanceSettingForm()"
+        >
+            清空
+        </button>
+
+
+        <button
+            type="button"
+            class="primary-btn"
+            onclick="saveMaintenanceSetting()"
+        >
+            💾 保存保养设置
+        </button>
+
+    </div>
+
+</section>
+
+
+<section class="card">
+
+    <div class="section-title">
+
+        <div>
+
+            <h2>
+                📋 已配置保养设备
+            </h2>
+
+            <p>
+                点击“修改”可重新设置保养周期或提前预警值
+            </p>
+
+        </div>
+
+    </div>
+
+
+    <div
+        id="maintenanceSettingsList"
+        class="record-list"
+    >
+    </div>
+
+</section>
+
+
+
+<section class="card">
+
+    <div class="section-title">
+
+        <div>
+
+            <h2>
                 📚 设备保养历史
             </h2>
 
@@ -1197,6 +1482,11 @@ footer {
 
         <br>
 
+        保养周期和提前预警值由维修管理统一设置，
+        司机 / 设备使用人只负责提供最新真实读数。
+
+        <br>
+
         挖机按小时数 h 计算，
         其他车辆 / 辅助车辆按公里数 km 计算。
 
@@ -1249,7 +1539,7 @@ footer {
 
 <footer>
 
-矿山管理系统 · 修理厂维修管理 V2.10.3A
+矿山管理系统 · 修理厂维修管理 V2.10.3B
 
 </footer>
 
@@ -2478,6 +2768,10 @@ function renderAll() {
     renderInspection();
 
     renderMaintenanceAlerts();
+
+    renderMaintenanceSettingEquipmentOptions();
+
+    renderMaintenanceSettingsList();
 
     renderMaintenanceHistoryFilter();
 
@@ -4874,6 +5168,1079 @@ function renderMaintenanceAlertList(
    V2.10.2Z
    完成保养闭环
 ========================================================= */
+
+function isExcavatorMaintenanceType(
+    equipmentType
+) {
+
+    const text =
+        String(
+            equipmentType ||
+            ""
+        );
+
+
+    return (
+        text.includes(
+            "挖机"
+        )
+        ||
+        text.includes(
+            "挖掘机"
+        )
+    );
+}
+
+
+function getMaintenanceMeterType(
+    equipmentType
+) {
+
+    return isExcavatorMaintenanceType(
+        equipmentType
+    )
+        ? "hours"
+        : "mileage";
+}
+
+
+function getMaintenanceUnitByType(
+    equipmentType
+) {
+
+    return isExcavatorMaintenanceType(
+        equipmentType
+    )
+        ? "h"
+        : "km";
+}
+
+
+function renderMaintenanceSettingEquipmentOptions() {
+
+    const select =
+        document.getElementById(
+            "maintenanceSettingEquipment"
+        );
+
+
+    if (
+        !select
+    ) {
+
+        return;
+    }
+
+
+    const currentValue =
+        select.value;
+
+
+    const equipmentMap =
+        new Map();
+
+
+    getMeterReadings()
+        .forEach(
+            item => {
+
+                const id =
+                    String(
+                        item.equipmentId ||
+                        item.equipmentNumber ||
+                        ""
+                    );
+
+
+                if (
+                    !id
+                ) {
+
+                    return;
+                }
+
+
+                const type =
+                    item.equipmentType ||
+                    "";
+
+
+                if (
+                    !equipmentMap.has(
+                        id
+                    )
+                ) {
+
+                    equipmentMap.set(
+                        id,
+                        {
+                            id,
+
+                            number:
+                                item.equipmentNumber ||
+                                id,
+
+                            type
+                        }
+                    );
+                }
+            }
+        );
+
+
+    getMaintenanceSettings()
+        .forEach(
+            item => {
+
+                const id =
+                    String(
+                        item.equipmentId ||
+                        item.equipmentNumber ||
+                        ""
+                    );
+
+
+                if (
+                    !id
+                ) {
+
+                    return;
+                }
+
+
+                equipmentMap.set(
+                    id,
+                    {
+                        id,
+
+                        number:
+                            item.equipmentNumber ||
+                            id,
+
+                        type:
+                            item.equipmentType ||
+                            ""
+                    }
+                );
+            }
+        );
+
+
+    select.innerHTML =
+        [
+            '<option value="">手动填写 / 选择设备</option>',
+
+            ...[
+                ...equipmentMap.values()
+            ]
+                .sort(
+                    (
+                        a,
+                        b
+                    ) =>
+                        String(
+                            a.number
+                        )
+                        .localeCompare(
+                            String(
+                                b.number
+                            ),
+                            "zh-CN",
+                            {
+                                numeric:
+                                    true
+                            }
+                        )
+                )
+                .map(
+                    item =>
+                        `<option value="${escapeHtml(
+                            item.id
+                        )}">${escapeHtml(
+                            item.number
+                        )}${item.type ? " · " + escapeHtml(item.type) : ""}</option>`
+                )
+        ]
+        .join(
+            ""
+        );
+
+
+    if (
+        [
+            ...select.options
+        ]
+        .some(
+            option =>
+                option.value ===
+                currentValue
+        )
+    ) {
+
+        select.value =
+            currentValue;
+    }
+}
+
+
+function loadMaintenanceSettingEquipment() {
+
+    const id =
+        document.getElementById(
+            "maintenanceSettingEquipment"
+        )
+        .value;
+
+
+    if (
+        !id
+    ) {
+
+        return;
+    }
+
+
+    const setting =
+        getMaintenanceSettings()
+            .find(
+                item =>
+                    String(
+                        item.equipmentId ||
+                        item.equipmentNumber ||
+                        ""
+                    ) ===
+                        String(
+                            id
+                        )
+            );
+
+
+    const latest =
+        getLatestEquipmentMeter(
+            id
+        );
+
+
+    document.getElementById(
+        "maintenanceSettingEquipmentNumber"
+    ).value =
+        setting?.equipmentNumber ||
+        latest?.equipmentNumber ||
+        id;
+
+
+    document.getElementById(
+        "maintenanceSettingEquipmentType"
+    ).value =
+        setting?.equipmentType ||
+        latest?.equipmentType ||
+        "";
+
+
+    document.getElementById(
+        "maintenanceSettingLastReading"
+    ).value =
+        setting?.lastMaintenanceReading ??
+        "";
+
+
+    document.getElementById(
+        "maintenanceSettingInterval"
+    ).value =
+        setting?.maintenanceInterval ??
+        "";
+
+
+    document.getElementById(
+        "maintenanceSettingWarning"
+    ).value =
+        setting?.warningAdvance ??
+        "";
+
+
+    refreshMaintenanceSettingUnit();
+}
+
+
+function refreshMaintenanceSettingUnit() {
+
+    const type =
+        document.getElementById(
+            "maintenanceSettingEquipmentType"
+        )
+        ?.value ||
+        "";
+
+
+    const number =
+        document.getElementById(
+            "maintenanceSettingEquipmentNumber"
+        )
+        ?.value
+        .trim() ||
+        "";
+
+
+    const unit =
+        type
+            ? getMaintenanceUnitByType(
+                type
+            )
+            : "";
+
+
+    const meterTypeText =
+        type
+            ? (
+                isExcavatorMaintenanceType(
+                    type
+                )
+                    ? "小时数 h"
+                    : "公里数 km"
+            )
+            : "自动判断";
+
+
+    const meterInput =
+        document.getElementById(
+            "maintenanceSettingMeterType"
+        );
+
+
+    if (
+        meterInput
+    ) {
+
+        meterInput.value =
+            meterTypeText;
+    }
+
+
+    const latestBox =
+        document.getElementById(
+            "maintenanceSettingLatestReading"
+        );
+
+
+    if (
+        !latestBox
+    ) {
+
+        return;
+    }
+
+
+    if (
+        !number
+    ) {
+
+        latestBox.innerHTML =
+            "暂无";
+
+        return;
+    }
+
+
+    const latest =
+        getLatestEquipmentMeter(
+            number
+        );
+
+
+    if (
+        !latest
+    ) {
+
+        latestBox.innerHTML =
+            "暂无设备使用读数";
+
+        return;
+    }
+
+
+    latestBox.innerHTML =
+        `<strong>${Number(
+            latest.reading ||
+            0
+        ).toFixed(1)} ${escapeHtml(
+            latest.unit ||
+            unit ||
+            "km"
+        )}</strong><br><span style="color:#64748b;font-size:12px;">${formatDateTime(
+            latest.createdAt
+        )}</span>`;
+}
+
+
+function saveMaintenanceSetting() {
+
+    const equipmentNumber =
+        document.getElementById(
+            "maintenanceSettingEquipmentNumber"
+        )
+        .value
+        .trim();
+
+
+    const equipmentType =
+        document.getElementById(
+            "maintenanceSettingEquipmentType"
+        )
+        .value;
+
+
+    const lastReading =
+        Number(
+            document.getElementById(
+                "maintenanceSettingLastReading"
+            )
+            .value
+        );
+
+
+    const interval =
+        Number(
+            document.getElementById(
+                "maintenanceSettingInterval"
+            )
+            .value
+        );
+
+
+    const warning =
+        Number(
+            document.getElementById(
+                "maintenanceSettingWarning"
+            )
+            .value
+        );
+
+
+    if (
+        !equipmentNumber ||
+        !equipmentType
+    ) {
+
+        alert(
+            "请填写设备编号并选择设备类型。"
+        );
+
+        return;
+    }
+
+
+    if (
+        !Number.isFinite(
+            lastReading
+        ) ||
+        lastReading < 0
+    ) {
+
+        alert(
+            "请填写有效的上次保养读数。"
+        );
+
+        return;
+    }
+
+
+    if (
+        !Number.isFinite(
+            interval
+        ) ||
+        interval <= 0
+    ) {
+
+        alert(
+            "保养周期必须大于 0。"
+        );
+
+        return;
+    }
+
+
+    if (
+        !Number.isFinite(
+            warning
+        ) ||
+        warning < 0
+    ) {
+
+        alert(
+            "提前预警值不能小于 0。"
+        );
+
+        return;
+    }
+
+
+    if (
+        warning >=
+        interval
+    ) {
+
+        alert(
+            "提前预警值必须小于保养周期。"
+        );
+
+        return;
+    }
+
+
+    const latest =
+        getLatestEquipmentMeter(
+            equipmentNumber
+        );
+
+
+    if (
+        latest &&
+        lastReading >
+            Number(
+                latest.reading ||
+                0
+            )
+    ) {
+
+        if (
+            !confirm(
+                "上次保养读数高于当前系统最新使用读数。\n\n" +
+                "请确认数据是否正确。仍然保存吗？"
+            )
+        ) {
+
+            return;
+        }
+    }
+
+
+    const settings =
+        getMaintenanceSettings();
+
+
+    const existing =
+        settings.find(
+            item =>
+                String(
+                    item.equipmentId ||
+                    item.equipmentNumber ||
+                    ""
+                ) ===
+                    String(
+                        equipmentNumber
+                    )
+        );
+
+
+    const now =
+        new Date()
+            .toISOString();
+
+
+    const meterType =
+        getMaintenanceMeterType(
+            equipmentType
+        );
+
+
+    const unit =
+        getMaintenanceUnitByType(
+            equipmentType
+        );
+
+
+    const nextReading =
+        lastReading +
+        interval;
+
+
+    if (
+        existing
+    ) {
+
+        existing.equipmentId =
+            equipmentNumber;
+
+        existing.equipmentNumber =
+            equipmentNumber;
+
+        existing.equipmentType =
+            equipmentType;
+
+        existing.meterType =
+            meterType;
+
+        existing.unit =
+            unit;
+
+        existing.lastMaintenanceReading =
+            lastReading;
+
+        existing.maintenanceInterval =
+            interval;
+
+        existing.warningAdvance =
+            warning;
+
+        existing.nextMaintenanceReading =
+            nextReading;
+
+        existing.updatedAt =
+            now;
+
+    } else {
+
+        settings.push({
+
+            settingId:
+                createId(
+                    "MS"
+                ),
+
+            equipmentId:
+                equipmentNumber,
+
+            equipmentNumber:
+                equipmentNumber,
+
+            equipmentType:
+                equipmentType,
+
+            meterType:
+                meterType,
+
+            unit:
+                unit,
+
+            lastMaintenanceReading:
+                lastReading,
+
+            maintenanceInterval:
+                interval,
+
+            warningAdvance:
+                warning,
+
+            nextMaintenanceReading:
+                nextReading,
+
+            createdAt:
+                now,
+
+            updatedAt:
+                now
+        });
+    }
+
+
+    save(
+        STORAGE.MAINTENANCE_SETTINGS,
+        settings
+    );
+
+
+    /*
+     * 设置变化后，删除该设备旧提醒。
+     * renderMaintenanceAlerts() 会基于最新读数与新设置重新计算。
+     */
+    save(
+        STORAGE.MAINTENANCE_ALERTS,
+        getMaintenanceAlerts()
+            .filter(
+                item =>
+                    String(
+                        item.equipmentId ||
+                        item.equipmentNumber ||
+                        ""
+                    ) !==
+                        String(
+                            equipmentNumber
+                        )
+            )
+    );
+
+
+    renderAll();
+
+
+    alert(
+        "保养设置已保存。\n\n" +
+        "设备：" +
+        equipmentNumber +
+        "\n" +
+        "计量：" +
+        (
+            meterType ===
+                "hours"
+                ? "小时数 h"
+                : "公里数 km"
+        ) +
+        "\n" +
+        "下次保养值：" +
+        nextReading.toFixed(
+            1
+        ) +
+        " " +
+        unit
+    );
+
+
+    clearMaintenanceSettingForm();
+}
+
+
+function editMaintenanceSetting(
+    equipmentId
+) {
+
+    const select =
+        document.getElementById(
+            "maintenanceSettingEquipment"
+        );
+
+
+    if (
+        select
+    ) {
+
+        select.value =
+            String(
+                equipmentId ||
+                ""
+            );
+    }
+
+
+    loadMaintenanceSettingEquipment();
+
+
+    document.getElementById(
+        "maintenanceSettingEquipmentNumber"
+    )
+    ?.scrollIntoView({
+        behavior:
+            "smooth",
+
+        block:
+            "center"
+    });
+}
+
+
+function clearMaintenanceSettingForm() {
+
+    const ids =
+        [
+            "maintenanceSettingEquipmentNumber",
+            "maintenanceSettingLastReading",
+            "maintenanceSettingInterval",
+            "maintenanceSettingWarning"
+        ];
+
+
+    ids.forEach(
+        id => {
+
+            const element =
+                document.getElementById(
+                    id
+                );
+
+
+            if (
+                element
+            ) {
+
+                element.value =
+                    "";
+            }
+        }
+    );
+
+
+    const type =
+        document.getElementById(
+            "maintenanceSettingEquipmentType"
+        );
+
+
+    if (
+        type
+    ) {
+
+        type.value =
+            "";
+    }
+
+
+    const select =
+        document.getElementById(
+            "maintenanceSettingEquipment"
+        );
+
+
+    if (
+        select
+    ) {
+
+        select.value =
+            "";
+    }
+
+
+    refreshMaintenanceSettingUnit();
+}
+
+
+function renderMaintenanceSettingsList() {
+
+    const box =
+        document.getElementById(
+            "maintenanceSettingsList"
+        );
+
+
+    if (
+        !box
+    ) {
+
+        return;
+    }
+
+
+    const settings =
+        getMaintenanceSettings()
+            .slice()
+            .sort(
+                (
+                    a,
+                    b
+                ) =>
+                    String(
+                        a.equipmentNumber ||
+                        a.equipmentId ||
+                        ""
+                    )
+                    .localeCompare(
+                        String(
+                            b.equipmentNumber ||
+                            b.equipmentId ||
+                            ""
+                        ),
+                        "zh-CN",
+                        {
+                            numeric:
+                                true
+                        }
+                    )
+            );
+
+
+    if (
+        !settings.length
+    ) {
+
+        box.innerHTML = `
+            <div class="empty">
+                暂无已配置保养设备
+            </div>
+        `;
+
+
+        return;
+    }
+
+
+    box.innerHTML =
+        settings
+            .map(
+                item => {
+
+                    const equipmentId =
+                        item.equipmentId ||
+                        item.equipmentNumber ||
+                        "";
+
+
+                    const unit =
+                        item.unit ||
+                        (
+                            item.meterType ===
+                                "hours"
+                                ? "h"
+                                : "km"
+                        );
+
+
+                    const latest =
+                        getLatestEquipmentMeter(
+                            equipmentId
+                        );
+
+
+                    const overview =
+                        calculateMaintenanceOverview()
+                            .find(
+                                record =>
+                                    String(
+                                        record.equipmentId ||
+                                        ""
+                                    ) ===
+                                        String(
+                                            equipmentId
+                                        )
+                            );
+
+
+                    const status =
+                        overview?.status ||
+                        "正常";
+
+
+                    const badgeClass =
+                        status ===
+                            "超期"
+                            ? "red"
+                            : (
+                                status ===
+                                    "临近"
+                                    ? "yellow"
+                                    : "green"
+                            );
+
+
+                    return `
+
+                    <div class="record-card">
+
+                        <div class="record-top">
+
+                            <strong>
+                                ⚙️
+                                ${escapeHtml(
+                                    item.equipmentNumber ||
+                                    equipmentId ||
+                                    "-"
+                                )}
+                            </strong>
+
+
+                            <span class="badge ${badgeClass}">
+                                ${escapeHtml(status)}
+                            </span>
+
+                        </div>
+
+
+                        <div class="record-info">
+
+                            设备类型：
+                            ${escapeHtml(
+                                item.equipmentType ||
+                                "-"
+                            )}
+
+                            <br>
+
+                            计量方式：
+                            ${
+                                item.meterType ===
+                                    "hours"
+                                    ? "小时数 h"
+                                    : "公里数 km"
+                            }
+
+                            <br>
+
+                            上次保养值：
+                            ${Number(
+                                item.lastMaintenanceReading ||
+                                0
+                            ).toFixed(1)}
+                            ${escapeHtml(unit)}
+
+                            <br>
+
+                            保养周期：
+                            ${Number(
+                                item.maintenanceInterval ||
+                                0
+                            ).toFixed(1)}
+                            ${escapeHtml(unit)}
+
+                            <br>
+
+                            提前预警：
+                            ${Number(
+                                item.warningAdvance ||
+                                0
+                            ).toFixed(1)}
+                            ${escapeHtml(unit)}
+
+                            <br>
+
+                            下次保养值：
+                            <strong>
+                                ${Number(
+                                    item.nextMaintenanceReading ||
+                                    (
+                                        Number(
+                                            item.lastMaintenanceReading ||
+                                            0
+                                        ) +
+                                        Number(
+                                            item.maintenanceInterval ||
+                                            0
+                                        )
+                                    )
+                                ).toFixed(1)}
+                                ${escapeHtml(unit)}
+                            </strong>
+
+                            <br>
+
+                            最新设备读数：
+                            ${
+                                latest
+                                    ? Number(
+                                        latest.reading ||
+                                        0
+                                    ).toFixed(1) +
+                                      " " +
+                                      escapeHtml(
+                                          latest.unit ||
+                                          unit
+                                      )
+                                    : "暂无"
+                            }
+
+                        </div>
+
+
+                        <div class="actions">
+
+                            <button
+                                type="button"
+                                class="secondary-btn"
+                                onclick="editMaintenanceSetting('${escapeJs(
+                                    equipmentId
+                                )}')"
+                            >
+                                ✏️ 修改设置
+                            </button>
+
+                        </div>
+
+                    </div>
+                    `;
+                }
+            )
+            .join(
+                ""
+            );
+}
+
+
 
 function getMaintenanceRecords() {
 
