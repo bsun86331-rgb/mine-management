@@ -615,7 +615,7 @@
                 </h1>
 
                 <p>
-                    Auxiliary Vehicle Operator · V2.10.2X
+                    Auxiliary Vehicle Operator · V2.10.3H
                 </p>
 
             </div>
@@ -1639,7 +1639,7 @@
 
 <footer>
 
-    矿山管理系统 · 辅助车辆司机端 V2.9.9D
+    矿山管理系统 · 辅助车辆司机端 V2.10.3H
 
 </footer>
 
@@ -1676,6 +1676,9 @@ const STORAGE = {
 
     EQUIPMENT_CHECKS:
         "equipmentUsageChecks",
+
+    OPERATIONAL_STATUS:
+        "equipmentOperationalStatus",
 
     MATERIALS:
         "materialRequests",
@@ -2265,7 +2268,302 @@ function findCurrentTask() {
 
 
 /* =========================================================
-   V2.10.2X
+   V2.10.3H
+   辅助车辆 / 设备运行状态联动
+========================================================= */
+
+function getCurrentAuxiliaryVehicleNumber() {
+
+    return String(
+        document
+            .getElementById(
+                "vehicleNumber"
+            )
+            ?.value ||
+        ""
+    )
+    .trim();
+}
+
+
+function getAuxiliaryOperationalStatusText(
+    status
+) {
+
+    const map = {
+
+        available:
+            "可用",
+
+        working:
+            "作业中",
+
+        maintenance:
+            "维修中",
+
+        service:
+            "保养中",
+
+        standby:
+            "备用",
+
+        disabled:
+            "停用"
+    };
+
+
+    return (
+        map[status] ||
+        status ||
+        "可用"
+    );
+}
+
+
+function isAuxiliaryBlockedStatus(
+    status
+) {
+
+    return [
+        "maintenance",
+        "service",
+        "disabled"
+    ]
+    .includes(
+        String(
+            status ||
+            ""
+        )
+    );
+}
+
+
+function hasActiveAuxiliaryRepairFlow() {
+
+    const vehicleNumber =
+        getCurrentAuxiliaryVehicleNumber();
+
+
+    if (
+        !vehicleNumber
+    ) {
+
+        return false;
+    }
+
+
+    const requestStatuses =
+        new Set([
+            "pending_dispatch",
+            "waiting_entry",
+            "waiting_assignment",
+            "assigned",
+            "working",
+            "waiting_parts",
+            "waiting_inspection",
+            "inspection_passed",
+            "rework"
+        ]);
+
+
+    const requests =
+        readArray(
+            "maintenanceRequests"
+        );
+
+
+    const orders =
+        readArray(
+            "maintenanceWorkOrders"
+        );
+
+
+    const requestActive =
+        requests.some(
+            item =>
+                String(
+                    item.equipmentId ||
+                    item.equipmentNumber ||
+                    item.vehicleId ||
+                    item.vehicleNumber ||
+                    ""
+                ) ===
+                    vehicleNumber
+                &&
+                requestStatuses.has(
+                    item.status
+                )
+        );
+
+
+    const orderActive =
+        orders.some(
+            item =>
+                String(
+                    item.equipmentId ||
+                    item.equipmentNumber ||
+                    item.vehicleId ||
+                    item.vehicleNumber ||
+                    ""
+                ) ===
+                    vehicleNumber
+                &&
+                item.status !==
+                    "completed"
+        );
+
+
+    return (
+        requestActive ||
+        orderActive
+    );
+}
+
+
+function getCurrentAuxiliaryOperationalStatus() {
+
+    const vehicleNumber =
+        getCurrentAuxiliaryVehicleNumber();
+
+
+    if (
+        !vehicleNumber
+    ) {
+
+        return {
+            vehicleNumber:
+                "",
+
+            status:
+                "available",
+
+            source:
+                "none"
+        };
+    }
+
+
+    /*
+     * 维修流程优先。
+     * 即使维修管理端尚未打开同步状态，
+     * 只要存在活动维修流程就按“维修中”处理。
+     */
+    if (
+        hasActiveAuxiliaryRepairFlow()
+    ) {
+
+        return {
+            vehicleNumber,
+
+            status:
+                "maintenance",
+
+            source:
+                "repair_flow"
+        };
+    }
+
+
+    const record =
+        readArray(
+            STORAGE.OPERATIONAL_STATUS
+        )
+        .find(
+            item =>
+                String(
+                    item.equipmentId ||
+                    item.equipmentNumber ||
+                    ""
+                ) ===
+                    vehicleNumber
+        );
+
+
+    if (
+        record?.status
+    ) {
+
+        return {
+            vehicleNumber,
+
+            status:
+                record.status,
+
+            source:
+                record.source ||
+                "operational_status"
+        };
+    }
+
+
+    return {
+        vehicleNumber,
+
+        status:
+            "available",
+
+        source:
+            "default"
+    };
+}
+
+
+function isCurrentAuxiliaryOperationallyBlocked() {
+
+    return isAuxiliaryBlockedStatus(
+        getCurrentAuxiliaryOperationalStatus()
+            .status
+    );
+}
+
+
+function requireCurrentAuxiliaryOperational(
+    actionText
+) {
+
+    const state =
+        getCurrentAuxiliaryOperationalStatus();
+
+
+    if (
+        !isAuxiliaryBlockedStatus(
+            state.status
+        )
+    ) {
+
+        return true;
+    }
+
+
+    alert(
+        "当前设备不能继续正式作业。\\n\\n" +
+        "设备：" +
+        (
+            state.vehicleNumber ||
+            "-"
+        ) +
+        "\\n" +
+        "状态：" +
+        getAuxiliaryOperationalStatusText(
+            state.status
+        ) +
+        "\\n\\n" +
+        "请等待维修 / 保养完成，或联系调度更换设备后再" +
+        (
+            actionText ||
+            "继续作业"
+        ) +
+        "。"
+    );
+
+
+    return false;
+}
+
+
+
+/* =========================================================
+   V2.10.3H
    辅助车辆 / 设备使用前检查
 ========================================================= */
 
@@ -2509,7 +2807,30 @@ function renderCurrentTask() {
         getCurrentEquipmentCheck();
 
 
+    const operationalState =
+        getCurrentAuxiliaryOperationalStatus();
+
+
+    const operationalBlocked =
+        isAuxiliaryBlockedStatus(
+            operationalState.status
+        );
+
+
     if (
+        operationalBlocked
+    ) {
+
+        badge.textContent =
+            getAuxiliaryOperationalStatusText(
+                operationalState.status
+            );
+
+
+        badge.className =
+            "badge yellow";
+
+    } else if (
         activeWork
     ) {
 
@@ -2641,6 +2962,35 @@ function renderCurrentTask() {
             </div>
 
 
+            <div class="task-route">
+
+                <strong>
+                    设备运行状态
+                </strong>
+
+                <br>
+
+                ${
+                    operationalBlocked
+                        ? "⛔ " +
+                          escapeHtml(
+                              getAuxiliaryOperationalStatusText(
+                                  operationalState.status
+                              )
+                          ) +
+                          " · 当前禁止继续正式作业"
+                        : "✅ " +
+                          escapeHtml(
+                              getAuxiliaryOperationalStatusText(
+                                  operationalState.status
+                              )
+                          ) +
+                          " · 当前可正常使用"
+                }
+
+            </div>
+
+
             ${
                 activeWork
 
@@ -2651,17 +3001,30 @@ function renderCurrentTask() {
                     <div class="work-clock">
 
                         <span>
-                            本次作业已开始
+                            ${
+                                operationalBlocked
+                                    ? "设备状态已变化，请停止正式作业"
+                                    : "本次作业已开始"
+                            }
                         </span>
 
                         <strong>
-                            ${formatDuration(
-                                Date.now() -
-                                new Date(
-                                    activeWork.startedAt
-                                )
-                                    .getTime()
-                            )}
+                            ${
+                                operationalBlocked
+                                    ? "⛔ " +
+                                      escapeHtml(
+                                          getAuxiliaryOperationalStatusText(
+                                              operationalState.status
+                                          )
+                                      )
+                                    : formatDuration(
+                                        Date.now() -
+                                        new Date(
+                                            activeWork.startedAt
+                                        )
+                                            .getTime()
+                                      )
+                            }
                         </strong>
 
                     </div>
@@ -2688,17 +3051,34 @@ function renderCurrentTask() {
 
                         <button
                             type="button"
-                            class="success-btn"
+                            class="${
+                                operationalBlocked
+                                    ? "danger-btn"
+                                    : "success-btn"
+                            }"
                             onclick="${
-                                equipmentCheck
-                                    ? "startCurrentWork()"
-                                    : "goEquipmentCheck()"
+                                operationalBlocked
+                                    ? "requireCurrentAuxiliaryOperational('开始作业')"
+                                    : (
+                                        equipmentCheck
+                                            ? "startCurrentWork()"
+                                            : "goEquipmentCheck()"
+                                      )
                             }"
                         >
                             ${
-                                equipmentCheck
-                                    ? "▶ 开始作业"
-                                    : "🧰 先完成设备使用检查"
+                                operationalBlocked
+                                    ? "⛔ 当前设备" +
+                                      escapeHtml(
+                                          getAuxiliaryOperationalStatusText(
+                                              operationalState.status
+                                          )
+                                      )
+                                    : (
+                                        equipmentCheck
+                                            ? "▶ 开始作业"
+                                            : "🧰 先完成设备使用检查"
+                                      )
                             }
                         </button>
 
@@ -2761,6 +3141,16 @@ function startCurrentWork() {
         alert(
             "当前没有生产任务。"
         );
+
+        return;
+    }
+
+
+    if (
+        !requireCurrentAuxiliaryOperational(
+            "开始作业"
+        )
+    ) {
 
         return;
     }
