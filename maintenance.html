@@ -131,7 +131,7 @@ button:disabled {
 .nav-grid {
     display: grid;
     grid-template-columns:
-        repeat(6,minmax(0,1fr));
+        repeat(7,minmax(0,1fr));
     gap: 8px;
     margin-bottom: 14px;
 }
@@ -530,7 +530,7 @@ footer {
             </h1>
 
             <p>
-                Workshop Maintenance · V2.10.0P
+                Workshop Maintenance · V2.10.2Y
             </p>
 
         </div>
@@ -561,6 +561,11 @@ footer {
     <br>
 
     皮卡、管理车辆等非生产设备可以直接进入维修管理待处理列表。
+
+    <br>
+
+    新增“保养提醒”：司机 / 设备使用人上传最新公里数或小时数后，
+    临近保养显示黄色，超期保养显示红色。
 
 </div>
 
@@ -606,6 +611,14 @@ footer {
         type="button"
     >
         ✅ 待验收
+    </button>
+
+    <button
+        class="nav-btn"
+        data-page="maintenance"
+        type="button"
+    >
+        ⏰ 保养提醒
     </button>
 
     <button
@@ -872,7 +885,7 @@ footer {
             </h2>
 
             <p>
-                维修员接车并开始维修后的车辆
+                修理工接车并开始维修后的车辆
             </p>
 
         </div>
@@ -933,6 +946,191 @@ footer {
 
 
 <!-- =====================================================
+     保养提醒
+====================================================== -->
+
+<section
+    id="page-maintenance"
+    class="page-section"
+>
+
+<section class="card">
+
+    <div class="section-title">
+
+        <div>
+
+            <h2>
+                ⏰ 设备保养提醒
+            </h2>
+
+            <p>
+                司机 / 设备使用人提供最新公里数或小时数，
+                维修管理统一查看保养状态
+            </p>
+
+        </div>
+
+    </div>
+
+
+    <div class="summary-grid">
+
+        <div class="summary-card">
+
+            <span>
+                正常
+            </span>
+
+            <strong
+                id="maintenanceNormalCount"
+                style="color:#166534;"
+            >
+                0
+            </strong>
+
+        </div>
+
+
+        <div class="summary-card">
+
+            <span>
+                临近保养
+            </span>
+
+            <strong
+                id="maintenanceNearCount"
+                style="color:#b45309;"
+            >
+                0
+            </strong>
+
+        </div>
+
+
+        <div class="summary-card">
+
+            <span>
+                超期保养
+            </span>
+
+            <strong
+                id="maintenanceOverdueCount"
+                style="color:#b91c1c;"
+            >
+                0
+            </strong>
+
+        </div>
+
+
+        <div class="summary-card">
+
+            <span>
+                已配置保养设备
+            </span>
+
+            <strong id="maintenanceConfiguredCount">
+                0
+            </strong>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+<section class="card">
+
+    <div class="section-title">
+
+        <div>
+
+            <h2>
+                🚨 超期保养
+            </h2>
+
+            <p>
+                红色提醒持续显示，直到保养数据被更新
+            </p>
+
+        </div>
+
+        <span class="badge red">
+            重点处理
+        </span>
+
+    </div>
+
+
+    <div
+        id="maintenanceOverdueList"
+        class="record-list"
+    >
+    </div>
+
+</section>
+
+
+<section class="card">
+
+    <div class="section-title">
+
+        <div>
+
+            <h2>
+                ⚠️ 临近保养
+            </h2>
+
+            <p>
+                黄色提醒，用于提前安排保养时间和配件
+            </p>
+
+        </div>
+
+        <span class="badge yellow">
+            提前安排
+        </span>
+
+    </div>
+
+
+    <div
+        id="maintenanceNearList"
+        class="record-list"
+    >
+    </div>
+
+</section>
+
+
+<section class="card">
+
+    <div class="notice">
+
+        保养状态只有：
+        <strong>正常 / 临近 / 超期</strong>。
+
+        <br>
+
+        正常设备不主动提醒；
+        临近和超期设备会集中显示在本页面。
+
+        <br>
+
+        挖机按小时数 h 计算，
+        其他车辆 / 辅助车辆按公里数 km 计算。
+
+    </div>
+
+</section>
+
+</section>
+
+
+
+<!-- =====================================================
      历史
 ====================================================== -->
 
@@ -973,7 +1171,7 @@ footer {
 
 <footer>
 
-矿山管理系统 · 修理厂维修管理 V2.10.0P
+矿山管理系统 · 修理厂维修管理 V2.10.2Y
 
 </footer>
 
@@ -1030,13 +1228,29 @@ footer {
         <div class="form-group">
 
             <label for="assignmentWorker">
-                主维修员
+                主维修工
             </label>
 
             <select id="assignmentWorker">
 
                 <option value="">
-                    请选择已审核维修员
+                    请选择维修工
+                </option>
+
+                <option value="维修工01">
+                    维修工01
+                </option>
+
+                <option value="维修工02">
+                    维修工02
+                </option>
+
+                <option value="维修工03">
+                    维修工03
+                </option>
+
+                <option value="维修工04">
+                    维修工04
                 </option>
 
             </select>
@@ -1332,7 +1546,16 @@ const STORAGE = {
         "workshopBays",
 
     COSTS:
-        "maintenanceCosts"
+        "maintenanceCosts",
+
+    MAINTENANCE_ALERTS:
+        "maintenanceAlerts",
+
+    MAINTENANCE_SETTINGS:
+        "equipmentMaintenanceSettings",
+
+    METER_READINGS:
+        "equipmentMeterReadings"
 
 };
 
@@ -1702,8 +1925,6 @@ function initialize() {
 
     migrateLegacyReports();
 
-    reconcileMaintenanceRequestStates();
-
     renderAll();
 
 
@@ -1988,97 +2209,6 @@ function migrateLegacyReports() {
 
 
 /* =========================================================
-   维修申请状态同步
-========================================================= */
-
-function reconcileMaintenanceRequestStates() {
-
-    const requests =
-        getRequests();
-
-    let changed =
-        false;
-
-    requests.forEach(
-        item => {
-
-            const status =
-                item.status || "";
-
-            const alreadyInWorkshopFlow = [
-                "waiting_entry",
-                "waiting_assignment",
-                "received",
-                "assigned",
-                "working",
-                "waiting_parts",
-                "waiting_inspection",
-                "inspection_passed",
-                "rework",
-                "completed"
-            ].includes(status);
-
-            if (alreadyInWorkshopFlow) {
-                return;
-            }
-
-            if (
-                item.dispatchRequired === false ||
-                item.dispatchStatus === "not_required"
-            ) {
-
-                if (
-                    status === "pending_dispatch" ||
-                    !status
-                ) {
-                    item.status = "waiting_entry";
-                    changed = true;
-                }
-
-                return;
-            }
-
-            if (item.dispatchStatus === "approved") {
-
-                if (status !== "waiting_entry") {
-                    item.status = "waiting_entry";
-                    changed = true;
-                }
-
-                return;
-            }
-
-            if (item.dispatchStatus === "rejected") {
-
-                if (status !== "rejected") {
-                    item.status = "rejected";
-                    changed = true;
-                }
-
-                return;
-            }
-
-            if (
-                item.dispatchRequired === true &&
-                status !== "pending_dispatch"
-            ) {
-                item.status = "pending_dispatch";
-                changed = true;
-            }
-        }
-    );
-
-    if (changed) {
-        save(
-            STORAGE.REQUESTS,
-            requests
-        );
-    }
-}
-
-
-
-/* =========================================================
    是否生产设备
 ========================================================= */
 
@@ -2134,8 +2264,6 @@ function isProductionEquipment(
 
 function renderAll() {
 
-    reconcileMaintenanceRequestStates();
-
     renderStatistics();
 
     renderWorkshopBoard();
@@ -2149,6 +2277,8 @@ function renderAll() {
     renderWorking();
 
     renderInspection();
+
+    renderMaintenanceAlerts();
 
     renderHistory();
 }
@@ -2568,41 +2698,6 @@ function renderWaitingWorkshop() {
 
                     </div>
 
-                    <div class="record-info" style="margin-top:8px;">
-
-                        调度状态：
-                        ${escapeHtml(
-                            item.dispatchRequired === false
-                                ? "无需调度审批"
-                                : (
-                                    item.dispatchStatus === "approved"
-                                        ? "已批准进厂"
-                                        : (item.dispatchStatus || "-")
-                                )
-                        )}
-
-                    </div>
-
-
-                    ${
-                        item.photoData
-                            ? `
-                                <div style="margin-top:10px;">
-                                    <div style="font-size:12px;color:#64748b;margin-bottom:6px;">
-                                        故障现场照片
-                                    </div>
-                                    <img
-                                        class="photo-thumb"
-                                        style="width:140px;height:100px;"
-                                        src="${item.photoData}"
-                                        alt="故障现场照片"
-                                    >
-                                </div>
-                            `
-                            : ""
-                    }
-
-
 
                     <div class="actions">
 
@@ -2649,19 +2744,6 @@ function receiveVehicle(
     if (
         !item
     ) {
-
-        return;
-    }
-
-
-    if (
-        item.dispatchRequired !== false &&
-        item.dispatchStatus !== "approved"
-    ) {
-
-        alert(
-            "该生产设备尚未获得调度批准，暂不能办理进厂接车。"
-        );
 
         return;
     }
@@ -2779,7 +2861,7 @@ function renderAssignments() {
                             class="primary-btn"
                             onclick="openAssignment('${escapeJs(item.requestId)}')"
                         >
-                            分配工位 / 维修员
+                            分配工位 / 维修工
                         </button>
 
                     </div>
@@ -2790,26 +2872,6 @@ function renderAssignments() {
             .join(
                 ""
             );
-}
-
-
-
-/* =========================================================
-   已审核维修员
-========================================================= */
-
-function getApprovedMaintenanceWorkers() {
-
-    return getMaintenancePersonnelRecords()
-        .filter(
-            person =>
-                normalizeMaintenancePosition(
-                    person.position
-                ) === "维修员" &&
-                isMaintenancePersonApproved(
-                    person
-                )
-        );
 }
 
 
@@ -2834,59 +2896,10 @@ function openAssignment(
         "";
 
 
-    const workerSelect =
-        document.getElementById(
-            "assignmentWorker"
-        );
-
-
-    const workers =
-        getApprovedMaintenanceWorkers();
-
-
-    workerSelect.innerHTML =
-        '<option value="">请选择已审核维修员</option>' +
-
-        workers
-            .map(
-                worker => {
-
-                    const workerId =
-                        getMaintenancePersonId(
-                            worker
-                        );
-
-                    const workerName =
-                        worker.name ||
-                        worker.realName ||
-                        "未命名维修员";
-
-                    return `
-                        <option
-                            value="${escapeHtml(workerId)}"
-                            data-worker-name="${escapeHtml(workerName)}"
-                        >
-                            ${escapeHtml(workerName)}
-                            ${workerId ? "（" + escapeHtml(workerId) + "）" : ""}
-                        </option>
-                    `;
-                }
-            )
-            .join(
-                ""
-            );
-
-
-    workerSelect.value =
+    document.getElementById(
+        "assignmentWorker"
+    ).value =
         "";
-
-
-    if (!workers.length) {
-
-        alert(
-            "当前没有已审核的维修员，请先在管理员端完成维修员入职审核。"
-        );
-    }
 
 
     const select =
@@ -2945,26 +2958,10 @@ function confirmAssignment() {
         ).value;
 
 
-    const workerSelect =
+    const workerName =
         document.getElementById(
             "assignmentWorker"
-        );
-
-
-    const workerId =
-        workerSelect.value;
-
-
-    const workerName =
-        workerSelect
-            .selectedOptions?.[0]
-            ?.dataset
-            ?.workerName ||
-        workerSelect
-            .selectedOptions?.[0]
-            ?.textContent
-            ?.trim() ||
-        "";
+        ).value;
 
 
     const project =
@@ -2977,7 +2974,6 @@ function confirmAssignment() {
 
     if (
         !bayId ||
-        !workerId ||
         !workerName ||
         !project
     ) {
@@ -3068,8 +3064,6 @@ function confirmAssignment() {
         bayName:
             bay.name,
 
-        workerId,
-
         workerName,
 
         repairProject:
@@ -3136,26 +3130,6 @@ function confirmAssignment() {
         order.orderId;
 
 
-    request.workerId =
-        workerId;
-
-
-    request.workerName =
-        workerName;
-
-
-    request.bayId =
-        bay.bayId;
-
-
-    request.bayName =
-        bay.name;
-
-
-    request.assignedAt =
-        order.assignedAt;
-
-
     save(
         STORAGE.REQUESTS,
         requests
@@ -3171,7 +3145,7 @@ function confirmAssignment() {
 
 
     alert(
-        "派工完成，维修员已收到维修任务。"
+        "派工完成，维修工已收到维修任务。"
     );
 }
 
@@ -3292,7 +3266,7 @@ function renderWorking() {
 
                             <div class="warning-box" style="margin-top:10px;">
 
-                                已派工，等待维修员接车、拍维修前照片并开始维修。
+                                已派工，等待维修工接车、拍维修前照片并开始维修。
 
                             </div>
                             `
@@ -3321,12 +3295,7 @@ function renderInspection() {
             .filter(
                 item =>
                     item.status ===
-                        "waiting_inspection"
-
-                    ||
-
-                    item.status ===
-                        "inspection_passed"
+                    "waiting_inspection"
             )
             .slice()
             .reverse();
@@ -3366,8 +3335,8 @@ function renderInspection() {
                             ${escapeHtml(item.equipmentNumber)}
                         </strong>
 
-                        <span class="badge ${item.status === "inspection_passed" ? "green" : "purple"}">
-                            ${item.status === "inspection_passed" ? "验收通过 / 待费用单" : "待验收"}
+                        <span class="badge purple">
+                            待验收
                         </span>
 
                     </div>
@@ -3403,27 +3372,13 @@ function renderInspection() {
 
                     <div class="actions">
 
-                        ${
-                            item.status === "inspection_passed"
-                                ? `
-                                    <button
-                                        type="button"
-                                        class="purple-btn"
-                                        onclick="openCostSheet('${escapeJs(item.orderId)}')"
-                                    >
-                                        💰 填写维修费用单
-                                    </button>
-                                `
-                                : `
-                                    <button
-                                        type="button"
-                                        class="success-btn"
-                                        onclick="openInspection('${escapeJs(item.orderId)}')"
-                                    >
-                                        维修验收
-                                    </button>
-                                `
-                        }
+                        <button
+                            type="button"
+                            class="success-btn"
+                            onclick="openInspection('${escapeJs(item.orderId)}')"
+                        >
+                            维修验收
+                        </button>
 
                     </div>
 
@@ -3619,12 +3574,6 @@ function approveInspection() {
     );
 
 
-    updateMaintenanceRequestFromOrder(
-        order,
-        "inspection_passed"
-    );
-
-
     closeModal(
         "inspectionModal"
     );
@@ -3711,12 +3660,6 @@ function rejectInspection() {
     );
 
 
-    updateMaintenanceRequestFromOrder(
-        order,
-        "rework"
-    );
-
-
     closeModal(
         "inspectionModal"
     );
@@ -3727,71 +3670,6 @@ function rejectInspection() {
 
     alert(
         "该维修任务已退回返修。"
-    );
-}
-
-
-
-/* =========================================================
-   工单状态同步到维修申请
-========================================================= */
-
-function updateMaintenanceRequestFromOrder(
-    order,
-    status
-) {
-
-    if (!order?.requestId) {
-        return;
-    }
-
-    const requests =
-        getRequests();
-
-    const request =
-        requests.find(
-            item =>
-                item.requestId ===
-                order.requestId
-        );
-
-    if (!request) {
-        return;
-    }
-
-    request.status =
-        status;
-
-    request.orderId =
-        order.orderId;
-
-    request.workerId =
-        order.workerId ||
-        request.workerId ||
-        "";
-
-    request.workerName =
-        order.workerName ||
-        request.workerName ||
-        "";
-
-    request.bayId =
-        order.bayId ||
-        request.bayId ||
-        "";
-
-    request.bayName =
-        order.bayName ||
-        request.bayName ||
-        "";
-
-    request.updatedAt =
-        new Date()
-            .toISOString();
-
-    save(
-        STORAGE.REQUESTS,
-        requests
     );
 }
 
@@ -3958,18 +3836,9 @@ function saveCostSheet() {
         getCosts();
 
 
-    const existingCost =
-        costs.find(
-            item =>
-                item.orderId ===
-                    orderId
-        );
-
-
-    const costData = {
+    costs.push({
 
         costId:
-            existingCost?.costId ||
             createId(
                 "COST"
             ),
@@ -4010,24 +3879,7 @@ function saveCostSheet() {
         issuedAt:
             new Date()
                 .toISOString()
-    };
-
-
-    if (
-        existingCost
-    ) {
-
-        Object.assign(
-            existingCost,
-            costData
-        );
-
-    } else {
-
-        costs.push(
-            costData
-        );
-    }
+    });
 
 
     save(
@@ -4123,30 +3975,6 @@ function completeOrder(
             order.completedAt;
 
 
-        request.workerId =
-            order.workerId ||
-            request.workerId ||
-            "";
-
-
-        request.workerName =
-            order.workerName ||
-            request.workerName ||
-            "";
-
-
-        request.bayId =
-            order.bayId ||
-            request.bayId ||
-            "";
-
-
-        request.bayName =
-            order.bayName ||
-            request.bayName ||
-            "";
-
-
         save(
             STORAGE.REQUESTS,
             requests
@@ -4201,6 +4029,623 @@ function releaseBay(
         STORAGE.BAYS,
         bays
     );
+}
+
+
+
+/* =========================================================
+   V2.10.2Y
+   保养提醒
+========================================================= */
+
+function getMaintenanceAlerts() {
+
+    return readArray(
+        STORAGE.MAINTENANCE_ALERTS
+    );
+}
+
+
+function getMaintenanceSettings() {
+
+    return readArray(
+        STORAGE.MAINTENANCE_SETTINGS
+    );
+}
+
+
+function getMeterReadings() {
+
+    return readArray(
+        STORAGE.METER_READINGS
+    );
+}
+
+
+function getLatestEquipmentMeter(
+    equipmentId
+) {
+
+    return (
+        getMeterReadings()
+            .filter(
+                item =>
+                    String(
+                        item.equipmentId ||
+                        item.equipmentNumber ||
+                        ""
+                    ) ===
+                        String(
+                            equipmentId ||
+                            ""
+                        )
+            )
+            .sort(
+                (
+                    a,
+                    b
+                ) =>
+                    new Date(
+                        b.createdAt ||
+                        0
+                    ) -
+                    new Date(
+                        a.createdAt ||
+                        0
+                    )
+            )[0]
+        ||
+        null
+    );
+}
+
+
+function calculateMaintenanceOverview() {
+
+    const settings =
+        getMaintenanceSettings();
+
+
+    const records =
+        [];
+
+
+    settings.forEach(
+        setting => {
+
+            const equipmentId =
+                String(
+                    setting.equipmentId ||
+                    setting.equipmentNumber ||
+                    ""
+                );
+
+
+            if (
+                !equipmentId
+            ) {
+
+                return;
+            }
+
+
+            const latest =
+                getLatestEquipmentMeter(
+                    equipmentId
+                );
+
+
+            if (
+                !latest
+            ) {
+
+                return;
+            }
+
+
+            const current =
+                Number(
+                    latest.reading ??
+                    latest.currentReading ??
+                    0
+                );
+
+
+            const last =
+                Number(
+                    setting.lastMaintenanceReading ||
+                    0
+                );
+
+
+            const interval =
+                Number(
+                    setting.maintenanceInterval ||
+                    0
+                );
+
+
+            const warning =
+                Math.max(
+                    0,
+                    Number(
+                        setting.warningAdvance ||
+                        0
+                    )
+                );
+
+
+            if (
+                interval <= 0
+            ) {
+
+                return;
+            }
+
+
+            const due =
+                last +
+                interval;
+
+
+            const remaining =
+                due -
+                current;
+
+
+            let status =
+                "正常";
+
+
+            if (
+                current >=
+                due
+            ) {
+
+                status =
+                    "超期";
+
+            } else if (
+                current >=
+                due -
+                warning
+            ) {
+
+                status =
+                    "临近";
+            }
+
+
+            records.push({
+
+                equipmentId,
+
+                equipmentNumber:
+                    setting.equipmentNumber ||
+                    latest.equipmentNumber ||
+                    equipmentId,
+
+                equipmentType:
+                    setting.equipmentType ||
+                    latest.equipmentType ||
+                    "",
+
+                meterType:
+                    setting.meterType ||
+                    latest.meterType ||
+                    "",
+
+                unit:
+                    latest.unit ||
+                    (
+                        (
+                            setting.meterType ||
+                            latest.meterType
+                        ) ===
+                            "hours"
+                            ? "h"
+                            : "km"
+                    ),
+
+                currentReading:
+                    current,
+
+                lastMaintenanceReading:
+                    last,
+
+                maintenanceInterval:
+                    interval,
+
+                warningAdvance:
+                    warning,
+
+                dueReading:
+                    due,
+
+                remaining,
+
+                status,
+
+                updatedAt:
+                    latest.createdAt ||
+                    ""
+            });
+        }
+    );
+
+
+    /*
+     * 兼容 equipment-check.html 已产生的 maintenanceAlerts。
+     * 如果某设备在设置表中没有成功计算，
+     * 仍然让维修管理能够看到临近 / 超期提醒。
+     */
+    const known =
+        new Set(
+            records.map(
+                item =>
+                    String(
+                        item.equipmentId
+                    )
+            )
+        );
+
+
+    getMaintenanceAlerts()
+        .forEach(
+            alertItem => {
+
+                const equipmentId =
+                    String(
+                        alertItem.equipmentId ||
+                        alertItem.equipmentNumber ||
+                        ""
+                    );
+
+
+                if (
+                    !equipmentId ||
+                    known.has(
+                        equipmentId
+                    )
+                ) {
+
+                    return;
+                }
+
+
+                if (
+                    alertItem.status !==
+                        "临近" &&
+                    alertItem.status !==
+                        "超期"
+                ) {
+
+                    return;
+                }
+
+
+                records.push({
+
+                    equipmentId,
+
+                    equipmentNumber:
+                        alertItem.equipmentNumber ||
+                        equipmentId,
+
+                    equipmentType:
+                        alertItem.equipmentType ||
+                        "",
+
+                    meterType:
+                        alertItem.meterType ||
+                        "",
+
+                    unit:
+                        alertItem.meterType ===
+                            "hours"
+                            ? "h"
+                            : "km",
+
+                    currentReading:
+                        Number(
+                            alertItem.currentReading ||
+                            0
+                        ),
+
+                    dueReading:
+                        Number(
+                            alertItem.dueReading ||
+                            0
+                        ),
+
+                    remaining:
+                        Number(
+                            alertItem.remaining ||
+                            0
+                        ),
+
+                    status:
+                        alertItem.status,
+
+                    updatedAt:
+                        alertItem.createdAt ||
+                        ""
+                });
+            }
+        );
+
+
+    return records;
+}
+
+
+function renderMaintenanceAlerts() {
+
+    const all =
+        calculateMaintenanceOverview();
+
+
+    const normal =
+        all.filter(
+            item =>
+                item.status ===
+                    "正常"
+        );
+
+
+    const near =
+        all.filter(
+            item =>
+                item.status ===
+                    "临近"
+        );
+
+
+    const overdue =
+        all.filter(
+            item =>
+                item.status ===
+                    "超期"
+        );
+
+
+    setText(
+        "maintenanceNormalCount",
+        normal.length
+    );
+
+
+    setText(
+        "maintenanceNearCount",
+        near.length
+    );
+
+
+    setText(
+        "maintenanceOverdueCount",
+        overdue.length
+    );
+
+
+    setText(
+        "maintenanceConfiguredCount",
+        getMaintenanceSettings()
+            .filter(
+                item =>
+                    Number(
+                        item.maintenanceInterval ||
+                        0
+                    ) >
+                    0
+            )
+            .length
+    );
+
+
+    renderMaintenanceAlertList(
+        "maintenanceOverdueList",
+        overdue,
+        "overdue"
+    );
+
+
+    renderMaintenanceAlertList(
+        "maintenanceNearList",
+        near,
+        "near"
+    );
+}
+
+
+function renderMaintenanceAlertList(
+    elementId,
+    records,
+    type
+) {
+
+    const box =
+        document.getElementById(
+            elementId
+        );
+
+
+    if (
+        !box
+    ) {
+
+        return;
+    }
+
+
+    if (
+        !records.length
+    ) {
+
+        box.innerHTML = `
+
+            <div class="empty">
+
+                ${
+                    type ===
+                        "overdue"
+                        ? "当前没有超期保养设备"
+                        : "当前没有临近保养设备"
+                }
+
+            </div>
+        `;
+
+
+        return;
+    }
+
+
+    records
+        .sort(
+            (
+                a,
+                b
+            ) =>
+                Number(
+                    a.remaining ||
+                    0
+                ) -
+                Number(
+                    b.remaining ||
+                    0
+                )
+        );
+
+
+    box.innerHTML =
+        records
+            .map(
+                item => {
+
+                    const unit =
+                        item.unit ||
+                        "km";
+
+
+                    const remaining =
+                        Number(
+                            item.remaining ||
+                            0
+                        );
+
+
+                    const statusBadge =
+                        item.status ===
+                            "超期"
+                            ? "red"
+                            : "yellow";
+
+
+                    const remainingText =
+                        item.status ===
+                            "超期"
+                            ? "已超 " +
+                              Math.abs(
+                                  remaining
+                              )
+                                  .toFixed(
+                                      1
+                                  ) +
+                              " " +
+                              unit
+                            : "剩余 " +
+                              Math.max(
+                                  0,
+                                  remaining
+                              )
+                                  .toFixed(
+                                      1
+                                  ) +
+                              " " +
+                              unit;
+
+
+                    return `
+
+                    <div class="record-card">
+
+                        <div class="record-top">
+
+                            <strong>
+                                ${
+                                    item.status ===
+                                        "超期"
+                                        ? "🚨"
+                                        : "⚠️"
+                                }
+                                ${escapeHtml(
+                                    item.equipmentNumber ||
+                                    item.equipmentId ||
+                                    "-"
+                                )}
+                            </strong>
+
+
+                            <span class="badge ${statusBadge}">
+                                ${escapeHtml(item.status)}
+                            </span>
+
+                        </div>
+
+
+                        <div class="record-info">
+
+                            设备类型：
+                            ${escapeHtml(
+                                item.equipmentType ||
+                                "-"
+                            )}
+
+                            <br>
+
+                            当前读数：
+                            <strong>
+                                ${Number(
+                                    item.currentReading ||
+                                    0
+                                ).toFixed(1)}
+                                ${escapeHtml(unit)}
+                            </strong>
+
+                            <br>
+
+                            下次保养值：
+                            ${Number(
+                                item.dueReading ||
+                                0
+                            ).toFixed(1)}
+                            ${escapeHtml(unit)}
+
+                            <br>
+
+                            保养进度：
+                            <strong>
+                                ${escapeHtml(
+                                    remainingText
+                                )}
+                            </strong>
+
+                            <br>
+
+                            最新读数时间：
+                            ${formatDateTime(
+                                item.updatedAt
+                            )}
+
+                        </div>
+
+                    </div>
+                    `;
+                }
+            )
+            .join(
+                ""
+            );
 }
 
 
