@@ -423,6 +423,24 @@
         }
 
 
+        .equipment-check-button {
+            width: 100%;
+            min-height: 48px;
+            border: none;
+            border-radius: 11px;
+            background: #2563eb;
+            color: #ffffff;
+            font-size: 15px;
+            font-weight: 800;
+            cursor: pointer;
+        }
+
+
+        .equipment-check-button:active {
+            transform: translateY(1px);
+        }
+
+
         @media (
             max-width: 560px
         ) {
@@ -453,7 +471,7 @@
                 </h1>
 
                 <p>
-                    Excavator Operator · V2.10.2R
+                    Excavator Operator · V2.10.2T
                 </p>
 
             </div>
@@ -618,6 +636,58 @@
             </div>
 
         </div>
+
+    </section>
+
+
+
+    <!-- =====================================================
+         设备使用检查
+    ====================================================== -->
+
+    <section class="card">
+
+        <div class="section-title">
+
+            <div>
+
+                <h2>
+                    🧰 设备使用检查
+                </h2>
+
+                <p>
+                    接班后先检查挖机，记录小时数和仪表照片
+                </p>
+
+            </div>
+
+
+            <span class="badge pending">
+                使用前检查
+            </span>
+
+        </div>
+
+
+        <div class="notice" style="margin-bottom:12px;">
+
+            挖机只记录小时数。
+
+            <br>
+
+            检查结果为“未见异常”或“发现异常”；
+            发现异常时需要拍照并进入维修流程。
+
+        </div>
+
+
+        <button
+            type="button"
+            class="equipment-check-button"
+            onclick="location.href='equipment-check.html'"
+        >
+            🧰 进入设备使用检查
+        </button>
 
     </section>
 
