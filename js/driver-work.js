@@ -1,7 +1,7 @@
 /*
 ====================================================
 矿山管理系统
-司机端 V2.10.2Q
+司机端 V2.10.2V
 ====================================================
 功能：
 1. 审核通过司机才可进入
@@ -29,7 +29,14 @@ document.addEventListener("DOMContentLoaded", function () {
         CHANGE_REQUESTS: "driverVehicleChangeRequests",
         LEAVE_REQUESTS: "leaveRequests",
         PENALTIES: "penaltyRecords",
-        GPS: "driverLastGpsPosition"
+        GPS: "driverLastGpsPosition",
+
+        /*
+         * V2.10.2V
+         * 设备使用检查
+         */
+        EQUIPMENT_CHECKS:
+            "equipmentUsageChecks"
     };
 
     const $ = id => document.getElementById(id);
@@ -1661,6 +1668,233 @@ document.addEventListener("DOMContentLoaded", function () {
 
     /*
     ===============================================
+    V2.10.2V
+    本班设备使用检查
+    ===============================================
+    */
+
+    function getCompletedEquipmentCheck() {
+
+        if (
+            !currentTask ||
+            !profile
+        ) {
+
+            return null;
+        }
+
+
+        const shiftId =
+            String(
+                currentTask.shiftId ||
+                ""
+            );
+
+
+        const vehicle =
+            String(
+                getVehicleNumber(
+                    currentTask
+                ) ||
+                ""
+            );
+
+
+        const personId =
+            String(
+                profile.driverId ||
+                profile.personId ||
+                profile.employeeId ||
+                profile.id ||
+                ""
+            );
+
+
+        const personName =
+            String(
+                profile.name ||
+                ""
+            )
+            .trim();
+
+
+        /*
+         * 新版生产任务必须具有 shiftId。
+         * 没有班次信息时，不允许绕过检查直接作业。
+         */
+        if (
+            !shiftId ||
+            !vehicle
+        ) {
+
+            return null;
+        }
+
+
+        const records =
+            readJson(
+                STORAGE.EQUIPMENT_CHECKS,
+                []
+            );
+
+
+        if (
+            !Array.isArray(
+                records
+            )
+        ) {
+
+            return null;
+        }
+
+
+        return (
+            records
+                .filter(
+                    item =>
+                        item &&
+                        item.locked ===
+                            true
+                )
+                .filter(
+                    item =>
+                        String(
+                            item.mode ||
+                            item.inspectionMode ||
+                            "shift"
+                        ) ===
+                            "shift"
+                )
+                .filter(
+                    item =>
+                        String(
+                            item.shiftId ||
+                            ""
+                        ) ===
+                            shiftId
+                )
+                .filter(
+                    item =>
+                        String(
+                            item.equipmentId ||
+                            item.equipmentNumber ||
+                            ""
+                        ) ===
+                            vehicle
+                )
+                .find(
+                    item => {
+
+                        const recordPersonId =
+                            String(
+                                item.personId ||
+                                item.incomingPersonId ||
+                                ""
+                            );
+
+
+                        const recordPersonName =
+                            String(
+                                item.personName ||
+                                item.incomingPersonName ||
+                                ""
+                            )
+                            .trim();
+
+
+                        if (
+                            personId &&
+                            recordPersonId
+                        ) {
+
+                            return (
+                                personId ===
+                                recordPersonId
+                            );
+                        }
+
+
+                        return (
+                            personName &&
+                            recordPersonName &&
+                            personName ===
+                                recordPersonName
+                        );
+                    }
+                )
+            ||
+            null
+        );
+    }
+
+
+    function hasCompletedEquipmentCheck() {
+
+        return Boolean(
+            getCompletedEquipmentCheck()
+        );
+    }
+
+
+    function requireEquipmentCheck(
+        actionText
+    ) {
+
+        if (
+            hasCompletedEquipmentCheck()
+        ) {
+
+            return true;
+        }
+
+
+        const vehicle =
+            getVehicleNumber(
+                currentTask
+            ) ||
+            "当前车辆";
+
+
+        if (
+            !currentTask?.shiftId
+        ) {
+
+            alert(
+                "当前任务缺少班次 shiftId，不能开始正式作业。\\n\\n" +
+                "请让车队长重新生成 / 发布本班任务。"
+            );
+
+            return false;
+        }
+
+
+        alert(
+            "请先完成本班设备使用检查。\\n\\n" +
+            "车辆：" +
+            vehicle +
+            "\\n" +
+            "班次：" +
+            (
+                currentTask.shift ||
+                currentTask.shiftId ||
+                "-"
+            ) +
+            "\\n\\n" +
+            "完成公里数录入和仪表照片后，才能" +
+            (
+                actionText ||
+                "继续作业"
+            ) +
+            "。"
+        );
+
+
+        return false;
+    }
+
+
+    /*
+    ===============================================
     领取车辆
     ===============================================
     */
@@ -1677,6 +1911,14 @@ document.addEventListener("DOMContentLoaded", function () {
 
         if (!vehicle) {
             alert("调度尚未给当前任务分配车辆。");
+            return;
+        }
+
+        if (
+            !requireEquipmentCheck(
+                "领取车辆"
+            )
+        ) {
             return;
         }
 
@@ -1721,6 +1963,52 @@ document.addEventListener("DOMContentLoaded", function () {
         const vehicle =
             getVehicleNumber(currentTask);
 
+        const checkCompleted =
+            hasCompletedEquipmentCheck();
+
+
+        const claimButton =
+            $("claimVehicleButton");
+
+
+        if (
+            !checkCompleted
+        ) {
+
+            setText(
+                "vehicleClaimText",
+                vehicle
+                    ? "请先完成设备使用检查 · " +
+                      vehicle
+                    : "调度尚未分配车辆"
+            );
+
+
+            if (
+                claimButton
+            ) {
+
+                claimButton.disabled =
+                    true;
+
+                claimButton.classList
+                    .remove("hidden");
+            }
+
+
+            return;
+        }
+
+
+        if (
+            claimButton
+        ) {
+
+            claimButton.disabled =
+                false;
+        }
+
+
         if (currentTask.vehicleClaimed) {
 
             setText(
@@ -1728,7 +2016,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 "已领取 " + vehicle
             );
 
-            $("claimVehicleButton")
+            claimButton
                 ?.classList
                 .add("hidden");
 
@@ -1741,7 +2029,7 @@ document.addEventListener("DOMContentLoaded", function () {
                     : "调度尚未分配车辆"
             );
 
-            $("claimVehicleButton")
+            claimButton
                 ?.classList
                 .remove("hidden");
         }
@@ -1758,6 +2046,14 @@ document.addEventListener("DOMContentLoaded", function () {
 
         if (!currentTask) {
             alert("当前没有任务。");
+            return;
+        }
+
+        if (
+            !requireEquipmentCheck(
+                "开始作业"
+            )
+        ) {
             return;
         }
 
@@ -1813,6 +2109,14 @@ document.addEventListener("DOMContentLoaded", function () {
             return;
         }
 
+        if (
+            !requireEquipmentCheck(
+                "恢复作业"
+            )
+        ) {
+            return;
+        }
+
         if (hasPendingVehicleChange()) {
             alert("换车申请正在审批。");
             return;
@@ -1858,6 +2162,12 @@ document.addEventListener("DOMContentLoaded", function () {
         );
 
         if (!currentTask) {
+            return;
+        }
+
+        if (
+            !hasCompletedEquipmentCheck()
+        ) {
             return;
         }
 
@@ -2125,6 +2435,14 @@ document.addEventListener("DOMContentLoaded", function () {
             currentTask.status !== "working"
         ) {
             alert("请先开始作业。");
+            return;
+        }
+
+        if (
+            !requireEquipmentCheck(
+                "记录运输趟次"
+            )
+        ) {
             return;
         }
 
