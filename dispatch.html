@@ -72,7 +72,7 @@
         }
 
         /* =====================================================
-           V2.10.2L 运输区域管理
+           V2.10.2P 运输区域管理
         ====================================================== */
 
         .transport-zone-note {
@@ -222,7 +222,7 @@
 
 <style>
 /* =========================================================
-   V2.10.2L 调度运输统计统一：总车数 / 煤 / 渣
+   V2.10.2P 调度运输统计统一：总车数 / 煤 / 渣
 ========================================================= */
 .dispatch-trip-stats{
     display:grid;
@@ -260,7 +260,7 @@
 
 <style>
 /* =========================================================
-   V2.10.2L 手动补录运输趟次审核
+   V2.10.2P 手动补录运输趟次审核
 ========================================================= */
 .manual-trip-review-card{
     margin-top:10px;
@@ -313,7 +313,7 @@
 
 <style>
 /* =========================================================
-   V2.10.2L 主任务 + 班次执行 / 继承上一班绑定
+   V2.10.2P 主任务 + 班次执行 / 继承上一班绑定
 ========================================================= */
 .shift-execution-summary{
     display:grid;
@@ -416,6 +416,98 @@
 }
 </style>
 
+
+<style>
+/* =========================================================
+   V2.10.2P 本班绑定调整
+========================================================= */
+.shift-edit-actions{
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+    margin-top:12px;
+}
+.shift-edit-actions button{
+    min-height:38px;
+}
+.shift-binding-editor{
+    margin-top:14px;
+}
+.shift-binding-group{
+    border:1px solid #dbeafe;
+    border-radius:12px;
+    padding:12px;
+    margin-bottom:12px;
+    background:#f8fbff;
+}
+.shift-binding-group-head{
+    display:grid;
+    grid-template-columns:1fr 1fr auto;
+    gap:8px;
+    align-items:end;
+}
+.shift-binding-group h4{
+    margin:0 0 10px;
+}
+.shift-truck-row{
+    display:grid;
+    grid-template-columns:1fr 1.2fr 1fr auto;
+    gap:8px;
+    align-items:end;
+    padding:10px 0;
+    border-top:1px dashed #cbd5e1;
+}
+.shift-truck-row:first-of-type{
+    border-top:0;
+}
+.shift-truck-row label,
+.shift-binding-group label{
+    display:block;
+    font-size:11px;
+    color:#64748b;
+    margin-bottom:4px;
+}
+.shift-truck-row input,
+.shift-truck-row select,
+.shift-binding-group input,
+.shift-binding-group select{
+    width:100%;
+    min-height:40px;
+}
+.shift-remove-button{
+    background:#fee2e2;
+    color:#991b1b;
+    border:0;
+    border-radius:9px;
+    padding:9px 11px;
+    cursor:pointer;
+}
+.shift-add-truck-button{
+    margin-top:8px;
+    background:#eff6ff;
+    color:#1d4ed8;
+    border:1px solid #bfdbfe;
+    border-radius:9px;
+    padding:9px 12px;
+    cursor:pointer;
+}
+.shift-change-history{
+    margin-top:12px;
+    padding:11px;
+    border-radius:10px;
+    background:#f8fafc;
+    border:1px solid #e2e8f0;
+    font-size:12px;
+    line-height:1.7;
+}
+@media(max-width:760px){
+    .shift-binding-group-head,
+    .shift-truck-row{
+        grid-template-columns:1fr;
+    }
+}
+</style>
+
 </head>
 
 <body class="dispatch-body">
@@ -428,7 +520,7 @@
         </div>
 
         <div class="dispatch-header-badge">
-            📋 调度端 V2.10.2L
+            📋 调度端 V2.10.2P
         </div>
     </div>
 </header>
@@ -918,7 +1010,7 @@
 
 
 <!-- =====================================================
-     V2.10.2L 运输区域管理
+     V2.10.2P 运输区域管理
 ===================================================== -->
 <div id="transportZoneModal" class="dispatch-modal hidden">
 
@@ -1316,12 +1408,12 @@
 
 
 <footer>
-    矿山管理系统 · 调度端 V2.10.2L
+    矿山管理系统 · 调度端 V2.10.2P
 </footer>
 
 
 <!-- =====================================================
-     V2.10.2L 生成本班任务 / 继承上一班绑定
+     V2.10.2P 生成本班任务 / 继承上一班绑定
 ===================================================== -->
 <div id="shiftTaskModal" class="dispatch-modal hidden">
 
@@ -1394,13 +1486,81 @@
 </div>
 
 
+
+<!-- =====================================================
+     V2.10.2P 本班绑定调整
+===================================================== -->
+<div id="shiftBindingEditorModal" class="dispatch-modal hidden">
+
+    <div class="dispatch-modal-card large-modal">
+
+        <h3>✏️ 修改本班绑定</h3>
+
+        <div class="shift-warning">
+            这里只修改当前班次。上一班已经冻结的历史绑定不会改变。
+            保存后，司机端和挖机端读取当前 taskId + shiftId 的最新绑定。
+        </div>
+
+        <div class="shift-modal-grid" style="margin-top:14px;">
+            <div>
+                <label>主任务</label>
+                <input id="shiftEditTaskId" type="text" readonly>
+            </div>
+
+            <div>
+                <label>当前班次</label>
+                <input id="shiftEditShiftLabel" type="text" readonly>
+            </div>
+        </div>
+
+        <div style="margin-top:12px;">
+            <label for="shiftEditReason">调整原因 *</label>
+            <input
+                id="shiftEditReason"
+                type="text"
+                placeholder="例如：夜班换司机、车辆故障换车、汽车调整到另一台挖机"
+            >
+        </div>
+
+        <div id="shiftBindingEditorBody" class="shift-binding-editor">
+            <div class="empty-placeholder">
+                暂无绑定数据
+            </div>
+        </div>
+
+        <div class="double-button-row" style="margin-top:16px;">
+            <button
+                id="closeShiftBindingEditorButton"
+                type="button"
+                class="secondary-button"
+            >
+                取消
+            </button>
+
+            <button
+                id="saveShiftBindingEditorButton"
+                type="button"
+                class="success-button"
+            >
+                ✅ 保存本班绑定
+            </button>
+        </div>
+
+    </div>
+
+</div>
+
+<datalist id="shiftVehicleOptions"></datalist>
+<datalist id="shiftExcavatorOptions"></datalist>
+
+
 <script src="js/dispatch.js?v=2.9.3"></script>
 
 <script>
 "use strict";
 
 /* =========================================================
-   V2.10.2L
+   V2.10.2P
    调度端维修审批接入
    本段独立于现有 js/dispatch.js，
    不影响原生产调度、换车、GPS、请假、罚单逻辑。
@@ -2174,7 +2334,7 @@ setInterval(
 
 
 /* =========================================================
-   V2.10.2L
+   V2.10.2P
    运输区域管理 + 生产任务多卸载点兼容层
 
    数据键：
@@ -3582,7 +3742,7 @@ renderTaskZoneSelectors();
 
 
 /* =========================================================
-   V2.10.2L
+   V2.10.2P
    调度端今日运输统计
    统一口径：
    - 总车数 = 煤 + 渣 + 只记车数 + 其他有效趟次
@@ -3692,7 +3852,7 @@ document.addEventListener(
 
 
 /* =========================================================
-   V2.10.2L
+   V2.10.2P
    GPS异常 / 手动补录运输趟次调度审核
 
    司机端 V2.10.2E1 手动补录记录：
@@ -4086,7 +4246,7 @@ window.addEventListener(
 
 
 /* =========================================================
-   V2.10.2L
+   V2.10.2P
    主生产任务 + 班次执行 / 继承上一班绑定
 
    数据：
@@ -5163,6 +5323,16 @@ function renderShiftExecutionSummary(){
                             }
                         </div>
 
+                        <div class="shift-edit-actions">
+                            <button
+                                type="button"
+                                class="secondary-button"
+                                onclick='openShiftBindingEditor(${JSON.stringify(String(item.shiftId || ""))})'
+                            >
+                                ✏️ 修改本班绑定
+                            </button>
+                        </div>
+
                     </div>
                 `;
             })
@@ -5397,6 +5567,1319 @@ window.addEventListener(
         renderShiftExecutionSummary();
     }
 );
+
+
+
+/* =========================================================
+   V2.10.2P
+   当前班次绑定调整
+========================================================= */
+
+const SHIFT_ASSIGNMENT_CHANGE_KEY =
+    "shiftAssignmentChanges";
+
+let shiftEditCurrentShiftId =
+    "";
+
+let shiftEditDraft =
+    null;
+
+
+function shiftApprovedPersonnel(){
+    return shiftReadArray(
+        "personnelRecords"
+    )
+        .filter(item=>{
+            if(!item){
+                return false;
+            }
+
+            if(
+                item.enabled === false ||
+                item.status === "rejected" ||
+                item.approvalStatus === "rejected" ||
+                item.status === "disabled" ||
+                item.status === "resigned" ||
+                item.personnelStatus === "停用" ||
+                item.personnelStatus === "离职"
+            ){
+                return false;
+            }
+
+            return (
+                item.status === "approved" ||
+                item.status === "active" ||
+                item.status === "working" ||
+                item.status === "leave" ||
+                item.approvalStatus === "approved" ||
+                item.personnelStatus === "在职可用" ||
+                item.personnelStatus === "作业中" ||
+                item.personnelStatus === "请假"
+            );
+        });
+}
+
+
+function shiftPersonId(person){
+    return String(
+        person?.personId ||
+        person?.employeeId ||
+        person?.driverId ||
+        person?.id ||
+        ""
+    );
+}
+
+
+function shiftNormalizePosition(position){
+    const map = {
+        "卡车司机":"汽车司机",
+        "挖掘机司机":"挖机司机",
+        "挖掘机操作手":"挖机司机",
+        "挖机操作手":"挖机司机"
+    };
+
+    return (
+        map[position] ||
+        position ||
+        ""
+    );
+}
+
+
+function shiftDriverOptions(
+    selectedId,
+    selectedName,
+    position
+){
+    const normalized =
+        shiftNormalizePosition(
+            position
+        );
+
+    const people =
+        shiftApprovedPersonnel()
+            .filter(
+                person =>
+                    shiftNormalizePosition(
+                        person.position
+                    ) ===
+                        normalized
+            );
+
+    const options = [
+        '<option value="">未选择</option>'
+    ];
+
+    const known =
+        new Set();
+
+    people.forEach(person=>{
+        const id =
+            shiftPersonId(
+                person
+            );
+
+        if(!id){
+            return;
+        }
+
+        known.add(
+            id
+        );
+
+        const selected =
+            String(id) ===
+                String(selectedId || "")
+                ? " selected"
+                : "";
+
+        options.push(
+            `<option value="${shiftEscape(id)}"${selected}>` +
+            `${shiftEscape(person.name || id)}` +
+            `</option>`
+        );
+    });
+
+    if(
+        selectedId &&
+        !known.has(
+            String(selectedId)
+        )
+    ){
+        options.push(
+            `<option value="${shiftEscape(selectedId)}" selected>` +
+            `${shiftEscape(selectedName || selectedId)}（历史人员）` +
+            `</option>`
+        );
+    }
+
+    return options.join("");
+}
+
+
+function shiftCollectKnownEquipment(){
+    const vehicles =
+        new Set();
+
+    const excavators =
+        new Set();
+
+    [
+        ...getPublishedShiftTasks(),
+        ...getShiftExecutions()
+    ]
+        .forEach(item=>{
+
+            (item.bindings || [])
+                .forEach(binding=>{
+
+                    const excavator =
+                        binding.excavatorNumber ||
+                        binding.excavatorId ||
+                        binding.excavator ||
+                        "";
+
+                    if(excavator){
+                        excavators.add(
+                            String(excavator)
+                        );
+                    }
+
+                    [
+                        ...(binding.truckIds || []),
+                        ...(binding.vehicleIds || []),
+                        ...(binding.trucks || [])
+                    ]
+                        .filter(Boolean)
+                        .forEach(id=>{
+                            vehicles.add(
+                                String(id)
+                            );
+                        });
+                });
+
+            (item.driverAssignments || [])
+                .forEach(assignment=>{
+
+                    const vehicle =
+                        assignment.vehicleNumber ||
+                        assignment.vehicleId ||
+                        assignment.truckNumber ||
+                        assignment.truckId ||
+                        "";
+
+                    const excavator =
+                        assignment.excavatorNumber ||
+                        assignment.excavatorId ||
+                        "";
+
+                    if(vehicle){
+                        vehicles.add(
+                            String(vehicle)
+                        );
+                    }
+
+                    if(excavator){
+                        excavators.add(
+                            String(excavator)
+                        );
+                    }
+                });
+        });
+
+    return {
+        vehicles:
+            [...vehicles].sort(),
+        excavators:
+            [...excavators].sort()
+    };
+}
+
+
+function renderShiftEquipmentDatalists(){
+    const data =
+        shiftCollectKnownEquipment();
+
+    const vehicleBox =
+        document.getElementById(
+            "shiftVehicleOptions"
+        );
+
+    const excavatorBox =
+        document.getElementById(
+            "shiftExcavatorOptions"
+        );
+
+    if(vehicleBox){
+        vehicleBox.innerHTML =
+            data.vehicles
+                .map(
+                    item =>
+                        `<option value="${shiftEscape(item)}"></option>`
+                )
+                .join("");
+    }
+
+    if(excavatorBox){
+        excavatorBox.innerHTML =
+            data.excavators
+                .map(
+                    item =>
+                        `<option value="${shiftEscape(item)}"></option>`
+                )
+                .join("");
+    }
+}
+
+
+function shiftAssignmentsByVehicle(
+    execution
+){
+    const map =
+        new Map();
+
+    (execution?.driverAssignments || [])
+        .forEach(item=>{
+            const vehicle =
+                String(
+                    item.vehicleNumber ||
+                    item.vehicleId ||
+                    item.truckNumber ||
+                    item.truckId ||
+                    ""
+                );
+
+            if(vehicle){
+                map.set(
+                    vehicle,
+                    item
+                );
+            }
+        });
+
+    return map;
+}
+
+
+function shiftBuildDraft(
+    execution
+){
+    const assignments =
+        shiftAssignmentsByVehicle(
+            execution
+        );
+
+    let bindings =
+        shiftDeepClone(
+            execution?.bindings ||
+            []
+        ) || [];
+
+    /*
+     * 如果历史班次只有 driverAssignments 而没有 bindings，
+     * 自动根据 excavatorNumber 分组。
+     */
+    if(
+        !bindings.length &&
+        Array.isArray(
+            execution?.driverAssignments
+        )
+    ){
+        const groups =
+            new Map();
+
+        execution.driverAssignments
+            .forEach(item=>{
+                const excavator =
+                    String(
+                        item.excavatorNumber ||
+                        item.excavatorId ||
+                        "未指定挖机"
+                    );
+
+                if(!groups.has(excavator)){
+                    groups.set(
+                        excavator,
+                        []
+                    );
+                }
+
+                const vehicle =
+                    item.vehicleNumber ||
+                    item.vehicleId ||
+                    item.truckNumber ||
+                    item.truckId ||
+                    "";
+
+                if(vehicle){
+                    groups.get(excavator)
+                        .push(
+                            String(vehicle)
+                        );
+                }
+            });
+
+        bindings =
+            [...groups.entries()]
+                .map(
+                    ([excavator,truckIds])=>({
+                        excavatorNumber:
+                            excavator,
+
+                        excavatorId:
+                            excavator,
+
+                        truckIds:
+                            truckIds
+                    })
+                );
+    }
+
+    return bindings.map(
+        (binding,index)=>{
+
+            const excavator =
+                String(
+                    binding.excavatorNumber ||
+                    binding.excavatorId ||
+                    binding.excavator ||
+                    ""
+                );
+
+            const trucks = [
+                ...(binding.truckIds || []),
+                ...(binding.vehicleIds || []),
+                ...(binding.trucks || [])
+            ]
+                .filter(Boolean)
+                .map(String);
+
+            const uniqueTrucks =
+                [...new Set(trucks)];
+
+            return {
+                groupId:
+                    `GROUP_${Date.now()}_${index}`,
+
+                excavatorNumber:
+                    excavator,
+
+                excavatorDriverId:
+                    String(
+                        binding.excavatorDriverId ||
+                        binding.operatorId ||
+                        ""
+                    ),
+
+                excavatorDriverName:
+                    String(
+                        binding.excavatorDriverName ||
+                        binding.operatorName ||
+                        ""
+                    ),
+
+                trucks:
+                    uniqueTrucks.map(vehicle=>{
+                        const assignment =
+                            assignments.get(
+                                vehicle
+                            ) ||
+                            {};
+
+                        return {
+                            vehicleNumber:
+                                vehicle,
+
+                            driverId:
+                                String(
+                                    assignment.driverId ||
+                                    assignment.personId ||
+                                    ""
+                                ),
+
+                            driverName:
+                                String(
+                                    assignment.driverName ||
+                                    assignment.personName ||
+                                    ""
+                                )
+                        };
+                    })
+            };
+        });
+}
+
+
+function renderShiftBindingEditor(){
+    const box =
+        document.getElementById(
+            "shiftBindingEditorBody"
+        );
+
+    if(!box){
+        return;
+    }
+
+    if(
+        !shiftEditDraft ||
+        !Array.isArray(
+            shiftEditDraft.groups
+        ) ||
+        !shiftEditDraft.groups.length
+    ){
+        box.innerHTML = `
+            <div class="empty-placeholder">
+                当前班次没有绑定组。
+            </div>
+
+            <button
+                type="button"
+                class="shift-add-truck-button"
+                onclick="shiftAddBindingGroup()"
+            >
+                + 新增挖机绑定组
+            </button>
+        `;
+        return;
+    }
+
+    box.innerHTML =
+        shiftEditDraft.groups
+            .map((group,groupIndex)=>{
+
+                const truckRows =
+                    group.trucks
+                        .map((truck,truckIndex)=>`
+                            <div class="shift-truck-row">
+
+                                <div>
+                                    <label>汽车编号</label>
+                                    <input
+                                        type="text"
+                                        list="shiftVehicleOptions"
+                                        value="${shiftEscape(truck.vehicleNumber)}"
+                                        onchange="shiftUpdateTruck(${groupIndex},${truckIndex},'vehicleNumber',this.value)"
+                                    >
+                                </div>
+
+                                <div>
+                                    <label>汽车司机</label>
+                                    <select
+                                        onchange="shiftUpdateTruckDriver(${groupIndex},${truckIndex},this)"
+                                    >
+                                        ${shiftDriverOptions(
+                                            truck.driverId,
+                                            truck.driverName,
+                                            "汽车司机"
+                                        )}
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label>所属挖机</label>
+                                    <input
+                                        type="text"
+                                        value="${shiftEscape(group.excavatorNumber)}"
+                                        readonly
+                                    >
+                                </div>
+
+                                <div>
+                                    <button
+                                        type="button"
+                                        class="shift-remove-button"
+                                        onclick="shiftRemoveTruck(${groupIndex},${truckIndex})"
+                                    >
+                                        移除
+                                    </button>
+                                </div>
+
+                            </div>
+                        `)
+                        .join("");
+
+                return `
+                    <div class="shift-binding-group">
+
+                        <div class="shift-binding-group-head">
+
+                            <div>
+                                <label>挖机编号</label>
+                                <input
+                                    type="text"
+                                    list="shiftExcavatorOptions"
+                                    value="${shiftEscape(group.excavatorNumber)}"
+                                    onchange="shiftUpdateGroup(${groupIndex},'excavatorNumber',this.value)"
+                                >
+                            </div>
+
+                            <div>
+                                <label>挖机司机</label>
+                                <select
+                                    onchange="shiftUpdateExcavatorDriver(${groupIndex},this)"
+                                >
+                                    ${shiftDriverOptions(
+                                        group.excavatorDriverId,
+                                        group.excavatorDriverName,
+                                        "挖机司机"
+                                    )}
+                                </select>
+                            </div>
+
+                            <div>
+                                <button
+                                    type="button"
+                                    class="shift-remove-button"
+                                    onclick="shiftRemoveBindingGroup(${groupIndex})"
+                                >
+                                    删除整组
+                                </button>
+                            </div>
+
+                        </div>
+
+                        <div>
+                            ${truckRows}
+                        </div>
+
+                        <button
+                            type="button"
+                            class="shift-add-truck-button"
+                            onclick="shiftAddTruck(${groupIndex})"
+                        >
+                            + 给本挖机增加汽车
+                        </button>
+
+                    </div>
+                `;
+            })
+            .join("") +
+        `
+            <button
+                type="button"
+                class="shift-add-truck-button"
+                onclick="shiftAddBindingGroup()"
+            >
+                + 新增挖机绑定组
+            </button>
+        `;
+}
+
+
+function openShiftBindingEditor(
+    shiftId
+){
+    const execution =
+        getShiftExecutions()
+            .find(
+                item =>
+                    String(
+                        item.shiftId ||
+                        ""
+                    ) ===
+                        String(shiftId)
+            );
+
+    if(!execution){
+        alert(
+            "没有找到当前班次执行记录。"
+        );
+
+        return;
+    }
+
+    shiftEditCurrentShiftId =
+        String(shiftId);
+
+    shiftEditDraft = {
+        taskId:
+            execution.taskId ||
+            "",
+
+        shiftId:
+            execution.shiftId ||
+            "",
+
+        shift:
+            execution.shift ||
+            "",
+
+        date:
+            execution.date ||
+            "",
+
+        groups:
+            shiftBuildDraft(
+                execution
+            )
+    };
+
+    document.getElementById(
+        "shiftEditTaskId"
+    ).value =
+        execution.taskId ||
+        "";
+
+    document.getElementById(
+        "shiftEditShiftLabel"
+    ).value =
+        `${execution.date || ""} ${execution.shift || ""} · ${execution.shiftId || ""}`;
+
+    document.getElementById(
+        "shiftEditReason"
+    ).value =
+        "";
+
+    renderShiftEquipmentDatalists();
+    renderShiftBindingEditor();
+
+    document
+        .getElementById(
+            "shiftBindingEditorModal"
+        )
+        ?.classList
+        .remove(
+            "hidden"
+        );
+}
+
+
+function closeShiftBindingEditor(){
+    document
+        .getElementById(
+            "shiftBindingEditorModal"
+        )
+        ?.classList
+        .add(
+            "hidden"
+        );
+
+    shiftEditCurrentShiftId =
+        "";
+
+    shiftEditDraft =
+        null;
+}
+
+
+function shiftUpdateGroup(
+    groupIndex,
+    field,
+    value
+){
+    if(
+        !shiftEditDraft?.groups?.[groupIndex]
+    ){
+        return;
+    }
+
+    shiftEditDraft.groups[
+        groupIndex
+    ][field] =
+        String(value || "");
+}
+
+
+function shiftUpdateExcavatorDriver(
+    groupIndex,
+    select
+){
+    const group =
+        shiftEditDraft?.groups?.[
+            groupIndex
+        ];
+
+    if(!group){
+        return;
+    }
+
+    group.excavatorDriverId =
+        select.value ||
+        "";
+
+    group.excavatorDriverName =
+        select.options[
+            select.selectedIndex
+        ]?.text
+        ?.replace(
+            "（历史人员）",
+            ""
+        ) ||
+        "";
+}
+
+
+function shiftUpdateTruck(
+    groupIndex,
+    truckIndex,
+    field,
+    value
+){
+    const truck =
+        shiftEditDraft
+            ?.groups
+            ?.[groupIndex]
+            ?.trucks
+            ?.[truckIndex];
+
+    if(!truck){
+        return;
+    }
+
+    truck[field] =
+        String(value || "");
+}
+
+
+function shiftUpdateTruckDriver(
+    groupIndex,
+    truckIndex,
+    select
+){
+    const truck =
+        shiftEditDraft
+            ?.groups
+            ?.[groupIndex]
+            ?.trucks
+            ?.[truckIndex];
+
+    if(!truck){
+        return;
+    }
+
+    truck.driverId =
+        select.value ||
+        "";
+
+    truck.driverName =
+        select.options[
+            select.selectedIndex
+        ]?.text
+        ?.replace(
+            "（历史人员）",
+            ""
+        ) ||
+        "";
+}
+
+
+function shiftAddTruck(
+    groupIndex
+){
+    const group =
+        shiftEditDraft
+            ?.groups
+            ?.[groupIndex];
+
+    if(!group){
+        return;
+    }
+
+    group.trucks.push({
+        vehicleNumber:"",
+        driverId:"",
+        driverName:""
+    });
+
+    renderShiftBindingEditor();
+}
+
+
+function shiftRemoveTruck(
+    groupIndex,
+    truckIndex
+){
+    const group =
+        shiftEditDraft
+            ?.groups
+            ?.[groupIndex];
+
+    if(!group){
+        return;
+    }
+
+    group.trucks.splice(
+        truckIndex,
+        1
+    );
+
+    renderShiftBindingEditor();
+}
+
+
+function shiftAddBindingGroup(){
+    if(!shiftEditDraft){
+        return;
+    }
+
+    if(
+        !Array.isArray(
+            shiftEditDraft.groups
+        )
+    ){
+        shiftEditDraft.groups =
+            [];
+    }
+
+    shiftEditDraft.groups.push({
+        groupId:
+            "GROUP_" +
+            Date.now(),
+
+        excavatorNumber:"",
+        excavatorDriverId:"",
+        excavatorDriverName:"",
+        trucks:[]
+    });
+
+    renderShiftBindingEditor();
+}
+
+
+function shiftRemoveBindingGroup(
+    groupIndex
+){
+    if(
+        !shiftEditDraft?.groups
+    ){
+        return;
+    }
+
+    if(
+        !confirm(
+            "确认删除本班这个挖机绑定组？\n上一班历史不会受影响。"
+        )
+    ){
+        return;
+    }
+
+    shiftEditDraft.groups.splice(
+        groupIndex,
+        1
+    );
+
+    renderShiftBindingEditor();
+}
+
+
+function shiftBuildSavedBindings(){
+    return (
+        shiftEditDraft?.groups ||
+        []
+    )
+        .filter(
+            group =>
+                group.excavatorNumber ||
+                group.trucks.length
+        )
+        .map(group=>({
+
+            excavatorId:
+                group.excavatorNumber,
+
+            excavatorNumber:
+                group.excavatorNumber,
+
+            excavatorDriverId:
+                group.excavatorDriverId,
+
+            excavatorDriverName:
+                group.excavatorDriverName,
+
+            operatorId:
+                group.excavatorDriverId,
+
+            operatorName:
+                group.excavatorDriverName,
+
+            truckIds:
+                group.trucks
+                    .map(
+                        truck =>
+                            truck.vehicleNumber
+                    )
+                    .filter(Boolean),
+
+            shiftId:
+                shiftEditDraft.shiftId,
+
+            shift:
+                shiftEditDraft.shift,
+
+            shiftDate:
+                shiftEditDraft.date
+
+        }));
+}
+
+
+function shiftBuildSavedDriverAssignments(){
+    const rows =
+        [];
+
+    (
+        shiftEditDraft?.groups ||
+        []
+    )
+        .forEach(group=>{
+
+            group.trucks
+                .forEach(truck=>{
+
+                    if(
+                        !truck.vehicleNumber
+                    ){
+                        return;
+                    }
+
+                    rows.push({
+
+                        driverId:
+                            truck.driverId,
+
+                        personId:
+                            truck.driverId,
+
+                        driverName:
+                            truck.driverName,
+
+                        vehicleId:
+                            truck.vehicleNumber,
+
+                        vehicleNumber:
+                            truck.vehicleNumber,
+
+                        truckId:
+                            truck.vehicleNumber,
+
+                        truckNumber:
+                            truck.vehicleNumber,
+
+                        excavatorId:
+                            group.excavatorNumber,
+
+                        excavatorNumber:
+                            group.excavatorNumber,
+
+                        shiftId:
+                            shiftEditDraft.shiftId,
+
+                        shift:
+                            shiftEditDraft.shift,
+
+                        shiftDate:
+                            shiftEditDraft.date
+
+                    });
+                });
+        });
+
+    return rows;
+}
+
+
+function saveShiftBindingEditor(){
+    if(
+        !shiftEditCurrentShiftId ||
+        !shiftEditDraft
+    ){
+        return;
+    }
+
+    const reason =
+        document.getElementById(
+            "shiftEditReason"
+        )?.value
+        ?.trim() ||
+        "";
+
+    if(!reason){
+        alert(
+            "请填写本班绑定调整原因。"
+        );
+
+        return;
+    }
+
+    const duplicateVehicles =
+        [];
+
+    const seenVehicles =
+        new Set();
+
+    shiftEditDraft.groups
+        .forEach(group=>{
+            group.trucks
+                .forEach(truck=>{
+                    const vehicle =
+                        String(
+                            truck.vehicleNumber ||
+                            ""
+                        ).trim();
+
+                    if(!vehicle){
+                        return;
+                    }
+
+                    if(
+                        seenVehicles.has(
+                            vehicle
+                        )
+                    ){
+                        duplicateVehicles.push(
+                            vehicle
+                        );
+                    }
+
+                    seenVehicles.add(
+                        vehicle
+                    );
+                });
+        });
+
+    if(
+        duplicateVehicles.length
+    ){
+        alert(
+            "同一辆汽车不能同时绑定到两台挖机：\n" +
+            [...new Set(
+                duplicateVehicles
+            )].join("、")
+        );
+
+        return;
+    }
+
+    const executions =
+        getShiftExecutions();
+
+    const index =
+        executions.findIndex(
+            item =>
+                String(
+                    item.shiftId ||
+                    ""
+                ) ===
+                    shiftEditCurrentShiftId
+        );
+
+    if(index < 0){
+        alert(
+            "当前班次记录不存在。"
+        );
+
+        return;
+    }
+
+    if(
+        executions[index].status !==
+            "active"
+    ){
+        alert(
+            "只能修改当前执行中的班次。已交班历史不能修改。"
+        );
+
+        return;
+    }
+
+    const before = {
+        bindings:
+            shiftDeepClone(
+                executions[index].bindings ||
+                []
+            ),
+
+        driverAssignments:
+            shiftDeepClone(
+                executions[index].driverAssignments ||
+                []
+            )
+    };
+
+    const bindings =
+        shiftBuildSavedBindings();
+
+    const driverAssignments =
+        shiftBuildSavedDriverAssignments();
+
+    const now =
+        new Date()
+            .toISOString();
+
+    executions[index] = {
+        ...executions[index],
+
+        bindings:
+            bindings,
+
+        driverAssignments:
+            driverAssignments,
+
+        updatedAt:
+            now,
+
+        lastAssignmentChangeAt:
+            now,
+
+        lastAssignmentChangeReason:
+            reason
+    };
+
+    saveShiftExecutions(
+        executions
+    );
+
+
+    /*
+     * 同步更新主任务当前班次。
+     */
+    const tasks =
+        getPublishedShiftTasks();
+
+    const taskIndex =
+        tasks.findIndex(
+            task =>
+                shiftTaskId(task) ===
+                    String(
+                        shiftEditDraft.taskId
+                    )
+        );
+
+    if(taskIndex >= 0){
+
+        tasks[taskIndex] = {
+            ...tasks[taskIndex],
+
+            currentShiftId:
+                shiftEditDraft.shiftId,
+
+            shiftId:
+                shiftEditDraft.shiftId,
+
+            shift:
+                shiftEditDraft.shift,
+
+            shiftDate:
+                shiftEditDraft.date,
+
+            bindings:
+                shiftDeepClone(
+                    bindings
+                ),
+
+            driverAssignments:
+                shiftDeepClone(
+                    driverAssignments
+                ),
+
+            updatedAt:
+                now
+        };
+
+        savePublishedShiftTasks(
+            tasks
+        );
+    }
+
+
+    /*
+     * 保存调整历史，方便后续查询。
+     */
+    const history =
+        shiftReadArray(
+            SHIFT_ASSIGNMENT_CHANGE_KEY
+        );
+
+    history.push({
+
+        changeId:
+            "SHIFT_CHANGE_" +
+            Date.now(),
+
+        taskId:
+            shiftEditDraft.taskId,
+
+        shiftId:
+            shiftEditDraft.shiftId,
+
+        shift:
+            shiftEditDraft.shift,
+
+        shiftDate:
+            shiftEditDraft.date,
+
+        reason:
+            reason,
+
+        before:
+            before,
+
+        after:{
+            bindings:
+                shiftDeepClone(
+                    bindings
+                ),
+
+            driverAssignments:
+                shiftDeepClone(
+                    driverAssignments
+                )
+        },
+
+        changedBy:
+            "车队长 / 调度",
+
+        changedAt:
+            now
+
+    });
+
+    shiftWriteArray(
+        SHIFT_ASSIGNMENT_CHANGE_KEY,
+        history
+    );
+
+    closeShiftBindingEditor();
+
+    renderShiftExecutionSummary();
+
+    window.dispatchEvent(
+        new StorageEvent(
+            "storage",
+            {
+                key:
+                    "dispatchPublishedTasks"
+            }
+        )
+    );
+
+    alert(
+        "本班绑定已更新。\n\n" +
+        `主任务：${shiftEditDraft?.taskId || ""}\n` +
+        `班次：${shiftEditDraft?.shift || ""}\n\n` +
+        "上一班历史绑定保持不变。"
+    );
+}
+
+
+document
+    .getElementById(
+        "closeShiftBindingEditorButton"
+    )
+    ?.addEventListener(
+        "click",
+        closeShiftBindingEditor
+    );
+
+document
+    .getElementById(
+        "saveShiftBindingEditorButton"
+    )
+    ?.addEventListener(
+        "click",
+        saveShiftBindingEditor
+    );
 
 
 </script>
