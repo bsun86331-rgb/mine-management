@@ -506,6 +506,45 @@
         grid-template-columns:1fr;
     }
 }
+
+/* =========================================================
+   V2.10.3E 设备运行状态联动
+========================================================= */
+
+.dispatch-operational-blocked {
+    position: relative;
+    opacity: .58 !important;
+    filter: grayscale(.25);
+    cursor: not-allowed !important;
+    outline: 2px solid #fca5a5 !important;
+    outline-offset: -2px;
+}
+
+.dispatch-operational-blocked::after {
+    content: "不可调度";
+    position: absolute;
+    right: 8px;
+    top: 8px;
+    padding: 4px 7px;
+    border-radius: 999px;
+    background: #fee2e2;
+    color: #991b1b;
+    font-size: 11px;
+    font-weight: 800;
+    z-index: 2;
+}
+
+.dispatch-operational-status-note {
+    margin-top: 10px;
+    padding: 10px 12px;
+    border: 1px solid #cbd5e1;
+    border-radius: 10px;
+    background: #f8fafc;
+    color: #475569;
+    font-size: 12px;
+    line-height: 1.65;
+}
+
 </style>
 
 </head>
@@ -520,7 +559,7 @@
         </div>
 
         <div class="dispatch-header-badge">
-            📋 调度端 V2.10.2P
+            📋 调度端 V2.10.3E
         </div>
     </div>
 </header>
@@ -661,6 +700,12 @@
 
             </div>
 
+        </div>
+
+        <div class="dispatch-operational-status-note">
+            设备运行状态已与维修 / 保养联动：
+            <strong>维修中、保养中、停用</strong>设备不可新分配；
+            <strong>临近保养、超期保养</strong>只做提醒，不会自动锁死设备。
         </div>
 
     </section>
@@ -875,7 +920,7 @@
         <div class="dispatch-section-title">
             <div>
                 <h2>② 🚜 选择挖机</h2>
-                <p>绿色可选，黄色维修，红色已占用</p>
+                <p>可用 / 备用可调度；维修中 / 保养中 / 停用不可选；作业中按原逻辑占用</p>
             </div>
         </div>
 
@@ -6881,6 +6926,1770 @@ document
         saveShiftBindingEditor
     );
 
+
+</script>
+
+
+<script>
+"use strict";
+
+/* =========================================================
+   V2.10.3E
+   调度端设备运行状态联动
+
+   数据来源：
+   - equipmentOperationalStatus
+   - maintenanceRequests
+   - maintenanceWorkOrders
+   - 设备档案 status / equipmentStatus
+
+   规则：
+   - maintenance 维修中：不可新分配
+   - service     保养中：不可新分配
+   - disabled    停用：不可新分配
+   - available / standby：允许
+   - working：继续沿用原调度端“已占用”逻辑
+   - 临近 / 超期保养提醒不参与锁车
+========================================================= */
+
+const DISPATCH_OPERATIONAL_STATUS_KEY =
+    "equipmentOperationalStatus";
+
+
+function dispatchOperationalReadArray(
+    key
+) {
+
+    try {
+
+        const raw =
+            localStorage.getItem(
+                key
+            );
+
+
+        if (
+            !raw
+        ) {
+
+            return [];
+        }
+
+
+        const data =
+            JSON.parse(
+                raw
+            );
+
+
+        return Array.isArray(
+            data
+        )
+            ? data
+            : [];
+
+
+    } catch (
+        error
+    ) {
+
+        return [];
+    }
+}
+
+
+function dispatchOperationalStatusText(
+    status
+) {
+
+    const map = {
+
+        available:
+            "可用",
+
+        working:
+            "作业中",
+
+        maintenance:
+            "维修中",
+
+        service:
+            "保养中",
+
+        standby:
+            "备用",
+
+        disabled:
+            "停用"
+    };
+
+
+    return (
+        map[status] ||
+        status ||
+        "可用"
+    );
+}
+
+
+function dispatchOperationalBlockedStatus(
+    status
+) {
+
+    return [
+        "maintenance",
+        "service",
+        "disabled"
+    ]
+    .includes(
+        String(
+            status ||
+            ""
+        )
+    );
+}
+
+
+function dispatchHasActiveRepairFlow(
+    equipmentId
+) {
+
+    const id =
+        String(
+            equipmentId ||
+            ""
+        );
+
+
+    if (
+        !id
+    ) {
+
+        return false;
+    }
+
+
+    const requestStatuses =
+        new Set([
+            "pending_dispatch",
+            "waiting_entry",
+            "waiting_assignment",
+            "assigned",
+            "working",
+            "waiting_parts",
+            "waiting_inspection",
+            "inspection_passed",
+            "rework"
+        ]);
+
+
+    const requestActive =
+        dispatchOperationalReadArray(
+            "maintenanceRequests"
+        )
+        .some(
+            item =>
+                String(
+                    item.equipmentId ||
+                    item.equipmentNumber ||
+                    item.vehicleId ||
+                    item.vehicleNumber ||
+                    ""
+                ) ===
+                    id
+                &&
+                requestStatuses.has(
+                    item.status
+                )
+        );
+
+
+    const orderActive =
+        dispatchOperationalReadArray(
+            "maintenanceWorkOrders"
+        )
+        .some(
+            item =>
+                String(
+                    item.equipmentId ||
+                    item.equipmentNumber ||
+                    item.vehicleId ||
+                    item.vehicleNumber ||
+                    ""
+                ) ===
+                    id
+                &&
+                item.status !==
+                    "completed"
+        );
+
+
+    return (
+        requestActive ||
+        orderActive
+    );
+}
+
+
+function dispatchFindMasterEquipmentStatus(
+    equipmentId
+) {
+
+    const id =
+        String(
+            equipmentId ||
+            ""
+        );
+
+
+    if (
+        !id
+    ) {
+
+        return "";
+    }
+
+
+    for (
+        let index = 0;
+        index <
+            localStorage.length;
+        index++
+    ) {
+
+        const key =
+            localStorage.key(
+                index
+            );
+
+
+        if (
+            !key ||
+            !/equipment|vehicle|设备|车辆/i.test(
+                key
+            )
+        ) {
+
+            continue;
+        }
+
+
+        if (
+            [
+                DISPATCH_OPERATIONAL_STATUS_KEY,
+                "equipmentMeterReadings",
+                "equipmentMaintenanceSettings",
+                "maintenanceAlerts",
+                "equipmentMaintenanceRecords",
+                "equipmentUsageChecks",
+                "equipmentUsageRecords"
+            ]
+            .includes(
+                key
+            )
+        ) {
+
+            continue;
+        }
+
+
+        let data;
+
+
+        try {
+
+            const raw =
+                localStorage.getItem(
+                    key
+                );
+
+
+            if (
+                !raw ||
+                raw.length >
+                    1500000
+            ) {
+
+                continue;
+            }
+
+
+            data =
+                JSON.parse(
+                    raw
+                );
+
+
+        } catch (
+            error
+        ) {
+
+            continue;
+        }
+
+
+        const list =
+            Array.isArray(
+                data
+            )
+                ? data
+                : (
+                    data &&
+                    typeof data ===
+                        "object"
+                        ? [
+                            data
+                        ]
+                        : []
+                );
+
+
+        const record =
+            list.find(
+                item => {
+
+                    if (
+                        !item ||
+                        typeof item !==
+                            "object"
+                    ) {
+
+                        return false;
+                    }
+
+
+                    const recordId =
+                        String(
+                            item.equipmentNumber ||
+                            item.vehicleNumber ||
+                            item.equipmentId ||
+                            item.vehicleId ||
+                            item.number ||
+                            ""
+                        );
+
+
+                    return (
+                        recordId ===
+                        id
+                    );
+                }
+            );
+
+
+        if (
+            record
+        ) {
+
+            return (
+                record.status ||
+                record.equipmentStatus ||
+                ""
+            );
+        }
+    }
+
+
+    return "";
+}
+
+
+function dispatchGetEquipmentOperationalStatus(
+    equipmentId
+) {
+
+    const id =
+        String(
+            equipmentId ||
+            ""
+        );
+
+
+    if (
+        !id
+    ) {
+
+        return {
+            equipmentId:
+                "",
+
+            status:
+                "available",
+
+            source:
+                "default"
+        };
+    }
+
+
+    /*
+     * 维修流程优先级最高。
+     * 防止维修申请已经生成，但维修管理页面尚未打开同步状态。
+     */
+    if (
+        dispatchHasActiveRepairFlow(
+            id
+        )
+    ) {
+
+        return {
+            equipmentId:
+                id,
+
+            status:
+                "maintenance",
+
+            source:
+                "repair_flow"
+        };
+    }
+
+
+    const operational =
+        dispatchOperationalReadArray(
+            DISPATCH_OPERATIONAL_STATUS_KEY
+        )
+        .find(
+            item =>
+                String(
+                    item.equipmentId ||
+                    ""
+                ) ===
+                    id
+        );
+
+
+    if (
+        operational?.status
+    ) {
+
+        return {
+            equipmentId:
+                id,
+
+            status:
+                operational.status,
+
+            source:
+                operational.source ||
+                "operational_status"
+        };
+    }
+
+
+    const masterStatus =
+        dispatchFindMasterEquipmentStatus(
+            id
+        );
+
+
+    return {
+        equipmentId:
+            id,
+
+        status:
+            masterStatus ||
+            "available",
+
+        source:
+            masterStatus
+                ? "equipment_master"
+                : "default"
+    };
+}
+
+
+function dispatchIsEquipmentOperationallyBlocked(
+    equipmentId
+) {
+
+    return dispatchOperationalBlockedStatus(
+        dispatchGetEquipmentOperationalStatus(
+            equipmentId
+        ).status
+    );
+}
+
+
+function dispatchGetBlockedEquipmentEntries() {
+
+    const ids =
+        new Set();
+
+
+    dispatchOperationalReadArray(
+        DISPATCH_OPERATIONAL_STATUS_KEY
+    )
+    .forEach(
+        item => {
+
+            const id =
+                String(
+                    item.equipmentId ||
+                    ""
+                );
+
+
+            if (
+                id
+            ) {
+
+                ids.add(
+                    id
+                );
+            }
+        }
+    );
+
+
+    [
+        ...dispatchOperationalReadArray(
+            "maintenanceRequests"
+        ),
+
+        ...dispatchOperationalReadArray(
+            "maintenanceWorkOrders"
+        )
+    ]
+    .forEach(
+        item => {
+
+            const id =
+                String(
+                    item.equipmentId ||
+                    item.equipmentNumber ||
+                    item.vehicleId ||
+                    item.vehicleNumber ||
+                    ""
+                );
+
+
+            if (
+                id
+            ) {
+
+                ids.add(
+                    id
+                );
+            }
+        }
+    );
+
+
+    /*
+     * 兼容设备档案中直接保存 maintenance / service / disabled。
+     */
+    for (
+        let index = 0;
+        index <
+            localStorage.length;
+        index++
+    ) {
+
+        const key =
+            localStorage.key(
+                index
+            );
+
+
+        if (
+            !key ||
+            !/equipment|vehicle|设备|车辆/i.test(
+                key
+            )
+        ) {
+
+            continue;
+        }
+
+
+        if (
+            [
+                DISPATCH_OPERATIONAL_STATUS_KEY,
+                "equipmentMeterReadings",
+                "equipmentMaintenanceSettings",
+                "maintenanceAlerts",
+                "equipmentMaintenanceRecords",
+                "equipmentUsageChecks",
+                "equipmentUsageRecords"
+            ]
+            .includes(
+                key
+            )
+        ) {
+
+            continue;
+        }
+
+
+        try {
+
+            const raw =
+                localStorage.getItem(
+                    key
+                );
+
+
+            if (
+                !raw ||
+                raw.length >
+                    1500000
+            ) {
+
+                continue;
+            }
+
+
+            const data =
+                JSON.parse(
+                    raw
+                );
+
+
+            const list =
+                Array.isArray(
+                    data
+                )
+                    ? data
+                    : (
+                        data &&
+                        typeof data ===
+                            "object"
+                            ? [
+                                data
+                            ]
+                            : []
+                    );
+
+
+            list.forEach(
+                item => {
+
+                    if (
+                        !item ||
+                        typeof item !==
+                            "object"
+                    ) {
+
+                        return;
+                    }
+
+
+                    const status =
+                        item.status ||
+                        item.equipmentStatus ||
+                        "";
+
+
+                    if (
+                        !dispatchOperationalBlockedStatus(
+                            status
+                        )
+                    ) {
+
+                        return;
+                    }
+
+
+                    const id =
+                        String(
+                            item.equipmentNumber ||
+                            item.vehicleNumber ||
+                            item.equipmentId ||
+                            item.vehicleId ||
+                            item.number ||
+                            ""
+                        );
+
+
+                    if (
+                        id
+                    ) {
+
+                        ids.add(
+                            id
+                        );
+                    }
+                }
+            );
+
+
+        } catch (
+            error
+        ) {
+
+            /*
+             * 非 JSON 忽略。
+             */
+        }
+    }
+
+
+    return [
+        ...ids
+    ]
+        .map(
+            id => {
+
+                const state =
+                    dispatchGetEquipmentOperationalStatus(
+                        id
+                    );
+
+
+                return {
+                    id,
+
+                    status:
+                        state.status,
+
+                    text:
+                        dispatchOperationalStatusText(
+                            state.status
+                        )
+                };
+            }
+        )
+        .filter(
+            item =>
+                dispatchOperationalBlockedStatus(
+                    item.status
+                )
+        )
+        .sort(
+            (
+                a,
+                b
+            ) =>
+                String(
+                    b.id
+                ).length -
+                String(
+                    a.id
+                ).length
+        );
+}
+
+
+function dispatchEscapeRegExp(
+    value
+) {
+
+    return String(
+        value ||
+        ""
+    )
+    .replace(
+        /[.*+?^${}()|[\]\\]/g,
+        "\\$&"
+    );
+}
+
+
+function dispatchTextContainsEquipmentId(
+    text,
+    id
+) {
+
+    const value =
+        String(
+            text ||
+            ""
+        );
+
+
+    const equipmentId =
+        String(
+            id ||
+            ""
+        );
+
+
+    if (
+        !equipmentId
+    ) {
+
+        return false;
+    }
+
+
+    /*
+     * 短纯数字编号使用数字边界，避免 1 匹配到 101。
+     */
+    if (
+        /^\d+$/.test(
+            equipmentId
+        )
+    ) {
+
+        return new RegExp(
+            "(^|\\D)" +
+            dispatchEscapeRegExp(
+                equipmentId
+            ) +
+            "(\\D|$)"
+        )
+        .test(
+            value
+        );
+    }
+
+
+    return value.includes(
+        equipmentId
+    );
+}
+
+
+function dispatchFindBlockedEntryInText(
+    text
+) {
+
+    return (
+        dispatchGetBlockedEquipmentEntries()
+            .find(
+                item =>
+                    dispatchTextContainsEquipmentId(
+                        text,
+                        item.id
+                    )
+            )
+        ||
+        null
+    );
+}
+
+
+function dispatchFindBlockedEntryForElement(
+    element
+) {
+
+    if (
+        !element
+    ) {
+
+        return null;
+    }
+
+
+    const candidates =
+        [
+            element.dataset?.equipmentId,
+            element.dataset?.vehicleId,
+            element.dataset?.excavatorId,
+            element.dataset?.equipmentNumber,
+            element.dataset?.vehicleNumber,
+            element.dataset?.number,
+            element.value
+        ]
+        .filter(
+            Boolean
+        );
+
+
+    for (
+        const candidate
+        of candidates
+    ) {
+
+        const id =
+            String(
+                candidate
+            );
+
+
+        if (
+            dispatchIsEquipmentOperationallyBlocked(
+                id
+            )
+        ) {
+
+            const state =
+                dispatchGetEquipmentOperationalStatus(
+                    id
+                );
+
+
+            return {
+                id,
+
+                status:
+                    state.status,
+
+                text:
+                    dispatchOperationalStatusText(
+                        state.status
+                    )
+            };
+        }
+    }
+
+
+    return dispatchFindBlockedEntryInText(
+        element.textContent ||
+        ""
+    );
+}
+
+
+function dispatchAlertBlockedEquipment(
+    entry
+) {
+
+    if (
+        !entry
+    ) {
+
+        return;
+    }
+
+
+    alert(
+        "该设备当前不可调度。\n\n" +
+        "设备：" +
+        entry.id +
+        "\n" +
+        "状态：" +
+        entry.text +
+        "\n\n" +
+        "请等待维修 / 保养完成，或选择其他可用设备。"
+    );
+}
+
+
+function dispatchApplyBoardRestrictions(
+    boardId
+) {
+
+    const board =
+        document.getElementById(
+            boardId
+        );
+
+
+    if (
+        !board
+    ) {
+
+        return;
+    }
+
+
+    [
+        ...board.children
+    ]
+    .forEach(
+        card => {
+
+            const entry =
+                dispatchFindBlockedEntryForElement(
+                    card
+                );
+
+
+            if (
+                entry
+            ) {
+
+                card.classList.add(
+                    "dispatch-operational-blocked"
+                );
+
+                card.dataset.dispatchBlockedId =
+                    entry.id;
+
+                card.dataset.dispatchBlockedStatus =
+                    entry.status;
+
+                card.setAttribute(
+                    "aria-disabled",
+                    "true"
+                );
+
+                card.title =
+                    "不可调度：" +
+                    entry.text;
+
+
+            } else {
+
+                card.classList.remove(
+                    "dispatch-operational-blocked"
+                );
+
+                delete card.dataset.dispatchBlockedId;
+                delete card.dataset.dispatchBlockedStatus;
+
+                card.removeAttribute(
+                    "aria-disabled"
+                );
+            }
+        }
+    );
+}
+
+
+function dispatchHandleBlockedBoardClick(
+    event
+) {
+
+    const board =
+        event.currentTarget;
+
+
+    let node =
+        event.target;
+
+
+    while (
+        node &&
+        node.parentElement !==
+            board &&
+        node !==
+            board
+    ) {
+
+        node =
+            node.parentElement;
+    }
+
+
+    if (
+        !node ||
+        node ===
+            board
+    ) {
+
+        return;
+    }
+
+
+    const blockedId =
+        node.dataset
+            ?.dispatchBlockedId;
+
+
+    if (
+        !blockedId
+    ) {
+
+        return;
+    }
+
+
+    event.preventDefault();
+
+    event.stopImmediatePropagation();
+
+
+    const state =
+        dispatchGetEquipmentOperationalStatus(
+            blockedId
+        );
+
+
+    dispatchAlertBlockedEquipment({
+        id:
+            blockedId,
+
+        status:
+            state.status,
+
+        text:
+            dispatchOperationalStatusText(
+                state.status
+            )
+    });
+}
+
+
+function dispatchApplySelectRestrictions(
+    select
+) {
+
+    if (
+        !select
+    ) {
+
+        return;
+    }
+
+
+    [
+        ...select.options
+    ]
+    .forEach(
+        option => {
+
+            if (
+                !option.value
+            ) {
+
+                return;
+            }
+
+
+            const entry =
+                dispatchFindBlockedEntryForElement(
+                    option
+                );
+
+
+            option.disabled =
+                Boolean(
+                    entry
+                );
+
+
+            if (
+                entry
+            ) {
+
+                option.title =
+                    "不可调度：" +
+                    entry.text;
+
+            } else {
+
+                option.removeAttribute(
+                    "title"
+                );
+            }
+        }
+    );
+
+
+    const selected =
+        select.options[
+            select.selectedIndex
+        ];
+
+
+    if (
+        selected?.disabled
+    ) {
+
+        select.value =
+            "";
+    }
+}
+
+
+function dispatchFilterShiftDatalists() {
+
+    [
+        "shiftVehicleOptions",
+        "shiftExcavatorOptions"
+    ]
+    .forEach(
+        id => {
+
+            const box =
+                document.getElementById(
+                    id
+                );
+
+
+            if (
+                !box
+            ) {
+
+                return;
+            }
+
+
+            [
+                ...box.options
+            ]
+            .forEach(
+                option => {
+
+                    if (
+                        dispatchIsEquipmentOperationallyBlocked(
+                            option.value
+                        )
+                    ) {
+
+                        option.remove();
+                    }
+                }
+            );
+        }
+    );
+}
+
+
+function dispatchValidateShiftDraftOperationalStatus() {
+
+    if (
+        typeof shiftEditDraft ===
+            "undefined" ||
+        !shiftEditDraft ||
+        !Array.isArray(
+            shiftEditDraft.groups
+        )
+    ) {
+
+        return true;
+    }
+
+
+    const blocked =
+        [];
+
+
+    shiftEditDraft.groups
+        .forEach(
+            group => {
+
+                const excavator =
+                    String(
+                        group.excavatorNumber ||
+                        ""
+                    )
+                    .trim();
+
+
+                if (
+                    excavator &&
+                    dispatchIsEquipmentOperationallyBlocked(
+                        excavator
+                    )
+                ) {
+
+                    const state =
+                        dispatchGetEquipmentOperationalStatus(
+                            excavator
+                        );
+
+
+                    blocked.push(
+                        excavator +
+                        "（" +
+                        dispatchOperationalStatusText(
+                            state.status
+                        ) +
+                        "）"
+                    );
+                }
+
+
+                (
+                    group.trucks ||
+                    []
+                )
+                .forEach(
+                    truck => {
+
+                        const vehicle =
+                            String(
+                                truck.vehicleNumber ||
+                                ""
+                            )
+                            .trim();
+
+
+                        if (
+                            vehicle &&
+                            dispatchIsEquipmentOperationallyBlocked(
+                                vehicle
+                            )
+                        ) {
+
+                            const state =
+                                dispatchGetEquipmentOperationalStatus(
+                                    vehicle
+                                );
+
+
+                            blocked.push(
+                                vehicle +
+                                "（" +
+                                dispatchOperationalStatusText(
+                                    state.status
+                                ) +
+                                "）"
+                            );
+                        }
+                    }
+                );
+            }
+        );
+
+
+    if (
+        !blocked.length
+    ) {
+
+        return true;
+    }
+
+
+    alert(
+        "本班绑定中包含不可调度设备：\n\n" +
+        [
+            ...new Set(
+                blocked
+            )
+        ]
+        .join(
+            "\n"
+        ) +
+        "\n\n请先更换设备后再保存本班绑定。"
+    );
+
+
+    return false;
+}
+
+
+function dispatchValidateCurrentDraftOperationalStatus() {
+
+    const texts =
+        [
+            document.getElementById(
+                "bindingList"
+            )?.textContent ||
+            "",
+
+            document.getElementById(
+                "auxiliaryAssignmentList"
+            )?.textContent ||
+            ""
+        ]
+        .join(
+            "\n"
+        );
+
+
+    const entry =
+        dispatchFindBlockedEntryInText(
+            texts
+        );
+
+
+    if (
+        !entry
+    ) {
+
+        return true;
+    }
+
+
+    dispatchAlertBlockedEquipment(
+        entry
+    );
+
+
+    return false;
+}
+
+
+function dispatchApplyOperationalRestrictions() {
+
+    dispatchApplyBoardRestrictions(
+        "excavatorBoard"
+    );
+
+    dispatchApplyBoardRestrictions(
+        "truckBoard"
+    );
+
+
+    dispatchApplySelectRestrictions(
+        document.getElementById(
+            "auxiliaryVehicleSelect"
+        )
+    );
+
+
+    document
+        .querySelectorAll(
+            "#vehicleChangeRequestList select"
+        )
+        .forEach(
+            dispatchApplySelectRestrictions
+        );
+
+
+    dispatchFilterShiftDatalists();
+}
+
+
+/*
+ * 新建任务设备看板：
+ * 捕获阶段阻止维修中 / 保养中 / 停用设备被点击。
+ */
+[
+    "excavatorBoard",
+    "truckBoard"
+]
+.forEach(
+    id => {
+
+        document
+            .getElementById(
+                id
+            )
+            ?.addEventListener(
+                "click",
+                dispatchHandleBlockedBoardClick,
+                true
+            );
+    }
+);
+
+
+/*
+ * 辅助车辆添加前再做一次校验。
+ */
+document
+    .getElementById(
+        "addAuxiliaryButton"
+    )
+    ?.addEventListener(
+        "click",
+        function (
+            event
+        ) {
+
+            const select =
+                document.getElementById(
+                    "auxiliaryVehicleSelect"
+                );
+
+
+            const value =
+                select?.value ||
+                "";
+
+
+            if (
+                value &&
+                dispatchIsEquipmentOperationallyBlocked(
+                    value
+                )
+            ) {
+
+                event.preventDefault();
+
+                event.stopImmediatePropagation();
+
+
+                const state =
+                    dispatchGetEquipmentOperationalStatus(
+                        value
+                    );
+
+
+                dispatchAlertBlockedEquipment({
+                    id:
+                        value,
+
+                    status:
+                        state.status,
+
+                    text:
+                        dispatchOperationalStatusText(
+                            state.status
+                        )
+                });
+            }
+        },
+        true
+    );
+
+
+/*
+ * 发布正式任务前最后兜底校验。
+ * 防止设备先被选择，随后才进入维修 / 保养状态。
+ */
+document
+    .getElementById(
+        "publishTaskButton"
+    )
+    ?.addEventListener(
+        "click",
+        function (
+            event
+        ) {
+
+            if (
+                !dispatchValidateCurrentDraftOperationalStatus()
+            ) {
+
+                event.preventDefault();
+
+                event.stopImmediatePropagation();
+            }
+        },
+        true
+    );
+
+
+/*
+ * 修改本班绑定保存前最后兜底校验。
+ */
+document
+    .getElementById(
+        "saveShiftBindingEditorButton"
+    )
+    ?.addEventListener(
+        "click",
+        function (
+            event
+        ) {
+
+            if (
+                !dispatchValidateShiftDraftOperationalStatus()
+            ) {
+
+                event.preventDefault();
+
+                event.stopImmediatePropagation();
+            }
+        },
+        true
+    );
+
+
+/*
+ * 换车审批：
+ * 如果审批卡中的候选新车处于维修 / 保养 / 停用，
+ * 阻止批准。
+ */
+document
+    .getElementById(
+        "vehicleChangeRequestList"
+    )
+    ?.addEventListener(
+        "click",
+        function (
+            event
+        ) {
+
+            const button =
+                event.target.closest(
+                    "button"
+                );
+
+
+            if (
+                !button
+            ) {
+
+                return;
+            }
+
+
+            const positive =
+                /批准|同意|确认换车|通过/.test(
+                    button.textContent ||
+                    ""
+                );
+
+
+            if (
+                !positive
+            ) {
+
+                return;
+            }
+
+
+            const root =
+                document.getElementById(
+                    "vehicleChangeRequestList"
+                );
+
+
+            let node =
+                button.parentElement;
+
+
+            let entry =
+                null;
+
+
+            while (
+                node &&
+                node !==
+                    root
+            ) {
+
+                const selectedValues =
+                    [
+                        ...node.querySelectorAll(
+                            "select"
+                        )
+                    ]
+                    .map(
+                        select =>
+                            select.value
+                    )
+                    .filter(
+                        Boolean
+                    );
+
+
+                entry =
+                    selectedValues
+                        .map(
+                            value => {
+
+                                if (
+                                    !dispatchIsEquipmentOperationallyBlocked(
+                                        value
+                                    )
+                                ) {
+
+                                    return null;
+                                }
+
+
+                                const state =
+                                    dispatchGetEquipmentOperationalStatus(
+                                        value
+                                    );
+
+
+                                return {
+                                    id:
+                                        value,
+
+                                    status:
+                                        state.status,
+
+                                    text:
+                                        dispatchOperationalStatusText(
+                                            state.status
+                                        )
+                                };
+                            }
+                        )
+                        .find(
+                            Boolean
+                        );
+
+
+                if (
+                    entry
+                ) {
+
+                    break;
+                }
+
+
+                node =
+                    node.parentElement;
+            }
+
+
+            if (
+                entry
+            ) {
+
+                event.preventDefault();
+
+                event.stopImmediatePropagation();
+
+                dispatchAlertBlockedEquipment(
+                    entry
+                );
+            }
+        },
+        true
+    );
+
+
+/*
+ * 动态内容由旧 dispatch.js 生成，
+ * 使用 MutationObserver 自动补上运行状态限制。
+ */
+[
+    "excavatorBoard",
+    "truckBoard",
+    "auxiliaryVehicleSelect",
+    "vehicleChangeRequestList",
+    "shiftVehicleOptions",
+    "shiftExcavatorOptions"
+]
+.forEach(
+    id => {
+
+        const element =
+            document.getElementById(
+                id
+            );
+
+
+        if (
+            !element
+        ) {
+
+            return;
+        }
+
+
+        new MutationObserver(
+            () =>
+                dispatchApplyOperationalRestrictions()
+        )
+        .observe(
+            element,
+            {
+                childList:
+                    true,
+
+                subtree:
+                    true
+            }
+        );
+    }
+);
+
+
+document
+    .getElementById(
+        "newTaskButton"
+    )
+    ?.addEventListener(
+        "click",
+        () =>
+            setTimeout(
+                dispatchApplyOperationalRestrictions,
+                0
+            )
+    );
+
+
+document
+    .getElementById(
+        "openVehicleChangeButton"
+    )
+    ?.addEventListener(
+        "click",
+        () =>
+            setTimeout(
+                dispatchApplyOperationalRestrictions,
+                0
+            )
+    );
+
+
+window.addEventListener(
+    "storage",
+    dispatchApplyOperationalRestrictions
+);
+
+
+dispatchApplyOperationalRestrictions();
+
+
+setInterval(
+    dispatchApplyOperationalRestrictions,
+    3000
+);
 
 </script>
 
