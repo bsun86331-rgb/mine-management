@@ -530,7 +530,7 @@ footer {
             </h1>
 
             <p>
-                Workshop Maintenance · V2.10.3C
+                Workshop Maintenance · V2.10.3D
             </p>
 
         </div>
@@ -1609,6 +1609,12 @@ footer {
 
         <br>
 
+        “临近 / 超期”只属于保养提醒，不自动改变设备运行状态。
+        只有维修流程或维修管理点击“开始保养”时，
+        设备才进入“维修中 / 保养中”。
+
+        <br>
+
         挖机按小时数 h 计算，
         其他车辆 / 辅助车辆按公里数 km 计算。
 
@@ -1661,7 +1667,7 @@ footer {
 
 <footer>
 
-矿山管理系统 · 修理厂维修管理 V2.10.3C
+矿山管理系统 · 修理厂维修管理 V2.10.3D
 
 </footer>
 
@@ -2166,7 +2172,10 @@ const STORAGE = {
         "equipmentMeterReadings",
 
     MAINTENANCE_RECORDS:
-        "equipmentMaintenanceRecords"
+        "equipmentMaintenanceRecords",
+
+    OPERATIONAL_STATUS:
+        "equipmentOperationalStatus"
 
 };
 
@@ -2874,6 +2883,8 @@ function isProductionEquipment(
 ========================================================= */
 
 function renderAll() {
+
+    syncEquipmentOperationalStatusFromRepairFlows();
 
     renderStatistics();
 
@@ -4655,6 +4666,973 @@ function releaseBay(
 
 
 /* =========================================================
+   V2.10.3D
+   设备运行状态联动
+========================================================= */
+
+function getOperationalStatusRecords() {
+
+    return readArray(
+        STORAGE.OPERATIONAL_STATUS
+    );
+}
+
+
+function getEquipmentOperationalStatus(
+    equipmentId
+) {
+
+    const id =
+        String(
+            equipmentId ||
+            ""
+        );
+
+
+    const record =
+        getOperationalStatusRecords()
+            .find(
+                item =>
+                    String(
+                        item.equipmentId ||
+                        ""
+                    ) ===
+                        id
+            );
+
+
+    if (
+        record
+    ) {
+
+        return record;
+    }
+
+
+    const master =
+        findEquipmentMasterRecord(
+            id
+        );
+
+
+    return {
+
+        equipmentId:
+            id,
+
+        status:
+            master?.status ||
+            master?.equipmentStatus ||
+            "available",
+
+        previousStatus:
+            "",
+
+        source:
+            "equipment_master"
+    };
+}
+
+
+function getOperationalStatusText(
+    status
+) {
+
+    const map = {
+
+        available:
+            "可用",
+
+        working:
+            "作业中",
+
+        maintenance:
+            "维修中",
+
+        service:
+            "保养中",
+
+        standby:
+            "备用",
+
+        disabled:
+            "停用"
+    };
+
+
+    return (
+        map[status] ||
+        status ||
+        "可用"
+    );
+}
+
+
+function getOperationalStatusBadgeClass(
+    status
+) {
+
+    const map = {
+
+        available:
+            "green",
+
+        working:
+            "blue",
+
+        maintenance:
+            "red",
+
+        service:
+            "yellow",
+
+        standby:
+            "default",
+
+        disabled:
+            "default"
+    };
+
+
+    return (
+        map[status] ||
+        "default"
+    );
+}
+
+
+function renderOperationalStatusText(
+    equipmentId
+) {
+
+    const record =
+        getEquipmentOperationalStatus(
+            equipmentId
+        );
+
+
+    return (
+        `<span class="badge ${getOperationalStatusBadgeClass(
+            record.status
+        )}">${escapeHtml(
+            getOperationalStatusText(
+                record.status
+            )
+        )}</span>`
+    );
+}
+
+
+function setEquipmentOperationalStatus(
+    equipmentId,
+    status,
+    source
+) {
+
+    const id =
+        String(
+            equipmentId ||
+            ""
+        );
+
+
+    if (
+        !id
+    ) {
+
+        return;
+    }
+
+
+    const records =
+        getOperationalStatusRecords();
+
+
+    let record =
+        records.find(
+            item =>
+                String(
+                    item.equipmentId ||
+                    ""
+                ) ===
+                    id
+        );
+
+
+    const current =
+        getEquipmentOperationalStatus(
+            id
+        );
+
+
+    const now =
+        new Date()
+            .toISOString();
+
+
+    if (
+        !record
+    ) {
+
+        record = {
+
+            equipmentId:
+                id,
+
+            previousStatus:
+                current.status &&
+                ![
+                    "maintenance",
+                    "service"
+                ]
+                .includes(
+                    current.status
+                )
+                    ? current.status
+                    : "available"
+        };
+
+
+        records.push(
+            record
+        );
+    }
+
+
+    if (
+        ![
+            "maintenance",
+            "service"
+        ]
+        .includes(
+            record.status
+        ) &&
+        [
+            "maintenance",
+            "service"
+        ]
+        .includes(
+            status
+        )
+    ) {
+
+        record.previousStatus =
+            record.status ||
+            current.status ||
+            "available";
+    }
+
+
+    record.status =
+        status;
+
+    record.source =
+        source ||
+        "";
+
+    record.updatedAt =
+        now;
+
+
+    save(
+        STORAGE.OPERATIONAL_STATUS,
+        records
+    );
+
+
+    syncEquipmentMasterStatus(
+        id,
+        status
+    );
+}
+
+
+function restoreEquipmentOperationalStatus(
+    equipmentId,
+    source
+) {
+
+    const id =
+        String(
+            equipmentId ||
+            ""
+        );
+
+
+    const records =
+        getOperationalStatusRecords();
+
+
+    const record =
+        records.find(
+            item =>
+                String(
+                    item.equipmentId ||
+                    ""
+                ) ===
+                    id
+        );
+
+
+    const restoreStatus =
+        record?.previousStatus &&
+        ![
+            "maintenance",
+            "service"
+        ]
+        .includes(
+            record.previousStatus
+        )
+            ? record.previousStatus
+            : "available";
+
+
+    if (
+        record
+    ) {
+
+        record.status =
+            restoreStatus;
+
+        record.source =
+            source ||
+            "restore";
+
+        record.previousStatus =
+            "";
+
+        record.updatedAt =
+            new Date()
+                .toISOString();
+
+
+        save(
+            STORAGE.OPERATIONAL_STATUS,
+            records
+        );
+
+    } else {
+
+        setEquipmentOperationalStatus(
+            id,
+            restoreStatus,
+            source ||
+            "restore"
+        );
+    }
+
+
+    syncEquipmentMasterStatus(
+        id,
+        restoreStatus
+    );
+}
+
+
+function startEquipmentService(
+    equipmentId
+) {
+
+    const id =
+        String(
+            equipmentId ||
+            ""
+        );
+
+
+    const current =
+        getEquipmentOperationalStatus(
+            id
+        );
+
+
+    if (
+        current.status ===
+            "maintenance"
+    ) {
+
+        alert(
+            "该设备当前处于维修流程，不能同时切换为保养中。"
+        );
+
+        return;
+    }
+
+
+    if (
+        current.status ===
+            "service"
+    ) {
+
+        alert(
+            "该设备已经处于保养中。"
+        );
+
+        return;
+    }
+
+
+    if (
+        !confirm(
+            "确认开始该设备保养？\n\n" +
+            "设备状态将变为“保养中”。\n" +
+            "保养提醒本身不会自动锁死设备，只有点击开始保养后才改变运行状态。"
+        )
+    ) {
+
+        return;
+    }
+
+
+    setEquipmentOperationalStatus(
+        id,
+        "service",
+        "maintenance_service"
+    );
+
+
+    renderAll();
+}
+
+
+function finishEquipmentService(
+    equipmentId
+) {
+
+    const id =
+        String(
+            equipmentId ||
+            ""
+        );
+
+
+    if (
+        hasActiveRepairFlow(
+            id
+        )
+    ) {
+
+        setEquipmentOperationalStatus(
+            id,
+            "maintenance",
+            "repair_flow"
+        );
+
+        return;
+    }
+
+
+    restoreEquipmentOperationalStatus(
+        id,
+        "maintenance_complete"
+    );
+}
+
+
+function hasActiveRepairFlow(
+    equipmentId
+) {
+
+    const id =
+        String(
+            equipmentId ||
+            ""
+        );
+
+
+    const activeRequestStatuses =
+        new Set([
+            "pending_dispatch",
+            "waiting_entry",
+            "waiting_assignment",
+            "assigned",
+            "working",
+            "waiting_parts",
+            "waiting_inspection",
+            "inspection_passed",
+            "rework"
+        ]);
+
+
+    const requestActive =
+        getRequests()
+            .some(
+                item =>
+                    String(
+                        item.equipmentId ||
+                        item.equipmentNumber ||
+                        ""
+                    ) ===
+                        id &&
+                    activeRequestStatuses.has(
+                        item.status
+                    )
+            );
+
+
+    const orderActive =
+        getOrders()
+            .some(
+                item =>
+                    String(
+                        item.equipmentId ||
+                        item.equipmentNumber ||
+                        ""
+                    ) ===
+                        id &&
+                    item.status !==
+                        "completed"
+            );
+
+
+    return (
+        requestActive ||
+        orderActive
+    );
+}
+
+
+function syncEquipmentOperationalStatusFromRepairFlows() {
+
+    const equipmentIds =
+        new Set();
+
+
+    getRequests()
+        .forEach(
+            item => {
+
+                const id =
+                    String(
+                        item.equipmentId ||
+                        item.equipmentNumber ||
+                        ""
+                    );
+
+
+                if (
+                    id
+                ) {
+
+                    equipmentIds.add(
+                        id
+                    );
+                }
+            }
+        );
+
+
+    getOrders()
+        .forEach(
+            item => {
+
+                const id =
+                    String(
+                        item.equipmentId ||
+                        item.equipmentNumber ||
+                        ""
+                    );
+
+
+                if (
+                    id
+                ) {
+
+                    equipmentIds.add(
+                        id
+                    );
+                }
+            }
+        );
+
+
+    equipmentIds.forEach(
+        id => {
+
+            const current =
+                getEquipmentOperationalStatus(
+                    id
+                );
+
+
+            if (
+                hasActiveRepairFlow(
+                    id
+                )
+            ) {
+
+                if (
+                    current.status !==
+                        "maintenance"
+                ) {
+
+                    setEquipmentOperationalStatus(
+                        id,
+                        "maintenance",
+                        "repair_flow"
+                    );
+                }
+
+
+                return;
+            }
+
+
+            if (
+                current.status ===
+                    "maintenance"
+            ) {
+
+                restoreEquipmentOperationalStatus(
+                    id,
+                    "repair_complete"
+                );
+            }
+        }
+    );
+}
+
+
+function findEquipmentMasterRecord(
+    equipmentId
+) {
+
+    const id =
+        String(
+            equipmentId ||
+            ""
+        );
+
+
+    if (
+        !id
+    ) {
+
+        return null;
+    }
+
+
+    for (
+        let index = 0;
+        index <
+            localStorage.length;
+        index++
+    ) {
+
+        const key =
+            localStorage.key(
+                index
+            );
+
+
+        if (
+            !key ||
+            !/equipment|vehicle|设备|车辆/i.test(
+                key
+            )
+        ) {
+
+            continue;
+        }
+
+
+        if (
+            [
+                STORAGE.METER_READINGS,
+                STORAGE.MAINTENANCE_SETTINGS,
+                STORAGE.MAINTENANCE_ALERTS,
+                STORAGE.MAINTENANCE_RECORDS,
+                STORAGE.OPERATIONAL_STATUS,
+                "equipmentUsageChecks",
+                "equipmentUsageRecords"
+            ]
+            .includes(
+                key
+            )
+        ) {
+
+            continue;
+        }
+
+
+        let data;
+
+
+        try {
+
+            data =
+                JSON.parse(
+                    localStorage.getItem(
+                        key
+                    )
+                );
+
+        } catch (
+            error
+        ) {
+
+            continue;
+        }
+
+
+        const list =
+            Array.isArray(
+                data
+            )
+                ? data
+                : (
+                    data &&
+                    typeof data ===
+                        "object"
+                        ? [
+                            data
+                        ]
+                        : []
+                );
+
+
+        const record =
+            list.find(
+                item => {
+
+                    if (
+                        !item ||
+                        typeof item !==
+                            "object"
+                    ) {
+
+                        return false;
+                    }
+
+
+                    const recordId =
+                        String(
+                            item.equipmentNumber ||
+                            item.vehicleNumber ||
+                            item.equipmentId ||
+                            item.vehicleId ||
+                            item.number ||
+                            ""
+                        );
+
+
+                    return (
+                        recordId ===
+                        id
+                    );
+                }
+            );
+
+
+        if (
+            record
+        ) {
+
+            return record;
+        }
+    }
+
+
+    return null;
+}
+
+
+function syncEquipmentMasterStatus(
+    equipmentId,
+    status
+) {
+
+    const id =
+        String(
+            equipmentId ||
+            ""
+        );
+
+
+    if (
+        !id
+    ) {
+
+        return;
+    }
+
+
+    for (
+        let index = 0;
+        index <
+            localStorage.length;
+        index++
+    ) {
+
+        const key =
+            localStorage.key(
+                index
+            );
+
+
+        if (
+            !key ||
+            !/equipment|vehicle|设备|车辆/i.test(
+                key
+            )
+        ) {
+
+            continue;
+        }
+
+
+        if (
+            [
+                STORAGE.METER_READINGS,
+                STORAGE.MAINTENANCE_SETTINGS,
+                STORAGE.MAINTENANCE_ALERTS,
+                STORAGE.MAINTENANCE_RECORDS,
+                STORAGE.OPERATIONAL_STATUS,
+                "equipmentUsageChecks",
+                "equipmentUsageRecords"
+            ]
+            .includes(
+                key
+            )
+        ) {
+
+            continue;
+        }
+
+
+        let data;
+
+
+        try {
+
+            data =
+                JSON.parse(
+                    localStorage.getItem(
+                        key
+                    )
+                );
+
+        } catch (
+            error
+        ) {
+
+            continue;
+        }
+
+
+        let changed =
+            false;
+
+
+        const updateRecord =
+            item => {
+
+                if (
+                    !item ||
+                    typeof item !==
+                        "object"
+                ) {
+
+                    return;
+                }
+
+
+                const recordId =
+                    String(
+                        item.equipmentNumber ||
+                        item.vehicleNumber ||
+                        item.equipmentId ||
+                        item.vehicleId ||
+                        item.number ||
+                        ""
+                    );
+
+
+                if (
+                    recordId !==
+                        id
+                ) {
+
+                    return;
+                }
+
+
+                if (
+                    "status" in
+                        item
+                ) {
+
+                    item.status =
+                        status;
+
+                    changed =
+                        true;
+                }
+
+
+                if (
+                    "equipmentStatus" in
+                        item
+                ) {
+
+                    item.equipmentStatus =
+                        status;
+
+                    changed =
+                        true;
+                }
+
+
+                if (
+                    changed
+                ) {
+
+                    item.updatedAt =
+                        new Date()
+                            .toISOString();
+                }
+            };
+
+
+        if (
+            Array.isArray(
+                data
+            )
+        ) {
+
+            data.forEach(
+                updateRecord
+            );
+
+        } else if (
+            data &&
+            typeof data ===
+                "object"
+        ) {
+
+            updateRecord(
+                data
+            );
+        }
+
+
+        if (
+            changed
+        ) {
+
+            localStorage.setItem(
+                key,
+                JSON.stringify(
+                    data
+                )
+            );
+        }
+    }
+}
+
+
+
+/* =========================================================
    V2.10.2Y
    保养提醒
 ========================================================= */
@@ -5258,10 +6236,41 @@ function renderMaintenanceAlertList(
                                 item.updatedAt
                             )}
 
+                            <br>
+
+                            设备状态：
+                            ${renderOperationalStatusText(
+                                item.equipmentId ||
+                                item.equipmentNumber ||
+                                ""
+                            )}
+
                         </div>
 
 
                         <div class="actions">
+
+                            ${
+                                getEquipmentOperationalStatus(
+                                    item.equipmentId ||
+                                    item.equipmentNumber ||
+                                    ""
+                                ).status === "service"
+                                    ? ""
+                                    : `
+                                    <button
+                                        type="button"
+                                        class="warning-btn"
+                                        onclick="startEquipmentService('${escapeJs(
+                                            item.equipmentId ||
+                                            item.equipmentNumber ||
+                                            ""
+                                        )}')"
+                                    >
+                                        🛠️ 开始保养
+                                    </button>
+                                    `
+                            }
 
                             <button
                                 type="button"
@@ -7141,6 +8150,13 @@ function renderMaintenanceSettingsList() {
                                     : "暂无"
                             }
 
+                            <br>
+
+                            设备运行状态：
+                            ${renderOperationalStatusText(
+                                equipmentId
+                            )}
+
                         </div>
 
 
@@ -8115,6 +9131,11 @@ function saveMaintenanceComplete() {
     save(
         STORAGE.MAINTENANCE_ALERTS,
         alerts
+    );
+
+
+    finishEquipmentService(
+        equipmentId
     );
 
 
