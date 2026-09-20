@@ -1,7 +1,7 @@
 /*
 ====================================================
 矿山管理系统
-司机端 V2.10.3F
+司机端 V2.10.3J
 ====================================================
 功能：
 1. 审核通过司机才可进入
@@ -32,18 +32,28 @@ document.addEventListener("DOMContentLoaded", function () {
         GPS: "driverLastGpsPosition",
 
         /*
-         * V2.10.3F
+         * V2.10.3J
          * 设备使用检查
          */
         EQUIPMENT_CHECKS:
             "equipmentUsageChecks",
 
         /*
-         * V2.10.3F
+         * V2.10.3J
          * 设备运行状态
          */
         OPERATIONAL_STATUS:
-            "equipmentOperationalStatus"
+            "equipmentOperationalStatus",
+
+        /*
+         * V2.10.3J
+         * GPS运输闭环
+         */
+        TRANSPORT_ZONES:
+            "transportZones",
+
+        TRANSPORT_CYCLE:
+            "driverTransportCycleState"
     };
 
     const $ = id => document.getElementById(id);
@@ -1069,6 +1079,8 @@ document.addEventListener("DOMContentLoaded", function () {
         refreshTodoCounts();
 
         refreshDriverStatus();
+
+        refreshTransportCycle();
     }
 
 
@@ -1675,7 +1687,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     /*
     ===============================================
-    V2.10.3F
+    V2.10.3J
     设备运行状态联动
     ===============================================
     */
@@ -1987,7 +1999,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     /*
     ===============================================
-    V2.10.3F
+    V2.10.3J
     本班设备使用检查
     ===============================================
     */
@@ -2457,6 +2469,11 @@ document.addEventListener("DOMContentLoaded", function () {
 
         saveCurrentTask(currentTask);
 
+        /*
+         * 正式开始作业后初始化本班、本司机、本车辆的GPS运输闭环。
+         */
+        getTransportCycle();
+
         refreshAll();
     }
 
@@ -2576,11 +2593,1743 @@ document.addEventListener("DOMContentLoaded", function () {
         if (currentTask.status === "working") {
             pause?.classList.remove("hidden");
             trip?.classList.remove("hidden");
+
+            /*
+             * 是否可以完成一趟，
+             * 由GPS运输闭环状态决定。
+             */
+            renderTransportCycleStatus();
         }
 
         if (currentTask.status === "paused") {
             resume?.classList.remove("hidden");
         }
+    }
+
+
+    /*
+    ===============================================
+    V2.10.3J
+    GPS运输闭环
+
+    一趟正式成立必须依次完成：
+
+    1. 进入本任务装载区
+    2. 在装载区连续稳定定位，自动确认“已装车”
+    3. 驶离装载区
+    4. 进入本任务允许卸载区
+    5. 在卸载区点击“完成一趟”
+    6. 再获取一次实时GPS复核后 +1 趟
+
+    GPS精度 > 100m 时不允许推进闭环。
+    不再允许仅凭“点击完成一趟 + 任意GPS位置”直接计数。
+    ===============================================
+    */
+
+    function getTransportZones() {
+
+        const zones =
+            readJson(
+                STORAGE.TRANSPORT_ZONES,
+                []
+            );
+
+
+        return Array.isArray(zones)
+            ? zones
+            : [];
+    }
+
+
+    function splitTransportZoneNames(
+        value
+    ) {
+
+        if (
+            Array.isArray(value)
+        ) {
+
+            return value
+                .map(
+                    item =>
+                        String(
+                            item ||
+                            ""
+                        )
+                        .trim()
+                )
+                .filter(Boolean);
+        }
+
+
+        return String(
+            value ||
+            ""
+        )
+        .split(
+            /[、,，;；|]/
+        )
+        .map(
+            item =>
+                item.trim()
+        )
+        .filter(Boolean);
+    }
+
+
+    function getTransportTaskZoneConfig() {
+
+        if (
+            !currentTask
+        ) {
+
+            return {
+                loadingZone:
+                    null,
+
+                unloadingZones:
+                    [],
+
+                valid:
+                    false,
+
+                reason:
+                    "当前没有生产任务"
+            };
+        }
+
+
+        const zones =
+            getTransportZones()
+                .filter(
+                    item =>
+                        item &&
+                        item.enabled !==
+                            false
+                );
+
+
+        const loadingId =
+            String(
+                currentTask.loadingZoneId ||
+                currentTask.taskLoadingZoneId ||
+                ""
+            )
+            .trim();
+
+
+        const loadingName =
+            String(
+                currentTask.loadingZoneName ||
+                currentTask.loadingPoint ||
+                currentTask.taskLoadingPoint ||
+                ""
+            )
+            .trim();
+
+
+        let loadingZone =
+            null;
+
+
+        if (
+            loadingId
+        ) {
+
+            loadingZone =
+                zones.find(
+                    item =>
+                        item.zoneType ===
+                            "loading"
+                        &&
+                        String(
+                            item.zoneId ||
+                            ""
+                        ) ===
+                            loadingId
+                )
+                ||
+                null;
+        }
+
+
+        if (
+            !loadingZone &&
+            loadingName
+        ) {
+
+            loadingZone =
+                zones.find(
+                    item =>
+                        item.zoneType ===
+                            "loading"
+                        &&
+                        String(
+                            item.name ||
+                            ""
+                        )
+                        .trim() ===
+                            loadingName
+                )
+                ||
+                null;
+        }
+
+
+        const unloadIds =
+            Array.isArray(
+                currentTask.unloadingZoneIds
+            )
+                ? currentTask.unloadingZoneIds
+                    .map(String)
+                : splitTransportZoneNames(
+                    currentTask.unloadingZoneIds ||
+                    ""
+                );
+
+
+        const unloadNames =
+            splitTransportZoneNames(
+                currentTask.unloadingZoneNames ||
+                currentTask.unloadingPoint ||
+                currentTask.taskUnloadingPoint ||
+                ""
+            );
+
+
+        let unloadingZones =
+            zones.filter(
+                item => {
+
+                    if (
+                        item.zoneType !==
+                            "unloading"
+                    ) {
+
+                        return false;
+                    }
+
+
+                    if (
+                        unloadIds.length &&
+                        unloadIds.includes(
+                            String(
+                                item.zoneId ||
+                                ""
+                            )
+                        )
+                    ) {
+
+                        return true;
+                    }
+
+
+                    return (
+                        unloadNames.length &&
+                        unloadNames.includes(
+                            String(
+                                item.name ||
+                                ""
+                            )
+                            .trim()
+                        )
+                    );
+                }
+            );
+
+
+        /*
+         * 兼容旧任务：
+         * 如果任务里只有一个卸载区名称，
+         * 按名称精确匹配 transportZones。
+         */
+        if (
+            !unloadingZones.length &&
+            unloadNames.length
+        ) {
+
+            unloadingZones =
+                zones.filter(
+                    item =>
+                        item.zoneType ===
+                            "unloading"
+                        &&
+                        unloadNames.includes(
+                            String(
+                                item.name ||
+                                ""
+                            )
+                            .trim()
+                        )
+                );
+        }
+
+
+        if (
+            !loadingZone
+        ) {
+
+            return {
+                loadingZone:
+                    null,
+
+                unloadingZones,
+
+                valid:
+                    false,
+
+                reason:
+                    loadingName
+                        ? "任务装载区在运输区域库中未找到"
+                        : "当前任务没有配置装载区"
+            };
+        }
+
+
+        if (
+            !unloadingZones.length
+        ) {
+
+            return {
+                loadingZone,
+
+                unloadingZones:
+                    [],
+
+                valid:
+                    false,
+
+                reason:
+                    "当前任务没有可识别的允许卸载区"
+            };
+        }
+
+
+        const invalidMaterial =
+            unloadingZones.find(
+                zone =>
+                    ![
+                        "煤",
+                        "渣",
+                        "只记车数"
+                    ]
+                    .includes(
+                        String(
+                            zone.materialType ||
+                            ""
+                        )
+                        .trim()
+                    )
+            );
+
+
+        if (
+            invalidMaterial
+        ) {
+
+            return {
+                loadingZone,
+
+                unloadingZones,
+
+                valid:
+                    false,
+
+                reason:
+                    "卸载区“" +
+                    (
+                        invalidMaterial.name ||
+                        "-"
+                    ) +
+                    "”物料类型不是统一参数：煤 / 渣 / 只记车数"
+            };
+        }
+
+
+        return {
+            loadingZone,
+
+            unloadingZones,
+
+            valid:
+                true,
+
+            reason:
+                ""
+        };
+    }
+
+
+    function degreesToRadians(
+        value
+    ) {
+
+        return Number(value) *
+            Math.PI /
+            180;
+    }
+
+
+    function distanceMeters(
+        latitude1,
+        longitude1,
+        latitude2,
+        longitude2
+    ) {
+
+        const earthRadius =
+            6371000;
+
+
+        const lat1 =
+            degreesToRadians(
+                latitude1
+            );
+
+
+        const lat2 =
+            degreesToRadians(
+                latitude2
+            );
+
+
+        const deltaLat =
+            degreesToRadians(
+                Number(latitude2) -
+                Number(latitude1)
+            );
+
+
+        const deltaLon =
+            degreesToRadians(
+                Number(longitude2) -
+                Number(longitude1)
+            );
+
+
+        const a =
+            Math.sin(
+                deltaLat / 2
+            ) ** 2
+            +
+            Math.cos(lat1) *
+            Math.cos(lat2) *
+            Math.sin(
+                deltaLon / 2
+            ) ** 2;
+
+
+        const c =
+            2 *
+            Math.atan2(
+                Math.sqrt(a),
+                Math.sqrt(
+                    1 - a
+                )
+            );
+
+
+        return earthRadius *
+            c;
+    }
+
+
+    function getZoneDistance(
+        gps,
+        zone
+    ) {
+
+        if (
+            !gps ||
+            !zone
+        ) {
+
+            return Infinity;
+        }
+
+
+        const latitude =
+            Number(
+                zone.latitude
+            );
+
+
+        const longitude =
+            Number(
+                zone.longitude
+            );
+
+
+        if (
+            !Number.isFinite(latitude) ||
+            !Number.isFinite(longitude)
+        ) {
+
+            return Infinity;
+        }
+
+
+        return distanceMeters(
+            gps.latitude,
+            gps.longitude,
+            latitude,
+            longitude
+        );
+    }
+
+
+    function isGpsGoodForTransport(
+        gps
+    ) {
+
+        if (
+            !gps
+        ) {
+
+            return false;
+        }
+
+
+        const latitude =
+            Number(
+                gps.latitude
+            );
+
+
+        const longitude =
+            Number(
+                gps.longitude
+            );
+
+
+        const accuracy =
+            Number(
+                gps.accuracy
+            );
+
+
+        return (
+            Number.isFinite(latitude)
+            &&
+            Number.isFinite(longitude)
+            &&
+            Number.isFinite(accuracy)
+            &&
+            accuracy > 0
+            &&
+            accuracy <= 100
+        );
+    }
+
+
+    function isInsideTransportZone(
+        gps,
+        zone
+    ) {
+
+        if (
+            !isGpsGoodForTransport(
+                gps
+            ) ||
+            !zone
+        ) {
+
+            return false;
+        }
+
+
+        const radius =
+            Math.max(
+                10,
+                Number(
+                    zone.radius ||
+                    0
+                )
+            );
+
+
+        /*
+         * 最多给GPS误差30米缓冲，
+         * 防止车辆在边界处反复跳动。
+         * 但GPS精度本身仍必须 <= 100m。
+         */
+        const accuracyBuffer =
+            Math.min(
+                30,
+                Math.max(
+                    0,
+                    Number(
+                        gps.accuracy ||
+                        0
+                    )
+                )
+            );
+
+
+        return (
+            getZoneDistance(
+                gps,
+                zone
+            )
+            <=
+            radius +
+            accuracyBuffer
+        );
+    }
+
+
+    function isClearlyOutsideTransportZone(
+        gps,
+        zone
+    ) {
+
+        if (
+            !isGpsGoodForTransport(
+                gps
+            ) ||
+            !zone
+        ) {
+
+            return false;
+        }
+
+
+        const radius =
+            Math.max(
+                10,
+                Number(
+                    zone.radius ||
+                    0
+                )
+            );
+
+
+        /*
+         * 离开装载区采用额外30米滞回，
+         * 避免边界GPS漂移造成“刚进区就判定驶离”。
+         */
+        return (
+            getZoneDistance(
+                gps,
+                zone
+            )
+            >
+            radius +
+            30
+        );
+    }
+
+
+    function getTransportCycleKey() {
+
+        if (
+            !currentTask ||
+            !profile
+        ) {
+
+            return "";
+        }
+
+
+        return [
+            String(
+                currentTask.taskId ||
+                currentTask.dispatchTaskId ||
+                ""
+            ),
+
+            String(
+                currentTask.shiftId ||
+                ""
+            ),
+
+            String(
+                getVehicleNumber(
+                    currentTask
+                ) ||
+                ""
+            ),
+
+            String(
+                profile.driverId ||
+                profile.personId ||
+                profile.employeeId ||
+                profile.id ||
+                profile.name ||
+                ""
+            )
+        ]
+        .join("|");
+    }
+
+
+    function createEmptyTransportCycle() {
+
+        return {
+            cycleKey:
+                getTransportCycleKey(),
+
+            phase:
+                "waiting_loading",
+
+            taskId:
+                currentTask?.taskId ||
+                currentTask?.dispatchTaskId ||
+                "",
+
+            shiftId:
+                currentTask?.shiftId ||
+                "",
+
+            vehicleNumber:
+                currentTask
+                    ? getVehicleNumber(
+                        currentTask
+                    )
+                    : "",
+
+            loadingCandidateAt:
+                null,
+
+            departureCandidateAt:
+                null,
+
+            loadedAt:
+                null,
+
+            loadingGps:
+                null,
+
+            departedLoadingAt:
+                null,
+
+            arrivedUnloadAt:
+                null,
+
+            unloadingZoneId:
+                "",
+
+            unloadingZoneName:
+                "",
+
+            materialType:
+                "",
+
+            unloadingGps:
+                null,
+
+            updatedAt:
+                new Date()
+                    .toISOString()
+        };
+    }
+
+
+    function getTransportCycle() {
+
+        const key =
+            getTransportCycleKey();
+
+
+        if (
+            !key
+        ) {
+
+            return null;
+        }
+
+
+        const saved =
+            readJson(
+                STORAGE.TRANSPORT_CYCLE,
+                null
+            );
+
+
+        if (
+            !saved ||
+            saved.cycleKey !==
+                key
+        ) {
+
+            const fresh =
+                createEmptyTransportCycle();
+
+
+            saveTransportCycle(
+                fresh
+            );
+
+
+            return fresh;
+        }
+
+
+        return saved;
+    }
+
+
+    function saveTransportCycle(
+        cycle
+    ) {
+
+        if (
+            !cycle
+        ) {
+
+            return;
+        }
+
+
+        cycle.updatedAt =
+            new Date()
+                .toISOString();
+
+
+        localStorage.setItem(
+            STORAGE.TRANSPORT_CYCLE,
+            JSON.stringify(
+                cycle
+            )
+        );
+    }
+
+
+    function resetTransportCycleForNextTrip() {
+
+        const cycle =
+            createEmptyTransportCycle();
+
+
+        saveTransportCycle(
+            cycle
+        );
+
+
+        return cycle;
+    }
+
+
+    function findCurrentUnloadZone(
+        gps,
+        unloadingZones
+    ) {
+
+        if (
+            !isGpsGoodForTransport(
+                gps
+            )
+        ) {
+
+            return null;
+        }
+
+
+        return (
+            unloadingZones
+                .map(
+                    zone => ({
+                        zone,
+
+                        distance:
+                            getZoneDistance(
+                                gps,
+                                zone
+                            )
+                    })
+                )
+                .filter(
+                    item =>
+                        isInsideTransportZone(
+                            gps,
+                            item.zone
+                        )
+                )
+                .sort(
+                    (
+                        a,
+                        b
+                    ) =>
+                        a.distance -
+                        b.distance
+                )[0]
+                ?.zone
+            ||
+            null
+        );
+    }
+
+
+    function updateTransportCycleState(
+        gps
+    ) {
+
+        if (
+            !currentTask ||
+            currentTask.status !==
+                "working"
+        ) {
+
+            return;
+        }
+
+
+        const config =
+            getTransportTaskZoneConfig();
+
+
+        if (
+            !config.valid
+        ) {
+
+            return;
+        }
+
+
+        if (
+            !isGpsGoodForTransport(
+                gps
+            )
+        ) {
+
+            return;
+        }
+
+
+        const cycle =
+            getTransportCycle();
+
+
+        if (
+            !cycle
+        ) {
+
+            return;
+        }
+
+
+        const now =
+            new Date()
+                .toISOString();
+
+
+        /*
+         * 阶段1：
+         * 等待进入装载区。
+         *
+         * 连续在装载区稳定停留至少4秒，
+         * 才自动确认“已装车”。
+         */
+        if (
+            cycle.phase ===
+                "waiting_loading"
+        ) {
+
+            if (
+                isInsideTransportZone(
+                    gps,
+                    config.loadingZone
+                )
+            ) {
+
+                if (
+                    !cycle.loadingCandidateAt
+                ) {
+
+                    cycle.loadingCandidateAt =
+                        now;
+
+
+                    saveTransportCycle(
+                        cycle
+                    );
+
+
+                    return;
+                }
+
+
+                const elapsed =
+                    Date.now() -
+                    new Date(
+                        cycle.loadingCandidateAt
+                    )
+                    .getTime();
+
+
+                if (
+                    elapsed >=
+                        4000
+                ) {
+
+                    cycle.phase =
+                        "loaded_wait_departure";
+
+
+                    cycle.loadedAt =
+                        now;
+
+
+                    cycle.loadingGps = {
+                        latitude:
+                            gps.latitude,
+
+                        longitude:
+                            gps.longitude,
+
+                        accuracy:
+                            gps.accuracy,
+
+                        timestamp:
+                            gps.timestamp,
+
+                        distanceToCenter:
+                            Number(
+                                getZoneDistance(
+                                    gps,
+                                    config.loadingZone
+                                )
+                                .toFixed(1)
+                            )
+                    };
+
+
+                    cycle.loadingZoneId =
+                        config.loadingZone.zoneId ||
+                        "";
+
+
+                    cycle.loadingZoneName =
+                        config.loadingZone.name ||
+                        "";
+
+
+                    cycle.loadingCandidateAt =
+                        null;
+
+
+                    saveTransportCycle(
+                        cycle
+                    );
+                }
+
+
+            } else if (
+                cycle.loadingCandidateAt
+            ) {
+
+                cycle.loadingCandidateAt =
+                    null;
+
+
+                saveTransportCycle(
+                    cycle
+                );
+            }
+
+
+            return;
+        }
+
+
+        /*
+         * 阶段2：
+         * 已装车，等待明确驶离装载区。
+         *
+         * 连续在装载区外稳定至少4秒，
+         * 才确认车辆真正离开装载区。
+         */
+        if (
+            cycle.phase ===
+                "loaded_wait_departure"
+        ) {
+
+            if (
+                isClearlyOutsideTransportZone(
+                    gps,
+                    config.loadingZone
+                )
+            ) {
+
+                if (
+                    !cycle.departureCandidateAt
+                ) {
+
+                    cycle.departureCandidateAt =
+                        now;
+
+
+                    saveTransportCycle(
+                        cycle
+                    );
+
+
+                    return;
+                }
+
+
+                const elapsed =
+                    Date.now() -
+                    new Date(
+                        cycle.departureCandidateAt
+                    )
+                    .getTime();
+
+
+                if (
+                    elapsed >=
+                        4000
+                ) {
+
+                    cycle.phase =
+                        "enroute_unload";
+
+
+                    cycle.departedLoadingAt =
+                        now;
+
+
+                    cycle.departureCandidateAt =
+                        null;
+
+
+                    saveTransportCycle(
+                        cycle
+                    );
+                }
+
+
+            } else if (
+                cycle.departureCandidateAt
+            ) {
+
+                cycle.departureCandidateAt =
+                    null;
+
+
+                saveTransportCycle(
+                    cycle
+                );
+            }
+
+
+            return;
+        }
+
+
+        /*
+         * 阶段3：
+         * 已驶离装载区，前往任一“本任务允许卸载区”。
+         */
+        if (
+            cycle.phase ===
+                "enroute_unload"
+        ) {
+
+            const unloadZone =
+                findCurrentUnloadZone(
+                    gps,
+                    config.unloadingZones
+                );
+
+
+            if (
+                unloadZone
+            ) {
+
+                cycle.phase =
+                    "at_unloading";
+
+
+                cycle.arrivedUnloadAt =
+                    now;
+
+
+                cycle.unloadingZoneId =
+                    unloadZone.zoneId ||
+                    "";
+
+
+                cycle.unloadingZoneName =
+                    unloadZone.name ||
+                    "";
+
+
+                cycle.materialType =
+                    unloadZone.materialType ||
+                    "";
+
+
+                cycle.unloadingGps = {
+                    latitude:
+                        gps.latitude,
+
+                    longitude:
+                        gps.longitude,
+
+                    accuracy:
+                        gps.accuracy,
+
+                    timestamp:
+                        gps.timestamp,
+
+                    distanceToCenter:
+                        Number(
+                            getZoneDistance(
+                                gps,
+                                unloadZone
+                            )
+                            .toFixed(1)
+                        )
+                };
+
+
+                saveTransportCycle(
+                    cycle
+                );
+            }
+
+
+            return;
+        }
+
+
+        /*
+         * 阶段4：
+         * 已进入卸载区。
+         *
+         * 如果司机还没点击“完成一趟”就驶离，
+         * 自动退回运输中，防止在卸载区外补点完成。
+         */
+        if (
+            cycle.phase ===
+                "at_unloading"
+        ) {
+
+            const unloadZone =
+                config.unloadingZones
+                    .find(
+                        zone =>
+                            String(
+                                zone.zoneId ||
+                                ""
+                            ) ===
+                                String(
+                                    cycle.unloadingZoneId ||
+                                    ""
+                                )
+                    );
+
+
+            if (
+                !unloadZone ||
+                !isInsideTransportZone(
+                    gps,
+                    unloadZone
+                )
+            ) {
+
+                cycle.phase =
+                    "enroute_unload";
+
+
+                cycle.arrivedUnloadAt =
+                    null;
+
+
+                cycle.unloadingZoneId =
+                    "";
+
+
+                cycle.unloadingZoneName =
+                    "";
+
+
+                cycle.materialType =
+                    "";
+
+
+                cycle.unloadingGps =
+                    null;
+
+
+                saveTransportCycle(
+                    cycle
+                );
+            }
+        }
+    }
+
+
+    function ensureTransportCycleBox() {
+
+        if (
+            $("transportCycleBox")
+        ) {
+
+            return;
+        }
+
+
+        const equipmentCheckBox =
+            $("equipmentCheckBox");
+
+
+        if (
+            !equipmentCheckBox ||
+            !equipmentCheckBox.parentNode
+        ) {
+
+            return;
+        }
+
+
+        const box =
+            document.createElement(
+                "div"
+            );
+
+
+        box.id =
+            "transportCycleBox";
+
+
+        box.className =
+            "claim-box";
+
+
+        box.innerHTML = `
+            <div style="width:100%;">
+                <strong>
+                    📍 GPS运输闭环
+                </strong>
+
+                <p
+                    id="transportCycleText"
+                    style="margin-bottom:6px;"
+                >
+                    等待任务和GPS
+                </p>
+
+                <small
+                    id="transportCycleDetail"
+                    style="display:block;color:#64748b;line-height:1.55;"
+                >
+                </small>
+            </div>
+        `;
+
+
+        equipmentCheckBox.parentNode
+            .insertBefore(
+                box,
+                equipmentCheckBox
+            );
+    }
+
+
+    function renderTransportCycleStatus() {
+
+        ensureTransportCycleBox();
+
+
+        const box =
+            $("transportCycleBox");
+
+
+        const textBox =
+            $("transportCycleText");
+
+
+        const detail =
+            $("transportCycleDetail");
+
+
+        const button =
+            $("addTripButton");
+
+
+        if (
+            !box ||
+            !textBox ||
+            !detail
+        ) {
+
+            return;
+        }
+
+
+        if (
+            !currentTask
+        ) {
+
+            textBox.textContent =
+                "当前没有生产任务";
+
+
+            detail.textContent =
+                "";
+
+
+            if (
+                button
+            ) {
+
+                button.disabled =
+                    true;
+            }
+
+
+            return;
+        }
+
+
+        const config =
+            getTransportTaskZoneConfig();
+
+
+        if (
+            !config.valid
+        ) {
+
+            textBox.textContent =
+                "⚠️ GPS区域配置不完整";
+
+
+            detail.textContent =
+                config.reason +
+                "。请联系调度重新配置运输区域。";
+
+
+            if (
+                button
+            ) {
+
+                button.disabled =
+                    true;
+
+                button.textContent =
+                    "⚠️ 当前任务未配置GPS闭环区域";
+            }
+
+
+            return;
+        }
+
+
+        if (
+            currentTask.status !==
+                "working"
+        ) {
+
+            textBox.textContent =
+                "作业开始后自动识别装载区和卸载区";
+
+
+            detail.textContent =
+                "装载区：" +
+                (
+                    config.loadingZone.name ||
+                    "-"
+                ) +
+                "；允许卸载区：" +
+                config.unloadingZones
+                    .map(
+                        item =>
+                            (
+                                item.name ||
+                                "-"
+                            ) +
+                            "（" +
+                            (
+                                item.materialType ||
+                                "-"
+                            ) +
+                            "）"
+                    )
+                    .join("、");
+
+
+            return;
+        }
+
+
+        if (
+            !isGpsGoodForTransport(
+                latestGps
+            )
+        ) {
+
+            textBox.textContent =
+                "📡 等待有效GPS定位";
+
+
+            detail.textContent =
+                "GPS精度必须 ≤ 100 米，才能自动推进运输闭环。";
+
+
+            if (
+                button
+            ) {
+
+                button.disabled =
+                    true;
+
+                button.textContent =
+                    "📡 GPS精度不足";
+            }
+
+
+            return;
+        }
+
+
+        const cycle =
+            getTransportCycle();
+
+
+        if (
+            !cycle
+        ) {
+
+            return;
+        }
+
+
+        const loadingDistance =
+            getZoneDistance(
+                latestGps,
+                config.loadingZone
+            );
+
+
+        let unloadNearest =
+            null;
+
+
+        if (
+            config.unloadingZones.length
+        ) {
+
+            unloadNearest =
+                config.unloadingZones
+                    .map(
+                        zone => ({
+                            zone,
+
+                            distance:
+                                getZoneDistance(
+                                    latestGps,
+                                    zone
+                                )
+                        })
+                    )
+                    .sort(
+                        (
+                            a,
+                            b
+                        ) =>
+                            a.distance -
+                            b.distance
+                    )[0]
+                    ||
+                    null;
+        }
+
+
+        if (
+            cycle.phase ===
+                "waiting_loading"
+        ) {
+
+            const inside =
+                isInsideTransportZone(
+                    latestGps,
+                    config.loadingZone
+                );
+
+
+            textBox.textContent =
+                inside
+                    ? "⏳ 已进入装载区，正在稳定确认装车"
+                    : "① 请进入指定装载区";
+
+
+            detail.textContent =
+                "装载区：" +
+                (
+                    config.loadingZone.name ||
+                    "-"
+                ) +
+                "；距中心约 " +
+                (
+                    Number.isFinite(
+                        loadingDistance
+                    )
+                        ? Math.round(
+                            loadingDistance
+                          )
+                        : "-"
+                ) +
+                " 米";
+
+
+            if (
+                button
+            ) {
+
+                button.disabled =
+                    true;
+
+                button.textContent =
+                    inside
+                        ? "⏳ 正在确认装车..."
+                        : "📍 等待进入装载区";
+            }
+
+
+            return;
+        }
+
+
+        if (
+            cycle.phase ===
+                "loaded_wait_departure"
+        ) {
+
+            textBox.textContent =
+                "② ✅ 已自动确认装车，请驶离装载区";
+
+
+            detail.textContent =
+                "装车确认时间：" +
+                formatDateTime(
+                    cycle.loadedAt
+                );
+
+
+            if (
+                button
+            ) {
+
+                button.disabled =
+                    true;
+
+                button.textContent =
+                    "✅ 已装车 · 请驶离装载区";
+            }
+
+
+            return;
+        }
+
+
+        if (
+            cycle.phase ===
+                "enroute_unload"
+        ) {
+
+            textBox.textContent =
+                "③ 🚚 运输中，请前往允许卸载区";
+
+
+            detail.textContent =
+                unloadNearest
+                    ? "最近允许卸载区：" +
+                      (
+                          unloadNearest.zone.name ||
+                          "-"
+                      ) +
+                      "（" +
+                      (
+                          unloadNearest.zone.materialType ||
+                          "-"
+                      ) +
+                      "），距中心约 " +
+                      Math.round(
+                          unloadNearest.distance
+                      ) +
+                      " 米"
+                    : "等待进入允许卸载区";
+
+
+            if (
+                button
+            ) {
+
+                button.disabled =
+                    true;
+
+                button.textContent =
+                    "🚚 运输中 · 前往卸载区";
+            }
+
+
+            return;
+        }
+
+
+        if (
+            cycle.phase ===
+                "at_unloading"
+        ) {
+
+            textBox.textContent =
+                "④ ✅ 已到达允许卸载区，可以完成本趟";
+
+
+            detail.textContent =
+                "卸载区：" +
+                (
+                    cycle.unloadingZoneName ||
+                    "-"
+                ) +
+                "；类型：" +
+                (
+                    cycle.materialType ||
+                    "-"
+                ) +
+                "；点击下方按钮后会再次获取实时GPS复核。";
+
+
+            if (
+                button
+            ) {
+
+                button.disabled =
+                    false;
+
+                button.textContent =
+                    "✅ 到达" +
+                    (
+                        cycle.unloadingZoneName ||
+                        "卸载区"
+                    ) +
+                    " · 完成一趟";
+            }
+        }
+    }
+
+
+    function refreshTransportCycle() {
+
+        ensureTransportCycleBox();
+
+
+        if (
+            currentTask &&
+            currentTask.status ===
+                "working" &&
+            latestGps
+        ) {
+
+            updateTransportCycleState(
+                latestGps
+            );
+        }
+
+
+        renderTransportCycleStatus();
     }
 
 
@@ -2656,6 +4405,12 @@ document.addEventListener("DOMContentLoaded", function () {
         );
 
         renderGps();
+
+        updateTransportCycleState(
+            latestGps
+        );
+
+        renderTransportCycleStatus();
     }
 
 
@@ -2820,123 +4575,364 @@ document.addEventListener("DOMContentLoaded", function () {
 
         if (
             !currentTask ||
-            currentTask.status !== "working"
+            currentTask.status !==
+                "working"
         ) {
-            alert("请先开始作业。");
+
+            alert(
+                "请先开始作业。"
+            );
+
             return;
         }
+
 
         if (
             !requireCurrentVehicleOperational(
                 "记录运输趟次"
             )
         ) {
+
             return;
         }
+
 
         if (
             !requireEquipmentCheck(
                 "记录运输趟次"
             )
         ) {
+
             return;
         }
 
-        if (!currentTask.vehicleClaimed) {
-            alert("当前车辆尚未领取。");
+
+        if (
+            !currentTask.vehicleClaimed
+        ) {
+
+            alert(
+                "当前车辆尚未领取。"
+            );
+
             return;
         }
 
-        if (hasPendingVehicleChange()) {
-            alert("换车申请正在审批，暂时不能记录趟数。");
+
+        if (
+            hasPendingVehicleChange()
+        ) {
+
+            alert(
+                "换车申请正在审批，暂时不能记录趟数。"
+            );
+
             return;
         }
 
-        if (isOnApprovedLeaveNow()) {
-            alert("当前处于已批准请假时间，不能记录生产趟数。");
+
+        if (
+            isOnApprovedLeaveNow()
+        ) {
+
+            alert(
+                "当前处于已批准请假时间，不能记录生产趟数。"
+            );
+
             return;
         }
+
 
         const vehicle =
-            getVehicleNumber(currentTask);
+            getVehicleNumber(
+                currentTask
+            );
 
-        if (!vehicle) {
-            alert("当前没有有效车辆。");
+
+        if (
+            !vehicle
+        ) {
+
+            alert(
+                "当前没有有效车辆。"
+            );
+
             return;
         }
 
-        $("addTripButton").disabled = true;
-        $("addTripButton").textContent =
-            "📍 正在获取GPS...";
 
+        const config =
+            getTransportTaskZoneConfig();
+
+
+        if (
+            !config.valid
+        ) {
+
+            alert(
+                "当前任务不能完成GPS运输闭环。\n\n" +
+                config.reason +
+                "\n\n请联系调度重新配置装载区和允许卸载区。"
+            );
+
+            return;
+        }
+
+
+        const cycle =
+            getTransportCycle();
+
+
+        if (
+            !cycle ||
+            cycle.phase !==
+                "at_unloading"
+        ) {
+
+            alert(
+                "当前还没有完成运输闭环。\n\n" +
+                "必须按顺序完成：\n" +
+                "进入装载区 → 自动确认装车 → 驶离装载区 → 进入允许卸载区。"
+            );
+
+            renderTransportCycleStatus();
+
+            return;
+        }
+
+
+        const expectedUnloadZone =
+            config.unloadingZones
+                .find(
+                    zone =>
+                        String(
+                            zone.zoneId ||
+                            ""
+                        ) ===
+                            String(
+                                cycle.unloadingZoneId ||
+                                ""
+                            )
+                );
+
+
+        if (
+            !expectedUnloadZone
+        ) {
+
+            alert(
+                "当前卸载区域已经不在本任务允许范围内，请重新进入允许卸载区。"
+            );
+
+
+            cycle.phase =
+                "enroute_unload";
+
+
+            cycle.unloadingZoneId =
+                "";
+
+
+            cycle.unloadingZoneName =
+                "";
+
+
+            cycle.materialType =
+                "";
+
+
+            cycle.unloadingGps =
+                null;
+
+
+            saveTransportCycle(
+                cycle
+            );
+
+
+            renderTransportCycleStatus();
+
+            return;
+        }
+
+
+        $("addTripButton").disabled =
+            true;
+
+
+        $("addTripButton").textContent =
+            "📍 正在复核卸载区GPS...";
+
+
+        /*
+         * 最终点击时必须重新读取实时GPS。
+         * 不使用旧缓存位置完成一趟。
+         */
         const gps =
             await getFreshPosition();
 
-        let gpsStatus =
-            "GPS异常";
-
-        let dispatchConfirmation =
-            "pending";
-
-        let officialCountEligible =
-            false;
 
         if (
-            gps &&
-            Number(gps.accuracy) <= 100
+            !isGpsGoodForTransport(
+                gps
+            )
         ) {
 
-            gpsStatus =
-                "正常";
+            alert(
+                "本次实时GPS无法确认卸载区域。\n\n" +
+                "要求：GPS精度 ≤ 100 米。\n" +
+                "请等待定位稳定后重新点击。"
+            );
 
-            dispatchConfirmation =
-                "not_required";
 
-            officialCountEligible =
-                true;
+            resetTripButton();
 
-        } else if (gps) {
-
-            gpsStatus =
-                "精度较低";
+            return;
         }
 
-        if (!gps) {
 
-            const continueRecord =
-                confirm(
-                    "本次没有取得有效GPS位置。\n\n" +
-                    "是否仍然提交本趟？\n" +
-                    "提交后将进入调度GPS异常审核。"
-                );
+        if (
+            !isInsideTransportZone(
+                gps,
+                expectedUnloadZone
+            )
+        ) {
 
-            if (!continueRecord) {
+            cycle.phase =
+                "enroute_unload";
 
-                resetTripButton();
-                return;
-            }
+
+            cycle.arrivedUnloadAt =
+                null;
+
+
+            cycle.unloadingZoneId =
+                "";
+
+
+            cycle.unloadingZoneName =
+                "";
+
+
+            cycle.materialType =
+                "";
+
+
+            cycle.unloadingGps =
+                null;
+
+
+            saveTransportCycle(
+                cycle
+            );
+
+
+            latestGps =
+                gps;
+
+
+            localStorage.setItem(
+                STORAGE.GPS,
+                JSON.stringify(
+                    gps
+                )
+            );
+
+
+            renderGps();
+
+            alert(
+                "实时GPS显示车辆已经不在允许卸载区内。\n\n" +
+                "本趟尚未计数，请重新进入允许卸载区。"
+            );
+
+
+            resetTripButton();
+
+            return;
         }
+
+
+        /*
+         * 第二次防重：
+         * 同一运输闭环只允许保存一次。
+         */
+        if (
+            cycle.completedAt
+        ) {
+
+            alert(
+                "本次运输闭环已经完成，不能重复计数。"
+            );
+
+
+            resetTransportCycleForNextTrip();
+
+            resetTripButton();
+
+            return;
+        }
+
+
+        const now =
+            new Date()
+                .toISOString();
+
+
+        cycle.completedAt =
+            now;
+
+
+        cycle.unloadingGps = {
+            latitude:
+                gps.latitude,
+
+            longitude:
+                gps.longitude,
+
+            accuracy:
+                gps.accuracy,
+
+            timestamp:
+                gps.timestamp,
+
+            distanceToCenter:
+                Number(
+                    getZoneDistance(
+                        gps,
+                        expectedUnloadZone
+                    )
+                    .toFixed(1)
+                )
+        };
+
+
+        saveTransportCycle(
+            cycle
+        );
+
+
+        const tripId =
+            "TRIP_" +
+            Date.now();
+
 
         const record = {
 
             id:
-                "TRIP_" + Date.now(),
+                tripId,
 
-            tripId:
-                "TRIP_" + Date.now(),
+            tripId,
 
             taskId:
-                currentTask.taskId || "",
+                currentTask.taskId ||
+                "",
 
             dispatchTaskId:
                 currentTask.dispatchTaskId ||
                 currentTask.taskId ||
                 "",
 
-            /*
-             * V2.10.2M
-             * 每趟运输同时归属主任务 + 当前班次。
-             */
             shiftId:
                 currentTask.shiftId ||
                 "",
@@ -2946,10 +4942,13 @@ document.addEventListener("DOMContentLoaded", function () {
                 "",
 
             driverId:
-                profile.driverId || profile.personId || "",
+                profile.driverId ||
+                profile.personId ||
+                "",
 
             driverName:
-                profile.name || "",
+                profile.name ||
+                "",
 
             vehicleId:
                 currentTask.vehicleId ||
@@ -2974,93 +4973,238 @@ document.addEventListener("DOMContentLoaded", function () {
                 "",
 
             shift:
-                currentTask.shift || "",
+                currentTask.shift ||
+                "",
+
+            /*
+             * GPS区域闭环真实位置，
+             * 不再只保存任务文字。
+             */
+            loadingZoneId:
+                cycle.loadingZoneId ||
+                config.loadingZone.zoneId ||
+                "",
+
+            loadingZoneName:
+                cycle.loadingZoneName ||
+                config.loadingZone.name ||
+                "",
 
             loadingPoint:
-                currentTask.loadingPoint || "",
+                cycle.loadingZoneName ||
+                config.loadingZone.name ||
+                currentTask.loadingPoint ||
+                "",
+
+            unloadingZoneId:
+                expectedUnloadZone.zoneId ||
+                "",
+
+            unloadingZoneName:
+                expectedUnloadZone.name ||
+                "",
 
             unloadingPoint:
-                currentTask.unloadingPoint || "",
+                expectedUnloadZone.name ||
+                "",
+
+            materialType:
+                expectedUnloadZone.materialType ||
+                "",
+
+            material:
+                expectedUnloadZone.materialType ||
+                "",
+
+            loadedAt:
+                cycle.loadedAt ||
+                "",
+
+            departedLoadingAt:
+                cycle.departedLoadingAt ||
+                "",
+
+            arrivedUnloadAt:
+                cycle.arrivedUnloadAt ||
+                "",
 
             completedAt:
-                new Date().toISOString(),
+                now,
 
-            tripCount: 1,
+            unloadedAt:
+                now,
 
+            tripCount:
+                1,
+
+            /*
+             * 装载区GPS证据
+             */
+            loadingLatitude:
+                cycle.loadingGps?.latitude ??
+                null,
+
+            loadingLongitude:
+                cycle.loadingGps?.longitude ??
+                null,
+
+            loadingGpsAccuracy:
+                cycle.loadingGps?.accuracy ??
+                null,
+
+            loadingGpsTime:
+                cycle.loadingGps?.timestamp ??
+                null,
+
+            loadingDistanceToCenter:
+                cycle.loadingGps
+                    ?.distanceToCenter ??
+                null,
+
+            /*
+             * 卸载区GPS证据
+             */
             latitude:
-                gps?.latitude ?? null,
+                gps.latitude,
 
             longitude:
-                gps?.longitude ?? null,
+                gps.longitude,
 
             gpsAccuracy:
-                gps?.accuracy ?? null,
+                gps.accuracy,
 
             gpsTime:
-                gps?.timestamp ?? null,
+                gps.timestamp,
 
-            gpsStatus,
+            unloadingLatitude:
+                gps.latitude,
+
+            unloadingLongitude:
+                gps.longitude,
+
+            unloadingGpsAccuracy:
+                gps.accuracy,
+
+            unloadingGpsTime:
+                gps.timestamp,
+
+            unloadingDistanceToCenter:
+                cycle.unloadingGps
+                    ?.distanceToCenter ??
+                null,
+
+            gpsStatus:
+                "正常",
 
             dataSource:
-                "司机端GPS",
+                "司机端GPS区域闭环",
 
-            dispatchConfirmation,
+            transportValidation:
+                "gps_geofence_closed_loop",
 
-            officialCountEligible,
+            loadingValidated:
+                true,
+
+            unloadingValidated:
+                true,
+
+            manualOverride:
+                false,
+
+            dispatchConfirmation:
+                "not_required",
+
+            officialCountEligible:
+                true,
 
             abnormalType:
-                gpsStatus === "正常"
-                    ? ""
-                    : "GPS异常",
+                "",
 
             vehicleAuthorized:
                 true
         };
 
+
         const records =
             getTripRecords();
 
-        records.push(record);
 
-        saveTripRecords(records);
+        records.push(
+            record
+        );
 
-        if (gps) {
-            latestGps = gps;
 
-            localStorage.setItem(
-                STORAGE.GPS,
-                JSON.stringify(gps)
-            );
+        saveTripRecords(
+            records
+        );
 
-            renderGps();
-        }
+
+        latestGps =
+            gps;
+
+
+        localStorage.setItem(
+            STORAGE.GPS,
+            JSON.stringify(
+                gps
+            )
+        );
+
+
+        renderGps();
+
+
+        /*
+         * 本趟成功后立即开始下一趟闭环：
+         * 必须重新进入装载区，不能在卸载区连续点击计数。
+         */
+        resetTransportCycleForNextTrip();
+
 
         resetTripButton();
 
+
         refreshAll();
 
-        if (gpsStatus === "正常") {
 
-            alert("本趟已记录，GPS正常。");
-
-        } else {
-
-            alert(
-                "本趟已保存。\n" +
-                "GPS状态：" +
-                gpsStatus +
-                "\n等待调度审核。"
-            );
-        }
+        alert(
+            "本趟已完成并正式计数。\n\n" +
+            "装载区：" +
+            (
+                record.loadingPoint ||
+                "-"
+            ) +
+            "\n" +
+            "卸载区：" +
+            (
+                record.unloadingPoint ||
+                "-"
+            ) +
+            "\n" +
+            "运输类型：" +
+            (
+                record.materialType ||
+                "-"
+            )
+        );
     }
-
 
     function resetTripButton() {
 
-        $("addTripButton").disabled = false;
+        const button =
+            $("addTripButton");
 
-        $("addTripButton").textContent =
-            "🚚 完成一趟";
+
+        if (
+            button
+        ) {
+
+            button.disabled =
+                true;
+        }
+
+
+        renderTransportCycleStatus();
     }
 
 
