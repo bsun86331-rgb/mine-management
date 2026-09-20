@@ -453,7 +453,7 @@
                 </h1>
 
                 <p>
-                    Excavator Operator · V2.10.2N
+                    Excavator Operator · V2.10.2R
                 </p>
 
             </div>
@@ -762,7 +762,7 @@
 
 <footer>
 
-    矿山管理系统 · 挖机司机端 V2.10.2N
+    矿山管理系统 · 挖机司机端 V2.10.2R
 
 </footer>
 
@@ -1388,11 +1388,15 @@ function findCurrentTask() {
                     b
                 ) =>
                     new Date(
+                        b.updatedAt ||
                         b.publishedAt ||
+                        b.createdAt ||
                         0
                     ) -
                     new Date(
+                        a.updatedAt ||
                         a.publishedAt ||
+                        a.createdAt ||
                         0
                     )
             );
@@ -1403,7 +1407,77 @@ function findCurrentTask() {
         tasks
     ) {
 
-        const assignments =
+        /*
+         * V2.10.2R
+         *
+         * 先取得本任务当前 active 班次。
+         * 车队长在“修改本班绑定”保存后，
+         * dispatchShiftExecutions 和主任务 bindings
+         * 都会立即更新。
+         */
+        const activeShift =
+            getActiveShiftExecution(
+                task
+            );
+
+
+        const effectiveTask = {
+            ...task,
+
+            currentShiftId:
+                activeShift?.shiftId ||
+                task.currentShiftId ||
+                task.shiftId ||
+                "",
+
+            shiftId:
+                activeShift?.shiftId ||
+                task.currentShiftId ||
+                task.shiftId ||
+                "",
+
+            shift:
+                activeShift?.shift ||
+                task.shift ||
+                "",
+
+            shiftDate:
+                activeShift?.date ||
+                task.shiftDate ||
+                "",
+
+            bindings:
+                Array.isArray(
+                    activeShift?.bindings
+                )
+                    ? activeShift.bindings
+                    : (
+                        Array.isArray(
+                            task.bindings
+                        )
+                            ? task.bindings
+                            : []
+                    ),
+
+            driverAssignments:
+                Array.isArray(
+                    activeShift?.driverAssignments
+                )
+                    ? activeShift.driverAssignments
+                    : (
+                        Array.isArray(
+                            task.driverAssignments
+                        )
+                            ? task.driverAssignments
+                            : []
+                    )
+        };
+
+
+        /*
+         * 兼容旧版独立挖机司机绑定。
+         */
+        const legacyAssignments =
             Array.isArray(
                 task.excavatorDriverAssignments
             )
@@ -1411,8 +1485,8 @@ function findCurrentTask() {
                 : [];
 
 
-        const assignment =
-            assignments.find(
+        let assignment =
+            legacyAssignments.find(
                 item => {
 
                     const assignmentId =
@@ -1431,9 +1505,6 @@ function findCurrentTask() {
                         ).trim();
 
 
-                    /*
-                     * 优先人员ID
-                     */
                     if (
                         personId &&
                         assignmentId
@@ -1446,10 +1517,6 @@ function findCurrentTask() {
                     }
 
 
-                    /*
-                     * 老数据兼容：
-                     * ID缺失时按姓名
-                     */
                     if (
                         personName &&
                         assignmentName
@@ -1467,12 +1534,204 @@ function findCurrentTask() {
             );
 
 
+        /*
+         * 新版：
+         * 直接从当前班次 bindings 中读取
+         * 挖机司机与挖机的绑定关系。
+         */
+        if (
+            !assignment
+        ) {
+
+            const binding =
+                effectiveTask.bindings
+                    .find(
+                        item => {
+
+                            const driverId =
+                                String(
+                                    item.excavatorDriverId ||
+                                    item.operatorId ||
+                                    ""
+                                );
+
+
+                            const driverName =
+                                String(
+                                    item.excavatorDriverName ||
+                                    item.operatorName ||
+                                    ""
+                                ).trim();
+
+
+                            if (
+                                personId &&
+                                driverId
+                            ) {
+
+                                return (
+                                    personId ===
+                                    driverId
+                                );
+                            }
+
+
+                            if (
+                                personName &&
+                                driverName
+                            ) {
+
+                                return (
+                                    personName ===
+                                    driverName
+                                );
+                            }
+
+
+                            return false;
+                        }
+                    );
+
+
+            if (
+                binding
+            ) {
+
+                assignment = {
+
+                    driverId:
+                        binding.excavatorDriverId ||
+                        binding.operatorId ||
+                        personId ||
+                        "",
+
+                    personId:
+                        binding.excavatorDriverId ||
+                        binding.operatorId ||
+                        personId ||
+                        "",
+
+                    driverName:
+                        binding.excavatorDriverName ||
+                        binding.operatorName ||
+                        personName ||
+                        "",
+
+                    personName:
+                        binding.excavatorDriverName ||
+                        binding.operatorName ||
+                        personName ||
+                        "",
+
+                    excavatorId:
+                        binding.excavatorId ||
+                        binding.excavatorNumber ||
+                        binding.excavator ||
+                        "",
+
+                    excavatorNumber:
+                        binding.excavatorNumber ||
+                        binding.excavatorId ||
+                        binding.excavator ||
+                        "",
+
+                    shiftId:
+                        effectiveTask.shiftId ||
+                        "",
+
+                    shift:
+                        effectiveTask.shift ||
+                        "",
+
+                    shiftDate:
+                        effectiveTask.shiftDate ||
+                        "",
+
+                    source:
+                        "current_shift_bindings"
+                };
+            }
+        }
+
+
         if (
             assignment
         ) {
 
+            /*
+             * 如果旧 excavatorDriverAssignments 找到了人，
+             * 但当前班次 bindings 已经明确把此人从该挖机移走，
+             * 优先以当前班次绑定为准。
+             */
+            if (
+                effectiveTask.bindings.length
+            ) {
+
+                const currentBindingForPerson =
+                    effectiveTask.bindings
+                        .find(
+                            item => {
+
+                                const driverId =
+                                    String(
+                                        item.excavatorDriverId ||
+                                        item.operatorId ||
+                                        ""
+                                    );
+
+
+                                const driverName =
+                                    String(
+                                        item.excavatorDriverName ||
+                                        item.operatorName ||
+                                        ""
+                                    ).trim();
+
+
+                                return (
+                                    (
+                                        personId &&
+                                        driverId &&
+                                        personId ===
+                                            driverId
+                                    )
+                                    ||
+                                    (
+                                        personName &&
+                                        driverName &&
+                                        personName ===
+                                            driverName
+                                    )
+                                );
+                            }
+                        );
+
+
+                if (
+                    !currentBindingForPerson &&
+                    (
+                        effectiveTask.bindings
+                            .some(
+                                item =>
+                                    item.excavatorDriverId ||
+                                    item.operatorId ||
+                                    item.excavatorDriverName ||
+                                    item.operatorName
+                            )
+                    )
+                ) {
+
+                    /*
+                     * 当前班次已经采用新版绑定，
+                     * 但此司机不在里面：说明已被车队长移出本班。
+                     */
+                    continue;
+                }
+            }
+
+
             currentTask =
-                task;
+                effectiveTask;
 
 
             currentExcavatorAssignment =
@@ -1485,10 +1744,8 @@ function findCurrentTask() {
 }
 
 
-
-
 /* =========================================================
-   V2.10.2N
+   V2.10.2R
    班次执行辅助
 ========================================================= */
 
@@ -1688,6 +1945,33 @@ function syncCurrentTaskShiftContext() {
             activeShift.date ||
             currentTask.shiftDate ||
             "";
+
+
+        /*
+         * V2.10.2R
+         * 同一个 shiftId 内如果车队长修改了绑定，
+         * 挖机端每次5秒刷新都会同步最新版。
+         */
+        if (
+            Array.isArray(
+                activeShift.bindings
+            )
+        ) {
+
+            currentTask.bindings =
+                activeShift.bindings;
+        }
+
+
+        if (
+            Array.isArray(
+                activeShift.driverAssignments
+            )
+        ) {
+
+            currentTask.driverAssignments =
+                activeShift.driverAssignments;
+        }
     }
 }
 
@@ -1919,6 +2203,25 @@ function renderCurrentTask() {
             </div>
 
 
+            <div class="task-note">
+
+                <strong>
+                    本班绑定同步
+                </strong>
+
+                <br>
+
+                当前数据来自：
+                ${escapeHtml(
+                    currentTask.shiftId ||
+                    "旧任务兼容"
+                )}
+
+                · 页面每5秒自动核对调度端最新绑定
+
+            </div>
+
+
             ${
                 currentTask.remark
 
@@ -1953,7 +2256,7 @@ function renderCurrentTask() {
         "block";
 
     /*
-     * V2.10.2N 班次信息
+     * V2.10.2R 班次信息
      */
     let shiftBox =
         document.getElementById(
@@ -2026,6 +2329,13 @@ function findExcavatorBinding(
     excavatorId
 ) {
 
+    const target =
+        String(
+            excavatorId ||
+            ""
+        );
+
+
     return (
         (
             task.bindings ||
@@ -2035,18 +2345,16 @@ function findExcavatorBinding(
                 item =>
                     String(
                         item.excavatorId ||
+                        item.excavatorNumber ||
+                        item.excavator ||
                         ""
                     ) ===
-                    String(
-                        excavatorId ||
-                        ""
-                    )
+                    target
             )
         ||
         null
     );
 }
-
 
 
 /* =========================================================
