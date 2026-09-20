@@ -453,7 +453,7 @@
                 </h1>
 
                 <p>
-                    Excavator Operator · V2.10.2F
+                    Excavator Operator · V2.10.2N
                 </p>
 
             </div>
@@ -674,6 +674,20 @@
         <div class="summary-grid" style="margin-top:12px;">
 
             <div class="info-box">
+                <span>本班装车数</span>
+                <strong id="excavatorShiftTripCount">0</strong>
+            </div>
+
+            <div class="info-box">
+                <span>主任务累计车数</span>
+                <strong id="excavatorMasterTaskTripCount">0</strong>
+            </div>
+
+        </div>
+
+        <div class="summary-grid" style="margin-top:12px;">
+
+            <div class="info-box">
                 <span>煤车数</span>
                 <strong id="excavatorCoalTripCount">0</strong>
             </div>
@@ -748,7 +762,7 @@
 
 <footer>
 
-    矿山管理系统 · 挖机司机端 V2.10.2F
+    矿山管理系统 · 挖机司机端 V2.10.2N
 
 </footer>
 
@@ -774,7 +788,10 @@ const STORAGE = {
         "tripRecords",
 
     LEGACY_TRIPS:
-        "driverTripRecords"
+        "driverTripRecords",
+
+    SHIFT_EXECUTIONS:
+        "dispatchShiftExecutions"
 };
 
 
@@ -872,6 +889,9 @@ function refreshAll() {
 
 
     findCurrentTask();
+
+
+    syncCurrentTaskShiftContext();
 
 
     renderCurrentTask();
@@ -1466,6 +1486,212 @@ function findCurrentTask() {
 
 
 
+
+/* =========================================================
+   V2.10.2N
+   班次执行辅助
+========================================================= */
+
+function getShiftExecutions() {
+
+    return readArray(
+        STORAGE.SHIFT_EXECUTIONS
+    );
+}
+
+
+function getTaskIdentifier(
+    task
+) {
+
+    return String(
+
+        task?.taskId ||
+
+        task?.dispatchTaskId ||
+
+        task?.id ||
+
+        ""
+
+    );
+}
+
+
+function getCurrentShiftIdForTask(
+    task
+) {
+
+    return String(
+
+        task?.currentShiftId ||
+
+        task?.shiftId ||
+
+        ""
+
+    );
+}
+
+
+function getActiveShiftExecution(
+    task
+) {
+
+    const taskId =
+        getTaskIdentifier(
+            task
+        );
+
+
+    if (
+        !taskId
+    ) {
+
+        return null;
+    }
+
+
+    const currentShiftId =
+        getCurrentShiftIdForTask(
+            task
+        );
+
+
+    const records =
+        getShiftExecutions();
+
+
+    if (
+        currentShiftId
+    ) {
+
+        const direct =
+            records.find(
+                item =>
+                    String(
+                        item.shiftId ||
+                        ""
+                    ) ===
+                        currentShiftId
+            );
+
+
+        if (
+            direct
+        ) {
+
+            return direct;
+        }
+
+    }
+
+
+    return records
+        .filter(
+            item =>
+                String(
+                    item.taskId ||
+                    ""
+                ) ===
+                    taskId &&
+                item.status ===
+                    "active"
+        )
+        .sort(
+            (a,b) =>
+                new Date(
+                    b.startedAt ||
+                    b.createdAt ||
+                    0
+                ) -
+                new Date(
+                    a.startedAt ||
+                    a.createdAt ||
+                    0
+                )
+        )[0] ||
+        null;
+}
+
+
+function tripBelongsToCurrentShift(
+    trip,
+    task
+) {
+
+    const currentShiftId =
+        getCurrentShiftIdForTask(
+            task
+        );
+
+
+    /*
+     * 新版数据：
+     * 严格按 shiftId 分班统计。
+     */
+    if (
+        currentShiftId
+    ) {
+
+        return String(
+            trip?.shiftId ||
+            ""
+        ) ===
+            currentShiftId;
+    }
+
+
+    /*
+     * 历史旧数据没有 shiftId，
+     * 继续按 taskId 兼容。
+     */
+    return true;
+}
+
+
+
+function syncCurrentTaskShiftContext() {
+
+    if (
+        !currentTask
+    ) {
+
+        return;
+    }
+
+
+    const activeShift =
+        getActiveShiftExecution(
+            currentTask
+        );
+
+
+    if (
+        activeShift
+    ) {
+
+        currentTask.shiftId =
+            activeShift.shiftId ||
+            currentTask.shiftId ||
+            "";
+
+        currentTask.currentShiftId =
+            currentTask.shiftId;
+
+        currentTask.shift =
+            activeShift.shift ||
+            currentTask.shift ||
+            "";
+
+        currentTask.shiftDate =
+            activeShift.date ||
+            currentTask.shiftDate ||
+            "";
+    }
+}
+
+
 /* =========================================================
    当前任务显示
 ========================================================= */
@@ -1725,6 +1951,68 @@ function renderCurrentTask() {
         "tripSection"
     ).style.display =
         "block";
+
+    /*
+     * V2.10.2N 班次信息
+     */
+    let shiftBox =
+        document.getElementById(
+            "excavatorCurrentShift"
+        );
+
+
+    if (
+        !shiftBox &&
+        currentTask
+    ) {
+
+        shiftBox =
+            document.createElement(
+                "div"
+            );
+
+        shiftBox.id =
+            "excavatorCurrentShift";
+
+        shiftBox.className =
+            "info-box";
+
+        const target =
+            document.getElementById(
+                "currentTaskArea"
+            ) ||
+            document.getElementById(
+                "taskArea"
+            );
+
+        target?.parentElement
+            ?.appendChild(
+                shiftBox
+            );
+    }
+
+
+    if (
+        shiftBox
+    ) {
+
+        shiftBox.innerHTML =
+            "<span>当前班次</span>" +
+            "<strong>" +
+            (
+                currentTask?.shift ||
+                "-"
+            ) +
+            "</strong>" +
+            "<small>" +
+            (
+                currentTask?.shiftId ||
+                currentTask?.currentShiftId ||
+                ""
+            ) +
+            "</small>";
+    }
+
 }
 
 
@@ -1821,6 +2109,13 @@ function getValidTaskTrips(
     return getTaskTrips(
         task
     )
+        .filter(
+            trip =>
+                tripBelongsToCurrentShift(
+                    trip,
+                    task
+                )
+        )
         .filter(
             trip =>
 
@@ -2331,6 +2626,52 @@ function renderTripStatistics() {
     setText(
         "totalTripCount",
         stats.total
+    );
+
+    /*
+     * 本班车数 = 当前 shiftId 的有效趟次
+     */
+    setText(
+        "excavatorShiftTripCount",
+        stats.total
+    );
+
+
+    /*
+     * 主任务累计 = 同 taskId 下全部班次有效趟次
+     */
+    const masterTaskId =
+        getTaskIdentifier(
+            currentTask
+        );
+
+
+    const masterTotal =
+        getTrips()
+            .filter(
+                trip =>
+                    String(
+                        trip.taskId ||
+                        trip.dispatchTaskId ||
+                        ""
+                    ) ===
+                        masterTaskId
+            )
+            .filter(
+                trip =>
+                    trip.status !==
+                        "cancelled" &&
+                    trip.dispatchConfirmation !==
+                        "rejected" &&
+                    trip.officialCountEligible !==
+                        false
+            )
+            .length;
+
+
+    setText(
+        "excavatorMasterTaskTripCount",
+        masterTotal
     );
 
 
