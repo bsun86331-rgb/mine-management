@@ -530,7 +530,7 @@ footer {
             </h1>
 
             <p>
-                Workshop Maintenance · V2.10.3B
+                Workshop Maintenance · V2.10.3C
             </p>
 
         </div>
@@ -1112,6 +1112,122 @@ footer {
         <div>
 
             <h2>
+                🚜 系统设备汇总
+            </h2>
+
+            <p>
+                自动汇总设备档案、生产任务、班次绑定、设备检查和历史读数中的设备
+            </p>
+
+        </div>
+
+        <span class="badge blue">
+            自动识别
+        </span>
+
+    </div>
+
+
+    <div class="summary-grid">
+
+        <div class="summary-card">
+
+            <span>
+                系统已识别设备
+            </span>
+
+            <strong id="maintenanceDetectedEquipmentCount">
+                0
+            </strong>
+
+        </div>
+
+
+        <div class="summary-card">
+
+            <span>
+                已配置保养参数
+            </span>
+
+            <strong
+                id="maintenanceConfiguredEquipmentCount"
+                style="color:#166534;"
+            >
+                0
+            </strong>
+
+        </div>
+
+
+        <div class="summary-card">
+
+            <span>
+                待配置设备
+            </span>
+
+            <strong
+                id="maintenanceUnconfiguredEquipmentCount"
+                style="color:#b45309;"
+            >
+                0
+            </strong>
+
+        </div>
+
+
+        <div class="summary-card">
+
+            <span>
+                识别规则
+            </span>
+
+            <strong style="font-size:15px;">
+                挖机 h / 其他 km
+            </strong>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+<section class="card">
+
+    <div class="section-title">
+
+        <div>
+
+            <h2>
+                📝 待配置保养参数设备
+            </h2>
+
+            <p>
+                不需要手工重新输入设备编号，点击“配置”后只补充上次保养值、保养周期和提前预警值
+            </p>
+
+        </div>
+
+    </div>
+
+
+    <div
+        id="maintenanceUnconfiguredEquipmentList"
+        class="record-list"
+    >
+    </div>
+
+</section>
+
+
+
+<section class="card">
+
+    <div class="section-title">
+
+        <div>
+
+            <h2>
                 ⚙️ 保养周期设置
             </h2>
 
@@ -1487,6 +1603,12 @@ footer {
 
         <br>
 
+        系统会自动汇总已有设备，
+        未配置设备集中进入“待配置保养参数设备”列表，
+        不需要再次手工录入设备编号。
+
+        <br>
+
         挖机按小时数 h 计算，
         其他车辆 / 辅助车辆按公里数 km 计算。
 
@@ -1539,7 +1661,7 @@ footer {
 
 <footer>
 
-矿山管理系统 · 修理厂维修管理 V2.10.3B
+矿山管理系统 · 修理厂维修管理 V2.10.3C
 
 </footer>
 
@@ -2768,6 +2890,8 @@ function renderAll() {
     renderInspection();
 
     renderMaintenanceAlerts();
+
+    renderMaintenanceEquipmentBootstrap();
 
     renderMaintenanceSettingEquipmentOptions();
 
@@ -5216,6 +5340,881 @@ function getMaintenanceUnitByType(
 }
 
 
+function normalizeMaintenanceEquipmentType(
+    type
+) {
+
+    const value =
+        String(
+            type ||
+            ""
+        )
+        .trim();
+
+
+    const map = {
+
+        "挖掘机":
+            "挖机",
+
+        "卡车":
+            "汽车",
+
+        "运输车":
+            "汽车",
+
+        "宽体车":
+            "汽车",
+
+        "装载机":
+            "铲车",
+
+        "维修车辆":
+            "维修车",
+
+        "其他设备":
+            "其他车辆",
+
+        "其他辅助车辆":
+            "其他车辆"
+    };
+
+
+    return (
+        map[value] ||
+        value
+    );
+}
+
+
+function collectSystemMaintenanceEquipment() {
+
+    const equipmentMap =
+        new Map();
+
+
+    function register(
+        number,
+        type,
+        source
+    ) {
+
+        const id =
+            String(
+                number ||
+                ""
+            )
+            .trim();
+
+
+        if (
+            !id ||
+            id ===
+                "-" ||
+            id.length >
+                80
+        ) {
+
+            return;
+        }
+
+
+        const normalizedType =
+            normalizeMaintenanceEquipmentType(
+                type
+            );
+
+
+        const existing =
+            equipmentMap.get(
+                id
+            );
+
+
+        if (
+            existing
+        ) {
+
+            if (
+                !existing.type &&
+                normalizedType
+            ) {
+
+                existing.type =
+                    normalizedType;
+            }
+
+
+            if (
+                source &&
+                !existing.sources.includes(
+                    source
+                )
+            ) {
+
+                existing.sources.push(
+                    source
+                );
+            }
+
+
+            return;
+        }
+
+
+        equipmentMap.set(
+            id,
+            {
+                id,
+
+                number:
+                    id,
+
+                type:
+                    normalizedType,
+
+                sources:
+                    source
+                        ? [
+                            source
+                        ]
+                        : []
+            }
+        );
+    }
+
+
+    function scanObject(
+        value,
+        source,
+        depth = 0
+    ) {
+
+        if (
+            value == null ||
+            depth >
+                4
+        ) {
+
+            return;
+        }
+
+
+        if (
+            Array.isArray(
+                value
+            )
+        ) {
+
+            value.forEach(
+                item =>
+                    scanObject(
+                        item,
+                        source,
+                        depth +
+                            1
+                    )
+            );
+
+
+            return;
+        }
+
+
+        if (
+            typeof value !==
+                "object"
+        ) {
+
+            return;
+        }
+
+
+        const equipmentType =
+            value.equipmentType ||
+            value.vehicleType ||
+            value.machineType ||
+            value.type ||
+            "";
+
+
+        if (
+            value.equipmentNumber
+        ) {
+
+            register(
+                value.equipmentNumber,
+                equipmentType,
+                source
+            );
+        }
+
+
+        if (
+            value.vehicleNumber
+        ) {
+
+            register(
+                value.vehicleNumber,
+                equipmentType ||
+                    "汽车",
+                source
+            );
+        }
+
+
+        if (
+            value.truckNumber
+        ) {
+
+            register(
+                value.truckNumber,
+                "汽车",
+                source
+            );
+        }
+
+
+        if (
+            value.excavatorNumber
+        ) {
+
+            register(
+                value.excavatorNumber,
+                "挖机",
+                source
+            );
+        }
+
+
+        /*
+         * 有类型信息但没有编号字段时，
+         * 兼容设备档案可能只保存 equipmentId。
+         */
+        if (
+            !value.equipmentNumber &&
+            value.equipmentId &&
+            equipmentType
+        ) {
+
+            register(
+                value.equipmentId,
+                equipmentType,
+                source
+            );
+        }
+
+
+        if (
+            !value.vehicleNumber &&
+            value.vehicleId &&
+            (
+                value.driverId ||
+                value.driverName ||
+                value.vehicleType ||
+                value.equipmentType
+            )
+        ) {
+
+            register(
+                value.vehicleId,
+                equipmentType ||
+                    "汽车",
+                source
+            );
+        }
+
+
+        if (
+            !value.excavatorNumber &&
+            value.excavatorId
+        ) {
+
+            register(
+                value.excavatorId,
+                "挖机",
+                source
+            );
+        }
+
+
+        [
+            ...(
+                Array.isArray(
+                    value.truckIds
+                )
+                    ? value.truckIds
+                    : []
+            ),
+
+            ...(
+                Array.isArray(
+                    value.vehicleIds
+                )
+                    ? value.vehicleIds
+                    : []
+            )
+        ]
+            .filter(
+                Boolean
+            )
+            .forEach(
+                id =>
+                    register(
+                        id,
+                        "汽车",
+                        source
+                    )
+            );
+
+
+        /*
+         * 继续扫描常见嵌套结构。
+         * 不扫描照片 / base64 等大字段。
+         */
+        [
+            "bindings",
+            "driverAssignments",
+            "excavatorDriverAssignments",
+            "vehicles",
+            "equipment",
+            "equipmentList",
+            "records",
+            "items"
+        ]
+            .forEach(
+                key => {
+
+                    if (
+                        value[key]
+                    ) {
+
+                        scanObject(
+                            value[key],
+                            source,
+                            depth +
+                                1
+                        );
+                    }
+                }
+            );
+    }
+
+
+    /*
+     * 1. 当前保养、读数、维修、检查数据
+     */
+    [
+        [
+            getMeterReadings(),
+            "设备读数"
+        ],
+
+        [
+            getMaintenanceSettings(),
+            "保养设置"
+        ],
+
+        [
+            getRequests(),
+            "维修记录"
+        ],
+
+        [
+            readArray(
+                "equipmentUsageRecords"
+            ),
+            "设备使用"
+        ],
+
+        [
+            readArray(
+                "equipmentUsageChecks"
+            ),
+            "设备检查"
+        ],
+
+        [
+            readArray(
+                "dispatchPublishedTasks"
+            ),
+            "生产任务"
+        ],
+
+        [
+            readArray(
+                "dispatchShiftExecutions"
+            ),
+            "班次绑定"
+        ]
+    ]
+        .forEach(
+            pair =>
+                scanObject(
+                    pair[0],
+                    pair[1]
+                )
+        );
+
+
+    /*
+     * 2. 辅助车辆端本机车辆档案
+     */
+    scanObject(
+        readJson(
+            "auxiliaryVehicleProfile",
+            null
+        ),
+        "辅助车辆档案"
+    );
+
+
+    /*
+     * 3. 自动发现其他设备档案存储。
+     * 只检查名称明确与设备/车辆有关的 localStorage，
+     * 避免读取照片等无关大数据。
+     */
+    for (
+        let index = 0;
+        index <
+            localStorage.length;
+        index++
+    ) {
+
+        const key =
+            localStorage.key(
+                index
+            );
+
+
+        if (
+            !key ||
+            !/equipment|vehicle|truck|excavator|设备|车辆/i.test(
+                key
+            )
+        ) {
+
+            continue;
+        }
+
+
+        if (
+            [
+                STORAGE.METER_READINGS,
+                STORAGE.MAINTENANCE_SETTINGS,
+                STORAGE.MAINTENANCE_ALERTS,
+                STORAGE.MAINTENANCE_RECORDS,
+                "equipmentUsageRecords",
+                "equipmentUsageChecks",
+                "auxiliaryVehicleProfile"
+            ]
+            .includes(
+                key
+            )
+        ) {
+
+            continue;
+        }
+
+
+        try {
+
+            const raw =
+                localStorage.getItem(
+                    key
+                );
+
+
+            if (
+                !raw ||
+                raw.length >
+                    1500000
+            ) {
+
+                continue;
+            }
+
+
+            scanObject(
+                JSON.parse(
+                    raw
+                ),
+                "设备档案"
+            );
+
+
+        } catch (
+            error
+        ) {
+
+            /*
+             * 非 JSON 存储直接跳过。
+             */
+        }
+    }
+
+
+    return [
+        ...equipmentMap.values()
+    ]
+        .sort(
+            (
+                a,
+                b
+            ) =>
+                String(
+                    a.number
+                )
+                .localeCompare(
+                    String(
+                        b.number
+                    ),
+                    "zh-CN",
+                    {
+                        numeric:
+                            true
+                    }
+                )
+        );
+}
+
+
+function getUnconfiguredMaintenanceEquipment() {
+
+    const configured =
+        new Set(
+            getMaintenanceSettings()
+                .map(
+                    item =>
+                        String(
+                            item.equipmentId ||
+                            item.equipmentNumber ||
+                            ""
+                        )
+                )
+                .filter(
+                    Boolean
+                )
+        );
+
+
+    return collectSystemMaintenanceEquipment()
+        .filter(
+            item =>
+                !configured.has(
+                    String(
+                        item.id
+                    )
+                )
+        );
+}
+
+
+function renderMaintenanceEquipmentBootstrap() {
+
+    const all =
+        collectSystemMaintenanceEquipment();
+
+
+    const settings =
+        getMaintenanceSettings();
+
+
+    const configured =
+        new Set(
+            settings
+                .map(
+                    item =>
+                        String(
+                            item.equipmentId ||
+                            item.equipmentNumber ||
+                            ""
+                        )
+                )
+                .filter(
+                    Boolean
+                )
+        );
+
+
+    const unconfigured =
+        all.filter(
+            item =>
+                !configured.has(
+                    String(
+                        item.id
+                    )
+                )
+        );
+
+
+    setText(
+        "maintenanceDetectedEquipmentCount",
+        all.length
+    );
+
+
+    setText(
+        "maintenanceConfiguredEquipmentCount",
+        all.filter(
+            item =>
+                configured.has(
+                    String(
+                        item.id
+                    )
+                )
+        ).length
+    );
+
+
+    setText(
+        "maintenanceUnconfiguredEquipmentCount",
+        unconfigured.length
+    );
+
+
+    const box =
+        document.getElementById(
+            "maintenanceUnconfiguredEquipmentList"
+        );
+
+
+    if (
+        !box
+    ) {
+
+        return;
+    }
+
+
+    if (
+        !unconfigured.length
+    ) {
+
+        box.innerHTML = `
+
+            <div class="empty">
+
+                ${
+                    all.length
+                        ? "当前已识别设备都已配置保养参数"
+                        : "暂未识别到设备。设备档案、生产任务或设备使用记录产生后会自动显示。"
+                }
+
+            </div>
+        `;
+
+
+        return;
+    }
+
+
+    box.innerHTML =
+        unconfigured
+            .map(
+                item => {
+
+                    const inferredType =
+                        item.type ||
+                        "其他车辆";
+
+
+                    const unit =
+                        getMaintenanceUnitByType(
+                            inferredType
+                        );
+
+
+                    const latest =
+                        getLatestEquipmentMeter(
+                            item.id
+                        );
+
+
+                    return `
+
+                    <div class="record-card">
+
+                        <div class="record-top">
+
+                            <strong>
+                                🚜
+                                ${escapeHtml(
+                                    item.number
+                                )}
+                            </strong>
+
+
+                            <span class="badge yellow">
+                                待配置
+                            </span>
+
+                        </div>
+
+
+                        <div class="record-info">
+
+                            设备类型：
+                            ${escapeHtml(
+                                inferredType
+                            )}
+
+                            <br>
+
+                            计量方式：
+                            ${
+                                isExcavatorMaintenanceType(
+                                    inferredType
+                                )
+                                    ? "小时数 h"
+                                    : "公里数 km"
+                            }
+
+                            <br>
+
+                            最新读数：
+                            ${
+                                latest
+                                    ? Number(
+                                        latest.reading ||
+                                        0
+                                    ).toFixed(1) +
+                                      " " +
+                                      escapeHtml(
+                                          latest.unit ||
+                                          unit
+                                      )
+                                    : "暂无"
+                            }
+
+                            <br>
+
+                            数据来源：
+                            ${escapeHtml(
+                                item.sources
+                                    .join(
+                                        " / "
+                                    ) ||
+                                "-"
+                            )}
+
+                        </div>
+
+
+                        <div class="actions">
+
+                            <button
+                                type="button"
+                                class="primary-btn"
+                                onclick="configureDetectedMaintenanceEquipment('${escapeJs(
+                                    item.id
+                                )}')"
+                            >
+                                ⚙️ 配置保养参数
+                            </button>
+
+                        </div>
+
+                    </div>
+                    `;
+                }
+            )
+            .join(
+                ""
+            );
+}
+
+
+function configureDetectedMaintenanceEquipment(
+    equipmentId
+) {
+
+    const item =
+        collectSystemMaintenanceEquipment()
+            .find(
+                record =>
+                    String(
+                        record.id
+                    ) ===
+                        String(
+                            equipmentId
+                        )
+            );
+
+
+    if (
+        !item
+    ) {
+
+        return;
+    }
+
+
+    const type =
+        normalizeMaintenanceEquipmentType(
+            item.type ||
+            "其他车辆"
+        );
+
+
+    document.getElementById(
+        "maintenanceSettingEquipmentNumber"
+    ).value =
+        item.number;
+
+
+    document.getElementById(
+        "maintenanceSettingEquipmentType"
+    ).value =
+        [
+            ...document.getElementById(
+                "maintenanceSettingEquipmentType"
+            ).options
+        ]
+        .some(
+            option =>
+                option.value ===
+                    type
+        )
+            ? type
+            : "其他车辆";
+
+
+    document.getElementById(
+        "maintenanceSettingLastReading"
+    ).value =
+        "";
+
+
+    document.getElementById(
+        "maintenanceSettingInterval"
+    ).value =
+        "";
+
+
+    document.getElementById(
+        "maintenanceSettingWarning"
+    ).value =
+        "";
+
+
+    refreshMaintenanceSettingUnit();
+
+
+    document.getElementById(
+        "maintenanceSettingEquipmentNumber"
+    )
+    ?.scrollIntoView({
+        behavior:
+            "smooth",
+
+        block:
+            "center"
+    });
+}
+
+
+
 function renderMaintenanceSettingEquipmentOptions() {
 
     const select =
@@ -5236,122 +6235,15 @@ function renderMaintenanceSettingEquipmentOptions() {
         select.value;
 
 
-    const equipmentMap =
-        new Map();
-
-
-    getMeterReadings()
-        .forEach(
-            item => {
-
-                const id =
-                    String(
-                        item.equipmentId ||
-                        item.equipmentNumber ||
-                        ""
-                    );
-
-
-                if (
-                    !id
-                ) {
-
-                    return;
-                }
-
-
-                const type =
-                    item.equipmentType ||
-                    "";
-
-
-                if (
-                    !equipmentMap.has(
-                        id
-                    )
-                ) {
-
-                    equipmentMap.set(
-                        id,
-                        {
-                            id,
-
-                            number:
-                                item.equipmentNumber ||
-                                id,
-
-                            type
-                        }
-                    );
-                }
-            }
-        );
-
-
-    getMaintenanceSettings()
-        .forEach(
-            item => {
-
-                const id =
-                    String(
-                        item.equipmentId ||
-                        item.equipmentNumber ||
-                        ""
-                    );
-
-
-                if (
-                    !id
-                ) {
-
-                    return;
-                }
-
-
-                equipmentMap.set(
-                    id,
-                    {
-                        id,
-
-                        number:
-                            item.equipmentNumber ||
-                            id,
-
-                        type:
-                            item.equipmentType ||
-                            ""
-                    }
-                );
-            }
-        );
+    const equipment =
+        collectSystemMaintenanceEquipment();
 
 
     select.innerHTML =
         [
             '<option value="">手动填写 / 选择设备</option>',
 
-            ...[
-                ...equipmentMap.values()
-            ]
-                .sort(
-                    (
-                        a,
-                        b
-                    ) =>
-                        String(
-                            a.number
-                        )
-                        .localeCompare(
-                            String(
-                                b.number
-                            ),
-                            "zh-CN",
-                            {
-                                numeric:
-                                    true
-                            }
-                        )
-                )
+            ...equipment
                 .map(
                     item =>
                         `<option value="${escapeHtml(
@@ -5373,7 +6265,7 @@ function renderMaintenanceSettingEquipmentOptions() {
         .some(
             option =>
                 option.value ===
-                currentValue
+                    currentValue
         )
     ) {
 
@@ -5381,7 +6273,6 @@ function renderMaintenanceSettingEquipmentOptions() {
             currentValue;
     }
 }
-
 
 function loadMaintenanceSettingEquipment() {
 
@@ -5421,20 +6312,56 @@ function loadMaintenanceSettingEquipment() {
         );
 
 
+    const detected =
+        collectSystemMaintenanceEquipment()
+            .find(
+                item =>
+                    String(
+                        item.id
+                    ) ===
+                        String(
+                            id
+                        )
+            );
+
+
+    const detectedType =
+        normalizeMaintenanceEquipmentType(
+            setting?.equipmentType ||
+            latest?.equipmentType ||
+            detected?.type ||
+            ""
+        );
+
+
     document.getElementById(
         "maintenanceSettingEquipmentNumber"
     ).value =
         setting?.equipmentNumber ||
         latest?.equipmentNumber ||
+        detected?.number ||
         id;
 
 
     document.getElementById(
         "maintenanceSettingEquipmentType"
     ).value =
-        setting?.equipmentType ||
-        latest?.equipmentType ||
-        "";
+        [
+            ...document.getElementById(
+                "maintenanceSettingEquipmentType"
+            ).options
+        ]
+        .some(
+            option =>
+                option.value ===
+                    detectedType
+        )
+            ? detectedType
+            : (
+                detectedType
+                    ? "其他车辆"
+                    : ""
+            );
 
 
     document.getElementById(
