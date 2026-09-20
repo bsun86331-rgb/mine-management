@@ -615,7 +615,7 @@
                 </h1>
 
                 <p>
-                    Auxiliary Vehicle Operator · V2.10.0M
+                    Auxiliary Vehicle Operator · V2.10.2U
                 </p>
 
             </div>
@@ -646,7 +646,8 @@
 
         <br>
 
-        当前版本先完成工作界面和基础记录，复杂跨端实时同步后续统一接入。
+        使用车辆 / 设备前可进入“设备使用检查”，记录实际使用人、公里数和仪表照片；
+        发现异常时拍照留证并进入维修流程。
 
     </div>
 
@@ -679,7 +680,7 @@
             data-page="service"
             type="button"
         >
-            🛠 维修 / 物资
+            🛠 故障 / 物资
         </button>
 
 
@@ -857,6 +858,26 @@
 
                         <option value="大巴">
                             大巴
+                        </option>
+
+                        <option value="皮卡">
+                            皮卡
+                        </option>
+
+                        <option value="指挥车">
+                            指挥车
+                        </option>
+
+                        <option value="通勤车">
+                            通勤车
+                        </option>
+
+                        <option value="维修车">
+                            维修车
+                        </option>
+
+                        <option value="加油车">
+                            加油车
                         </option>
 
                         <option value="其他辅助车辆">
@@ -1037,6 +1058,27 @@
                 <button
                     class="quick-button"
                     type="button"
+                    onclick="goEquipmentCheck()"
+                >
+
+                    <span class="quick-icon">
+                        🧰
+                    </span>
+
+                    <span class="quick-title">
+                        设备使用检查
+                    </span>
+
+                    <span class="quick-sub">
+                        用车前检查 · 公里数 · 仪表照片
+                    </span>
+
+                </button>
+
+
+                <button
+                    class="quick-button"
+                    type="button"
                     onclick="goFuelRequest()"
                 >
 
@@ -1058,19 +1100,19 @@
                 <button
                     class="quick-button"
                     type="button"
-                    onclick="goMaintenanceReport()"
+                    onclick="openPage('service')"
                 >
 
                     <span class="quick-icon">
-                        ⚠️
+                        🛠
                     </span>
 
                     <span class="quick-title">
-                        异常上报 / 设备维修
+                        故障上报
                     </span>
 
                     <span class="quick-sub">
-                        进入统一维修上报中心
+                        车辆设备异常
                     </span>
 
                 </button>
@@ -1218,7 +1260,7 @@
     >
 
 
-        <!-- 统一设备维修入口 -->
+        <!-- 故障 -->
 
         <section class="card">
 
@@ -1227,11 +1269,11 @@
                 <div>
 
                     <h2>
-                        ⚠️ 异常上报 / 设备维修
+                        🛠 车辆 / 设备故障上报
                     </h2>
 
                     <p>
-                        统一进入设备维修上报中心，不再在本页面重复填写故障记录
+                        当前阶段先保存本地故障记录
                     </p>
 
                 </div>
@@ -1239,16 +1281,90 @@
             </div>
 
 
-            <div class="notice">
+            <div class="form-grid">
 
-                当前车辆或设备发生故障时，
-                点击下面按钮进入统一维修上报页面。
+                <div class="form-group">
 
-                <br>
+                    <label for="faultType">
+                        故障类型
+                    </label>
 
-                汽车、挖机及辅助生产车辆提交后，
-                先进入调度审批；
-                调度批准后再进入维修管理和维修员流程。
+                    <select id="faultType">
+
+                        <option value="">
+                            请选择
+                        </option>
+
+                        <option value="发动机">
+                            发动机
+                        </option>
+
+                        <option value="液压系统">
+                            液压系统
+                        </option>
+
+                        <option value="轮胎">
+                            轮胎
+                        </option>
+
+                        <option value="电气系统">
+                            电气系统
+                        </option>
+
+                        <option value="制动系统">
+                            制动系统
+                        </option>
+
+                        <option value="转向系统">
+                            转向系统
+                        </option>
+
+                        <option value="其他">
+                            其他
+                        </option>
+
+                    </select>
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label for="faultLevel">
+                        故障等级
+                    </label>
+
+                    <select id="faultLevel">
+
+                        <option value="一般">
+                            一般
+                        </option>
+
+                        <option value="较严重">
+                            较严重
+                        </option>
+
+                        <option value="严重">
+                            严重 / 停车
+                        </option>
+
+                    </select>
+
+                </div>
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label for="faultDescription">
+                    故障说明
+                </label>
+
+                <textarea
+                    id="faultDescription"
+                    placeholder="请描述车辆或设备故障情况"
+                ></textarea>
 
             </div>
 
@@ -1256,9 +1372,9 @@
             <button
                 type="button"
                 class="danger-btn"
-                onclick="goMaintenanceReport()"
+                onclick="submitFault()"
             >
-                ⚠️ 进入异常上报 / 设备维修
+                提交故障上报
             </button>
 
         </section>
@@ -1523,7 +1639,7 @@
 
 <footer>
 
-    矿山管理系统 · 辅助车辆司机端 V2.10.0M
+    矿山管理系统 · 辅助车辆司机端 V2.9.9D
 
 </footer>
 
@@ -3927,63 +4043,17 @@ function renderLeaveRecords() {
 
 
 /* =========================================================
-   异常上报 / 设备维修
+   设备使用检查
 ========================================================= */
 
-function goMaintenanceReport() {
+function goEquipmentCheck() {
 
-    if (
-        !currentPerson
-    ) {
-
-        alert(
-            "当前没有识别到人员信息，请返回首页重新进入。"
-        );
-
-        return;
-    }
-
-
-    const personId =
-        getPersonId(
-            currentPerson
-        );
-
-
-    if (
-        personId
-    ) {
-
-        localStorage.setItem(
-            "currentPersonId",
-            personId
-        );
-    }
-
-
-    if (
-        currentPerson.position
-    ) {
-
-        localStorage.setItem(
-            "selectedPosition",
-            currentPerson.position
-        );
-    }
-
-
-    /*
-     * 保存当前辅助车辆信息。
-     * maintenance-report.html 当前仍允许手工确认设备编号，
-     * 这里先保存草稿，为后续统一读取设备主数据预留兼容。
-     */
     const vehicleType =
         document
             .getElementById(
                 "vehicleType"
             )
-            ?.value ||
-        "";
+            .value;
 
 
     const vehicleNumber =
@@ -3991,43 +4061,41 @@ function goMaintenanceReport() {
             .getElementById(
                 "vehicleNumber"
             )
-            ?.value
-            .trim() ||
-        "";
+            .value
+            .trim();
+
+
+    if (
+        !vehicleType ||
+        !vehicleNumber
+    ) {
+
+        alert(
+            "请先填写车辆 / 设备类型和编号。"
+        );
+
+        return;
+    }
 
 
     save(
-        "maintenanceReportDraft",
+        STORAGE.VEHICLE_PROFILE,
         {
-
-            equipmentType:
+            vehicleType:
                 vehicleType,
 
-            equipmentNumber:
-                vehicleNumber,
-
-            personId,
-
-            personName:
-                currentPerson.name ||
-                "",
-
-            position:
-                currentPerson.position ||
-                "",
-
-            source:
-                "auxiliary.html",
-
-            savedAt:
-                new Date()
-                    .toISOString()
+            vehicleNumber:
+                vehicleNumber
         }
     );
 
 
+    /*
+     * equipment-check.html 会读取 auxiliaryVehicleProfile，
+     * 自动进入“用车前检查”模式。
+     */
     location.href =
-        "maintenance-report.html";
+        "equipment-check.html";
 }
 
 
