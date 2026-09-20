@@ -471,7 +471,7 @@
                 </h1>
 
                 <p>
-                    Excavator Operator · V2.10.2T
+                    Excavator Operator · V2.10.2W
                 </p>
 
             </div>
@@ -662,21 +662,28 @@
             </div>
 
 
-            <span class="badge pending">
-                使用前检查
+            <span
+                id="equipmentCheckStatusBadge"
+                class="badge pending"
+            >
+                待检查
             </span>
 
         </div>
 
 
-        <div class="notice" style="margin-bottom:12px;">
+        <div
+            id="equipmentCheckStatusText"
+            class="notice"
+            style="margin-bottom:12px;"
+        >
 
             挖机只记录小时数。
 
             <br>
 
-            检查结果为“未见异常”或“发现异常”；
-            发现异常时需要拍照并进入维修流程。
+            本班完成小时数录入和仪表照片后，
+            才进入正式本班作业统计状态。
 
         </div>
 
@@ -832,7 +839,7 @@
 
 <footer>
 
-    矿山管理系统 · 挖机司机端 V2.10.2R
+    矿山管理系统 · 挖机司机端 V2.10.2W
 
 </footer>
 
@@ -861,7 +868,10 @@ const STORAGE = {
         "driverTripRecords",
 
     SHIFT_EXECUTIONS:
-        "dispatchShiftExecutions"
+        "dispatchShiftExecutions",
+
+    EQUIPMENT_CHECKS:
+        "equipmentUsageChecks"
 };
 
 
@@ -965,6 +975,9 @@ function refreshAll() {
 
 
     renderCurrentTask();
+
+
+    renderEquipmentCheckStatus();
 
 
     renderTripStatistics();
@@ -2047,6 +2060,254 @@ function syncCurrentTaskShiftContext() {
 
 
 /* =========================================================
+   V2.10.2W
+   本班挖机设备使用检查
+========================================================= */
+
+function getCurrentExcavatorId() {
+
+    return String(
+
+        currentExcavatorAssignment?.excavatorId ||
+
+        currentExcavatorAssignment?.excavatorNumber ||
+
+        ""
+
+    );
+}
+
+
+function getCompletedEquipmentCheck() {
+
+    if (
+        !currentPerson ||
+        !currentTask ||
+        !currentExcavatorAssignment
+    ) {
+
+        return null;
+    }
+
+
+    const shiftId =
+        String(
+            currentTask.shiftId ||
+            currentTask.currentShiftId ||
+            ""
+        );
+
+
+    const excavatorId =
+        getCurrentExcavatorId();
+
+
+    const personId =
+        getPersonId(
+            currentPerson
+        );
+
+
+    const personName =
+        String(
+            currentPerson.name ||
+            ""
+        ).trim();
+
+
+    if (
+        !shiftId ||
+        !excavatorId
+    ) {
+
+        return null;
+    }
+
+
+    const records =
+        readArray(
+            STORAGE.EQUIPMENT_CHECKS
+        );
+
+
+    return (
+        records
+            .filter(
+                item =>
+                    item &&
+                    item.locked ===
+                        true
+            )
+            .filter(
+                item =>
+                    String(
+                        item.mode ||
+                        item.inspectionMode ||
+                        "shift"
+                    ) ===
+                        "shift"
+            )
+            .filter(
+                item =>
+                    String(
+                        item.shiftId ||
+                        ""
+                    ) ===
+                        shiftId
+            )
+            .filter(
+                item =>
+                    String(
+                        item.equipmentId ||
+                        item.equipmentNumber ||
+                        ""
+                    ) ===
+                        excavatorId
+            )
+            .find(
+                item => {
+
+                    const recordPersonId =
+                        String(
+                            item.personId ||
+                            item.incomingPersonId ||
+                            ""
+                        );
+
+
+                    const recordPersonName =
+                        String(
+                            item.personName ||
+                            item.incomingPersonName ||
+                            ""
+                        )
+                        .trim();
+
+
+                    if (
+                        personId &&
+                        recordPersonId
+                    ) {
+
+                        return (
+                            personId ===
+                            recordPersonId
+                        );
+                    }
+
+
+                    return (
+                        personName &&
+                        recordPersonName &&
+                        personName ===
+                            recordPersonName
+                    );
+                }
+            )
+        ||
+        null
+    );
+}
+
+
+function hasCompletedEquipmentCheck() {
+
+    return Boolean(
+        getCompletedEquipmentCheck()
+    );
+}
+
+
+function renderEquipmentCheckStatus() {
+
+    const badge =
+        document.getElementById(
+            "equipmentCheckStatusBadge"
+        );
+
+
+    const textBox =
+        document.getElementById(
+            "equipmentCheckStatusText"
+        );
+
+
+    if (
+        !badge ||
+        !textBox
+    ) {
+
+        return;
+    }
+
+
+    if (
+        !currentTask ||
+        !currentExcavatorAssignment
+    ) {
+
+        badge.textContent =
+            "待任务";
+
+        badge.className =
+            "badge default";
+
+        textBox.innerHTML =
+            "当前还没有本班挖机任务。<br>" +
+            "调度绑定本班挖机司机后，再进行设备使用检查。";
+
+        return;
+    }
+
+
+    const record =
+        getCompletedEquipmentCheck();
+
+
+    if (
+        record
+    ) {
+
+        badge.textContent =
+            "已检查";
+
+        badge.className =
+            "badge active";
+
+        textBox.innerHTML =
+            "本班设备使用检查已完成并锁定。<br>" +
+            "小时数：" +
+            escapeHtml(
+                record.meterReading
+            ) +
+            " " +
+            escapeHtml(
+                record.meterUnit ||
+                "h"
+            ) +
+            " · 结果：" +
+            escapeHtml(
+                record.result ||
+                "-"
+            );
+
+        return;
+    }
+
+
+    badge.textContent =
+        "待检查";
+
+    badge.className =
+        "badge pending";
+
+    textBox.innerHTML =
+        "请先完成本班挖机设备使用检查。<br>" +
+        "必须录入小时数并拍摄仪表照片；完成后才显示正式本班作业统计。";
+}
+
+
+/* =========================================================
    当前任务显示
 ========================================================= */
 
@@ -2323,7 +2584,9 @@ function renderCurrentTask() {
     document.getElementById(
         "tripSection"
     ).style.display =
-        "block";
+        hasCompletedEquipmentCheck()
+            ? "block"
+            : "none";
 
     /*
      * V2.10.2R 班次信息
@@ -2977,7 +3240,8 @@ function renderTripStatistics() {
 
     if (
         !currentTask ||
-        !currentExcavatorAssignment
+        !currentExcavatorAssignment ||
+        !hasCompletedEquipmentCheck()
     ) {
 
         section.style.display =
@@ -2986,6 +3250,10 @@ function renderTripStatistics() {
 
         return;
     }
+
+
+    section.style.display =
+        "block";
 
 
     const excavatorId =
