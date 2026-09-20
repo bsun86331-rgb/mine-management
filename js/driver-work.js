@@ -1,7 +1,7 @@
 /*
 ====================================================
 矿山管理系统
-司机端 V2.10.2K
+司机端 V2.10.2M
 ====================================================
 功能：
 1. 审核通过司机才可进入
@@ -1076,7 +1076,51 @@ document.addEventListener("DOMContentLoaded", function () {
             oldTask &&
             oldTask.status !== "completed"
         ) {
-            return oldTask;
+
+            const publishedTasks =
+                readJson(
+                    STORAGE.DISPATCH_TASKS,
+                    []
+                );
+
+            const masterTask =
+                Array.isArray(publishedTasks)
+                    ? publishedTasks.find(
+                        item =>
+                            String(
+                                item.taskId ||
+                                item.dispatchTaskId ||
+                                item.id ||
+                                ""
+                            ) ===
+                                String(
+                                    oldTask.taskId ||
+                                    oldTask.dispatchTaskId ||
+                                    ""
+                                )
+                    )
+                    : null;
+
+            const latestShiftId =
+                masterTask?.currentShiftId ||
+                masterTask?.shiftId ||
+                "";
+
+            const oldShiftId =
+                oldTask.shiftId ||
+                "";
+
+            if (
+                !latestShiftId ||
+                latestShiftId ===
+                    oldShiftId
+            ) {
+                return oldTask;
+            }
+
+            localStorage.removeItem(
+                STORAGE.CURRENT_TASK
+            );
         }
 
         /*
@@ -1123,10 +1167,25 @@ document.addEventListener("DOMContentLoaded", function () {
                 const converted = {
                     taskId: task.taskId,
                     dispatchTaskId: task.taskId,
+
+                    shiftId:
+                        assignment.shiftId ||
+                        task.currentShiftId ||
+                        task.shiftId ||
+                        "",
+
+                    shift:
+                        assignment.shift ||
+                        task.shift ||
+                        "",
+
+                    shiftDate:
+                        assignment.shiftDate ||
+                        task.shiftDate ||
+                        "",
+
                     workArea:
                         task.area || "",
-                    shift:
-                        task.shift || "",
                     remark:
                         task.remark || "",
                     vehicleNumber:
@@ -1844,6 +1903,18 @@ document.addEventListener("DOMContentLoaded", function () {
             dispatchTaskId:
                 currentTask.dispatchTaskId ||
                 currentTask.taskId ||
+                "",
+
+            /*
+             * V2.10.2M
+             * 每趟运输同时归属主任务 + 当前班次。
+             */
+            shiftId:
+                currentTask.shiftId ||
+                "",
+
+            shiftDate:
+                currentTask.shiftDate ||
                 "",
 
             driverId:
