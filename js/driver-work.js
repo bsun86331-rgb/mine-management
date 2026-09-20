@@ -1,7 +1,7 @@
 /*
 ====================================================
 矿山管理系统
-司机端 V2.10.2M
+司机端 V2.10.2Q
 ====================================================
 功能：
 1. 审核通过司机才可进入
@@ -1066,107 +1066,402 @@ document.addEventListener("DOMContentLoaded", function () {
 
     function getCurrentTask() {
 
-        const oldTask =
-            readJson(
-                STORAGE.CURRENT_TASK,
-                null
-            );
-
-        if (
-            oldTask &&
-            oldTask.status !== "completed"
-        ) {
-
-            const publishedTasks =
-                readJson(
-                    STORAGE.DISPATCH_TASKS,
-                    []
-                );
-
-            const masterTask =
-                Array.isArray(publishedTasks)
-                    ? publishedTasks.find(
-                        item =>
-                            String(
-                                item.taskId ||
-                                item.dispatchTaskId ||
-                                item.id ||
-                                ""
-                            ) ===
-                                String(
-                                    oldTask.taskId ||
-                                    oldTask.dispatchTaskId ||
-                                    ""
-                                )
-                    )
-                    : null;
-
-            const latestShiftId =
-                masterTask?.currentShiftId ||
-                masterTask?.shiftId ||
-                "";
-
-            const oldShiftId =
-                oldTask.shiftId ||
-                "";
-
-            if (
-                !latestShiftId ||
-                latestShiftId ===
-                    oldShiftId
-            ) {
-                return oldTask;
-            }
-
-            localStorage.removeItem(
-                STORAGE.CURRENT_TASK
-            );
-        }
-
-        /*
-        兼容未来调度端人员绑定结构。
-        如果调度任务出现 driverAssignments，
-        自动找到属于本司机的任务。
-        */
-
         const tasks =
             readJson(
                 STORAGE.DISPATCH_TASKS,
                 []
             );
 
-        if (!Array.isArray(tasks)) {
+
+        if (
+            !Array.isArray(
+                tasks
+            )
+        ) {
+
             return null;
         }
 
-        for (const task of tasks) {
+
+        const oldTask =
+            readJson(
+                STORAGE.CURRENT_TASK,
+                null
+            );
+
+
+        /*
+         * V2.10.2Q
+         *
+         * 车队长在同一班次内修改“本班绑定”后，
+         * 司机端不能继续一直使用旧 driverCurrentTask。
+         *
+         * 每次刷新都重新核对：
+         * 1. currentShiftId 是否变化
+         * 2. 当前司机是否仍在这个主任务
+         * 3. 本班车辆是否变化
+         * 4. 本班挖机是否变化
+         * 5. 装载区 / 卸载区是否调整
+         */
+        if (
+            oldTask &&
+            oldTask.status !==
+                "completed"
+        ) {
+
+            const oldTaskId =
+                String(
+                    oldTask.taskId ||
+                    oldTask.dispatchTaskId ||
+                    ""
+                );
+
+
+            const masterTask =
+                tasks.find(
+                    item =>
+                        String(
+                            item.taskId ||
+                            item.dispatchTaskId ||
+                            item.id ||
+                            ""
+                        ) ===
+                            oldTaskId
+                );
+
 
             if (
-                task.status !== "pending" &&
-                task.status !== "active"
+                masterTask
             ) {
+
+                const latestShiftId =
+                    String(
+                        masterTask.currentShiftId ||
+                        masterTask.shiftId ||
+                        ""
+                    );
+
+
+                const oldShiftId =
+                    String(
+                        oldTask.shiftId ||
+                        ""
+                    );
+
+
+                const assignments =
+                    Array.isArray(
+                        masterTask.driverAssignments
+                    )
+                        ? masterTask.driverAssignments
+                        : [];
+
+
+                const latestAssignment =
+                    assignments.find(
+                        item =>
+                            samePerson(
+                                item.driverId ||
+                                item.personId,
+                                item.driverName ||
+                                item.personName
+                            )
+                    );
+
+
+                /*
+                 * 当前主任务仍存在，并且还是同一个班次。
+                 * 继续检查本班绑定有没有变化。
+                 */
+                if (
+                    (
+                        !latestShiftId ||
+                        latestShiftId ===
+                            oldShiftId
+                    ) &&
+                    latestAssignment
+                ) {
+
+                    const latestVehicle =
+                        String(
+                            latestAssignment.vehicleNumber ||
+                            latestAssignment.vehicleId ||
+                            latestAssignment.truckNumber ||
+                            latestAssignment.truckId ||
+                            ""
+                        );
+
+
+                    const oldVehicle =
+                        String(
+                            oldTask.vehicleNumber ||
+                            oldTask.vehicleId ||
+                            ""
+                        );
+
+
+                    const latestExcavator =
+                        String(
+                            latestAssignment.excavatorNumber ||
+                            latestAssignment.excavatorId ||
+                            ""
+                        );
+
+
+                    const oldExcavator =
+                        String(
+                            oldTask.excavatorNumber ||
+                            oldTask.excavatorId ||
+                            ""
+                        );
+
+
+                    const latestLoadingPoint =
+                        String(
+                            latestAssignment.loadingPoint ||
+                            masterTask.loadingPoint ||
+                            masterTask.taskLoadingPoint ||
+                            ""
+                        );
+
+
+                    const latestUnloadingPoint =
+                        String(
+                            latestAssignment.unloadingPoint ||
+                            masterTask.unloadingPoint ||
+                            masterTask.taskUnloadingPoint ||
+                            ""
+                        );
+
+
+                    const vehicleChanged =
+                        latestVehicle !==
+                            oldVehicle;
+
+
+                    const bindingChanged =
+
+                        vehicleChanged
+
+                        ||
+
+                        latestExcavator !==
+                            oldExcavator
+
+                        ||
+
+                        latestLoadingPoint !==
+                            String(
+                                oldTask.loadingPoint ||
+                                ""
+                            )
+
+                        ||
+
+                        latestUnloadingPoint !==
+                            String(
+                                oldTask.unloadingPoint ||
+                                ""
+                            )
+
+                        ||
+
+                        String(
+                            latestAssignment.shiftId ||
+                            latestShiftId ||
+                            ""
+                        ) !==
+                            oldShiftId;
+
+
+                    if (
+                        bindingChanged
+                    ) {
+
+                        const updatedTask = {
+                            ...oldTask,
+
+                            taskId:
+                                masterTask.taskId ||
+                                oldTask.taskId,
+
+                            dispatchTaskId:
+                                masterTask.taskId ||
+                                oldTask.dispatchTaskId ||
+                                oldTask.taskId,
+
+                            shiftId:
+                                latestAssignment.shiftId ||
+                                latestShiftId ||
+                                oldShiftId,
+
+                            shift:
+                                latestAssignment.shift ||
+                                masterTask.shift ||
+                                oldTask.shift ||
+                                "",
+
+                            shiftDate:
+                                latestAssignment.shiftDate ||
+                                masterTask.shiftDate ||
+                                oldTask.shiftDate ||
+                                "",
+
+                            workArea:
+                                masterTask.area ||
+                                masterTask.workArea ||
+                                oldTask.workArea ||
+                                "",
+
+                            remark:
+                                masterTask.remark ||
+                                oldTask.remark ||
+                                "",
+
+                            vehicleNumber:
+                                latestVehicle,
+
+                            vehicleId:
+                                latestVehicle,
+
+                            excavatorNumber:
+                                latestExcavator,
+
+                            excavatorId:
+                                latestExcavator,
+
+                            loadingPoint:
+                                latestLoadingPoint,
+
+                            unloadingPoint:
+                                latestUnloadingPoint,
+
+                            bindingUpdatedAt:
+                                masterTask.updatedAt ||
+                                new Date()
+                                    .toISOString()
+                        };
+
+
+                        /*
+                         * 如果车号发生变化，
+                         * 必须重新领取车辆，防止司机继续用旧车计数。
+                         */
+                        if (
+                            vehicleChanged
+                        ) {
+
+                            updatedTask.vehicleClaimed =
+                                false;
+
+                            updatedTask.status =
+                                "assigned";
+
+                            updatedTask.claimedAt =
+                                null;
+                        }
+
+
+                        saveCurrentTask(
+                            updatedTask
+                        );
+
+
+                        return updatedTask;
+                    }
+
+
+                    return oldTask;
+                }
+
+
+                /*
+                 * 发生以下任一种情况：
+                 * - 调度已经切换到新班次
+                 * - 当前司机从本班绑定中移除
+                 *
+                 * 清除旧任务，继续向下寻找司机的新绑定。
+                 */
+                localStorage.removeItem(
+                    STORAGE.CURRENT_TASK
+                );
+
+            } else {
+
+                /*
+                 * 主任务已不存在，也不能继续沿用旧本地任务。
+                 */
+                localStorage.removeItem(
+                    STORAGE.CURRENT_TASK
+                );
+            }
+        }
+
+
+        /*
+         * 从当前调度任务中重新寻找本司机绑定。
+         */
+        for (
+            const task
+            of tasks
+        ) {
+
+            if (
+                task.status !==
+                    "pending" &&
+                task.status !==
+                    "active"
+            ) {
+
                 continue;
             }
 
+
             const assignments =
-                Array.isArray(task.driverAssignments)
+                Array.isArray(
+                    task.driverAssignments
+                )
                     ? task.driverAssignments
                     : [];
+
 
             const assignment =
                 assignments.find(
                     item =>
                         samePerson(
-                            item.driverId,
-                            item.driverName
+                            item.driverId ||
+                            item.personId,
+                            item.driverName ||
+                            item.personName
                         )
                 );
 
-            if (assignment) {
+
+            if (
+                assignment
+            ) {
+
+                const vehicle =
+                    assignment.vehicleNumber ||
+                    assignment.vehicleId ||
+                    assignment.truckNumber ||
+                    assignment.truckId ||
+                    "";
+
+
+                const excavator =
+                    assignment.excavatorNumber ||
+                    assignment.excavatorId ||
+                    "";
+
 
                 const converted = {
-                    taskId: task.taskId,
-                    dispatchTaskId: task.taskId,
+
+                    taskId:
+                        task.taskId,
+
+                    dispatchTaskId:
+                        task.taskId,
 
                     shiftId:
                         assignment.shiftId ||
@@ -1185,49 +1480,68 @@ document.addEventListener("DOMContentLoaded", function () {
                         "",
 
                     workArea:
-                        task.area || "",
+                        task.area ||
+                        task.workArea ||
+                        "",
+
                     remark:
-                        task.remark || "",
+                        task.remark ||
+                        "",
+
                     vehicleNumber:
-                        assignment.vehicleNumber ||
-                        assignment.vehicleId ||
-                        "",
+                        vehicle,
+
                     vehicleId:
-                        assignment.vehicleId ||
-                        assignment.vehicleNumber ||
-                        "",
+                        vehicle,
+
                     excavatorNumber:
-                        assignment.excavatorNumber ||
-                        assignment.excavatorId ||
-                        "",
+                        excavator,
+
                     excavatorId:
-                        assignment.excavatorId ||
-                        assignment.excavatorNumber ||
-                        "",
+                        excavator,
+
                     loadingPoint:
                         assignment.loadingPoint ||
                         task.loadingPoint ||
+                        task.taskLoadingPoint ||
                         "",
+
                     unloadingPoint:
                         assignment.unloadingPoint ||
                         task.unloadingPoint ||
+                        task.taskUnloadingPoint ||
                         "",
-                    status: "assigned",
-                    vehicleClaimed: false,
+
+                    status:
+                        "assigned",
+
+                    vehicleClaimed:
+                        false,
+
                     createdAt:
                         task.publishedAt ||
-                        new Date().toISOString()
+                        task.createdAt ||
+                        new Date()
+                            .toISOString(),
+
+                    bindingUpdatedAt:
+                        task.updatedAt ||
+                        ""
                 };
 
-                saveCurrentTask(converted);
+
+                saveCurrentTask(
+                    converted
+                );
+
 
                 return converted;
             }
         }
 
+
         return null;
     }
-
 
     function saveCurrentTask(task) {
 
