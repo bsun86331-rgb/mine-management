@@ -72,7 +72,7 @@
         }
 
         /* =====================================================
-           V2.10.2D4 运输区域管理
+           V2.10.2L 运输区域管理
         ====================================================== */
 
         .transport-zone-note {
@@ -222,7 +222,7 @@
 
 <style>
 /* =========================================================
-   V2.10.2D4 调度运输统计统一：总车数 / 煤 / 渣
+   V2.10.2L 调度运输统计统一：总车数 / 煤 / 渣
 ========================================================= */
 .dispatch-trip-stats{
     display:grid;
@@ -257,6 +257,165 @@
 }
 </style>
 
+
+<style>
+/* =========================================================
+   V2.10.2L 手动补录运输趟次审核
+========================================================= */
+.manual-trip-review-card{
+    margin-top:10px;
+    padding:14px;
+    border:1px solid #e2e8f0;
+    border-radius:12px;
+    background:#fff;
+}
+.manual-trip-review-top{
+    display:flex;
+    justify-content:space-between;
+    gap:10px;
+    align-items:flex-start;
+}
+.manual-trip-review-title{
+    font-weight:800;
+    color:#0f172a;
+}
+.manual-trip-review-info{
+    margin-top:8px;
+    color:#475569;
+    font-size:12px;
+    line-height:1.8;
+}
+.manual-trip-review-actions{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:8px;
+    margin-top:12px;
+}
+.manual-trip-review-actions button{
+    min-height:42px;
+}
+.manual-trip-source-badge{
+    display:inline-block;
+    padding:5px 8px;
+    border-radius:999px;
+    background:#fef3c7;
+    color:#92400e;
+    font-size:11px;
+    font-weight:700;
+}
+@media(max-width:640px){
+    .manual-trip-review-actions{
+        grid-template-columns:1fr;
+    }
+}
+</style>
+
+
+<style>
+/* =========================================================
+   V2.10.2L 主任务 + 班次执行 / 继承上一班绑定
+========================================================= */
+.shift-execution-summary{
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:10px;
+    margin:0 0 14px;
+}
+.shift-execution-card{
+    border:1px solid #dbeafe;
+    border-radius:13px;
+    padding:13px;
+    background:#f8fbff;
+}
+.shift-execution-top{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    gap:10px;
+}
+.shift-execution-card h4{
+    margin:0;
+    font-size:14px;
+    color:#0f172a;
+}
+.shift-execution-meta{
+    margin-top:8px;
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:7px;
+    font-size:12px;
+    color:#475569;
+}
+.shift-execution-meta strong{
+    display:block;
+    color:#0f172a;
+    margin-top:2px;
+}
+.shift-chip{
+    display:inline-block;
+    padding:5px 9px;
+    border-radius:999px;
+    background:#dbeafe;
+    color:#1d4ed8;
+    font-size:11px;
+    font-weight:800;
+    white-space:nowrap;
+}
+.shift-chip.green{
+    background:#dcfce7;
+    color:#166534;
+}
+.shift-inherit-note{
+    margin-top:10px;
+    padding:9px 10px;
+    border-radius:9px;
+    background:#fff7ed;
+    color:#9a3412;
+    font-size:12px;
+    line-height:1.65;
+}
+.shift-modal-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:12px;
+}
+.shift-preview{
+    margin-top:14px;
+    padding:13px;
+    border:1px solid #e2e8f0;
+    border-radius:12px;
+    background:#f8fafc;
+}
+.shift-preview h4{
+    margin:0 0 10px;
+}
+.shift-preview-row{
+    padding:9px 0;
+    border-bottom:1px dashed #cbd5e1;
+    font-size:12px;
+    line-height:1.7;
+}
+.shift-preview-row:last-child{
+    border-bottom:0;
+}
+.shift-warning{
+    margin-top:12px;
+    padding:11px 12px;
+    border-radius:10px;
+    background:#eff6ff;
+    color:#1e40af;
+    font-size:12px;
+    line-height:1.75;
+}
+@media(max-width:760px){
+    .shift-execution-summary,
+    .shift-modal-grid,
+    .shift-execution-meta{
+        grid-template-columns:1fr;
+    }
+}
+</style>
+
 </head>
 
 <body class="dispatch-body">
@@ -269,7 +428,7 @@
         </div>
 
         <div class="dispatch-header-badge">
-            📋 调度端 V2.10.2D4
+            📋 调度端 V2.10.2L
         </div>
     </div>
 </header>
@@ -396,6 +555,10 @@
                     📍 运输区域管理
                 </button>
 
+                <button id="shiftTaskButton" type="button" class="management-button">
+                    🔄 生成本班任务
+                </button>
+
                 <button id="historyTaskButton" type="button" class="history-button">
                     📚 历史任务
                 </button>
@@ -442,6 +605,12 @@
                 <span>今日渣车数</span>
                 <strong id="dispatchTodayWasteTrips">0</strong>
                 <small>仅统计卸载区类型=渣</small>
+            </div>
+        </div>
+
+        <div id="shiftExecutionSummary" class="shift-execution-summary">
+            <div class="empty-placeholder">
+                暂无班次执行记录
             </div>
         </div>
 
@@ -749,7 +918,7 @@
 
 
 <!-- =====================================================
-     V2.10.2D4 运输区域管理
+     V2.10.2L 运输区域管理
 ===================================================== -->
 <div id="transportZoneModal" class="dispatch-modal hidden">
 
@@ -978,7 +1147,32 @@
 <div id="gpsReviewModal" class="dispatch-modal hidden">
     <div class="dispatch-modal-card large-modal">
 
-        <h3>📍 GPS异常趟次审核</h3>
+        <h3>📍 GPS异常 / 手动补录趟次审核</h3>
+
+        <div class="approval-notice">
+            GPS正常完成的趟次直接进入正式统计；
+            GPS异常时司机手动补录的趟次必须由调度确认。
+            审核通过后自动进入总车数及煤/渣分类统计；驳回后不进入正式报表。
+        </div>
+
+        <div class="dispatch-section-title" style="margin-top:14px;">
+            <div>
+                <h3 style="margin:0;font-size:16px;">手动补录待审核</h3>
+                <p>来源：driver-work.html GPS异常 / 无法定位补录</p>
+            </div>
+            <span id="manualTripReviewCount" class="count-badge">0 条</span>
+        </div>
+
+        <div id="manualTripReviewList">
+            <div class="empty">暂无手动补录待审核记录</div>
+        </div>
+
+        <div class="dispatch-section-title" style="margin-top:18px;">
+            <div>
+                <h3 style="margin:0;font-size:16px;">其他GPS异常记录</h3>
+                <p>保留原调度端GPS审核逻辑</p>
+            </div>
+        </div>
 
         <div id="gpsReviewList"></div>
 
@@ -1122,8 +1316,83 @@
 
 
 <footer>
-    矿山管理系统 · 调度端 V2.10.2D4
+    矿山管理系统 · 调度端 V2.10.2L
 </footer>
+
+
+<!-- =====================================================
+     V2.10.2L 生成本班任务 / 继承上一班绑定
+===================================================== -->
+<div id="shiftTaskModal" class="dispatch-modal hidden">
+
+    <div class="dispatch-modal-card large-modal">
+
+        <h3>🔄 生成本班任务</h3>
+
+        <div class="shift-warning">
+            主生产任务不变，只新建一个“班次执行记录”。
+            新班次默认继承上一班的挖机、汽车及绑定关系；
+            上一班记录会冻结为“已交班”，不会被新班次覆盖。
+        </div>
+
+        <div class="shift-modal-grid" style="margin-top:14px;">
+
+            <div>
+                <label for="shiftMasterTaskSelect">继续执行的生产任务 *</label>
+                <select id="shiftMasterTaskSelect">
+                    <option value="">请选择生产任务</option>
+                </select>
+            </div>
+
+            <div>
+                <label for="shiftNextShiftSelect">本班班次 *</label>
+                <select id="shiftNextShiftSelect">
+                    <option value="白班">白班 08:00—20:00</option>
+                    <option value="夜班">夜班 20:00—次日08:00</option>
+                </select>
+            </div>
+
+        </div>
+
+        <div class="shift-modal-grid" style="margin-top:12px;">
+
+            <div>
+                <label for="shiftExecutionDate">本班生产日期 *</label>
+                <input id="shiftExecutionDate" type="date">
+            </div>
+
+            <div>
+                <label for="shiftHandoverRemark">交接班备注</label>
+                <input
+                    id="shiftHandoverRemark"
+                    type="text"
+                    placeholder="例如：设备绑定不变，夜班继续执行"
+                >
+            </div>
+
+        </div>
+
+        <div id="shiftInheritancePreview" class="shift-preview">
+            <h4>上一班绑定预览</h4>
+            <div class="empty-placeholder">
+                选择生产任务后显示
+            </div>
+        </div>
+
+        <div class="double-button-row" style="margin-top:16px;">
+            <button id="closeShiftTaskButton" class="secondary-button" type="button">
+                取消
+            </button>
+
+            <button id="generateShiftExecutionButton" class="success-button" type="button">
+                ✅ 沿用上一班绑定并生成本班任务
+            </button>
+        </div>
+
+    </div>
+
+</div>
+
 
 <script src="js/dispatch.js?v=2.9.3"></script>
 
@@ -1131,7 +1400,7 @@
 "use strict";
 
 /* =========================================================
-   V2.10.2D4
+   V2.10.2L
    调度端维修审批接入
    本段独立于现有 js/dispatch.js，
    不影响原生产调度、换车、GPS、请假、罚单逻辑。
@@ -1905,7 +2174,7 @@ setInterval(
 
 
 /* =========================================================
-   V2.10.2D4
+   V2.10.2L
    运输区域管理 + 生产任务多卸载点兼容层
 
    数据键：
@@ -3313,7 +3582,7 @@ renderTaskZoneSelectors();
 
 
 /* =========================================================
-   V2.10.2D4
+   V2.10.2L
    调度端今日运输统计
    统一口径：
    - 总车数 = 煤 + 渣 + 只记车数 + 其他有效趟次
@@ -3417,6 +3686,1715 @@ document.addEventListener(
         if(!document.hidden){
             dispatchRenderTripStats();
         }
+    }
+);
+
+
+
+/* =========================================================
+   V2.10.2L
+   GPS异常 / 手动补录运输趟次调度审核
+
+   司机端 V2.10.2E1 手动补录记录：
+   manualOverride = true
+   dispatchConfirmation = pending
+   gpsReviewStatus = pending
+   officialCountEligible = false
+
+   调度批准：
+   dispatchConfirmation = confirmed
+   gpsReviewStatus = approved
+   officialCountEligible = true
+
+   调度驳回：
+   dispatchConfirmation = rejected
+   gpsReviewStatus = rejected
+   officialCountEligible = false
+========================================================= */
+
+function manualTripReadArray(key){
+    try{
+        const data = JSON.parse(localStorage.getItem(key));
+        return Array.isArray(data) ? data : [];
+    }catch(error){
+        return [];
+    }
+}
+
+function manualTripWriteArray(key,records){
+    localStorage.setItem(
+        key,
+        JSON.stringify(records)
+    );
+}
+
+function manualTripPendingRecords(){
+    /*
+     * tripRecords 是新版正式来源。
+     * 没有新版数据时才兼容 driverTripRecords，防止双写重复显示。
+     */
+    const canonical = manualTripReadArray("tripRecords");
+
+    const source =
+        canonical.length
+            ? canonical
+            : manualTripReadArray("driverTripRecords");
+
+    const seen = new Set();
+
+    return source
+        .filter(item =>
+            item &&
+            (
+                item.manualOverride === true ||
+                item.gpsStatus === "manual_override"
+            ) &&
+            (
+                item.dispatchConfirmation === "pending" ||
+                item.gpsReviewStatus === "pending"
+            )
+        )
+        .filter(item => {
+            const id = String(
+                item.tripId ||
+                item.recordId ||
+                item.id ||
+                ""
+            );
+
+            if(!id){
+                return true;
+            }
+
+            if(seen.has(id)){
+                return false;
+            }
+
+            seen.add(id);
+            return true;
+        })
+        .sort((a,b)=>
+            new Date(
+                b.completedAt ||
+                b.createdAt ||
+                0
+            ) -
+            new Date(
+                a.completedAt ||
+                a.createdAt ||
+                0
+            )
+        );
+}
+
+function manualTripFormatTime(value){
+    if(!value){
+        return "-";
+    }
+
+    const date = new Date(value);
+
+    if(Number.isNaN(date.getTime())){
+        return String(value);
+    }
+
+    return date.toLocaleString("zh-CN");
+}
+
+function manualTripEscape(value){
+    const div = document.createElement("div");
+    div.textContent = String(value ?? "");
+    return div.innerHTML;
+}
+
+function renderManualTripReview(){
+    const box = document.getElementById("manualTripReviewList");
+    const count = document.getElementById("manualTripReviewCount");
+
+    if(!box){
+        return;
+    }
+
+    const records = manualTripPendingRecords();
+
+    if(count){
+        count.textContent = records.length + " 条";
+    }
+
+    if(!records.length){
+        box.innerHTML = `
+            <div class="empty">
+                暂无手动补录待审核记录
+            </div>
+        `;
+        return;
+    }
+
+    box.innerHTML = records
+        .map(item => {
+            const id = String(
+                item.tripId ||
+                item.recordId ||
+                item.id ||
+                ""
+            );
+
+            return `
+                <div class="manual-trip-review-card">
+
+                    <div class="manual-trip-review-top">
+
+                        <div>
+                            <div class="manual-trip-review-title">
+                                ${manualTripEscape(item.driverName || "-")}
+                                ·
+                                ${manualTripEscape(item.vehicleNumber || item.vehicleId || "-")}
+                            </div>
+
+                            <div class="manual-trip-review-info">
+                                物料：
+                                <strong>${manualTripEscape(item.materialType || item.material || "-")}</strong>
+                                <br>
+                                装载区：
+                                ${manualTripEscape(item.loadingZoneName || item.loadingPoint || "-")}
+                                <br>
+                                卸载区：
+                                ${manualTripEscape(item.unloadingZoneName || item.unloadingPoint || "-")}
+                                <br>
+                                装车：
+                                ${manualTripFormatTime(item.loadedAt || item.loadTime)}
+                                <br>
+                                卸料：
+                                ${manualTripFormatTime(item.unloadedAt || item.unloadTime || item.completedAt)}
+                                <br>
+                                任务：
+                                ${manualTripEscape(item.taskId || item.dispatchTaskId || "-")}
+                            </div>
+                        </div>
+
+                        <span class="manual-trip-source-badge">
+                            手动补录
+                        </span>
+
+                    </div>
+
+                    <div class="manual-trip-review-actions">
+
+                        <button
+                            type="button"
+                            class="success-button"
+                            onclick="reviewManualTrip('${manualTripEscape(id)}','approve')"
+                        >
+                            ✅ 审核通过
+                        </button>
+
+                        <button
+                            type="button"
+                            class="danger-button"
+                            onclick="reviewManualTrip('${manualTripEscape(id)}','reject')"
+                        >
+                            ❌ 驳回
+                        </button>
+
+                    </div>
+
+                </div>
+            `;
+        })
+        .join("");
+}
+
+function updateManualTripRecordArray(key,tripId,action){
+    const records = manualTripReadArray(key);
+    let changed = false;
+
+    const next = records.map(item => {
+        const id = String(
+            item.tripId ||
+            item.recordId ||
+            item.id ||
+            ""
+        );
+
+        if(id !== String(tripId)){
+            return item;
+        }
+
+        changed = true;
+
+        const approved = action === "approve";
+
+        return {
+            ...item,
+
+            dispatchConfirmation:
+                approved
+                    ? "confirmed"
+                    : "rejected",
+
+            gpsReviewStatus:
+                approved
+                    ? "approved"
+                    : "rejected",
+
+            officialCountEligible:
+                approved,
+
+            reviewedBy:
+                "dispatch",
+
+            reviewedAt:
+                new Date().toISOString(),
+
+            updatedAt:
+                new Date().toISOString(),
+
+            /*
+             * 当前仍是离线优先架构。
+             * 调度审核改变后也需要后续同步数据库。
+             */
+            syncStatus:
+                "pending"
+        };
+    });
+
+    if(changed){
+        manualTripWriteArray(
+            key,
+            next
+        );
+    }
+
+    return changed;
+}
+
+function reviewManualTrip(tripId,action){
+    const record = manualTripPendingRecords()
+        .find(item =>
+            String(
+                item.tripId ||
+                item.recordId ||
+                item.id ||
+                ""
+            ) === String(tripId)
+        );
+
+    if(!record){
+        alert("没有找到该手动补录记录，可能已经被处理。");
+        renderManualTripReview();
+        return;
+    }
+
+    const approved = action === "approve";
+
+    const message =
+        approved
+            ? (
+                "确认审核通过该运输趟次？\n\n" +
+                "司机：" + (record.driverName || "-") + "\n" +
+                "车辆：" + (record.vehicleNumber || record.vehicleId || "-") + "\n" +
+                "卸载区：" + (record.unloadingZoneName || record.unloadingPoint || "-") + "\n" +
+                "物料：" + (record.materialType || record.material || "-") + "\n\n" +
+                "通过后将进入正式生产车数和报表统计。"
+            )
+            : (
+                "确认驳回该手动补录趟次？\n\n" +
+                "驳回后该记录保留，但不会进入正式生产统计。"
+            );
+
+    if(!confirm(message)){
+        return;
+    }
+
+    /*
+     * driver-work V2.10.2E1 当前会同时写：
+     * tripRecords（正式）
+     * driverTripRecords（兼容镜像）
+     * 所以审核状态需要同步更新两处。
+     */
+    const canonicalChanged =
+        updateManualTripRecordArray(
+            "tripRecords",
+            tripId,
+            action
+        );
+
+    const legacyChanged =
+        updateManualTripRecordArray(
+            "driverTripRecords",
+            tripId,
+            action
+        );
+
+    if(!canonicalChanged && !legacyChanged){
+        alert("审核失败：没有找到对应运输记录。");
+        return;
+    }
+
+    renderManualTripReview();
+
+    /*
+     * 审核后立即刷新调度统计。
+     */
+    if(typeof dispatchRenderTripStats === "function"){
+        dispatchRenderTripStats();
+    }
+
+    alert(
+        approved
+            ? "手动补录趟次已审核通过，已进入正式统计。"
+            : "手动补录趟次已驳回，不进入正式统计。"
+    );
+}
+
+/*
+ * 原调度端已经有 GPS 异常按钮。
+ * 点击时追加刷新“手动补录待审核”部分，
+ * 不覆盖原 js/dispatch.js 的其他GPS异常审核。
+ */
+document
+    .getElementById("openGpsReviewButton")
+    ?.addEventListener(
+        "click",
+        () => {
+            setTimeout(
+                renderManualTripReview,
+                0
+            );
+        }
+    );
+
+document
+    .getElementById("closeGpsReviewModal")
+    ?.addEventListener(
+        "click",
+        renderManualTripReview
+    );
+
+renderManualTripReview();
+
+setInterval(
+    renderManualTripReview,
+    5000
+);
+
+window.addEventListener(
+    "storage",
+    renderManualTripReview
+);
+
+
+
+/* =========================================================
+   V2.10.2L
+   主生产任务 + 班次执行 / 继承上一班绑定
+
+   数据：
+   dispatchPublishedTasks   主生产任务（现有）
+   dispatchShiftExecutions  班次执行历史（新增）
+
+   核心：
+   - taskId 永久代表主生产任务
+   - shiftId 每个班次独立
+   - 新班默认复制上一班 bindings / driverAssignments /
+     auxiliaryAssignments
+   - 上一班快照冻结，不被覆盖
+========================================================= */
+
+const SHIFT_EXECUTION_STORAGE_KEY =
+    "dispatchShiftExecutions";
+
+
+function shiftReadArray(key){
+    try{
+        const data =
+            JSON.parse(
+                localStorage.getItem(key)
+            );
+
+        return Array.isArray(data)
+            ? data
+            : [];
+    }catch(error){
+        return [];
+    }
+}
+
+
+function shiftWriteArray(key,records){
+    localStorage.setItem(
+        key,
+        JSON.stringify(records)
+    );
+}
+
+
+function shiftTaskId(task){
+    return String(
+        task?.taskId ||
+        task?.dispatchTaskId ||
+        task?.id ||
+        ""
+    );
+}
+
+
+function shiftDeepClone(value){
+    return JSON.parse(
+        JSON.stringify(
+            value ?? null
+        )
+    );
+}
+
+
+function shiftToday(){
+    const date =
+        new Date();
+
+    const year =
+        date.getFullYear();
+
+    const month =
+        String(
+            date.getMonth() + 1
+        ).padStart(2,"0");
+
+    const day =
+        String(
+            date.getDate()
+        ).padStart(2,"0");
+
+    return `${year}-${month}-${day}`;
+}
+
+
+function shiftEscape(value){
+    const div =
+        document.createElement("div");
+
+    div.textContent =
+        String(value ?? "");
+
+    return div.innerHTML;
+}
+
+
+function getShiftExecutions(){
+    return shiftReadArray(
+        SHIFT_EXECUTION_STORAGE_KEY
+    );
+}
+
+
+function saveShiftExecutions(records){
+    shiftWriteArray(
+        SHIFT_EXECUTION_STORAGE_KEY,
+        records
+    );
+}
+
+
+function getPublishedShiftTasks(){
+    return shiftReadArray(
+        "dispatchPublishedTasks"
+    );
+}
+
+
+function savePublishedShiftTasks(tasks){
+    shiftWriteArray(
+        "dispatchPublishedTasks",
+        tasks
+    );
+}
+
+
+function latestShiftExecutionForTask(
+    taskId
+){
+    return getShiftExecutions()
+        .filter(
+            item =>
+                String(
+                    item.taskId || ""
+                ) ===
+                    String(taskId)
+        )
+        .sort(
+            (a,b) =>
+                new Date(
+                    b.startedAt ||
+                    b.createdAt ||
+                    0
+                ) -
+                new Date(
+                    a.startedAt ||
+                    a.createdAt ||
+                    0
+                )
+        )[0] || null;
+}
+
+
+/*
+ * 第一次引入班次系统时，
+ * 现有任务没有 shiftExecution 历史。
+ * 将当前 task 视为“上一班快照”，用于继承。
+ */
+function createSnapshotFromTask(
+    task
+){
+    if(!task){
+        return null;
+    }
+
+    return {
+        shiftId:
+            task.currentShiftId ||
+            task.shiftId ||
+            "",
+
+        taskId:
+            shiftTaskId(task),
+
+        date:
+            task.shiftDate ||
+            task.date ||
+            String(
+                task.publishedAt ||
+                task.createdAt ||
+                ""
+            ).slice(0,10) ||
+            shiftToday(),
+
+        shift:
+            task.shift ||
+            "白班",
+
+        area:
+            task.area ||
+            task.workArea ||
+            "",
+
+        loadingPoint:
+            task.loadingPoint ||
+            task.taskLoadingPoint ||
+            "",
+
+        unloadingPoint:
+            task.unloadingPoint ||
+            task.taskUnloadingPoint ||
+            "",
+
+        bindings:
+            shiftDeepClone(
+                task.bindings ||
+                []
+            ) || [],
+
+        driverAssignments:
+            shiftDeepClone(
+                task.driverAssignments ||
+                []
+            ) || [],
+
+        auxiliaryAssignments:
+            shiftDeepClone(
+                task.auxiliaryAssignments ||
+                task.auxiliary ||
+                []
+            ) || [],
+
+        status:
+            task.status ||
+            "active",
+
+        inheritedFromShiftId:
+            "",
+
+        createdAt:
+            task.publishedAt ||
+            task.createdAt ||
+            new Date().toISOString()
+    };
+}
+
+
+function getShiftInheritanceSource(
+    task
+){
+    const id =
+        shiftTaskId(task);
+
+    return (
+        latestShiftExecutionForTask(
+            id
+        )
+        ||
+        createSnapshotFromTask(
+            task
+        )
+    );
+}
+
+
+function shiftCountTrucks(
+    bindings
+){
+    const set =
+        new Set();
+
+    (bindings || [])
+        .forEach(binding=>{
+            [
+                ...(binding.truckIds || []),
+                ...(binding.vehicleIds || []),
+                ...(binding.trucks || [])
+            ]
+                .forEach(id=>{
+                    if(id){
+                        set.add(
+                            String(id)
+                        );
+                    }
+                });
+        });
+
+    return set.size;
+}
+
+
+function shiftBindingSummary(
+    source
+){
+    const bindings =
+        Array.isArray(
+            source?.bindings
+        )
+            ? source.bindings
+            : [];
+
+    if(!bindings.length){
+        return `
+            <div class="shift-preview-row">
+                上一班没有可读取的挖机—汽车绑定关系。
+            </div>
+        `;
+    }
+
+    return bindings
+        .map((binding,index)=>{
+            const excavator =
+                binding.excavatorNumber ||
+                binding.excavatorId ||
+                binding.excavator ||
+                `挖机${index+1}`;
+
+            const trucks = [
+                ...(binding.truckIds || []),
+                ...(binding.vehicleIds || []),
+                ...(binding.trucks || [])
+            ]
+                .filter(Boolean);
+
+            return `
+                <div class="shift-preview-row">
+                    <strong>${shiftEscape(excavator)}</strong>
+                    →
+                    ${trucks.length
+                        ? trucks.map(shiftEscape).join("、")
+                        : "暂无汽车"}
+                </div>
+            `;
+        })
+        .join("");
+}
+
+
+function renderShiftInheritancePreview(){
+    const taskId =
+        document.getElementById(
+            "shiftMasterTaskSelect"
+        )?.value ||
+        "";
+
+    const box =
+        document.getElementById(
+            "shiftInheritancePreview"
+        );
+
+    if(!box){
+        return;
+    }
+
+    const task =
+        getPublishedShiftTasks()
+            .find(
+                item =>
+                    shiftTaskId(item) ===
+                        taskId
+            );
+
+    if(!task){
+        box.innerHTML = `
+            <h4>上一班绑定预览</h4>
+            <div class="empty-placeholder">
+                选择生产任务后显示
+            </div>
+        `;
+        return;
+    }
+
+    const source =
+        getShiftInheritanceSource(
+            task
+        );
+
+    const driverCount =
+        Array.isArray(
+            source?.driverAssignments
+        )
+            ? source.driverAssignments.length
+            : 0;
+
+    box.innerHTML = `
+        <h4>
+            上一班绑定预览
+            <span class="shift-chip">
+                ${shiftEscape(source?.shift || "-")}
+            </span>
+        </h4>
+
+        <div class="shift-preview-row">
+            主任务：
+            <strong>${shiftEscape(taskId)}</strong>
+            · 区域：
+            <strong>${shiftEscape(source?.area || task.area || "-")}</strong>
+        </div>
+
+        <div class="shift-preview-row">
+            装载区：
+            ${shiftEscape(source?.loadingPoint || "-")}
+            <br>
+            卸载区：
+            ${shiftEscape(source?.unloadingPoint || "-")}
+        </div>
+
+        ${shiftBindingSummary(source)}
+
+        <div class="shift-preview-row">
+            上一班司机绑定：
+            <strong>${driverCount}</strong> 人
+            · 汽车绑定：
+            <strong>${shiftCountTrucks(source?.bindings)}</strong> 台
+        </div>
+
+        <div class="shift-inherit-note">
+            生成后默认沿用以上设备关系和人员绑定。
+            本班发生人员/车辆调整时，再在调度端修改本班绑定；
+            上一班历史快照不会改变。
+        </div>
+    `;
+}
+
+
+function populateShiftTaskSelect(){
+    const select =
+        document.getElementById(
+            "shiftMasterTaskSelect"
+        );
+
+    if(!select){
+        return;
+    }
+
+    const current =
+        select.value;
+
+    const tasks =
+        getPublishedShiftTasks()
+            .filter(
+                task =>
+                    ![
+                        "completed",
+                        "cancelled",
+                        "withdrawn"
+                    ].includes(
+                        task.status
+                    )
+            );
+
+    select.innerHTML =
+        '<option value="">请选择生产任务</option>';
+
+    tasks.forEach(task=>{
+        const id =
+            shiftTaskId(task);
+
+        if(!id){
+            return;
+        }
+
+        const option =
+            document.createElement(
+                "option"
+            );
+
+        option.value =
+            id;
+
+        option.textContent =
+            `${id} · ${task.area || task.workArea || "未命名区域"} · 当前${task.shift || "-"}`;
+
+        select.appendChild(
+            option
+        );
+    });
+
+    if(
+        current &&
+        tasks.some(
+            task =>
+                shiftTaskId(task) ===
+                    current
+        )
+    ){
+        select.value =
+            current;
+    }
+}
+
+
+function openShiftTaskModal(){
+    populateShiftTaskSelect();
+
+    const dateInput =
+        document.getElementById(
+            "shiftExecutionDate"
+        );
+
+    if(dateInput){
+        dateInput.value =
+            shiftToday();
+    }
+
+    renderShiftInheritancePreview();
+
+    document
+        .getElementById(
+            "shiftTaskModal"
+        )
+        ?.classList
+        .remove(
+            "hidden"
+        );
+}
+
+
+function closeShiftTaskModal(){
+    document
+        .getElementById(
+            "shiftTaskModal"
+        )
+        ?.classList
+        .add(
+            "hidden"
+        );
+}
+
+
+function createShiftId(
+    taskId,
+    date,
+    shift
+){
+    const shiftCode =
+        shift === "夜班"
+            ? "N"
+            : "D";
+
+    return (
+        `${taskId}-` +
+        `${String(date).replaceAll("-","")}-` +
+        `${shiftCode}-` +
+        `${Date.now().toString().slice(-6)}`
+    );
+}
+
+
+function generateShiftExecution(){
+    const taskId =
+        document.getElementById(
+            "shiftMasterTaskSelect"
+        )?.value ||
+        "";
+
+    const nextShift =
+        document.getElementById(
+            "shiftNextShiftSelect"
+        )?.value ||
+        "";
+
+    const date =
+        document.getElementById(
+            "shiftExecutionDate"
+        )?.value ||
+        "";
+
+    const remark =
+        document.getElementById(
+            "shiftHandoverRemark"
+        )?.value
+        ?.trim() ||
+        "";
+
+    if(
+        !taskId ||
+        !nextShift ||
+        !date
+    ){
+        alert(
+            "请选择生产任务、班次和生产日期。"
+        );
+        return;
+    }
+
+    const tasks =
+        getPublishedShiftTasks();
+
+    const taskIndex =
+        tasks.findIndex(
+            item =>
+                shiftTaskId(item) ===
+                    taskId
+        );
+
+    if(taskIndex < 0){
+        alert(
+            "没有找到该生产任务。"
+        );
+        return;
+    }
+
+    const task =
+        tasks[taskIndex];
+
+    const source =
+        getShiftInheritanceSource(
+            task
+        );
+
+    if(!source){
+        alert(
+            "无法读取上一班绑定数据。"
+        );
+        return;
+    }
+
+    const executions =
+        getShiftExecutions();
+
+    const duplicate =
+        executions.find(
+            item =>
+                String(item.taskId) ===
+                    taskId &&
+                String(item.date) ===
+                    date &&
+                String(item.shift) ===
+                    nextShift &&
+                item.status !==
+                    "cancelled"
+        );
+
+    if(duplicate){
+        alert(
+            `该任务在 ${date} ${nextShift} 已经生成过班次执行记录。`
+        );
+        return;
+    }
+
+    if(
+        !confirm(
+            "确认生成本班任务？\n\n" +
+            `主任务：${taskId}\n` +
+            `班次：${date} ${nextShift}\n\n` +
+            "系统将默认沿用上一班挖机、汽车及人员绑定，" +
+            "并把上一班冻结为“已交班”。"
+        )
+    ){
+        return;
+    }
+
+    const now =
+        new Date()
+            .toISOString();
+
+    const newShiftId =
+        createShiftId(
+            taskId,
+            date,
+            nextShift
+        );
+
+
+    /*
+     * 冻结上一班历史。
+     */
+    executions
+        .filter(
+            item =>
+                String(
+                    item.taskId
+                ) ===
+                    taskId &&
+                item.status ===
+                    "active"
+        )
+        .forEach(item=>{
+            item.status =
+                "handed_over";
+
+            item.handedOverAt =
+                now;
+
+            item.updatedAt =
+                now;
+        });
+
+
+    /*
+     * 如果这是第一次使用班次模块，
+     * 先把当前旧任务状态保存为历史快照。
+     */
+    const existingTaskExecutions =
+        executions.filter(
+            item =>
+                String(
+                    item.taskId
+                ) ===
+                    taskId
+        );
+
+    let inheritedFromShiftId =
+        source.shiftId ||
+        "";
+
+    if(
+        !existingTaskExecutions.length &&
+        !source.shiftId
+    ){
+        const firstSnapshot = {
+            ...shiftDeepClone(
+                source
+            ),
+
+            shiftId:
+                createShiftId(
+                    taskId,
+                    source.date ||
+                    shiftToday(),
+                    source.shift ||
+                    "白班"
+                ),
+
+            status:
+                "handed_over",
+
+            handedOverAt:
+                now,
+
+            snapshotImported:
+                true,
+
+            updatedAt:
+                now
+        };
+
+        inheritedFromShiftId =
+            firstSnapshot.shiftId;
+
+        executions.push(
+            firstSnapshot
+        );
+    }
+
+
+    const inheritedBindings =
+        shiftDeepClone(
+            source.bindings ||
+            task.bindings ||
+            []
+        ) || [];
+
+    const inheritedDrivers =
+        shiftDeepClone(
+            source.driverAssignments ||
+            task.driverAssignments ||
+            []
+        ) || [];
+
+    const inheritedAuxiliary =
+        shiftDeepClone(
+            source.auxiliaryAssignments ||
+            task.auxiliaryAssignments ||
+            []
+        ) || [];
+
+
+    /*
+     * 给本班人员绑定写入 shiftId，
+     * 后续司机端可以通过 taskId + shiftId 精确识别。
+     */
+    inheritedDrivers
+        .forEach(item=>{
+            item.shiftId =
+                newShiftId;
+
+            item.shift =
+                nextShift;
+
+            item.shiftDate =
+                date;
+        });
+
+    inheritedBindings
+        .forEach(item=>{
+            item.shiftId =
+                newShiftId;
+
+            item.shift =
+                nextShift;
+
+            item.shiftDate =
+                date;
+        });
+
+
+    const execution = {
+
+        shiftId:
+            newShiftId,
+
+        taskId:
+            taskId,
+
+        date:
+            date,
+
+        shift:
+            nextShift,
+
+        area:
+            task.area ||
+            task.workArea ||
+            source.area ||
+            "",
+
+        loadingPoint:
+            task.loadingPoint ||
+            task.taskLoadingPoint ||
+            source.loadingPoint ||
+            "",
+
+        unloadingPoint:
+            task.unloadingPoint ||
+            task.taskUnloadingPoint ||
+            source.unloadingPoint ||
+            "",
+
+        bindings:
+            inheritedBindings,
+
+        driverAssignments:
+            inheritedDrivers,
+
+        auxiliaryAssignments:
+            inheritedAuxiliary,
+
+        inheritedFromShiftId:
+            inheritedFromShiftId,
+
+        inherited:
+            true,
+
+        status:
+            "active",
+
+        handoverRemark:
+            remark,
+
+        startedAt:
+            now,
+
+        createdAt:
+            now,
+
+        updatedAt:
+            now
+    };
+
+
+    executions.push(
+        execution
+    );
+
+    saveShiftExecutions(
+        executions
+    );
+
+
+    /*
+     * 主任务始终保留同一个 taskId。
+     * 这里只更新“当前班次执行状态”，
+     * 并复制本班默认绑定给现有司机/挖机页面读取。
+     */
+    tasks[taskIndex] = {
+        ...task,
+
+        masterTask:
+            true,
+
+        currentShiftId:
+            newShiftId,
+
+        shiftId:
+            newShiftId,
+
+        shift:
+            nextShift,
+
+        shiftDate:
+            date,
+
+        bindings:
+            inheritedBindings,
+
+        driverAssignments:
+            inheritedDrivers,
+
+        auxiliaryAssignments:
+            inheritedAuxiliary,
+
+        status:
+            "active",
+
+        lastHandoverAt:
+            now,
+
+        lastHandoverRemark:
+            remark,
+
+        shiftHistory:
+            [
+                ...(
+                    Array.isArray(
+                        task.shiftHistory
+                    )
+                        ? task.shiftHistory
+                        : []
+                ),
+
+                {
+                    shiftId:
+                        newShiftId,
+
+                    shift:
+                        nextShift,
+
+                    date:
+                        date,
+
+                    inheritedFromShiftId:
+                        inheritedFromShiftId,
+
+                    createdAt:
+                        now
+                }
+            ],
+
+        updatedAt:
+            now
+    };
+
+
+    savePublishedShiftTasks(
+        tasks
+    );
+
+
+    closeShiftTaskModal();
+
+    renderShiftExecutionSummary();
+
+    /*
+     * 通知现有调度 JS / 页面刷新。
+     */
+    window.dispatchEvent(
+        new StorageEvent(
+            "storage",
+            {
+                key:
+                    "dispatchPublishedTasks"
+            }
+        )
+    );
+
+    alert(
+        "本班任务已生成。\n\n" +
+        `主任务：${taskId}\n` +
+        `班次执行：${newShiftId}\n` +
+        `班次：${nextShift}\n\n` +
+        "已默认沿用上一班挖机、汽车及人员绑定关系。"
+    );
+}
+
+
+function renderShiftExecutionSummary(){
+    const box =
+        document.getElementById(
+            "shiftExecutionSummary"
+        );
+
+    if(!box){
+        return;
+    }
+
+    const executions =
+        getShiftExecutions()
+            .filter(
+                item =>
+                    item.status ===
+                    "active"
+            )
+            .sort(
+                (a,b) =>
+                    new Date(
+                        b.startedAt ||
+                        0
+                    ) -
+                    new Date(
+                        a.startedAt ||
+                        0
+                    )
+            );
+
+    if(!executions.length){
+        box.innerHTML = `
+            <div class="empty-placeholder">
+                暂无班次执行记录。首次创建任务后，后续换班可点击“生成本班任务”。
+            </div>
+        `;
+        return;
+    }
+
+    box.innerHTML =
+        executions
+            .map(item=>{
+                const bindingCount =
+                    Array.isArray(
+                        item.bindings
+                    )
+                        ? item.bindings.length
+                        : 0;
+
+                const driverCount =
+                    Array.isArray(
+                        item.driverAssignments
+                    )
+                        ? item.driverAssignments.length
+                        : 0;
+
+                return `
+                    <div class="shift-execution-card">
+
+                        <div class="shift-execution-top">
+                            <div>
+                                <h4>
+                                    ${shiftEscape(item.taskId)}
+                                </h4>
+                                <div class="small">
+                                    ${shiftEscape(item.shiftId)}
+                                </div>
+                            </div>
+
+                            <span class="shift-chip green">
+                                ${shiftEscape(item.shift)}
+                                · 执行中
+                            </span>
+                        </div>
+
+                        <div class="shift-execution-meta">
+
+                            <div>
+                                <span>生产日期</span>
+                                <strong>${shiftEscape(item.date || "-")}</strong>
+                            </div>
+
+                            <div>
+                                <span>作业区域</span>
+                                <strong>${shiftEscape(item.area || "-")}</strong>
+                            </div>
+
+                            <div>
+                                <span>挖机绑定组</span>
+                                <strong>${bindingCount}</strong>
+                            </div>
+
+                            <div>
+                                <span>本班司机绑定</span>
+                                <strong>${driverCount}</strong>
+                            </div>
+
+                        </div>
+
+                        <div class="shift-inherit-note">
+                            ${
+                                item.inherited
+                                    ? "已继承上一班绑定"
+                                    : "首次班次"
+                            }
+                            ${
+                                item.inheritedFromShiftId
+                                    ? " · 来源：" +
+                                      shiftEscape(item.inheritedFromShiftId)
+                                    : ""
+                            }
+                        </div>
+
+                    </div>
+                `;
+            })
+            .join("");
+}
+
+
+/*
+ * 首次任务发布兼容：
+ * 如果旧 dispatch.js 发布了新任务，
+ * 这里自动给主任务补一个 currentShiftId，
+ * 但不改变原发布流程。
+ */
+function ensureInitialShiftExecutions(){
+    const tasks =
+        getPublishedShiftTasks();
+
+    if(!tasks.length){
+        return;
+    }
+
+    let executions =
+        getShiftExecutions();
+
+    let changedTask =
+        false;
+
+    let changedExecution =
+        false;
+
+    tasks.forEach((task,index)=>{
+        const id =
+            shiftTaskId(task);
+
+        if(!id){
+            return;
+        }
+
+        const exists =
+            executions.some(
+                item =>
+                    String(
+                        item.taskId
+                    ) ===
+                        id
+            );
+
+        if(exists){
+            return;
+        }
+
+        /*
+         * 只为已经发布且有实际配置的任务建立首次班次。
+         */
+        if(
+            !Array.isArray(
+                task.bindings
+            ) &&
+            !Array.isArray(
+                task.driverAssignments
+            )
+        ){
+            return;
+        }
+
+        const date =
+            task.shiftDate ||
+            String(
+                task.publishedAt ||
+                task.createdAt ||
+                ""
+            ).slice(0,10) ||
+            shiftToday();
+
+        const shift =
+            task.shift ||
+            "白班";
+
+        const shiftId =
+            createShiftId(
+                id,
+                date,
+                shift
+            );
+
+        const snapshot = {
+            ...createSnapshotFromTask(
+                task
+            ),
+
+            shiftId:
+                shiftId,
+
+            taskId:
+                id,
+
+            date:
+                date,
+
+            shift:
+                shift,
+
+            status:
+                (
+                    [
+                        "completed",
+                        "cancelled",
+                        "withdrawn"
+                    ].includes(
+                        task.status
+                    )
+                )
+                    ? "completed"
+                    : "active",
+
+            inherited:
+                false,
+
+            createdAt:
+                task.publishedAt ||
+                task.createdAt ||
+                new Date().toISOString()
+        };
+
+        executions.push(
+            snapshot
+        );
+
+        tasks[index] = {
+            ...task,
+
+            masterTask:
+                true,
+
+            currentShiftId:
+                shiftId,
+
+            shiftId:
+                shiftId,
+
+            shiftDate:
+                date
+        };
+
+        changedTask =
+            true;
+
+        changedExecution =
+            true;
+    });
+
+    if(changedExecution){
+        saveShiftExecutions(
+            executions
+        );
+    }
+
+    if(changedTask){
+        savePublishedShiftTasks(
+            tasks
+        );
+    }
+}
+
+
+/* ------------------------- 事件 ------------------------- */
+
+document
+    .getElementById(
+        "shiftTaskButton"
+    )
+    ?.addEventListener(
+        "click",
+        openShiftTaskModal
+    );
+
+document
+    .getElementById(
+        "closeShiftTaskButton"
+    )
+    ?.addEventListener(
+        "click",
+        closeShiftTaskModal
+    );
+
+document
+    .getElementById(
+        "shiftMasterTaskSelect"
+    )
+    ?.addEventListener(
+        "change",
+        renderShiftInheritancePreview
+    );
+
+document
+    .getElementById(
+        "generateShiftExecutionButton"
+    )
+    ?.addEventListener(
+        "click",
+        generateShiftExecution
+    );
+
+
+/*
+ * 原任务发布后补首次班次记录。
+ */
+document
+    .getElementById(
+        "publishTaskButton"
+    )
+    ?.addEventListener(
+        "click",
+        ()=>{
+            setTimeout(
+                ()=>{
+                    ensureInitialShiftExecutions();
+                    renderShiftExecutionSummary();
+                },
+                200
+            );
+        }
+    );
+
+
+ensureInitialShiftExecutions();
+renderShiftExecutionSummary();
+
+window.addEventListener(
+    "storage",
+    ()=>{
+        renderShiftExecutionSummary();
     }
 );
 
