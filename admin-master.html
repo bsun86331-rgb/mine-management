@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#0f172a">
 
-  <title>管理员基础资料中心 V2.10.1H</title>
+  <title>管理员基础资料中心 V2.10.3I</title>
 
   <link rel="stylesheet" href="css/admin-master.css?v=2.9.4a">
 
@@ -73,7 +73,67 @@
         width: 100%;
       }
     }
-  </style>
+  
+    .equipment-live-note {
+      margin: 0 0 14px;
+      padding: 12px 14px;
+      border: 1px solid #bfdbfe;
+      border-radius: 12px;
+      background: #eff6ff;
+      color: #1e40af;
+      font-size: 12px;
+      line-height: 1.7;
+    }
+
+    .equipment-status-summary {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+      gap: 9px;
+      margin-bottom: 14px;
+    }
+
+    .equipment-status-summary > div {
+      padding: 10px 8px;
+      border: 1px solid #e2e8f0;
+      border-radius: 11px;
+      background: #f8fafc;
+      text-align: center;
+    }
+
+    .equipment-status-summary span {
+      display: block;
+      color: #64748b;
+      font-size: 11px;
+    }
+
+    .equipment-status-summary strong {
+      display: block;
+      margin-top: 4px;
+      color: #0f172a;
+      font-size: 20px;
+    }
+
+    .equipment-status-help {
+      display: block;
+      margin-top: 6px;
+      color: #64748b;
+      font-size: 11px;
+      line-height: 1.5;
+    }
+
+    @media (max-width: 900px) {
+      .equipment-status-summary {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 560px) {
+      .equipment-status-summary {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+</style>
 </head>
 
 <body>
@@ -317,6 +377,26 @@
     </div>
 
 
+    <div class="equipment-live-note">
+      <strong>设备状态实时联动：</strong>
+      作业中由当前生产任务自动判断；维修中 / 保养中由维修流程自动判断；
+      管理员主要维护“可用 / 备用 / 停用”基础状态。
+      <br>
+      <strong>临近保养 / 超期保养只属于提醒，不会自动把设备锁死。</strong>
+    </div>
+
+
+    <div class="equipment-status-summary">
+      <div><span>全部</span><strong id="equipmentLiveTotal">0</strong></div>
+      <div><span>可用</span><strong id="equipmentLiveAvailable">0</strong></div>
+      <div><span>作业中</span><strong id="equipmentLiveWorking">0</strong></div>
+      <div><span>维修中</span><strong id="equipmentLiveMaintenance">0</strong></div>
+      <div><span>保养中</span><strong id="equipmentLiveService">0</strong></div>
+      <div><span>备用</span><strong id="equipmentLiveStandby">0</strong></div>
+      <div><span>停用</span><strong id="equipmentLiveDisabled">0</strong></div>
+    </div>
+
+
     <div class="toolbar">
 
       <input
@@ -339,6 +419,10 @@
         <option>平路机</option>
         <option>推土机</option>
         <option>大巴</option>
+        <option>皮卡</option>
+        <option>指挥车</option>
+        <option>通勤车</option>
+        <option>维修车</option>
         <option>维修车辆</option>
         <option>其他设备</option>
 
@@ -970,17 +1054,21 @@
 
 
       <label>
-        设备状态
+        设备基础状态
         <select id="equipmentStatus">
 
           <option value="available">可用</option>
-          <option value="working">作业中</option>
-          <option value="maintenance">维修中</option>
-          <option value="service">保养中</option>
+          <option value="working" disabled>作业中（系统自动）</option>
+          <option value="maintenance" disabled>维修中（系统自动）</option>
+          <option value="service" disabled>保养中（系统自动）</option>
           <option value="standby">备用</option>
           <option value="disabled">停用</option>
 
         </select>
+
+        <small class="equipment-status-help">
+          作业中、维修中、保养中由系统联动；管理员可设置可用、备用、停用。
+        </small>
       </label>
 
 
@@ -1389,6 +1477,1140 @@
 </script>
 
 <script src="js/admin-master.js?v=2.9.4a"></script>
+
+<script>
+"use strict";
+
+/* =========================================================
+   V2.10.3I
+   管理员设备档案状态统一联动
+
+   动态状态：
+   working      作业中     <- 当前生产任务 / 班次绑定
+   maintenance 维修中     <- 活动维修流程
+   service      保养中     <- equipmentOperationalStatus
+
+   基础状态：
+   available    可用
+   standby      备用
+   disabled     停用
+
+   说明：
+   maintenanceAlerts 中“临近 / 超期”不改变运行状态。
+========================================================= */
+
+const ADMIN_EQUIPMENT_OPERATIONAL_KEY =
+  "equipmentOperationalStatus";
+
+
+const ADMIN_EQUIPMENT_EXCLUDED_KEYS =
+  new Set([
+    "equipmentOperationalStatus",
+    "equipmentMeterReadings",
+    "equipmentMaintenanceSettings",
+    "equipmentMaintenanceRecords",
+    "equipmentUsageChecks",
+    "equipmentUsageRecords",
+    "maintenanceAlerts",
+    "auxiliaryVehicleProfile"
+  ]);
+
+
+function adminReadArray(key) {
+
+  try {
+
+    const data =
+      JSON.parse(
+        localStorage.getItem(key)
+      );
+
+
+    return Array.isArray(data)
+      ? data
+      : [];
+
+
+  } catch (error) {
+
+    return [];
+  }
+}
+
+
+function adminEquipmentId(item) {
+
+  return String(
+    item?.equipmentNumber ||
+    item?.vehicleNumber ||
+    item?.equipmentId ||
+    item?.vehicleId ||
+    item?.number ||
+    ""
+  ).trim();
+}
+
+
+function adminLooksLikeEquipmentRecord(item) {
+
+  if (
+    !item ||
+    typeof item !== "object"
+  ) {
+    return false;
+  }
+
+
+  if (
+    !adminEquipmentId(item)
+  ) {
+    return false;
+  }
+
+
+  return Boolean(
+    item.equipmentType ||
+    item.vehicleType ||
+    item.equipmentName ||
+    item.name ||
+    item.model ||
+    item.brand ||
+    item.plate ||
+    item.status ||
+    item.equipmentStatus ||
+    item.team ||
+    item.capacity
+  );
+}
+
+
+function adminStatusText(status) {
+
+  const map = {
+    available: "可用",
+    working: "作业中",
+    maintenance: "维修中",
+    service: "保养中",
+    standby: "备用",
+    disabled: "停用"
+  };
+
+
+  return map[status] || status || "可用";
+}
+
+
+function adminGetOperationalMap() {
+
+  const map =
+    new Map();
+
+
+  adminReadArray(
+    ADMIN_EQUIPMENT_OPERATIONAL_KEY
+  )
+    .forEach(
+      item => {
+
+        const id =
+          String(
+            item.equipmentId ||
+            item.equipmentNumber ||
+            ""
+          ).trim();
+
+
+        if (id) {
+
+          map.set(
+            id,
+            item
+          );
+        }
+      }
+    );
+
+
+  return map;
+}
+
+
+function adminGetActiveRepairSet() {
+
+  const set =
+    new Set();
+
+
+  const requestStatuses =
+    new Set([
+      "pending_dispatch",
+      "waiting_entry",
+      "waiting_assignment",
+      "assigned",
+      "working",
+      "waiting_parts",
+      "waiting_inspection",
+      "inspection_passed",
+      "rework"
+    ]);
+
+
+  adminReadArray(
+    "maintenanceRequests"
+  )
+    .forEach(
+      item => {
+
+        if (
+          !requestStatuses.has(
+            item.status
+          )
+        ) {
+          return;
+        }
+
+
+        const id =
+          adminEquipmentId(item);
+
+
+        if (id) {
+          set.add(id);
+        }
+      }
+    );
+
+
+  adminReadArray(
+    "maintenanceWorkOrders"
+  )
+    .forEach(
+      item => {
+
+        if (
+          item.status ===
+          "completed"
+        ) {
+          return;
+        }
+
+
+        const id =
+          adminEquipmentId(item);
+
+
+        if (id) {
+          set.add(id);
+        }
+      }
+    );
+
+
+  return set;
+}
+
+
+function adminCollectAssignmentIds(
+  value,
+  set,
+  depth = 0
+) {
+
+  if (
+    value == null ||
+    depth > 5
+  ) {
+    return;
+  }
+
+
+  if (
+    Array.isArray(value)
+  ) {
+
+    value.forEach(
+      item =>
+        adminCollectAssignmentIds(
+          item,
+          set,
+          depth + 1
+        )
+    );
+
+    return;
+  }
+
+
+  if (
+    typeof value !== "object"
+  ) {
+    return;
+  }
+
+
+  [
+    value.equipmentNumber,
+    value.vehicleNumber,
+    value.truckNumber,
+    value.excavatorNumber
+  ]
+    .filter(Boolean)
+    .forEach(
+      id =>
+        set.add(
+          String(id)
+        )
+    );
+
+
+  [
+    ...(Array.isArray(value.truckIds) ? value.truckIds : []),
+    ...(Array.isArray(value.vehicleIds) ? value.vehicleIds : [])
+  ]
+    .filter(Boolean)
+    .forEach(
+      id =>
+        set.add(
+          String(id)
+        )
+    );
+
+
+  [
+    "bindings",
+    "driverAssignments",
+    "auxiliaryAssignments",
+    "auxiliary",
+    "vehicles",
+    "equipment"
+  ]
+    .forEach(
+      key => {
+
+        if (value[key]) {
+
+          adminCollectAssignmentIds(
+            value[key],
+            set,
+            depth + 1
+          );
+        }
+      }
+    );
+}
+
+
+function adminGetActiveAssignmentSet() {
+
+  const set =
+    new Set();
+
+
+  adminReadArray(
+    "dispatchPublishedTasks"
+  )
+    .filter(
+      task =>
+        ![
+          "completed",
+          "cancelled",
+          "withdrawn"
+        ].includes(
+          task.status
+        )
+    )
+    .forEach(
+      task =>
+        adminCollectAssignmentIds(
+          task,
+          set
+        )
+    );
+
+
+  adminReadArray(
+    "dispatchShiftExecutions"
+  )
+    .filter(
+      item =>
+        item.status ===
+        "active"
+    )
+    .forEach(
+      item =>
+        adminCollectAssignmentIds(
+          item,
+          set
+        )
+    );
+
+
+  return set;
+}
+
+
+function adminMasterStorageContainers() {
+
+  const containers =
+    [];
+
+
+  for (
+    let index = 0;
+    index < localStorage.length;
+    index++
+  ) {
+
+    const key =
+      localStorage.key(index);
+
+
+    if (
+      !key ||
+      !/equipment|vehicle|设备|车辆/i.test(key) ||
+      ADMIN_EQUIPMENT_EXCLUDED_KEYS.has(key)
+    ) {
+      continue;
+    }
+
+
+    let data;
+
+
+    try {
+
+      const raw =
+        localStorage.getItem(key);
+
+
+      if (
+        !raw ||
+        raw.length > 1500000
+      ) {
+        continue;
+      }
+
+
+      data =
+        JSON.parse(raw);
+
+
+    } catch (error) {
+
+      continue;
+    }
+
+
+    const list =
+      Array.isArray(data)
+        ? data
+        : (
+            data &&
+            typeof data === "object"
+              ? [data]
+              : []
+          );
+
+
+    if (
+      list.some(
+        adminLooksLikeEquipmentRecord
+      )
+    ) {
+
+      containers.push({
+        key,
+        data,
+        isArray:
+          Array.isArray(data)
+      });
+    }
+  }
+
+
+  return containers;
+}
+
+
+function adminEffectiveEquipmentStatus(
+  item,
+  activeRepairs,
+  activeAssignments,
+  operationalMap
+) {
+
+  const id =
+    adminEquipmentId(item);
+
+
+  const currentStatus =
+    String(
+      item.status ||
+      item.equipmentStatus ||
+      "available"
+    );
+
+
+  const baseStatus =
+    String(
+      item.adminBaseStatus ||
+      (
+        [
+          "available",
+          "standby",
+          "disabled"
+        ].includes(currentStatus)
+          ? currentStatus
+          : "available"
+      )
+    );
+
+
+  if (
+    activeRepairs.has(id)
+  ) {
+    return "maintenance";
+  }
+
+
+  const operational =
+    operationalMap.get(id);
+
+
+  if (
+    operational &&
+    [
+      "maintenance",
+      "service",
+      "disabled"
+    ].includes(
+      operational.status
+    )
+  ) {
+    return operational.status;
+  }
+
+
+  if (
+    baseStatus === "disabled"
+  ) {
+    return "disabled";
+  }
+
+
+  if (
+    activeAssignments.has(id)
+  ) {
+    return "working";
+  }
+
+
+  if (
+    operational &&
+    [
+      "available",
+      "standby",
+      "working"
+    ].includes(
+      operational.status
+    )
+  ) {
+    return operational.status;
+  }
+
+
+  return baseStatus;
+}
+
+
+function adminSetOperationalStatus(
+  equipmentId,
+  status,
+  source = "admin_master"
+) {
+
+  const id =
+    String(
+      equipmentId ||
+      ""
+    ).trim();
+
+
+  if (!id) {
+    return;
+  }
+
+
+  const records =
+    adminReadArray(
+      ADMIN_EQUIPMENT_OPERATIONAL_KEY
+    );
+
+
+  let record =
+    records.find(
+      item =>
+        String(
+          item.equipmentId ||
+          ""
+        ) === id
+    );
+
+
+  if (!record) {
+
+    record = {
+      equipmentId: id
+    };
+
+    records.push(record);
+  }
+
+
+  record.status =
+    status;
+
+  record.source =
+    source;
+
+  record.updatedAt =
+    new Date()
+      .toISOString();
+
+
+  localStorage.setItem(
+    ADMIN_EQUIPMENT_OPERATIONAL_KEY,
+    JSON.stringify(records)
+  );
+}
+
+
+function adminSyncEquipmentStatuses() {
+
+  const activeRepairs =
+    adminGetActiveRepairSet();
+
+
+  const activeAssignments =
+    adminGetActiveAssignmentSet();
+
+
+  const operationalMap =
+    adminGetOperationalMap();
+
+
+  adminMasterStorageContainers()
+    .forEach(
+      container => {
+
+        const list =
+          container.isArray
+            ? container.data
+            : [container.data];
+
+
+        let changed =
+          false;
+
+
+        list.forEach(
+          item => {
+
+            if (
+              !adminLooksLikeEquipmentRecord(item)
+            ) {
+              return;
+            }
+
+
+            const current =
+              String(
+                item.status ||
+                item.equipmentStatus ||
+                "available"
+              );
+
+
+            const base =
+              String(
+                item.adminBaseStatus ||
+                (
+                  [
+                    "available",
+                    "standby",
+                    "disabled"
+                  ].includes(current)
+                    ? current
+                    : "available"
+                )
+              );
+
+
+            if (
+              item.adminBaseStatus !== base
+            ) {
+
+              item.adminBaseStatus =
+                base;
+
+              changed =
+                true;
+            }
+
+
+            const effective =
+              adminEffectiveEquipmentStatus(
+                item,
+                activeRepairs,
+                activeAssignments,
+                operationalMap
+              );
+
+
+            if (
+              item.status !== effective
+            ) {
+
+              item.status =
+                effective;
+
+              changed =
+                true;
+            }
+
+
+            if (
+              "equipmentStatus" in item &&
+              item.equipmentStatus !== effective
+            ) {
+
+              item.equipmentStatus =
+                effective;
+
+              changed =
+                true;
+            }
+
+
+            /*
+             * 历史档案中已经是“停用”的设备，
+             * 同步到统一运行状态，保证司机端也能立即识别。
+             */
+            if (
+              base === "disabled" &&
+              !operationalMap.has(
+                adminEquipmentId(item)
+              )
+            ) {
+
+              adminSetOperationalStatus(
+                adminEquipmentId(item),
+                "disabled",
+                "admin_master"
+              );
+            }
+          }
+        );
+
+
+        if (changed) {
+
+          localStorage.setItem(
+            container.key,
+            JSON.stringify(
+              container.isArray
+                ? list
+                : list[0]
+            )
+          );
+        }
+      }
+    );
+}
+
+
+function adminCollectMasterEquipment() {
+
+  const map =
+    new Map();
+
+
+  adminMasterStorageContainers()
+    .forEach(
+      container => {
+
+        const list =
+          container.isArray
+            ? container.data
+            : [container.data];
+
+
+        list.forEach(
+          item => {
+
+            if (
+              !adminLooksLikeEquipmentRecord(item)
+            ) {
+              return;
+            }
+
+
+            const id =
+              adminEquipmentId(item);
+
+
+            if (
+              id &&
+              !map.has(id)
+            ) {
+
+              map.set(
+                id,
+                item
+              );
+            }
+          }
+        );
+      }
+    );
+
+
+  return [
+    ...map.values()
+  ];
+}
+
+
+function adminRenderEquipmentStatusSummary() {
+
+  const records =
+    adminCollectMasterEquipment();
+
+
+  const counts = {
+    total: records.length,
+    available: 0,
+    working: 0,
+    maintenance: 0,
+    service: 0,
+    standby: 0,
+    disabled: 0
+  };
+
+
+  records.forEach(
+    item => {
+
+      const status =
+        String(
+          item.status ||
+          item.equipmentStatus ||
+          "available"
+        );
+
+
+      if (
+        status in counts
+      ) {
+
+        counts[status] += 1;
+      }
+    }
+  );
+
+
+  const mapping = {
+    equipmentLiveTotal:
+      counts.total,
+
+    equipmentLiveAvailable:
+      counts.available,
+
+    equipmentLiveWorking:
+      counts.working,
+
+    equipmentLiveMaintenance:
+      counts.maintenance,
+
+    equipmentLiveService:
+      counts.service,
+
+    equipmentLiveStandby:
+      counts.standby,
+
+    equipmentLiveDisabled:
+      counts.disabled
+  };
+
+
+  Object.entries(mapping)
+    .forEach(
+      ([id, value]) => {
+
+        const element =
+          document.getElementById(id);
+
+
+        if (element) {
+          element.textContent =
+            String(value);
+        }
+      }
+    );
+}
+
+
+function adminUpdateMasterBaseStatus(
+  equipmentId,
+  baseStatus
+) {
+
+  const id =
+    String(
+      equipmentId ||
+      ""
+    ).trim();
+
+
+  if (
+    !id ||
+    ![
+      "available",
+      "standby",
+      "disabled"
+    ].includes(baseStatus)
+  ) {
+    return;
+  }
+
+
+  adminMasterStorageContainers()
+    .forEach(
+      container => {
+
+        const list =
+          container.isArray
+            ? container.data
+            : [container.data];
+
+
+        let changed =
+          false;
+
+
+        list.forEach(
+          item => {
+
+            if (
+              adminEquipmentId(item) !== id
+            ) {
+              return;
+            }
+
+
+            item.adminBaseStatus =
+              baseStatus;
+
+            changed =
+              true;
+          }
+        );
+
+
+        if (changed) {
+
+          localStorage.setItem(
+            container.key,
+            JSON.stringify(
+              container.isArray
+                ? list
+                : list[0]
+            )
+          );
+        }
+      }
+    );
+}
+
+
+/*
+ * 包装原设备列表渲染：
+ * 每次筛选 / 搜索前先同步实时状态。
+ */
+const adminOriginalRenderEquipment =
+  window.renderEquipment;
+
+
+if (
+  typeof adminOriginalRenderEquipment ===
+  "function"
+) {
+
+  window.renderEquipment =
+    function () {
+
+      adminSyncEquipmentStatuses();
+
+      adminRenderEquipmentStatusSummary();
+
+      return adminOriginalRenderEquipment
+        .apply(
+          this,
+          arguments
+        );
+    };
+}
+
+
+/*
+ * 保存设备后：
+ * 管理员设置的 可用 / 备用 / 停用
+ * 同步进入 equipmentOperationalStatus。
+ */
+const adminOriginalSaveEquipment =
+  window.saveEquipment;
+
+
+if (
+  typeof adminOriginalSaveEquipment ===
+  "function"
+) {
+
+  window.saveEquipment =
+    function () {
+
+      const number =
+        document
+          .getElementById(
+            "equipmentNumber"
+          )
+          ?.value
+          ?.trim() ||
+        "";
+
+
+      const selectedStatus =
+        document
+          .getElementById(
+            "equipmentStatus"
+          )
+          ?.value ||
+        "";
+
+
+      const result =
+        adminOriginalSaveEquipment
+          .apply(
+            this,
+            arguments
+          );
+
+
+      setTimeout(
+        () => {
+
+          /*
+           * 只有确实已经保存进设备档案，
+           * 才写统一状态。
+           */
+          const exists =
+            adminCollectMasterEquipment()
+              .some(
+                item =>
+                  adminEquipmentId(item) ===
+                  number
+              );
+
+
+          if (
+            exists &&
+            [
+              "available",
+              "standby",
+              "disabled"
+            ].includes(
+              selectedStatus
+            )
+          ) {
+
+            adminUpdateMasterBaseStatus(
+              number,
+              selectedStatus
+            );
+
+
+            adminSetOperationalStatus(
+              number,
+              selectedStatus,
+              "admin_master"
+            );
+          }
+
+
+          if (
+            typeof window.renderEquipment ===
+            "function"
+          ) {
+
+            window.renderEquipment();
+          }
+
+        },
+        0
+      );
+
+
+      return result;
+    };
+}
+
+
+function adminRefreshEquipmentLiveLayer() {
+
+  adminSyncEquipmentStatuses();
+
+  adminRenderEquipmentStatusSummary();
+
+
+  /*
+   * 设备模块可见时实时刷新卡片，
+   * 避免维修 / 调度状态变化后管理员仍看到旧状态。
+   */
+  const module =
+    document.getElementById(
+      "equipmentModule"
+    );
+
+
+  if (
+    module &&
+    !module.classList.contains(
+      "hidden"
+    ) &&
+    typeof adminOriginalRenderEquipment ===
+      "function"
+  ) {
+
+    adminOriginalRenderEquipment();
+  }
+}
+
+
+window.addEventListener(
+  "storage",
+  adminRefreshEquipmentLiveLayer
+);
+
+
+adminRefreshEquipmentLiveLayer();
+
+
+setInterval(
+  adminRefreshEquipmentLiveLayer,
+  5000
+);
+
+</script>
 
 </body>
 </html>
