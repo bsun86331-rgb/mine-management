@@ -712,12 +712,17 @@
     display: block;
     border-radius: 10px;
 }
-  .auxiliary-icon-img {
+ .auxiliary-icon-box {
+    width: 92px !important;
+    height: 46px !important;
+}
+
+.auxiliary-icon-img {
     width: 100% !important;
     height: 100% !important;
-    transform: scale(1.5);
-    transform-origin: center;
-}   
+    object-fit: contain;
+    transform: none;
+}
         .portal-title {
 
             display:
@@ -1307,9 +1312,9 @@
             onclick="openRoleModal('auxiliary')"
         >
 
-            <span class="portal-icon">
-               <img src="images/imagesauxiliary.png" alt="辅助车辆" class="auxiliary-icon-img">
-            </span>
+        <span class="portal-icon auxiliary-icon-box">
+    <img src="images/imagesauxiliary.png" alt="辅助车辆" class="auxiliary-icon-img">
+</span>
 
             <span class="portal-title">
                 辅助车辆
