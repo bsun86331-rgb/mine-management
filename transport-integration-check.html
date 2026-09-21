@@ -27,7 +27,7 @@ button{border:0;border-radius:10px;min-height:42px;padding:10px 14px;font-weight
 .filters{display:grid;grid-template-columns:1fr 1fr 1.2fr auto;gap:10px;align-items:end}
 label{display:block;font-size:12px;color:#475569;margin-bottom:6px;font-weight:700}
 select,input{width:100%;min-height:42px;border:1px solid #cbd5e1;border-radius:10px;padding:9px 10px;background:#fff}
-.kpis{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px}
+.kpis{display:grid;grid-template-columns:repeat(9,minmax(0,1fr));gap:10px}
 .kpi{padding:13px;border-radius:12px;background:#f8fafc}.kpi span{display:block;color:#64748b;font-size:12px}.kpi strong{display:block;margin-top:6px;font-size:22px}
 .table-wrap{overflow:auto}
 table{width:100%;min-width:1100px;border-collapse:collapse}
@@ -49,7 +49,7 @@ footer{text-align:center;color:#94a3b8;font-size:12px;padding:20px}
 <div class="header-inner">
   <div>
     <h1>🔗 运输系统完整联调</h1>
-    <div class="sub">TRANSPORT-INTEGRATION-CHECK V1.1 · mine-management</div>
+    <div class="sub">TRANSPORT-INTEGRATION-CHECK V1.2 · mine-management</div>
   </div>
   <button class="header-btn" onclick="location.href='system-map.html'">系统地图</button>
 </div>
@@ -58,7 +58,7 @@ footer{text-align:center;color:#94a3b8;font-size:12px;padding:20px}
 <main>
 
 <div class="notice">
-本页面只读检查，不会修改业务数据。用于验证：调度区域 → 主生产任务 → 班次继承 → 本班绑定调整 → 司机装卸 → 挖机统计 → 调度统计 → 报表中心，是否使用同一套 taskId + shiftId 数据链。
+本页面只读检查，不会修改业务数据。V1.2 增加 GPS运输闭环核验：调度区域 → 主生产任务 → 班次继承 → 本班绑定 → 进入装载区 → 驶离装载区 → 进入允许卸载区 → 实时GPS复核完成一趟 → 挖机/调度/报表统计，检查是否使用同一套 taskId + shiftId + 区域证据链。
 </div>
 
 <section class="card">
@@ -101,6 +101,9 @@ footer{text-align:center;color:#94a3b8;font-size:12px;padding:20px}
     <div class="kpi"><span>煤车数</span><strong id="coalTrips">0</strong></div>
     <div class="kpi"><span>渣车数</span><strong id="wasteTrips">0</strong></div>
     <div class="kpi"><span>只记车数</span><strong id="countOnlyTrips">0</strong></div>
+    <div class="kpi"><span>GPS闭环趟次</span><strong id="closedLoopTrips">0</strong></div>
+    <div class="kpi"><span>旧版正式趟次</span><strong id="legacyOfficialTrips">0</strong></div>
+    <div class="kpi"><span>闭环异常趟次</span><strong id="invalidClosedLoopTrips">0</strong></div>
     <div class="kpi"><span>班次执行数</span><strong id="shiftExecutionCount">0</strong></div>
     <div class="kpi"><span>待审核手动补录</span><strong id="pendingManual">0</strong></div>
   </div>
@@ -164,13 +167,42 @@ footer{text-align:center;color:#94a3b8;font-size:12px;padding:20px}
 
 <section class="card">
   <div class="section-title">
-    <div><h2>⑥ 运输记录抽查</h2><p>展示当前筛选条件下最近的运输记录。</p></div>
+    <div>
+      <h2>⑥ GPS运输闭环核验</h2>
+      <p>正式新版趟次必须具备：装载区验证 → 驶离装载区 → 到达允许卸载区 → 最终实时GPS复核。</p>
+    </div>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>时间</th>
+          <th>司机 / 车辆</th>
+          <th>taskId / shiftId</th>
+          <th>装载区证据</th>
+          <th>驶离装载区</th>
+          <th>卸载区证据</th>
+          <th>物料</th>
+          <th>GPS精度</th>
+          <th>闭环结论</th>
+        </tr>
+      </thead>
+      <tbody id="closedLoopTable"></tbody>
+    </table>
+  </div>
+</section>
+
+
+<section class="card">
+  <div class="section-title">
+    <div><h2>⑦ 运输记录抽查</h2><p>展示当前筛选条件下最近的运输记录，同时查看GPS闭环来源。</p></div>
   </div>
   <div class="table-wrap">
     <table>
       <thead>
         <tr>
-          <th>时间</th><th>司机</th><th>车辆</th><th>任务</th><th>班次</th><th>shiftId</th><th>装载区</th><th>卸载区</th><th>类型</th><th>来源</th><th>审核</th>
+          <th>时间</th><th>司机</th><th>车辆</th><th>任务</th><th>班次</th><th>shiftId</th><th>装载区</th><th>卸载区</th><th>类型</th><th>闭环</th><th>来源</th><th>审核</th>
         </tr>
       </thead>
       <tbody id="tripTable"></tbody>
@@ -180,7 +212,7 @@ footer{text-align:center;color:#94a3b8;font-size:12px;padding:20px}
 
 <section class="card">
   <div class="section-title">
-    <div><h2>⑦ 问题与建议</h2></div>
+    <div><h2>⑧ 问题与建议</h2></div>
   </div>
   <div id="issues" class="grid2">
     <div class="issue">尚未开始检查。</div>
@@ -189,7 +221,7 @@ footer{text-align:center;color:#94a3b8;font-size:12px;padding:20px}
 
 </main>
 
-<footer>mine-management · TRANSPORT-INTEGRATION-CHECK V1.1</footer>
+<footer>mine-management · TRANSPORT-INTEGRATION-CHECK V1.2</footer>
 
 <script>
 "use strict";
@@ -200,7 +232,8 @@ const KEYS = {
   TRIPS: "tripRecords",
   LEGACY_TRIPS: "driverTripRecords",
   SHIFT_EXECUTIONS: "dispatchShiftExecutions",
-  SHIFT_CHANGES: "shiftAssignmentChanges"
+  SHIFT_CHANGES: "shiftAssignmentChanges",
+  TRANSPORT_CYCLE: "driverTransportCycleState"
 };
 
 function readArray(key){
@@ -244,6 +277,209 @@ function tripTime(item){
 
 function material(item){
   return String(item?.materialType || item?.material || "").trim();
+}
+
+function isClosedLoopTrip(item){
+  return Boolean(
+    item &&
+    (
+      item.transportValidation === "gps_geofence_closed_loop" ||
+      item.dataSource === "司机端GPS区域闭环"
+    )
+  );
+}
+
+function hasFiniteNumber(value){
+  return Number.isFinite(Number(value));
+}
+
+function closedLoopAudit(item,zones){
+  if(!isClosedLoopTrip(item)){
+    return {
+      type: "legacy",
+      ok: true,
+      problems: ["旧版正式趟次，没有GPS区域闭环证据"],
+      loadingZone: null,
+      unloadingZone: null
+    };
+  }
+
+  const problems = [];
+
+  const loadingZoneId = String(item.loadingZoneId || "");
+  const unloadingZoneId = String(item.unloadingZoneId || "");
+
+  const loadingZone = zones.find(zone=>
+    String(zone.zoneId || "") === loadingZoneId &&
+    zone.zoneType === "loading"
+  ) || null;
+
+  const unloadingZone = zones.find(zone=>
+    String(zone.zoneId || "") === unloadingZoneId &&
+    zone.zoneType === "unloading"
+  ) || null;
+
+  if(item.loadingValidated !== true){
+    problems.push("loadingValidated 不是 true");
+  }
+
+  if(item.unloadingValidated !== true){
+    problems.push("unloadingValidated 不是 true");
+  }
+
+  if(!loadingZoneId || !loadingZone){
+    problems.push("装载区ID不存在或已失效");
+  }
+
+  if(!unloadingZoneId || !unloadingZone){
+    problems.push("卸载区ID不存在或已失效");
+  }
+
+  if(
+    !hasFiniteNumber(item.loadingLatitude) ||
+    !hasFiniteNumber(item.loadingLongitude) ||
+    !hasFiniteNumber(item.loadingGpsAccuracy)
+  ){
+    problems.push("缺少装载区GPS证据");
+  }
+
+  if(
+    !hasFiniteNumber(item.unloadingLatitude ?? item.latitude) ||
+    !hasFiniteNumber(item.unloadingLongitude ?? item.longitude) ||
+    !hasFiniteNumber(item.unloadingGpsAccuracy ?? item.gpsAccuracy)
+  ){
+    problems.push("缺少卸载区GPS证据");
+  }
+
+  if(
+    hasFiniteNumber(item.loadingGpsAccuracy) &&
+    Number(item.loadingGpsAccuracy) > 100
+  ){
+    problems.push("装载GPS精度大于100米");
+  }
+
+  const unloadAccuracy =
+    item.unloadingGpsAccuracy ??
+    item.gpsAccuracy;
+
+  if(
+    hasFiniteNumber(unloadAccuracy) &&
+    Number(unloadAccuracy) > 100
+  ){
+    problems.push("卸载GPS精度大于100米");
+  }
+
+  const times = [
+    ["loadedAt", item.loadedAt],
+    ["departedLoadingAt", item.departedLoadingAt],
+    ["arrivedUnloadAt", item.arrivedUnloadAt],
+    ["completedAt", item.completedAt]
+  ];
+
+  times.forEach(([name,value])=>{
+    if(!value || Number.isNaN(new Date(value).getTime())){
+      problems.push("缺少有效 " + name);
+    }
+  });
+
+  if(times.every(([,value])=>value && !Number.isNaN(new Date(value).getTime()))){
+    const loaded = new Date(item.loadedAt).getTime();
+    const departed = new Date(item.departedLoadingAt).getTime();
+    const arrived = new Date(item.arrivedUnloadAt).getTime();
+    const completed = new Date(item.completedAt).getTime();
+
+    if(!(loaded <= departed && departed <= arrived && arrived <= completed)){
+      problems.push("装载/驶离/到达/完成时间顺序异常");
+    }
+  }
+
+  if(!["煤","渣","只记车数"].includes(material(item))){
+    problems.push("物料类型不是煤/渣/只记车数");
+  }
+
+  if(
+    unloadingZone &&
+    String(unloadingZone.materialType || "").trim() !== material(item)
+  ){
+    problems.push("趟次物料与实际卸载区 materialType 不一致");
+  }
+
+  if(item.manualOverride === true){
+    problems.push("GPS闭环趟次不应为 manualOverride");
+  }
+
+  if(item.officialCountEligible !== true){
+    problems.push("GPS闭环趟次 officialCountEligible 不是 true");
+  }
+
+  return {
+    type: "closed_loop",
+    ok: problems.length === 0,
+    problems,
+    loadingZone,
+    unloadingZone
+  };
+}
+
+function taskAllowedUnloadNames(task){
+  return String(
+    task?.unloadingPoint ||
+    task?.taskUnloadingPoint ||
+    task?.unloadingZoneName ||
+    ""
+  )
+  .split(/[、,，;；|]/)
+  .map(x=>x.trim())
+  .filter(Boolean);
+}
+
+function taskAllowsTripZones(item,tasks){
+  const task = tasks.find(t=>taskId(t)===taskId(item));
+  if(!task){
+    return {
+      ok:false,
+      reason:"找不到对应主任务"
+    };
+  }
+
+  const loadingName = String(
+    task.loadingPoint ||
+    task.taskLoadingPoint ||
+    task.loadingZoneName ||
+    ""
+  ).trim();
+
+  const tripLoading = String(
+    item.loadingZoneName ||
+    item.loadingPoint ||
+    ""
+  ).trim();
+
+  if(loadingName && tripLoading && loadingName !== tripLoading){
+    return {
+      ok:false,
+      reason:"实际装载区不等于任务指定装载区"
+    };
+  }
+
+  const allowedUnload = taskAllowedUnloadNames(task);
+  const tripUnload = String(
+    item.unloadingZoneName ||
+    item.unloadingPoint ||
+    ""
+  ).trim();
+
+  if(allowedUnload.length && !allowedUnload.includes(tripUnload)){
+    return {
+      ok:false,
+      reason:"实际卸载区不在本任务允许卸载区内"
+    };
+  }
+
+  return {
+    ok:true,
+    reason:""
+  };
 }
 
 function isValidOfficialTrip(item){
@@ -344,7 +580,7 @@ function row(id,cells){
 }
 
 function runIntegrationCheck(){
-  ["checkTable","shiftTable","zoneTable","tripTable"].forEach(id=>{
+  ["checkTable","shiftTable","zoneTable","closedLoopTable","tripTable"].forEach(id=>{
     document.getElementById(id).innerHTML="";
   });
 
@@ -376,6 +612,16 @@ function runIntegrationCheck(){
   const waste = official.filter(item=>material(item)==="渣").length;
   const countOnly = official.filter(item=>material(item)==="只记车数").length;
 
+  const closedLoopOfficial = official.filter(isClosedLoopTrip);
+  const legacyOfficial = official.filter(item=>!isClosedLoopTrip(item));
+
+  const closedLoopAudits = closedLoopOfficial.map(item=>({
+    item,
+    audit: closedLoopAudit(item,zones)
+  }));
+
+  const invalidClosedLoop = closedLoopAudits.filter(x=>!x.audit.ok);
+
   const pendingManual = filteredTrips.filter(item=>
     (item.manualOverride===true || item.gpsStatus==="manual_override") &&
     (item.dispatchConfirmation==="pending" || item.gpsReviewStatus==="pending")
@@ -385,6 +631,9 @@ function runIntegrationCheck(){
   document.getElementById("coalTrips").textContent = coal;
   document.getElementById("wasteTrips").textContent = waste;
   document.getElementById("countOnlyTrips").textContent = countOnly;
+  document.getElementById("closedLoopTrips").textContent = closedLoopOfficial.length;
+  document.getElementById("legacyOfficialTrips").textContent = legacyOfficial.length;
+  document.getElementById("invalidClosedLoopTrips").textContent = invalidClosedLoop.length;
 
   const visibleShiftExecutions = shiftExecutions.filter(item=>{
     if(selectedTaskId && String(item.taskId || "") !== selectedTaskId) return false;
@@ -434,6 +683,23 @@ function runIntegrationCheck(){
     badMaterials.length
       ? "卸载区 materialType 必须统一为：煤 / 渣 / 只记车数。"
       : "卸载物料参数统一。",
+    issues
+  );
+
+  const invalidZoneGps = zones.filter(zone=>
+    !hasFiniteNumber(zone.latitude) ||
+    !hasFiniteNumber(zone.longitude) ||
+    !hasFiniteNumber(zone.radius) ||
+    Number(zone.radius) < 10
+  );
+
+  addCheck(
+    "区域坐标与半径",
+    invalidZoneGps.length ? "fail" : "pass",
+    invalidZoneGps.length,
+    invalidZoneGps.length
+      ? "存在运输区域缺少有效经纬度或有效半径。"
+      : "运输区域坐标与半径可用于GPS围栏判断。",
     issues
   );
 
@@ -725,7 +991,104 @@ function runIntegrationCheck(){
     issues
   );
 
-  /* 5. cross-module count consistency */
+  /* 5. GPS closed-loop quality */
+  addCheck(
+    "GPS闭环正式趟次",
+    closedLoopOfficial.length ? "pass" : "warn",
+    closedLoopOfficial.length,
+    closedLoopOfficial.length
+      ? "已产生 V2.10.3J GPS区域闭环正式趟次。"
+      : "当前筛选范围还没有新版GPS闭环正式趟次；如果刚升级尚未跑车可以为0。",
+    issues
+  );
+
+  addCheck(
+    "旧版正式趟次兼容",
+    legacyOfficial.length ? "warn" : "pass",
+    legacyOfficial.length,
+    legacyOfficial.length
+      ? "存在旧版正式趟次，没有装载区→驶离→卸载区完整GPS证据；历史数据继续保留，但新产生趟次应全部使用闭环。"
+      : "正式趟次均为GPS区域闭环记录。",
+    issues
+  );
+
+  addCheck(
+    "GPS闭环证据完整性",
+    invalidClosedLoop.length ? "fail" : "pass",
+    invalidClosedLoop.length,
+    invalidClosedLoop.length
+      ? "存在新版闭环趟次缺少区域ID、GPS证据、时间顺序或物料一致性。"
+      : "新版闭环趟次证据链完整。",
+    issues
+  );
+
+  const taskZoneMismatch = closedLoopOfficial.filter(item=>
+    !taskAllowsTripZones(item,tasks).ok
+  );
+
+  addCheck(
+    "实际装卸区与任务许可",
+    taskZoneMismatch.length ? "fail" : "pass",
+    taskZoneMismatch.length,
+    taskZoneMismatch.length
+      ? "存在闭环趟次的实际装载区/卸载区不符合该任务配置。"
+      : "闭环趟次的实际装卸区均符合任务许可。",
+    issues
+  );
+
+  const duplicateClosedTripKeys = (() => {
+    const seen = new Set();
+    let duplicates = 0;
+
+    closedLoopOfficial.forEach(item=>{
+      const key = [
+        item.driverId || item.driverName || "",
+        item.vehicleNumber || item.vehicleId || "",
+        item.loadedAt || "",
+        item.completedAt || ""
+      ].join("|");
+
+      if(seen.has(key)){
+        duplicates++;
+      }else{
+        seen.add(key);
+      }
+    });
+
+    return duplicates;
+  })();
+
+  addCheck(
+    "闭环趟次防重复",
+    duplicateClosedTripKeys ? "fail" : "pass",
+    duplicateClosedTripKeys,
+    duplicateClosedTripKeys
+      ? "发现相同司机/车辆/装载时间/完成时间的重复闭环记录。"
+      : "没有发现明显重复闭环趟次。",
+    issues
+  );
+
+  const cycleState = (() => {
+    try{
+      return JSON.parse(localStorage.getItem(KEYS.TRANSPORT_CYCLE) || "null");
+    }catch(error){
+      return null;
+    }
+  })();
+
+  addCheck(
+    "当前司机闭环状态",
+    "pass",
+    cycleState?.phase || "无",
+    cycleState
+      ? "当前本机 driverTransportCycleState："
+        + (cycleState.phase || "-")
+        + "；仅用于当前司机当前趟过程状态，不进入正式车数。"
+      : "当前本机没有进行中的司机GPS闭环状态。",
+    issues
+  );
+
+  /* 6. cross-module count consistency */
   addCheck(
     "司机/调度/报表统计口径",
     "pass",
@@ -755,6 +1118,106 @@ function runIntegrationCheck(){
     row("zoneTable",["-","-","-","-","-",badge("无数据","gray")]);
   }
 
+  /* render GPS closed-loop audit */
+  official
+    .slice()
+    .sort((a,b)=>new Date(tripTime(b)||0)-new Date(tripTime(a)||0))
+    .slice(0,50)
+    .forEach(item=>{
+      const audit = closedLoopAudit(item,zones);
+      const taskPermission = isClosedLoopTrip(item)
+        ? taskAllowsTripZones(item,tasks)
+        : {ok:true,reason:""};
+
+      const loadingEvidence =
+        isClosedLoopTrip(item)
+          ? (
+              item.loadingValidated === true &&
+              hasFiniteNumber(item.loadingLatitude) &&
+              hasFiniteNumber(item.loadingLongitude)
+                ? badge("已验证","ok")
+                  + "<br><span class='small'>"
+                  + escapeHtml(item.loadingZoneName || item.loadingPoint || "-")
+                  + " · ±"
+                  + escapeHtml(item.loadingGpsAccuracy ?? "-")
+                  + "m</span>"
+                : badge("缺证据","fail")
+            )
+          : badge("旧版无闭环","gray");
+
+      const departureEvidence =
+        isClosedLoopTrip(item)
+          ? (
+              item.departedLoadingAt
+                ? badge("已驶离","ok")
+                  + "<br><span class='small'>"
+                  + escapeHtml(new Date(item.departedLoadingAt).toLocaleString("zh-CN"))
+                  + "</span>"
+                : badge("缺失","fail")
+            )
+          : badge("旧版无闭环","gray");
+
+      const unloadingEvidence =
+        isClosedLoopTrip(item)
+          ? (
+              item.unloadingValidated === true &&
+              hasFiniteNumber(item.unloadingLatitude ?? item.latitude) &&
+              hasFiniteNumber(item.unloadingLongitude ?? item.longitude)
+                ? badge("已验证","ok")
+                  + "<br><span class='small'>"
+                  + escapeHtml(item.unloadingZoneName || item.unloadingPoint || "-")
+                  + " · ±"
+                  + escapeHtml(item.unloadingGpsAccuracy ?? item.gpsAccuracy ?? "-")
+                  + "m</span>"
+                : badge("缺证据","fail")
+            )
+          : badge("旧版无闭环","gray");
+
+      let conclusion;
+
+      if(!isClosedLoopTrip(item)){
+        conclusion = badge("历史兼容","warn");
+      }else if(!audit.ok || !taskPermission.ok){
+        conclusion =
+          badge("闭环异常","fail")
+          + "<br><span class='small'>"
+          + escapeHtml(
+              [
+                ...audit.problems,
+                ...(taskPermission.ok ? [] : [taskPermission.reason])
+              ].join("；")
+            )
+          + "</span>";
+      }else{
+        conclusion = badge("闭环完整","ok");
+      }
+
+      row("closedLoopTable",[
+        escapeHtml(tripTime(item) ? new Date(tripTime(item)).toLocaleString("zh-CN") : "-"),
+        escapeHtml((item.driverName || "-") + " / " + (item.vehicleNumber || item.vehicleId || "-")),
+        escapeHtml((taskId(item) || "-") + " / " + (shiftId(item) || "-")),
+        loadingEvidence,
+        departureEvidence,
+        unloadingEvidence,
+        escapeHtml(material(item) || "-"),
+        isClosedLoopTrip(item)
+          ? escapeHtml(
+              "装 ±" + (item.loadingGpsAccuracy ?? "-")
+              + "m / 卸 ±"
+              + (item.unloadingGpsAccuracy ?? item.gpsAccuracy ?? "-")
+              + "m"
+            )
+          : "-",
+        conclusion
+      ]);
+    });
+
+  if(!official.length){
+    row("closedLoopTable",[
+      "-","-","-","-","-","-","-","-",badge("无正式趟次","gray")
+    ]);
+  }
+
   /* render trips */
   filteredTrips
     .slice()
@@ -781,13 +1244,16 @@ function runIntegrationCheck(){
         escapeHtml(item.loadingZoneName || item.loadingPoint || "-"),
         escapeHtml(item.unloadingZoneName || item.unloadingPoint || "-"),
         escapeHtml(material(item) || "-"),
-        escapeHtml(item.source || "-"),
+        isClosedLoopTrip(item)
+          ? badge("GPS闭环","ok")
+          : badge("旧版/非闭环","gray"),
+        escapeHtml(item.dataSource || item.source || "-"),
         review
       ]);
     });
 
   if(!filteredTrips.length){
-    row("tripTable",["-","-","-","-","-","-","-","-","-","-",badge("无记录","gray")]);
+    row("tripTable",["-","-","-","-","-","-","-","-","-","-","-",badge("无记录","gray")]);
   }
 
   renderIssues(issues);
@@ -819,7 +1285,7 @@ function renderIssues(issues){
     box.innerHTML = `
       <div class="issue">
         <strong>✅ 当前筛选范围没有发现明显问题。</strong><br>
-        运输区域、主任务、班次执行、绑定关系、司机记录和统计口径均未发现明显问题。
+        运输区域、主任务、班次执行、绑定关系、GPS装载/驶离/卸载证据链和统计口径均未发现明显问题。
       </div>
     `;
     return;
