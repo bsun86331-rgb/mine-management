@@ -443,44 +443,57 @@ init();
 </script>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-    const cards = document.querySelectorAll('section.card');
-    let first = true;
+    const cards = Array.from(document.querySelectorAll('.card'));
 
-    cards.forEach(function (card) {
-        const title = card.querySelector('h2');
-        if (!title) return;
+    cards.forEach(function (card, index) {
+        /* 第一块顶部说明区域不参与折叠 */
+        if (index === 0) return;
 
-        card.classList.add('collapsible-card');
+        if (card.dataset.foldReady === '1') return;
+        card.dataset.foldReady = '1';
 
-        const directChildren = Array.from(card.children);
-        const titleBox = directChildren.find(function (el) {
-            return el === title || el.contains(title);
-        });
+        const oldTitle = card.querySelector('h2');
+        const titleText = oldTitle
+            ? oldTitle.textContent.trim()
+            : '详细内容';
 
-        function setCollapsed(collapsed) {
-            card.classList.toggle('collapsed', collapsed);
+        const body = document.createElement('div');
+        body.className = 'fold-body';
 
-            directChildren.forEach(function (el) {
-                if (el !== titleBox) {
-                    el.style.display = collapsed ? 'none' : '';
-                }
-            });
-
-            title.setAttribute('data-state', collapsed ? 'collapsed' : 'open');
+        while (card.firstChild) {
+            body.appendChild(card.firstChild);
         }
 
-        title.style.cursor = 'pointer';
-
-        title.addEventListener('click', function () {
-            setCollapsed(!card.classList.contains('collapsed'));
-        });
-
-        if (first) {
-            setCollapsed(false);
-            first = false;
-        } else {
-            setCollapsed(true);
+        if (oldTitle) {
+            oldTitle.style.display = 'none';
         }
+
+        const toggle = document.createElement('button');
+        toggle.type = 'button';
+        toggle.className = 'fold-toggle';
+        toggle.innerHTML =
+            '<span>' + titleText + '</span>' +
+            '<span class="fold-arrow"></span>';
+
+        card.appendChild(toggle);
+        card.appendChild(body);
+
+        /* ①、④、⑥、⑦默认展开 */
+        const defaultOpen =
+            titleText.includes('①') ||
+            titleText.includes('④') ||
+            titleText.includes('⑥') ||
+            titleText.includes('⑦');
+
+        body.hidden = !defaultOpen;
+
+        const arrow = toggle.querySelector('.fold-arrow');
+        arrow.textContent = defaultOpen ? '▲' : '▼';
+
+        toggle.addEventListener('click', function () {
+            body.hidden = !body.hidden;
+            arrow.textContent = body.hidden ? '▼' : '▲';
+        });
     });
 });
 </script>
