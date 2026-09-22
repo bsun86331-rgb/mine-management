@@ -161,15 +161,16 @@
 
 
 <label for="team">
-    所属车队 *
+    部门 / 车队 *
 </label>
 
-<input
-    id="team"
-    type="text"
-    placeholder="例如：运输一队"
-    required
->
+<select id="team" required>
+    <option value="" selected disabled>请选择部门 / 车队</option>
+    <option value="生产A组">生产A组</option>
+    <option value="生产B组">生产B组</option>
+    <option value="修理组">修理组</option>
+    <option value="行政办公室">行政办公室</option>
+</select>
 
 
 <label for="entryDate">
