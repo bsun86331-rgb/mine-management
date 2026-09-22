@@ -30,6 +30,87 @@ button{min-height:42px;border:0;border-radius:10px;padding:10px 14px;font:inheri
 .metric{padding:10px;border-radius:10px;background:#f8fafc}.metric span{display:block;font-size:11px;color:#64748b}.metric strong{display:block;margin-top:5px}
 .hidden{display:none!important}.locked{padding:13px;border:1px solid #bbf7d0;background:#f0fdf4;color:#166534;border-radius:11px;font-size:13px;line-height:1.7}.hist{padding:11px 0;border-bottom:1px solid #e2e8f0;font-size:12px;line-height:1.7}.hist:last-child{border-bottom:0}
 @media(max-width:760px){.grid2,.grid3,.metrics,.mode-grid,.result-grid,.hints,.parts{grid-template-columns:1fr}.previews{grid-template-columns:repeat(2,1fr)}.actions{flex-direction:column}}
+/* ===== 紧凑版页面 ===== */
+main{
+    padding:10px 12px 24px;
+}
+
+.card{
+    padding:10px 12px;
+    margin-bottom:9px;
+    border-radius:12px;
+}
+
+h1{
+    font-size:19px;
+}
+
+h2{
+    font-size:16px;
+    margin:0 0 8px;
+}
+
+.notice{
+    padding:8px 10px;
+}
+
+.grid2,
+.grid3{
+    gap:8px;
+}
+
+label{
+    margin-bottom:4px;
+    font-size:12px;
+}
+
+input,
+select,
+textarea{
+    min-height:36px;
+    padding:7px 9px;
+    border-radius:8px;
+}
+
+textarea{
+    min-height:72px;
+}
+
+button{
+    min-height:38px;
+    padding:8px 12px;
+}
+
+/* ===== 折叠卡片 ===== */
+.collapsible-card > h2{
+    cursor:pointer;
+    user-select:none;
+    padding-right:28px;
+    position:relative;
+    margin-bottom:6px;
+}
+
+.collapsible-card > h2::after{
+    content:"▲";
+    position:absolute;
+    right:2px;
+    top:50%;
+    transform:translateY(-50%);
+    font-size:12px;
+    color:#64748b;
+}
+
+.collapsible-card.collapsed > h2{
+    margin-bottom:0;
+}
+
+.collapsible-card.collapsed > h2::after{
+    content:"▼";
+}
+
+.collapsible-card.collapsed > :not(h2){
+    display:none !important;
+}
 </style>
 </head>
 <body>
