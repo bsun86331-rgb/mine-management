@@ -432,7 +432,7 @@
         table {
             width: 100%;
             border-collapse: collapse;
-            min-width: 850px;
+            min-width: 950px;
         }
 
         th,
@@ -858,7 +858,7 @@
         <input
             id="searchInput"
             type="search"
-            placeholder="搜索姓名 / 手机号 / 部门 / 车队"
+            placeholder="搜索姓名 / 员工编号 / 手机号 / 部门 / 车队"
             oninput="renderTable()"
         >
 
@@ -941,6 +941,8 @@
                     <tr>
 
                         <th>姓名</th>
+
+                        <th>员工编号</th>
 
                         <th>岗位</th>
 
@@ -1052,6 +1054,22 @@
                 <div
                     class="detail-value"
                     id="detailName"
+                >
+                    -
+                </div>
+
+            </div>
+
+
+            <div class="detail-item">
+
+                <div class="detail-label">
+                    员工编号
+                </div>
+
+                <div
+                    class="detail-value"
+                    id="detailEmployeeNo"
                 >
                     -
                 </div>
@@ -1894,6 +1912,8 @@ function renderTable() {
 
                     person.name,
 
+                    person.employeeNo,
+
                     person.phone,
 
                     person.department,
@@ -2059,6 +2079,10 @@ function renderTable() {
                             </td>
 
                             <td>
+                                ${escapeHtml(person.employeeNo || "待生成")}
+                            </td>
+
+                            <td>
                                 ${escapeHtml(normalizePosition(person.position) || "-")}
                             </td>
 
@@ -2172,6 +2196,13 @@ function openDetail(personId) {
     setText(
         "detailName",
         person.name
+    );
+
+
+    setText(
+        "detailEmployeeNo",
+        person.employeeNo ||
+        "待生成"
     );
 
 
@@ -2486,54 +2517,144 @@ function approveCurrentPerson() {
     const now =
         new Date().toISOString();
 
-/* ===== 审核通过时生成可读员工编号 ===== */
-const team = String(person.team || "").trim();
 
-const employeeNoRules = {
-    "生产A组": { prefix: "A", digits: 4 },
-    "生产B组": { prefix: "B", digits: 4 },
-    "修理组": { prefix: "WX", digits: 3 },
-    "行政办公室": { prefix: "XZ", digits: 3 }
-};
+    /* ===== 审核通过时生成可读员工编号 ===== */
 
-let employeeNo = person.employeeNo || "";
+    const team =
+        String(
+            person.team ||
+            person.department ||
+            ""
+        ).trim();
 
-if (!employeeNo) {
-    const rule = employeeNoRules[team];
 
-    if (!rule) {
-        alert("请先为该人员设置正确的部门 / 车队。");
-        return;
+    const employeeNoRules = {
+
+        "生产A组": {
+            prefix: "A",
+            digits: 4
+        },
+
+        "生产B组": {
+            prefix: "B",
+            digits: 4
+        },
+
+        "修理组": {
+            prefix: "WX",
+            digits: 3
+        },
+
+        "行政办公室": {
+            prefix: "XZ",
+            digits: 3
+        }
+
+    };
+
+
+    let employeeNo =
+        String(
+            person.employeeNo ||
+            ""
+        ).trim();
+
+
+    if (!employeeNo) {
+
+        const rule =
+            employeeNoRules[team];
+
+
+        if (!rule) {
+
+            alert(
+                "请先为该人员设置正确的部门 / 车队。"
+            );
+
+
+            return;
+
+        }
+
+
+        let maxNumber = 0;
+
+
+        records.forEach(
+            function (item) {
+
+                const code =
+                    String(
+                        item.employeeNo ||
+                        ""
+                    ).trim();
+
+
+                if (
+                    !code.startsWith(
+                        rule.prefix
+                    )
+                ) {
+
+                    return;
+
+                }
+
+
+                const numberPart =
+                    code.slice(
+                        rule.prefix.length
+                    );
+
+
+                const number =
+                    parseInt(
+                        numberPart,
+                        10
+                    );
+
+
+                if (
+                    !Number.isNaN(
+                        number
+                    )
+                ) {
+
+                    maxNumber =
+                        Math.max(
+                            maxNumber,
+                            number
+                        );
+
+                }
+
+            }
+        );
+
+
+        employeeNo =
+            rule.prefix +
+            String(
+                maxNumber + 1
+            ).padStart(
+                rule.digits,
+                "0"
+            );
+
     }
 
-    let maxNumber = 0;
 
-    records.forEach(function (item) {
-        const code = String(item.employeeNo || "").trim();
-
-        if (!code.startsWith(rule.prefix)) {
-            return;
-        }
-
-        const numberPart = code.slice(rule.prefix.length);
-        const number = parseInt(numberPart, 10);
-
-        if (!Number.isNaN(number)) {
-            maxNumber = Math.max(maxNumber, number);
-        }
-    });
-
-    employeeNo =
-        rule.prefix +
-        String(maxNumber + 1).padStart(rule.digits, "0");
-}
     records[index] = {
 
         ...person,
 
         personId:
             getPersonId(person),
-employeeNo: employeeNo,
+
+        employeeNo:
+            employeeNo,
+
         position:
             normalizePosition(
                 person.position
@@ -2579,7 +2700,8 @@ employeeNo: employeeNo,
 
 
     alert(
-        "审核通过。"
+        "审核通过。员工编号：" +
+        employeeNo
     );
 
 
@@ -2708,8 +2830,8 @@ function confirmReject() {
 
     const now =
         new Date().toISOString();
-/* ===== 审核通过时生成可读员工编号 ===== */
-const team = String(person.team || "").trim();
+
+
     records[index] = {
 
         ...person,
@@ -2921,6 +3043,11 @@ function printCurrentProfile() {
                 <tr>
                     <td>姓名</td>
                     <td>${escapeHtml(person.name || "-")}</td>
+                </tr>
+
+                <tr>
+                    <td>员工编号</td>
+                    <td>${escapeHtml(person.employeeNo || "待生成")}</td>
                 </tr>
 
                 <tr>
