@@ -1,7 +1,7 @@
 /*
 ====================================================
 矿山管理系统
-司机端 V2.10.3J
+司机端 V2.10.4R
 ====================================================
 功能：
 1. 审核通过司机才可进入
@@ -30,6 +30,13 @@ document.addEventListener("DOMContentLoaded", function () {
         LEAVE_REQUESTS: "leaveRequests",
         PENALTIES: "penaltyRecords",
         GPS: "driverLastGpsPosition",
+
+        /*
+         * 正式月度综合绩效排名
+         * 来源：综合报表中心
+         */
+        PERFORMANCE_RANKING:
+            "performanceRankingRecords",
 
         /*
          * V2.10.3J
@@ -476,6 +483,10 @@ document.addEventListener("DOMContentLoaded", function () {
                 person.employeeId ||
                 personId,
 
+            employeeNo:
+                person.employeeNo ||
+                "",
+
             name:
                 person.name ||
                 "",
@@ -893,6 +904,20 @@ document.addEventListener("DOMContentLoaded", function () {
 
     function bindEvents() {
 
+        /*
+         * 设备检查统一带入本班 shiftId / taskId / vehicle，
+         * 避免设备检查页无法识别班次。
+         */
+        const equipmentCheckButton =
+            $("equipmentCheckButton");
+
+        if (equipmentCheckButton) {
+
+            equipmentCheckButton.onclick =
+                openEquipmentCheck;
+        }
+
+
         $("startGpsButton")
             ?.addEventListener(
                 "click",
@@ -1005,6 +1030,100 @@ document.addEventListener("DOMContentLoaded", function () {
 
     /*
     ===============================================
+    打开设备使用检查
+    ===============================================
+    */
+
+    function openEquipmentCheck() {
+
+        if (!currentTask) {
+
+            alert(
+                "当前没有生产任务，暂不能进行班次设备检查。"
+            );
+
+            return;
+        }
+
+
+        const params =
+            new URLSearchParams();
+
+
+        params.set(
+            "mode",
+            "shift"
+        );
+
+
+        if (currentTask.shiftId) {
+
+            params.set(
+                "shiftId",
+                currentTask.shiftId
+            );
+        }
+
+
+        if (
+            currentTask.taskId ||
+            currentTask.dispatchTaskId
+        ) {
+
+            params.set(
+                "taskId",
+                currentTask.taskId ||
+                currentTask.dispatchTaskId
+            );
+        }
+
+
+        const vehicle =
+            getVehicleNumber(
+                currentTask
+            );
+
+
+        if (vehicle) {
+
+            params.set(
+                "equipmentId",
+                vehicle
+            );
+
+            params.set(
+                "vehicle",
+                vehicle
+            );
+        }
+
+
+        if (currentTask.shift) {
+
+            params.set(
+                "shift",
+                currentTask.shift
+            );
+        }
+
+
+        if (currentTask.shiftDate) {
+
+            params.set(
+                "shiftDate",
+                currentTask.shiftDate
+            );
+        }
+
+
+        location.href =
+            "equipment-check.html?" +
+            params.toString();
+    }
+
+
+    /*
+    ===============================================
     人员信息
     ===============================================
     */
@@ -1018,17 +1137,34 @@ document.addEventListener("DOMContentLoaded", function () {
 
         setText(
             "driverPosition",
-            profile.position || "卡车司机"
+            normalizeDriverPosition(
+                profile.position
+            ) ||
+            "汽车司机"
+        );
+
+        setText(
+            "driverEmployeeNo",
+            profile.employeeNo ||
+            "-"
         );
 
         setText(
             "driverTeam",
-            profile.team || "-"
+            profile.team ||
+            profile.department ||
+            "-"
         );
 
         setText(
             "profileName",
             profile.name || "-"
+        );
+
+        setText(
+            "profileEmployeeNo",
+            profile.employeeNo ||
+            "-"
         );
 
         setText(
@@ -1038,12 +1174,17 @@ document.addEventListener("DOMContentLoaded", function () {
 
         setText(
             "profilePosition",
-            profile.position || "卡车司机"
+            normalizeDriverPosition(
+                profile.position
+            ) ||
+            "汽车司机"
         );
 
         setText(
             "profileTeam",
-            profile.team || "-"
+            profile.team ||
+            profile.department ||
+            "-"
         );
 
         setText(
@@ -1069,6 +1210,8 @@ document.addEventListener("DOMContentLoaded", function () {
         refreshTask();
 
         refreshTrips();
+
+        refreshShiftRankings();
 
         refreshLeaveRecords();
 
@@ -4941,9 +5084,22 @@ document.addEventListener("DOMContentLoaded", function () {
                 currentTask.shiftDate ||
                 "",
 
+            productionDate:
+                currentTask.shiftDate ||
+                "",
+
             driverId:
                 profile.driverId ||
                 profile.personId ||
+                "",
+
+            personId:
+                profile.personId ||
+                profile.driverId ||
+                "",
+
+            employeeNo:
+                profile.employeeNo ||
                 "",
 
             driverName:
@@ -5250,27 +5406,744 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
 
-    function getTodayTrips() {
+    /*
+    ===============================================
+    本班趟数
+    ===============================================
 
-        const today =
-            getDateKey(new Date());
+    规则：
+    1. 优先按 shiftId 统计，夜班跨零点也不会被拆分。
+    2. 旧数据没有 shiftId 时，才使用 shiftDate + shift 兼容。
+    3. 调度判定无效 / officialCountEligible=false 的趟次不计入正式趟数。
+    */
 
-        return getMyTrips()
+    function isOfficialTrip(
+        record
+    ) {
+
+        if (!record) {
+
+            return false;
+        }
+
+
+        if (
+            record.officialCountEligible ===
+                false
+        ) {
+
+            return false;
+        }
+
+
+        if (
+            record.dispatchConfirmation ===
+                "rejected" ||
+            record.dispatchConfirmation ===
+                "已判定无效"
+        ) {
+
+            return false;
+        }
+
+
+        return true;
+    }
+
+
+    function isTripInCurrentShift(
+        record
+    ) {
+
+        if (
+            !record ||
+            !currentTask
+        ) {
+
+            return false;
+        }
+
+
+        const currentShiftId =
+            String(
+                currentTask.shiftId ||
+                ""
+            )
+            .trim();
+
+
+        const recordShiftId =
+            String(
+                record.shiftId ||
+                ""
+            )
+            .trim();
+
+
+        if (
+            currentShiftId
+        ) {
+
+            return (
+                recordShiftId ===
+                currentShiftId
+            );
+        }
+
+
+        const currentShiftDate =
+            String(
+                currentTask.shiftDate ||
+                ""
+            )
+            .trim();
+
+
+        const currentShift =
+            String(
+                currentTask.shift ||
+                ""
+            )
+            .trim();
+
+
+        return Boolean(
+            currentShiftDate &&
+            currentShift &&
+            String(
+                record.shiftDate ||
+                record.productionDate ||
+                ""
+            )
+            .trim() ===
+                currentShiftDate &&
+            String(
+                record.shift ||
+                ""
+            )
+            .trim() ===
+                currentShift
+        );
+    }
+
+
+    function getCurrentShiftTrips() {
+
+        return getTripRecords()
+            .filter(
+                isTripInCurrentShift
+            );
+    }
+
+
+    function getMyCurrentShiftTrips() {
+
+        return getCurrentShiftTrips()
             .filter(
                 record =>
-                    getDateKey(
-                        new Date(
-                            record.completedAt
-                        )
-                    ) === today
+                    samePerson(
+                        record.driverId ||
+                        record.personId,
+                        record.driverName
+                    )
             );
+    }
+
+
+    function getCurrentShiftAssignments() {
+
+        if (!currentTask) {
+
+            return [];
+        }
+
+
+        const tasks =
+            readJson(
+                STORAGE.DISPATCH_TASKS,
+                []
+            );
+
+
+        if (
+            !Array.isArray(
+                tasks
+            )
+        ) {
+
+            return [];
+        }
+
+
+        const currentShiftId =
+            String(
+                currentTask.shiftId ||
+                ""
+            )
+            .trim();
+
+
+        const result = [];
+
+
+        tasks.forEach(
+            function (task) {
+
+                const taskShiftId =
+                    String(
+                        task.currentShiftId ||
+                        task.shiftId ||
+                        ""
+                    )
+                    .trim();
+
+
+                const assignments =
+                    Array.isArray(
+                        task.driverAssignments
+                    )
+                        ? task.driverAssignments
+                        : [];
+
+
+                assignments.forEach(
+                    function (assignment) {
+
+                        const assignmentShiftId =
+                            String(
+                                assignment.shiftId ||
+                                taskShiftId ||
+                                ""
+                            )
+                            .trim();
+
+
+                        if (
+                            currentShiftId &&
+                            assignmentShiftId !==
+                                currentShiftId
+                        ) {
+
+                            return;
+                        }
+
+
+                        result.push({
+
+                            personId:
+                                String(
+                                    assignment.driverId ||
+                                    assignment.personId ||
+                                    ""
+                                ),
+
+                            personName:
+                                String(
+                                    assignment.driverName ||
+                                    assignment.personName ||
+                                    ""
+                                ),
+
+                            employeeNo:
+                                String(
+                                    assignment.employeeNo ||
+                                    ""
+                                ),
+
+                            vehicleNumber:
+                                String(
+                                    assignment.vehicleNumber ||
+                                    assignment.vehicleId ||
+                                    assignment.truckNumber ||
+                                    assignment.truckId ||
+                                    ""
+                                ),
+
+                            shiftId:
+                                assignmentShiftId
+                        });
+
+                    }
+                );
+
+            }
+        );
+
+
+        return result;
+    }
+
+
+    function getPersonKeyFromTrip(
+        record
+    ) {
+
+        const id =
+            String(
+                record?.driverId ||
+                record?.personId ||
+                ""
+            )
+            .trim();
+
+
+        if (id) {
+
+            return "ID:" + id;
+        }
+
+
+        return "NAME:" +
+            String(
+                record?.driverName ||
+                ""
+            )
+            .trim();
+    }
+
+
+    function getCurrentPersonKey() {
+
+        const id =
+            String(
+                profile?.driverId ||
+                profile?.personId ||
+                ""
+            )
+            .trim();
+
+
+        if (id) {
+
+            return "ID:" + id;
+        }
+
+
+        return "NAME:" +
+            String(
+                profile?.name ||
+                ""
+            )
+            .trim();
+    }
+
+
+    function refreshShiftRankings() {
+
+        if (!currentTask) {
+
+            setText(
+                "tripRankValue",
+                "--"
+            );
+
+            setText(
+                "performanceRankValue",
+                "--"
+            );
+
+            setText(
+                "tripRankScope",
+                "等待班次任务"
+            );
+
+            setText(
+                "performanceRankScope",
+                "等待班次任务"
+            );
+
+            return;
+        }
+
+
+        const shiftTrips =
+            getCurrentShiftTrips();
+
+
+        const validTrips =
+            shiftTrips.filter(
+                isOfficialTrip
+            );
+
+
+        const assignments =
+            getCurrentShiftAssignments();
+
+
+        /*
+        -----------------------------------------------
+        1. 车辆趟数排名
+        -----------------------------------------------
+        */
+
+        const vehicleStats =
+            new Map();
+
+
+        assignments.forEach(
+            function (item) {
+
+                if (
+                    item.vehicleNumber
+                ) {
+
+                    vehicleStats.set(
+                        item.vehicleNumber,
+                        vehicleStats.get(
+                            item.vehicleNumber
+                        ) || 0
+                    );
+                }
+
+            }
+        );
+
+
+        validTrips.forEach(
+            function (record) {
+
+                const vehicle =
+                    String(
+                        record.vehicleNumber ||
+                        record.vehicleId ||
+                        ""
+                    )
+                    .trim();
+
+
+                if (!vehicle) {
+
+                    return;
+                }
+
+
+                vehicleStats.set(
+                    vehicle,
+                    (
+                        vehicleStats.get(
+                            vehicle
+                        ) || 0
+                    ) + 1
+                );
+
+            }
+        );
+
+
+        const currentVehicle =
+            String(
+                getVehicleNumber(
+                    currentTask
+                ) ||
+                ""
+            )
+            .trim();
+
+
+        if (
+            currentVehicle &&
+            !vehicleStats.has(
+                currentVehicle
+            )
+        ) {
+
+            vehicleStats.set(
+                currentVehicle,
+                0
+            );
+        }
+
+
+        const vehicleRanking =
+            Array.from(
+                vehicleStats.entries()
+            )
+            .map(
+                ([vehicle, count]) => ({
+                    vehicle,
+                    count
+                })
+            )
+            .sort(
+                (a, b) =>
+                    b.count -
+                        a.count ||
+                    a.vehicle.localeCompare(
+                        b.vehicle,
+                        "zh-CN"
+                    )
+            );
+
+
+        const vehicleRankIndex =
+            vehicleRanking.findIndex(
+                item =>
+                    item.vehicle ===
+                    currentVehicle
+            );
+
+
+        setText(
+            "tripRankValue",
+            vehicleRankIndex >= 0
+                ? "第" +
+                  (
+                      vehicleRankIndex + 1
+                  ) +
+                  " / " +
+                  vehicleRanking.length +
+                  "名"
+                : "--"
+        );
+
+
+        setText(
+            "tripRankScope",
+            (
+                currentTask.shift ||
+                "本班"
+            ) +
+            (
+                currentVehicle
+                    ? " · " +
+                      currentVehicle
+                    : ""
+            )
+        );
+
+
+        /*
+        -----------------------------------------------
+        2. 正式综合绩效排名
+        -----------------------------------------------
+
+        不在司机端重复计算绩效公式。
+        直接读取综合报表中心已经生成的月度排名：
+
+        综合得分 =
+        运输排名得分 × 运输权重
+        + 节油排名得分 × 节油权重
+        + 维修排名得分 × 维修权重
+
+        这样司机端与综合报表中心始终使用同一套结果。
+        */
+
+        const performanceMonth =
+            getPerformanceMonth();
+
+
+        const performanceRecords =
+            readJson(
+                STORAGE.PERFORMANCE_RANKING,
+                []
+            );
+
+
+        const monthRecords =
+            Array.isArray(
+                performanceRecords
+            )
+                ? performanceRecords
+                    .filter(
+                        item =>
+                            String(
+                                item.month ||
+                                ""
+                            ) ===
+                                performanceMonth
+                    )
+                : [];
+
+
+        const myPersonId =
+            String(
+                profile.personId ||
+                profile.driverId ||
+                profile.employeeId ||
+                ""
+            )
+            .trim();
+
+
+        const myName =
+            String(
+                profile.name ||
+                ""
+            )
+            .trim();
+
+
+        const myPerformance =
+            monthRecords.find(
+                item => {
+
+                    const itemPersonId =
+                        String(
+                            item.personId ||
+                            item.driverId ||
+                            item.employeeId ||
+                            ""
+                        )
+                        .trim();
+
+
+                    const itemName =
+                        String(
+                            item.personName ||
+                            item.driverName ||
+                            item.name ||
+                            ""
+                        )
+                        .trim();
+
+
+                    if (
+                        myPersonId &&
+                        itemPersonId
+                    ) {
+
+                        return (
+                            myPersonId ===
+                            itemPersonId
+                        );
+                    }
+
+
+                    return Boolean(
+                        myName &&
+                        itemName &&
+                        myName ===
+                            itemName
+                    );
+                }
+            ) ||
+            null;
+
+
+        if (
+            !myPerformance
+        ) {
+
+            setText(
+                "performanceRankValue",
+                "--"
+            );
+
+
+            setText(
+                "performanceRankScope",
+                performanceMonth +
+                " · 本月绩效排名待生成"
+            );
+
+
+            return;
+        }
+
+
+        const performanceRank =
+            Number(
+                myPerformance.rank ||
+                0
+            );
+
+
+        const totalPeople =
+            Number(
+                myPerformance.totalPeople ||
+                monthRecords.length ||
+                0
+            );
+
+
+        const comprehensiveScore =
+            Number(
+                myPerformance.comprehensiveScore ||
+                0
+            );
+
+
+        setText(
+            "performanceRankValue",
+            performanceRank > 0
+                ? "第" +
+                  performanceRank +
+                  " / " +
+                  totalPeople +
+                  "名"
+                : "--"
+        );
+
+
+        setText(
+            "performanceRankScope",
+            performanceMonth +
+            " · 综合分 " +
+            comprehensiveScore
+                .toFixed(1)
+        );
+    }
+
+
+    /*
+    ===============================================
+    正式绩效排名月份
+    ===============================================
+
+    优先使用当前生产班次日期所属月份；
+    没有班次日期时使用当前自然月。
+    */
+
+    function getPerformanceMonth() {
+
+        const shiftDate =
+            String(
+                currentTask?.shiftDate ||
+                ""
+            )
+            .trim();
+
+
+        if (
+            /^\d{4}-\d{2}/
+                .test(
+                    shiftDate
+                )
+        ) {
+
+            return shiftDate
+                .slice(
+                    0,
+                    7
+                );
+        }
+
+
+        const now =
+            new Date();
+
+
+        return (
+            now.getFullYear() +
+            "-" +
+            String(
+                now.getMonth() + 1
+            )
+            .padStart(
+                2,
+                "0"
+            )
+        );
     }
 
 
     function refreshTrips() {
 
         const trips =
-            getTodayTrips()
+            getMyCurrentShiftTrips()
+                .filter(
+                    isOfficialTrip
+                )
                 .sort(
                     (a, b) =>
                         new Date(b.completedAt) -
@@ -5472,8 +6345,17 @@ document.addEventListener("DOMContentLoaded", function () {
             driverId:
                 profile.driverId || profile.personId || "",
 
+            personId:
+                profile.personId || profile.driverId || "",
+
+            employeeNo:
+                profile.employeeNo || "",
+
             driverName:
                 profile.name || "",
+
+            shiftId:
+                currentTask.shiftId || "",
 
             taskId:
                 currentTask.taskId || "",
@@ -5931,6 +6813,9 @@ document.addEventListener("DOMContentLoaded", function () {
             personName:
                 profile.name || "",
 
+            employeeNo:
+                profile.employeeNo || "",
+
             role:
                 "driver",
 
@@ -5939,7 +6824,14 @@ document.addEventListener("DOMContentLoaded", function () {
                 "卡车司机",
 
             team:
-                profile.team || "",
+                profile.team ||
+                profile.department ||
+                "",
+
+            department:
+                profile.department ||
+                profile.team ||
+                "",
 
             employeeLevel:
                 "frontline",
