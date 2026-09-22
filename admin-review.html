@@ -2486,14 +2486,54 @@ function approveCurrentPerson() {
     const now =
         new Date().toISOString();
 
+/* ===== 审核通过时生成可读员工编号 ===== */
+const team = String(person.team || "").trim();
 
+const employeeNoRules = {
+    "生产A组": { prefix: "A", digits: 4 },
+    "生产B组": { prefix: "B", digits: 4 },
+    "修理组": { prefix: "WX", digits: 3 },
+    "行政办公室": { prefix: "XZ", digits: 3 }
+};
+
+let employeeNo = person.employeeNo || "";
+
+if (!employeeNo) {
+    const rule = employeeNoRules[team];
+
+    if (!rule) {
+        alert("请先为该人员设置正确的部门 / 车队。");
+        return;
+    }
+
+    let maxNumber = 0;
+
+    records.forEach(function (item) {
+        const code = String(item.employeeNo || "").trim();
+
+        if (!code.startsWith(rule.prefix)) {
+            return;
+        }
+
+        const numberPart = code.slice(rule.prefix.length);
+        const number = parseInt(numberPart, 10);
+
+        if (!Number.isNaN(number)) {
+            maxNumber = Math.max(maxNumber, number);
+        }
+    });
+
+    employeeNo =
+        rule.prefix +
+        String(maxNumber + 1).padStart(rule.digits, "0");
+}
     records[index] = {
 
         ...person,
 
         personId:
             getPersonId(person),
-
+employeeNo: employeeNo,
         position:
             normalizePosition(
                 person.position
