@@ -2,8 +2,16 @@
 =========================================
 矿山管理系统
 司机注册 / 审核跳转
-V2.8.1
+V2.8.2
 =========================================
+
+本版调整：
+1. 部门 / 车队继续使用 team 字段保存，并同步 department 字段。
+2. 新登记人员生成稳定的 UUID personId；旧 driverId 继续保留兼容。
+3. 驳回后重新提交继续使用原 personId / driverId，不重复新增人员。
+4. 登记阶段不生成 employeeNo；员工编号由管理员审核通过时生成。
+5. personnelRecords 同步时保留已有 employeeNo，并清除旧驳回信息。
+6. 同步照片的嵌套字段和顶层字段，兼容管理员审核页面。
 */
 
 
@@ -207,7 +215,7 @@ document.addEventListener(
             if (!team) {
 
                 fail(
-                    "请输入所属车队。"
+                    "请选择部门 / 车队。"
                 );
 
                 return;
@@ -240,7 +248,9 @@ document.addEventListener(
                     await processPhoto(
                         "idCardPhoto",
                         oldProfile?.photos
-                            ?.idCard || ""
+                            ?.idCard ||
+                        oldProfile?.idCardPhoto ||
+                        ""
                     );
 
 
@@ -248,7 +258,9 @@ document.addEventListener(
                     await processPhoto(
                         "passportPhoto",
                         oldProfile?.photos
-                            ?.passport || ""
+                            ?.passport ||
+                        oldProfile?.passportPhoto ||
+                        ""
                     );
 
 
@@ -256,7 +268,10 @@ document.addEventListener(
                     await processPhoto(
                         "driverLicensePhoto",
                         oldProfile?.photos
-                            ?.driverLicense || ""
+                            ?.driverLicense ||
+                        oldProfile?.driverLicensePhoto ||
+                        oldProfile?.licensePhoto ||
+                        ""
                     );
 
 
@@ -264,14 +279,30 @@ document.addEventListener(
                     await processPhoto(
                         "bankCardPhoto",
                         oldProfile?.photos
-                            ?.bankCard || ""
+                            ?.bankCard ||
+                        oldProfile?.bankCardPhoto ||
+                        ""
                     );
 
 
                 /*
-                保留原司机ID
-                rejected重新提交不能生成新司机
+                =================================
+                内部人员ID
+
+                personId：
+                - 新登记使用 UUID
+                - 驳回后重新提交保留原 personId
+
+                driverId：
+                - 保留旧系统兼容
+                - 不再作为新的唯一人员编号展示
+                =================================
                 */
+
+                const personId =
+                    oldProfile?.personId ||
+                    createPersonId();
+
 
                 const driverId =
                     oldProfile?.driverId ||
@@ -288,8 +319,32 @@ document.addEventListener(
 
                 const profile = {
 
+                    /*
+                    后台内部唯一ID
+                    */
+
+                    personId:
+                        personId,
+
+
+                    /*
+                    旧系统兼容ID
+                    */
+
                     driverId:
                         driverId,
+
+
+                    /*
+                    employeeNo 不在登记阶段生成。
+                    如果旧资料已经存在则仅保留。
+                    */
+
+                    employeeNo:
+                        oldProfile
+                            ?.employeeNo ||
+                        "",
+
 
                     name:
                         name,
@@ -315,14 +370,30 @@ document.addEventListener(
                     position:
                         position,
 
+
+                    /*
+                    部门 / 车队
+                    同时保留 team 与 department，
+                    兼容现有页面。
+                    */
+
                     team:
                         team,
+
+                    department:
+                        team,
+
 
                     entryDate:
                         entryDate,
 
                     remark:
                         remark,
+
+
+                    /*
+                    照片：保留嵌套结构
+                    */
 
                     photos: {
 
@@ -341,6 +412,27 @@ document.addEventListener(
 
 
                     /*
+                    照片：同步顶层字段，
+                    兼容 admin-review.html
+                    */
+
+                    idCardPhoto:
+                        idCardPhoto,
+
+                    passportPhoto:
+                        passportPhoto,
+
+                    driverLicensePhoto:
+                        driverLicensePhoto,
+
+                    licensePhoto:
+                        driverLicensePhoto,
+
+                    bankCardPhoto:
+                        bankCardPhoto,
+
+
+                    /*
                     每次重新提交，
                     状态必须重新变成 pending
                     */
@@ -348,8 +440,17 @@ document.addEventListener(
                     status:
                         "pending",
 
+                    approvalStatus:
+                        "pending",
+
+                    personnelStatus:
+                        "待审核",
+
 
                     submittedAt:
+                        now,
+
+                    updatedAt:
                         now,
 
 
@@ -426,7 +527,6 @@ document.addEventListener(
 
                 /*
                 =================================
-                最重要：
                 保存成功后进入等待审核页面
                 =================================
                 */
@@ -526,7 +626,8 @@ document.addEventListener(
 
             setValue(
                 "team",
-                profile.team
+                profile.team ||
+                profile.department
             );
 
             setValue(
@@ -586,7 +687,8 @@ document.addEventListener(
 
 
             /*
-            按driverId查找，
+            优先按 personId 查找。
+            兼容旧数据时再按 driverId 查找。
             防止重新提交产生重复人员。
             */
 
@@ -594,18 +696,84 @@ document.addEventListener(
                 records.findIndex(
                     function (item) {
 
-                        return (
+                        const samePersonId =
+                            profile.personId &&
+                            item.personId ===
+                                profile.personId;
+
+
+                        const sameDriverId =
+                            profile.driverId &&
                             item.driverId ===
-                            profile.driverId
+                                profile.driverId;
+
+
+                        return (
+                            samePersonId ||
+                            sameDriverId
                         );
+
                     }
                 );
 
 
             if (index >= 0) {
 
-                records[index] =
-                    profile;
+                const oldRecord =
+                    records[index] ||
+                    {};
+
+
+                /*
+                重新提交时：
+                - 用最新资料覆盖
+                - 保留已有 employeeNo
+                - 保留旧系统可能依赖的其他字段
+                */
+
+                records[index] = {
+
+                    ...oldRecord,
+                    ...profile,
+
+                    personId:
+                        profile.personId ||
+                        oldRecord.personId ||
+                        createPersonId(),
+
+                    driverId:
+                        profile.driverId ||
+                        oldRecord.driverId ||
+                        "",
+
+                    employeeNo:
+                        oldRecord.employeeNo ||
+                        profile.employeeNo ||
+                        ""
+                };
+
+
+                /*
+                驳回后重新提交，清理旧驳回信息
+                */
+
+                delete records[index].rejectReason;
+                delete records[index].rejectionReason;
+                delete records[index].reviewRemark;
+                delete records[index].approvalRemark;
+                delete records[index].rejectedAt;
+
+
+                /*
+                重新提交为 pending，
+                清理旧审核通过时间，避免状态混淆。
+                */
+
+                delete records[index].approvedAt;
+                delete records[index].approvedBy;
+                delete records[index].reviewedAt;
+                delete records[index].reviewedBy;
+
 
             } else {
 
@@ -631,6 +799,43 @@ document.addEventListener(
                     error
                 );
             }
+
+        }
+
+
+        /*
+        =================================
+        生成内部 UUID
+        =================================
+        */
+
+        function createPersonId() {
+
+
+            if (
+                window.crypto &&
+                typeof window.crypto.randomUUID ===
+                    "function"
+            ) {
+
+                return window.crypto
+                    .randomUUID();
+
+            }
+
+
+            /*
+            兼容不支持 crypto.randomUUID 的旧浏览器
+            */
+
+            return (
+                "PERSON_" +
+                Date.now() +
+                "_" +
+                Math.random()
+                    .toString(36)
+                    .slice(2, 10)
+            );
 
         }
 
