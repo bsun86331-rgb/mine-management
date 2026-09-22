@@ -82,6 +82,7 @@
             border-radius: 8px;
             color: #991b1b;
             background: #fef2f2;
+            line-height: 1.7;
         }
 
     </style>
@@ -160,6 +161,21 @@
 <li>
 
     <span>
+        员工编号
+    </span>
+
+    <strong
+        id="employeeNo"
+    >
+        待生成
+    </strong>
+
+</li>
+
+
+<li>
+
+    <span>
         岗位
     </span>
 
@@ -175,7 +191,7 @@
 <li>
 
     <span>
-        所属车队
+        部门 / 车队
     </span>
 
     <strong
@@ -261,7 +277,7 @@
     <br>
     请等待管理员审核。
     <br>
-    审核通过后，再次进入司机端将自动进入司机工作台。
+    系统会自动检查审核结果，审核通过后将自动进入司机工作台。
 </div>
 
 
@@ -308,7 +324,7 @@
 <footer>
 
     <p>
-        矿山管理系统 · 司机审核 V2.8.1
+        矿山管理系统 · 司机审核 V2.8.2
     </p>
 
 </footer>
@@ -320,6 +336,18 @@
 document.addEventListener(
     "DOMContentLoaded",
     function () {
+
+
+        const PROFILE_KEY =
+            "driverProfile";
+
+
+        const PERSONNEL_KEY =
+            "personnelRecords";
+
+
+        const AUTO_REFRESH_MS =
+            3000;
 
 
         const refreshButton =
@@ -334,6 +362,14 @@ document.addEventListener(
             );
 
 
+        let redirecting =
+            false;
+
+
+        let timer =
+            null;
+
+
         /*
         =================================
         初始化审核状态
@@ -341,6 +377,26 @@ document.addEventListener(
         */
 
         checkStatus();
+
+
+        /*
+        自动轮询管理员审核结果
+        */
+
+        timer =
+            setInterval(
+                function () {
+
+                    if (!redirecting) {
+
+                        checkStatus(
+                            false
+                        );
+                    }
+
+                },
+                AUTO_REFRESH_MS
+            );
 
 
         /*
@@ -384,57 +440,55 @@ document.addEventListener(
 
 
             let profile =
-                null;
+                readDriverProfile();
 
 
-            try {
-
-
-                const saved =
-                    localStorage.getItem(
-                        "driverProfile"
-                    );
-
-
-                if (!saved) {
-
-
-                    location.href =
-                        "driver-register.html";
-
-
-                    return;
-
-                }
-
-
-                profile =
-                    JSON.parse(
-                        saved
-                    );
-
-
-            } catch (error) {
-
-
-                console.error(
-                    "司机资料读取失败：",
-                    error
-                );
-
-
-                localStorage.removeItem(
-                    "driverProfile"
-                );
-
+            if (!profile) {
 
                 location.href =
                     "driver-register.html";
 
-
                 return;
+            }
+
+
+            /*
+            关键闭环：
+            管理员审核修改的是 personnelRecords。
+            等待页必须把人员总表的最新状态同步回 driverProfile。
+            */
+
+            const personnelRecord =
+                findPersonnelRecord(
+                    profile
+                );
+
+
+            if (personnelRecord) {
+
+                profile =
+                    mergeProfileFromPersonnelRecord(
+                        profile,
+                        personnelRecord
+                    );
+
+
+                saveDriverProfile(
+                    profile
+                );
 
             }
+
+
+            renderProfile(
+                profile
+            );
+
+
+            const state =
+                getApprovalState(
+                    profile
+                );
 
 
             /*
@@ -444,9 +498,22 @@ document.addEventListener(
             */
 
             if (
-                profile.status ===
+                state ===
                 "approved"
             ) {
+
+
+                redirecting =
+                    true;
+
+
+                if (timer) {
+
+                    clearInterval(
+                        timer
+                    );
+
+                }
 
 
                 document.getElementById(
@@ -477,8 +544,30 @@ document.addEventListener(
 
                 document.getElementById(
                     "waitingTip"
+                ).style.display =
+                    "block";
+
+
+                document.getElementById(
+                    "waitingTip"
                 ).innerHTML =
-                    "管理员已经批准您的人员资料。<br>正在进入司机工作台……";
+                    "管理员已经批准您的人员资料。<br>" +
+                    (
+                        profile.employeeNo
+                            ? "员工编号：" +
+                              escapeHtml(
+                                  profile.employeeNo
+                              ) +
+                              "<br>"
+                            : ""
+                    ) +
+                    "正在进入司机工作台……";
+
+
+                document.getElementById(
+                    "rejectedBox"
+                ).style.display =
+                    "none";
 
 
                 refreshButton.style.display =
@@ -490,8 +579,32 @@ document.addEventListener(
 
 
                 /*
+                保存当前人员身份，
+                供后续司机工作台使用。
+                */
+
+                if (profile.personId) {
+
+                    localStorage.setItem(
+                        "currentPersonId",
+                        profile.personId
+                    );
+
+                }
+
+
+                localStorage.setItem(
+                    "selectedPosition",
+                    normalizePosition(
+                        profile.position
+                    ) ||
+                    "汽车司机"
+                );
+
+
+                /*
                 给司机看一下审核成功状态，
-                然后进入V2.8.0工作台
+                然后进入工作台。
                 */
 
                 setTimeout(
@@ -517,14 +630,9 @@ document.addEventListener(
             */
 
             if (
-                profile.status ===
+                state ===
                 "rejected"
             ) {
-
-
-                renderProfile(
-                    profile
-                );
 
 
                 document.getElementById(
@@ -559,9 +667,29 @@ document.addEventListener(
                     "none";
 
 
-                document.getElementById(
-                    "rejectedBox"
-                ).style.display =
+                const rejectedBox =
+                    document.getElementById(
+                        "rejectedBox"
+                    );
+
+
+                const reason =
+                    profile.rejectReason ||
+                    profile.rejectionReason ||
+                    profile.reviewRemark ||
+                    "";
+
+
+                rejectedBox.innerHTML =
+                    reason
+                        ? "资料未通过审核。<br>驳回原因：" +
+                          escapeHtml(
+                              reason
+                          )
+                        : "资料未通过审核，请修改后重新提交。";
+
+
+                rejectedBox.style.display =
                     "block";
 
 
@@ -585,14 +713,9 @@ document.addEventListener(
             */
 
             if (
-                profile.status ===
+                state ===
                 "pending"
             ) {
-
-
-                renderProfile(
-                    profile
-                );
 
 
                 document.getElementById(
@@ -628,6 +751,14 @@ document.addEventListener(
 
 
                 document.getElementById(
+                    "waitingTip"
+                ).innerHTML =
+                    "您的资料已经提交成功。<br>" +
+                    "请等待管理员审核。<br>" +
+                    "系统会自动检查审核结果，审核通过后将自动进入司机工作台。";
+
+
+                document.getElementById(
                     "rejectedBox"
                 ).style.display =
                     "none";
@@ -655,21 +786,400 @@ document.addEventListener(
 
 
             /*
+            停用 / 离职
+            */
+
+            if (
+                state ===
+                "disabled"
+            ) {
+
+                if (timer) {
+
+                    clearInterval(
+                        timer
+                    );
+
+                }
+
+
+                alert(
+                    "当前人员状态为停用或离职，请联系管理员。"
+                );
+
+
+                location.href =
+                    "index.html";
+
+
+                return;
+
+            }
+
+
+            /*
             未知状态
             */
 
             alert(
-                "人员审核状态异常，请重新填写资料。"
+                "人员审核状态异常，请联系管理员。"
             );
 
+        }
 
-            localStorage.removeItem(
-                "driverProfile"
+
+        /*
+        =================================
+        读取司机资料
+        =================================
+        */
+
+        function readDriverProfile() {
+
+
+            try {
+
+
+                const saved =
+                    localStorage.getItem(
+                        PROFILE_KEY
+                    );
+
+
+                if (!saved) {
+
+                    return null;
+                }
+
+
+                return JSON.parse(
+                    saved
+                );
+
+
+            } catch (error) {
+
+
+                console.error(
+                    "司机资料读取失败：",
+                    error
+                );
+
+
+                localStorage.removeItem(
+                    PROFILE_KEY
+                );
+
+
+                return null;
+
+            }
+
+        }
+
+
+        /*
+        =================================
+        保存司机资料
+        =================================
+        */
+
+        function saveDriverProfile(
+            profile
+        ) {
+
+
+            try {
+
+                localStorage.setItem(
+                    PROFILE_KEY,
+                    JSON.stringify(
+                        profile
+                    )
+                );
+
+
+            } catch (error) {
+
+                console.warn(
+                    "司机资料同步失败：",
+                    error
+                );
+            }
+
+        }
+
+
+        /*
+        =================================
+        读取人员总表
+        =================================
+        */
+
+        function getPersonnelRecords() {
+
+
+            try {
+
+
+                const data =
+                    JSON.parse(
+                        localStorage.getItem(
+                            PERSONNEL_KEY
+                        ) ||
+                        "[]"
+                    );
+
+
+                return Array.isArray(
+                    data
+                )
+                    ? data
+                    : [];
+
+
+            } catch (error) {
+
+
+                console.error(
+                    "人员总表读取失败：",
+                    error
+                );
+
+
+                return [];
+
+            }
+
+        }
+
+
+        /*
+        =================================
+        从人员总表查找当前司机
+        =================================
+        */
+
+        function findPersonnelRecord(
+            profile
+        ) {
+
+
+            const records =
+                getPersonnelRecords();
+
+
+            return (
+                records.find(
+                    function (person) {
+
+
+                        const samePersonId =
+                            profile.personId &&
+                            person.personId ===
+                                profile.personId;
+
+
+                        const sameDriverId =
+                            profile.driverId &&
+                            person.driverId ===
+                                profile.driverId;
+
+
+                        return (
+                            samePersonId ||
+                            sameDriverId
+                        );
+
+                    }
+                ) ||
+                null
             );
 
+        }
 
-            location.href =
-                "driver-register.html";
+
+        /*
+        =================================
+        人员总表状态同步回 driverProfile
+        =================================
+        */
+
+        function mergeProfileFromPersonnelRecord(
+            profile,
+            record
+        ) {
+
+
+            return {
+
+                ...profile,
+                ...record,
+
+
+                /*
+                优先保留稳定身份字段
+                */
+
+                personId:
+                    record.personId ||
+                    profile.personId ||
+                    "",
+
+                driverId:
+                    record.driverId ||
+                    profile.driverId ||
+                    "",
+
+                employeeNo:
+                    record.employeeNo ||
+                    profile.employeeNo ||
+                    "",
+
+
+                /*
+                部门 / 车队字段统一
+                */
+
+                team:
+                    record.team ||
+                    record.department ||
+                    profile.team ||
+                    profile.department ||
+                    "",
+
+                department:
+                    record.department ||
+                    record.team ||
+                    profile.department ||
+                    profile.team ||
+                    "",
+
+
+                /*
+                状态字段以管理员审核结果为准
+                */
+
+                status:
+                    record.status ||
+                    profile.status ||
+                    "pending",
+
+                approvalStatus:
+                    record.approvalStatus ||
+                    profile.approvalStatus ||
+                    record.status ||
+                    profile.status ||
+                    "pending",
+
+                personnelStatus:
+                    record.personnelStatus ||
+                    profile.personnelStatus ||
+                    "待审核"
+
+            };
+
+        }
+
+
+        /*
+        =================================
+        统一审核状态
+        =================================
+        */
+
+        function getApprovalState(
+            profile
+        ) {
+
+
+            if (!profile) {
+
+                return "pending";
+            }
+
+
+            if (
+                profile.status ===
+                    "rejected" ||
+                profile.approvalStatus ===
+                    "rejected"
+            ) {
+
+                return "rejected";
+            }
+
+
+            if (
+                profile.status ===
+                    "disabled" ||
+                profile.status ===
+                    "resigned" ||
+                profile.personnelStatus ===
+                    "停用" ||
+                profile.personnelStatus ===
+                    "离职"
+            ) {
+
+                return "disabled";
+            }
+
+
+            if (
+                profile.approvalStatus ===
+                    "approved" ||
+                profile.status ===
+                    "approved" ||
+                profile.status ===
+                    "active" ||
+                profile.status ===
+                    "working" ||
+                profile.status ===
+                    "leave" ||
+                profile.personnelStatus ===
+                    "在职可用" ||
+                profile.personnelStatus ===
+                    "作业中" ||
+                profile.personnelStatus ===
+                    "请假"
+            ) {
+
+                return "approved";
+            }
+
+
+            return "pending";
+
+        }
+
+
+        /*
+        =================================
+        岗位兼容
+        =================================
+        */
+
+        function normalizePosition(
+            position
+        ) {
+
+
+            const map = {
+
+                "卡车司机":
+                    "汽车司机",
+
+                "汽车司机":
+                    "汽车司机"
+
+            };
+
+
+            return (
+                map[position] ||
+                position ||
+                ""
+            );
 
         }
 
@@ -693,15 +1203,25 @@ document.addEventListener(
 
 
             setText(
+                "employeeNo",
+                profile.employeeNo ||
+                "待生成"
+            );
+
+
+            setText(
                 "driverPosition",
-                profile.position ||
-                "卡车司机"
+                normalizePosition(
+                    profile.position
+                ) ||
+                "汽车司机"
             );
 
 
             setText(
                 "driverTeam",
                 profile.team ||
+                profile.department ||
                 "-"
             );
 
@@ -787,6 +1307,38 @@ document.addEventListener(
             return date.toLocaleString(
                 "zh-CN"
             );
+
+        }
+
+
+        function escapeHtml(
+            value
+        ) {
+
+
+            return String(
+                value ?? ""
+            )
+                .replaceAll(
+                    "&",
+                    "&amp;"
+                )
+                .replaceAll(
+                    "<",
+                    "&lt;"
+                )
+                .replaceAll(
+                    ">",
+                    "&gt;"
+                )
+                .replaceAll(
+                    '"',
+                    "&quot;"
+                )
+                .replaceAll(
+                    "'",
+                    "&#039;"
+                );
 
         }
 
