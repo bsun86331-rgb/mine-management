@@ -108,9 +108,7 @@ button{
     content:"▼";
 }
 
-.collapsible-card.collapsed > :not(h2){
-    display:none !important;
-}
+
 </style>
 </head>
 <body>
@@ -446,26 +444,43 @@ init();
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     const cards = document.querySelectorAll('section.card');
-
-    let firstCollapsible = true;
+    let first = true;
 
     cards.forEach(function (card) {
-        const title = card.querySelector(':scope > h2');
-
+        const title = card.querySelector('h2');
         if (!title) return;
 
         card.classList.add('collapsible-card');
 
-        /* 第一块功能区默认展开，其余默认折叠 */
-        if (firstCollapsible) {
-            firstCollapsible = false;
-        } else {
-            card.classList.add('collapsed');
+        const directChildren = Array.from(card.children);
+        const titleBox = directChildren.find(function (el) {
+            return el === title || el.contains(title);
+        });
+
+        function setCollapsed(collapsed) {
+            card.classList.toggle('collapsed', collapsed);
+
+            directChildren.forEach(function (el) {
+                if (el !== titleBox) {
+                    el.style.display = collapsed ? 'none' : '';
+                }
+            });
+
+            title.setAttribute('data-state', collapsed ? 'collapsed' : 'open');
         }
 
+        title.style.cursor = 'pointer';
+
         title.addEventListener('click', function () {
-            card.classList.toggle('collapsed');
+            setCollapsed(!card.classList.contains('collapsed'));
         });
+
+        if (first) {
+            setCollapsed(false);
+            first = false;
+        } else {
+            setCollapsed(true);
+        }
     });
 });
 </script>
