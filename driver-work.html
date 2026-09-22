@@ -19,6 +19,78 @@
         rel="stylesheet"
         href="css/driver-work.css?v=2.9.2"
     >
+
+    <style>
+        .shift-kpi-card {
+            padding: 16px;
+        }
+
+        .shift-kpi-grid {
+            display: grid;
+            grid-template-columns: 1.35fr 1fr 1fr;
+            gap: 10px;
+        }
+
+        .shift-kpi-item {
+            min-height: 106px;
+            padding: 14px 12px;
+            border: 1px solid #dbeafe;
+            border-radius: 14px;
+            background: #f8fafc;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
+
+        .shift-kpi-item.primary {
+            background: #eff6ff;
+            border-color: #bfdbfe;
+        }
+
+        .shift-kpi-label {
+            color: #64748b;
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+        .shift-kpi-value {
+            margin-top: 5px;
+            color: #0f172a;
+            font-size: 30px;
+            line-height: 1.05;
+            font-weight: 900;
+        }
+
+        .shift-kpi-item.primary .shift-kpi-value {
+            color: #1d4ed8;
+            font-size: 48px;
+        }
+
+        .shift-kpi-sub {
+            margin-top: 5px;
+            color: #94a3b8;
+            font-size: 11px;
+        }
+
+        .employee-line {
+            margin-top: 5px;
+            color: #64748b;
+            font-size: 12px;
+        }
+
+        @media (max-width: 700px) {
+            .shift-kpi-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .shift-kpi-item.primary {
+                grid-column: 1 / -1;
+            }
+        }
+    </style>
+
 </head>
 
 <body class="driver-body">
@@ -64,12 +136,80 @@
                         -
                     </span>
                 </p>
+
+                <p class="employee-line">
+                    员工编号：
+                    <span id="driverEmployeeNo">-</span>
+                </p>
             </div>
 
         </div>
 
         <div class="profile-status">
             已审核通过
+        </div>
+
+    </section>
+
+
+    <!-- 本班核心数据 -->
+
+    <section class="driver-card shift-kpi-card">
+
+        <div class="section-title">
+            <div>
+                <h2>📈 本班实时数据</h2>
+                <p>趟数、趟数排名、绩效排名实时显示</p>
+            </div>
+        </div>
+
+        <div class="shift-kpi-grid">
+
+            <div class="shift-kpi-item primary">
+                <span class="shift-kpi-label">本班趟数</span>
+                <strong
+                    id="todayTripCount"
+                    class="shift-kpi-value"
+                >
+                    0
+                </strong>
+                <span class="shift-kpi-sub">
+                    当前班次累计
+                </span>
+            </div>
+
+            <div class="shift-kpi-item">
+                <span class="shift-kpi-label">本班趟数排名</span>
+                <strong
+                    id="tripRankValue"
+                    class="shift-kpi-value"
+                >
+                    --
+                </strong>
+                <span
+                    id="tripRankScope"
+                    class="shift-kpi-sub"
+                >
+                    当前班次车辆
+                </span>
+            </div>
+
+            <div class="shift-kpi-item">
+                <span class="shift-kpi-label">本班绩效排名</span>
+                <strong
+                    id="performanceRankValue"
+                    class="shift-kpi-value"
+                >
+                    --
+                </strong>
+                <span
+                    id="performanceRankScope"
+                    class="shift-kpi-sub"
+                >
+                    当前班次司机
+                </span>
+            </div>
+
         </div>
 
     </section>
@@ -273,10 +413,6 @@
                     <strong id="taskShift">-</strong>
                 </div>
 
-                <div>
-                    <span>今日趟数</span>
-                    <strong id="todayTripCount">0</strong>
-                </div>
 
             </div>
 
@@ -428,8 +564,8 @@
         <div class="section-title">
 
             <div>
-                <h2>📊 今日运输记录</h2>
-                <p>包含GPS状态及调度审核结果</p>
+                <h2>📊 本班运输记录</h2>
+                <p>按当前班次统计，包含GPS状态及调度审核结果</p>
             </div>
 
             <span
@@ -549,6 +685,11 @@
             </div>
 
             <div>
+                <span>员工编号</span>
+                <strong id="profileEmployeeNo">-</strong>
+            </div>
+
+            <div>
                 <span>手机号</span>
                 <strong id="profilePhone">-</strong>
             </div>
@@ -559,7 +700,7 @@
             </div>
 
             <div>
-                <span>所属车队</span>
+                <span>部门 / 车队</span>
                 <strong id="profileTeam">-</strong>
             </div>
 
@@ -737,7 +878,7 @@
 
 
 <footer>
-    矿山管理系统 · 汽车司机端 V2.10.2S
+    矿山管理系统 · 汽车司机端 V2.10.3
 </footer>
 
 <script src="js/driver-work.js?v=2.9.2"></script>
