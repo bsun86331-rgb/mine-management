@@ -443,5 +443,31 @@ function init(){
 
 init();
 </script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const cards = document.querySelectorAll('section.card');
+
+    let firstCollapsible = true;
+
+    cards.forEach(function (card) {
+        const title = card.querySelector(':scope > h2');
+
+        if (!title) return;
+
+        card.classList.add('collapsible-card');
+
+        /* 第一块功能区默认展开，其余默认折叠 */
+        if (firstCollapsible) {
+            firstCollapsible = false;
+        } else {
+            card.classList.add('collapsed');
+        }
+
+        title.addEventListener('click', function () {
+            card.classList.toggle('collapsed');
+        });
+    });
+});
+</script>
 </body>
 </html>
