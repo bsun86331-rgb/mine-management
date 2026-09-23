@@ -6471,12 +6471,4 @@ document.addEventListener("DOMContentLoaded", function () {
                         item.driverId,
                         item.driverName
                     ) &&
-                    item.status === "approved" &&
-item.status === "approved" &&
-!item.appliedToDriverTask &&
-(
-    !item.taskId ||
-    item.taskId ===
-    currentTask.taskId
-)
-);
+                    item.status === "approved"
