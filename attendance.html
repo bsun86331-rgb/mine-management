@@ -337,6 +337,62 @@
             line-height: 1.7;
         }
 
+        .attendance-summary-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 10px;
+            margin-bottom: 14px;
+        }
+
+        .attendance-summary-box {
+            padding: 13px;
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            background: #f8fafc;
+        }
+
+        .attendance-summary-box span {
+            display: block;
+            margin-bottom: 6px;
+            color: var(--muted);
+            font-size: 12px;
+        }
+
+        .attendance-summary-box strong {
+            display: block;
+            font-size: 22px;
+        }
+
+        .attendance-ledger-note {
+            margin-bottom: 12px;
+            padding: 11px 12px;
+            border: 1px solid #bfdbfe;
+            border-radius: 10px;
+            background: #eff6ff;
+            color: #1e40af;
+            font-size: 12px;
+            line-height: 1.75;
+        }
+
+        .attendance-ledger-note strong {
+            color: #1e3a8a;
+        }
+
+        .ledger-positive {
+            color: #166534;
+            font-weight: 700;
+        }
+
+        .ledger-warning {
+            color: #92400e;
+            font-weight: 700;
+        }
+
+        .ledger-danger {
+            color: #991b1b;
+            font-weight: 700;
+        }
+
         footer {
             padding: 20px;
             text-align: center;
@@ -348,7 +404,8 @@
             .profile-grid,
             .status-grid,
             .grid-2,
-            .action-grid {
+            .action-grid,
+            .attendance-summary-grid {
                 grid-template-columns: 1fr;
             }
 
@@ -365,7 +422,7 @@
     <div class="header-inner">
         <div>
             <h1>📍 全员定位考勤中心</h1>
-            <p>Attendance Center · V2.10.1E</p>
+            <p>Attendance Center · V2.10.2F</p>
         </div>
 
         <button type="button" class="header-btn" onclick="goHome()">首页</button>
@@ -375,8 +432,9 @@
 <main>
 
     <div class="notice">
-        所有已审核人员均可定位打卡。有效请假期间的打卡记录会保存，但不计入有效出勤。
-        对汽车司机等生产岗位，如“当天有考勤但生产数量为 0”，系统自动标记为零产量异常，等待车队长报备原因。
+        所有已审核人员均可定位打卡。考勤核算同时读取定位打卡、生产班次、请假和零产量报备。
+        事假按批准天数扣考勤；轮休假额度内不扣考勤，超出额度部分扣考勤。
+        白班与夜班发生换班时，系统支持按 0.5 班核算，单日考勤可出现 1.5。
     </div>
 
     <section class="card">
@@ -492,6 +550,68 @@
     <section class="card">
         <div class="section-title">
             <div>
+                <h2>📊 近30天考勤核算</h2>
+                <p>用于工资考勤依据预览：结合班次、定位打卡、事假、轮休假和零产量报备自动计算。</p>
+            </div>
+
+            <span id="ledgerStatusBadge" class="badge blue">自动核算</span>
+        </div>
+
+        <div class="attendance-summary-grid">
+            <div class="attendance-summary-box">
+                <span>累计考勤</span>
+                <strong id="ledgerAttendanceTotal">0</strong>
+            </div>
+
+            <div class="attendance-summary-box">
+                <span>白班折算</span>
+                <strong id="ledgerWhiteTotal">0</strong>
+            </div>
+
+            <div class="attendance-summary-box">
+                <span>夜班折算</span>
+                <strong id="ledgerNightTotal">0</strong>
+            </div>
+
+            <div class="attendance-summary-box">
+                <span>扣考勤</span>
+                <strong id="ledgerDeductionTotal">0</strong>
+            </div>
+        </div>
+
+        <div class="attendance-ledger-note">
+            <strong>换班规则：</strong>
+            同一天同时存在白班和夜班时，系统根据上一班方向自动按
+            “0.5 + 1.0 = 1.5”核算。
+            轮休额度内按正常考勤计入，事假及轮休超额部分从考勤中扣除。
+            定位打卡用于核验，缺少打卡会在说明中提示，但本版本暂不自动扣罚。
+        </div>
+
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>日期</th>
+                        <th>排班状态</th>
+                        <th>白班</th>
+                        <th>夜班</th>
+                        <th>轮休计勤</th>
+                        <th>扣考勤</th>
+                        <th>当日考勤</th>
+                        <th>定位打卡</th>
+                        <th>说明</th>
+                    </tr>
+                </thead>
+
+                <tbody id="attendanceLedgerBody"></tbody>
+            </table>
+        </div>
+    </section>
+
+
+    <section class="card">
+        <div class="section-title">
+            <div>
                 <h2>📋 我的近期考勤</h2>
                 <p>显示最近 30 条打卡记录。</p>
             </div>
@@ -517,7 +637,7 @@
 </main>
 
 <footer>
-    矿山管理系统 · 全员定位考勤中心 V2.10.1E
+    矿山管理系统 · 全员定位考勤中心 V2.10.2F
 </footer>
 
 <script>
@@ -526,6 +646,8 @@
 const STORAGE = {
     ATTENDANCE: "attendanceRecords",
     ZERO_REPORTS: "zeroProductionReports",
+    SHIFT_EXECUTIONS: "dispatchShiftExecutions",
+    PUBLISHED_TASKS: "dispatchPublishedTasks",
     LEAVE_KEYS: [
         "leaveRequests",
         "leaveRecords",
@@ -754,10 +876,9 @@ function isOnApprovedLeave() {
     });
 }
 
-function getProductionCountForToday() {
+function getProductionCountForDate(date) {
     const personId = getPersonId(currentPerson);
     const position = normalizePosition(currentPerson.position);
-    const date = today();
 
     const possibleKeys = [
         "tripRecords",
@@ -808,6 +929,13 @@ function getProductionCountForToday() {
     }
 
     return count;
+}
+
+
+function getProductionCountForToday() {
+    return getProductionCountForDate(
+        today()
+    );
 }
 
 function getLocation() {
@@ -908,6 +1036,7 @@ async function checkIn() {
 
         renderTodayStatus();
         renderHistory();
+        renderAttendanceLedger();
 
         alert(
             leaveActive
@@ -948,6 +1077,7 @@ async function checkOut() {
 
         renderTodayStatus();
         renderHistory();
+        renderAttendanceLedger();
 
         alert("下班打卡成功。");
 
@@ -1113,9 +1243,945 @@ function submitZeroProductionReport() {
 
     renderTodayStatus();
     renderHistory();
+    renderAttendanceLedger();
 
     alert("零产量异常已完成报备。");
 }
+
+
+/*
+=========================================================
+V2.10.2F
+近30天考勤核算
+=========================================================
+
+核算来源：
+1. dispatchShiftExecutions：生产岗位白班 / 夜班
+2. attendanceRecords：定位打卡
+3. leaveRequests 等：事假 / 轮休假
+4. zeroProductionReports：零产量但有实际工作的说明
+
+原则：
+- 正常白班 = 1.0
+- 正常夜班 = 1.0
+- 同日白 + 夜换班 = 1.5
+- 事假扣考勤
+- 轮休额度内不扣考勤，超额部分扣考勤
+- 提前销假使用 actual* 字段
+- 定位缺失本版本只提示，不自动扣罚
+=========================================================
+*/
+
+function localDateKey(date) {
+    const value = new Date(date);
+
+    if (Number.isNaN(value.getTime())) {
+        return "";
+    }
+
+    return (
+        value.getFullYear() +
+        "-" +
+        String(value.getMonth() + 1).padStart(2, "0") +
+        "-" +
+        String(value.getDate()).padStart(2, "0")
+    );
+}
+
+
+function addLocalDays(dateKey, days) {
+    const date = new Date(dateKey + "T00:00:00");
+
+    if (Number.isNaN(date.getTime())) {
+        return "";
+    }
+
+    date.setDate(
+        date.getDate() + days
+    );
+
+    return localDateKey(date);
+}
+
+
+function formatAttendanceUnit(value) {
+    const number = Number(value || 0);
+
+    if (!Number.isFinite(number)) {
+        return "0";
+    }
+
+    return Number.isInteger(number)
+        ? number.toFixed(1)
+        : number.toFixed(1);
+}
+
+
+function sameLedgerPerson(item) {
+    if (!item || !currentPerson) {
+        return false;
+    }
+
+    const currentId =
+        String(
+            getPersonId(currentPerson) ||
+            ""
+        ).trim();
+
+    const itemId =
+        String(
+            item.personId ||
+            item.driverId ||
+            item.employeeId ||
+            item.workerId ||
+            item.applicantId ||
+            item.operatorId ||
+            ""
+        ).trim();
+
+    if (
+        currentId &&
+        itemId
+    ) {
+        return currentId === itemId;
+    }
+
+    const currentName =
+        String(
+            currentPerson.name ||
+            ""
+        ).trim();
+
+    const itemName =
+        String(
+            item.personName ||
+            item.driverName ||
+            item.workerName ||
+            item.applicantName ||
+            item.operatorName ||
+            item.name ||
+            ""
+        ).trim();
+
+    return Boolean(
+        currentName &&
+        itemName &&
+        currentName === itemName
+    );
+}
+
+
+function getAttendanceRecordForDate(date) {
+    return readArray(STORAGE.ATTENDANCE)
+        .find(item =>
+            sameLedgerPerson(item) &&
+            item.date === date
+        ) || null;
+}
+
+
+function getZeroReportForDate(date) {
+    return readArray(STORAGE.ZERO_REPORTS)
+        .find(item =>
+            sameLedgerPerson(item) &&
+            item.date === date
+        ) || null;
+}
+
+
+function assignmentMatchesCurrentPerson(assignment) {
+    return sameLedgerPerson({
+        personId:
+            assignment?.personId ||
+            assignment?.driverId ||
+            "",
+        personName:
+            assignment?.personName ||
+            assignment?.driverName ||
+            ""
+    });
+}
+
+
+function bindingMatchesCurrentPerson(binding) {
+    return sameLedgerPerson({
+        personId:
+            binding?.excavatorDriverId ||
+            binding?.operatorId ||
+            binding?.personId ||
+            "",
+        personName:
+            binding?.excavatorDriverName ||
+            binding?.operatorName ||
+            binding?.personName ||
+            ""
+    });
+}
+
+
+function getShiftExecutionsForCurrentPerson() {
+    return readArray(
+        STORAGE.SHIFT_EXECUTIONS
+    )
+    .filter(item => {
+        const inDriverAssignments =
+            (item.driverAssignments || [])
+                .some(
+                    assignmentMatchesCurrentPerson
+                );
+
+        const inBindings =
+            (item.bindings || [])
+                .some(
+                    bindingMatchesCurrentPerson
+                );
+
+        return (
+            inDriverAssignments ||
+            inBindings
+        );
+    });
+}
+
+
+function getShiftSetForDate(date) {
+    const result = new Set();
+
+    getShiftExecutionsForCurrentPerson()
+        .filter(item =>
+            String(
+                item.date ||
+                item.shiftDate ||
+                ""
+            ).slice(0, 10) === date
+        )
+        .forEach(item => {
+            const shift =
+                String(
+                    item.shift ||
+                    ""
+                ).trim();
+
+            if (
+                shift === "白班" ||
+                shift === "夜班"
+            ) {
+                result.add(shift);
+            }
+        });
+
+    return result;
+}
+
+
+function getShiftUnitsForDate(date) {
+    const shifts =
+        getShiftSetForDate(date);
+
+    const hasWhite =
+        shifts.has("白班");
+
+    const hasNight =
+        shifts.has("夜班");
+
+    if (
+        hasWhite &&
+        hasNight
+    ) {
+        const previousDate =
+            addLocalDays(
+                date,
+                -1
+            );
+
+        const previousShifts =
+            getShiftSetForDate(
+                previousDate
+            );
+
+        /*
+         * 白转夜：
+         * 上午白班0.5 + 当晚夜班1.0
+         *
+         * 夜转白：
+         * 夜班0.5 + 白班1.0
+         *
+         * 若历史数据无法判断方向，
+         * 默认按白转夜展示，但总考勤仍为1.5。
+         */
+        if (
+            previousShifts.has("夜班") &&
+            !previousShifts.has("白班")
+        ) {
+            return {
+                white: 1,
+                night: 0.5,
+                status: "夜转白"
+            };
+        }
+
+        return {
+            white: 0.5,
+            night: 1,
+            status: "白转夜"
+        };
+    }
+
+    if (hasWhite) {
+        return {
+            white: 1,
+            night: 0,
+            status: "正常白班"
+        };
+    }
+
+    if (hasNight) {
+        return {
+            white: 0,
+            night: 1,
+            status: "正常夜班"
+        };
+    }
+
+    return {
+        white: 0,
+        night: 0,
+        status: ""
+    };
+}
+
+
+function getLedgerLeaveRecords() {
+    const all = [];
+
+    STORAGE.LEAVE_KEYS.forEach(key => {
+        readArray(key).forEach(item => {
+            if (!sameLedgerPerson(item)) {
+                return;
+            }
+
+            if (
+                item.status !== "approved" &&
+                item.status !== "returned" &&
+                item.approvalStatus !== "approved"
+            ) {
+                return;
+            }
+
+            all.push(item);
+        });
+    });
+
+    /*
+     * 多个历史 key 可能保存同一条请假，
+     * 使用 leaveId / 时间组合去重。
+     */
+    const unique = new Map();
+
+    all.forEach(item => {
+        const key =
+            String(
+                item.leaveId ||
+                item.id ||
+                [
+                    item.startTime,
+                    item.endTime,
+                    item.leaveType
+                ].join("|")
+            );
+
+        if (!unique.has(key)) {
+            unique.set(key, item);
+        }
+    });
+
+    return [...unique.values()];
+}
+
+
+function leaveEffectiveDays(item) {
+    if (item.status === "returned") {
+        return Math.max(
+            0,
+            Number(
+                item.actualLeaveDays ||
+                0
+            )
+        );
+    }
+
+    return Math.max(
+        0,
+        Number(
+            item.leaveDays ||
+            0
+        )
+    );
+}
+
+
+function leaveRotationCoveredDays(item) {
+    if (item.leaveType !== "轮休假") {
+        return 0;
+    }
+
+    if (item.status === "returned") {
+        return Math.max(
+            0,
+            Number(
+                item.actualRotationCoveredDays ||
+                0
+            )
+        );
+    }
+
+    return Math.max(
+        0,
+        Number(
+            item.rotationCoveredDays ||
+            0
+        )
+    );
+}
+
+
+function createLeaveHalfDaySlots(item) {
+    const start =
+        new Date(
+            item.startTime ||
+            item.leaveStart ||
+            item.startDate ||
+            0
+        );
+
+    if (
+        Number.isNaN(
+            start.getTime()
+        )
+    ) {
+        return [];
+    }
+
+    const totalHalfDays =
+        Math.max(
+            0,
+            Math.round(
+                leaveEffectiveDays(item) * 2
+            )
+        );
+
+    if (!totalHalfDays) {
+        return [];
+    }
+
+    const rotationPaidHalfDays =
+        Math.max(
+            0,
+            Math.min(
+                totalHalfDays,
+                Math.round(
+                    leaveRotationCoveredDays(item) * 2
+                )
+            )
+        );
+
+    let currentDate =
+        localDateKey(start);
+
+    let half =
+        start.getHours() >= 12
+            ? "PM"
+            : "AM";
+
+    const slots = [];
+
+    for (
+        let index = 0;
+        index < totalHalfDays;
+        index += 1
+    ) {
+        const rotationPaid =
+            item.leaveType === "轮休假" &&
+            index < rotationPaidHalfDays;
+
+        slots.push({
+            date: currentDate,
+            half,
+            leaveType:
+                item.leaveType ||
+                "请假",
+            rotationPaid,
+            deduction:
+                item.leaveType === "事假" ||
+                (
+                    item.leaveType === "轮休假" &&
+                    !rotationPaid
+                )
+        });
+
+        if (half === "AM") {
+            half = "PM";
+        } else {
+            half = "AM";
+            currentDate =
+                addLocalDays(
+                    currentDate,
+                    1
+                );
+        }
+    }
+
+    return slots;
+}
+
+
+function getLeaveImpactForDate(date) {
+    let rotationPaidUnits = 0;
+    let deductionUnits = 0;
+    const labels = [];
+
+    getLedgerLeaveRecords()
+        .forEach(item => {
+            createLeaveHalfDaySlots(item)
+                .filter(slot =>
+                    slot.date === date
+                )
+                .forEach(slot => {
+                    if (slot.rotationPaid) {
+                        rotationPaidUnits += 0.5;
+                    }
+
+                    if (slot.deduction) {
+                        deductionUnits += 0.5;
+                    }
+
+                    const label =
+                        slot.leaveType +
+                        (
+                            slot.rotationPaid
+                                ? "（额度内）"
+                                : slot.deduction
+                                    ? "（扣考勤）"
+                                    : ""
+                        );
+
+                    labels.push(label);
+                });
+        });
+
+    return {
+        rotationPaidUnits:
+            Math.min(
+                1.5,
+                rotationPaidUnits
+            ),
+        deductionUnits:
+            Math.min(
+                1.5,
+                deductionUnits
+            ),
+        labels: [
+            ...new Set(labels)
+        ]
+    };
+}
+
+
+function getPunchState(record) {
+    if (
+        record?.checkInAt &&
+        record?.checkOutAt
+    ) {
+        return {
+            text: "完整",
+            className: "ledger-positive",
+            complete: true
+        };
+    }
+
+    if (
+        record?.checkInAt ||
+        record?.checkOutAt
+    ) {
+        return {
+            text: "不完整",
+            className: "ledger-warning",
+            complete: false
+        };
+    }
+
+    return {
+        text: "未打卡",
+        className: "ledger-danger",
+        complete: false
+    };
+}
+
+
+function getLedgerDates() {
+    const dates = new Set();
+
+    dates.add(today());
+
+    readArray(STORAGE.ATTENDANCE)
+        .filter(sameLedgerPerson)
+        .forEach(item => {
+            if (item.date) {
+                dates.add(
+                    String(item.date).slice(0, 10)
+                );
+            }
+        });
+
+    readArray(STORAGE.ZERO_REPORTS)
+        .filter(sameLedgerPerson)
+        .forEach(item => {
+            if (item.date) {
+                dates.add(
+                    String(item.date).slice(0, 10)
+                );
+            }
+        });
+
+    getShiftExecutionsForCurrentPerson()
+        .forEach(item => {
+            const date =
+                String(
+                    item.date ||
+                    item.shiftDate ||
+                    ""
+                ).slice(0, 10);
+
+            if (date) {
+                dates.add(date);
+            }
+        });
+
+    getLedgerLeaveRecords()
+        .forEach(item => {
+            createLeaveHalfDaySlots(item)
+                .forEach(slot => {
+                    if (slot.date) {
+                        dates.add(slot.date);
+                    }
+                });
+        });
+
+    return [...dates]
+        .filter(date =>
+            /^\d{4}-\d{2}-\d{2}$/.test(date)
+        )
+        .sort((a, b) =>
+            b.localeCompare(a)
+        )
+        .slice(0, 30);
+}
+
+
+function buildLedgerRow(date) {
+    const record =
+        getAttendanceRecordForDate(
+            date
+        );
+
+    const zeroReport =
+        getZeroReportForDate(
+            date
+        );
+
+    const shift =
+        getShiftUnitsForDate(
+            date
+        );
+
+    const leave =
+        getLeaveImpactForDate(
+            date
+        );
+
+    const punch =
+        getPunchState(
+            record
+        );
+
+    const scheduledUnits =
+        shift.white +
+        shift.night;
+
+    /*
+     * 无生产班次的普通岗位：
+     * 完成早晚定位打卡后按正常1.0出勤作为预览。
+     * 生产岗位优先以调度班次为基础。
+     */
+    const ordinaryPunchUnits =
+        scheduledUnits <= 0 &&
+        punch.complete
+            ? 1
+            : 0;
+
+    const baseWorkUnits =
+        scheduledUnits > 0
+            ? scheduledUnits
+            : ordinaryPunchUnits;
+
+    const normalCap =
+        scheduledUnits > 1
+            ? scheduledUnits
+            : 1;
+
+    const attendanceUnits =
+        Math.max(
+            0,
+            Math.min(
+                normalCap,
+                Math.max(
+                    0,
+                    baseWorkUnits -
+                    leave.deductionUnits
+                ) +
+                leave.rotationPaidUnits
+            )
+        );
+
+    const productionCount =
+        getProductionCountForDate(
+            date
+        );
+
+    let status =
+        shift.status;
+
+    if (!status) {
+        if (
+            leave.labels.length
+        ) {
+            status =
+                leave.labels.some(label =>
+                    label.startsWith("轮休假")
+                )
+                    ? "轮休假"
+                    : "事假";
+        } else if (punch.complete) {
+            status = "正常出勤";
+        } else if (
+            record?.checkInAt ||
+            record?.checkOutAt
+        ) {
+            status = "打卡待核验";
+        } else {
+            status = "无排班";
+        }
+    }
+
+    const notes = [];
+
+    if (
+        leave.labels.length
+    ) {
+        notes.push(
+            leave.labels.join("、")
+        );
+    }
+
+    if (zeroReport) {
+        notes.push(
+            "零产量报备：" +
+            (
+                zeroReport.reason ||
+                "已报备"
+            ) +
+            (
+                zeroReport.remark
+                    ? "（" +
+                      zeroReport.remark +
+                      "）"
+                    : ""
+            )
+        );
+    } else if (
+        isProductionPosition() &&
+        attendanceUnits > 0 &&
+        productionCount === 0 &&
+        !leave.labels.length
+    ) {
+        notes.push(
+            "有考勤但生产数量为0，待调度/车队长说明"
+        );
+    }
+
+    if (!punch.complete) {
+        notes.push(
+            punch.text === "未打卡"
+                ? "定位打卡缺失"
+                : "定位打卡不完整"
+        );
+    }
+
+    if (
+        productionCount > 0
+    ) {
+        notes.push(
+            "生产数量：" +
+            productionCount
+        );
+    }
+
+    return {
+        date,
+        status,
+        white:
+            shift.white,
+        night:
+            shift.night,
+        rotationPaid:
+            leave.rotationPaidUnits,
+        deduction:
+            leave.deductionUnits,
+        attendance:
+            attendanceUnits,
+        punch,
+        notes:
+            notes.join("；") ||
+            "-"
+    };
+}
+
+
+function renderAttendanceLedger() {
+    const body =
+        document.getElementById(
+            "attendanceLedgerBody"
+        );
+
+    if (!body) {
+        return;
+    }
+
+    const rows =
+        getLedgerDates()
+            .map(
+                buildLedgerRow
+            );
+
+    if (!rows.length) {
+        body.innerHTML =
+            '<tr><td colspan="9" class="empty">暂无可核算考勤数据</td></tr>';
+        return;
+    }
+
+    const attendanceTotal =
+        rows.reduce(
+            (sum, item) =>
+                sum +
+                item.attendance,
+            0
+        );
+
+    const whiteTotal =
+        rows.reduce(
+            (sum, item) =>
+                sum +
+                item.white,
+            0
+        );
+
+    const nightTotal =
+        rows.reduce(
+            (sum, item) =>
+                sum +
+                item.night,
+            0
+        );
+
+    const deductionTotal =
+        rows.reduce(
+            (sum, item) =>
+                sum +
+                item.deduction,
+            0
+        );
+
+    document
+        .getElementById(
+            "ledgerAttendanceTotal"
+        )
+        .textContent =
+        formatAttendanceUnit(
+            attendanceTotal
+        );
+
+    document
+        .getElementById(
+            "ledgerWhiteTotal"
+        )
+        .textContent =
+        formatAttendanceUnit(
+            whiteTotal
+        );
+
+    document
+        .getElementById(
+            "ledgerNightTotal"
+        )
+        .textContent =
+        formatAttendanceUnit(
+            nightTotal
+        );
+
+    document
+        .getElementById(
+            "ledgerDeductionTotal"
+        )
+        .textContent =
+        formatAttendanceUnit(
+            deductionTotal
+        );
+
+    const unresolved =
+        rows.filter(item =>
+            item.notes.includes("待调度/车队长说明") ||
+            item.punch.text !== "完整"
+        ).length;
+
+    const badge =
+        document.getElementById(
+            "ledgerStatusBadge"
+        );
+
+    if (badge) {
+        badge.textContent =
+            unresolved > 0
+                ? unresolved + " 条待核验"
+                : "核算正常";
+
+        badge.className =
+            unresolved > 0
+                ? "badge yellow"
+                : "badge green";
+    }
+
+    body.innerHTML =
+        rows.map(item => `
+            <tr>
+                <td>${escapeHtml(item.date)}</td>
+                <td>${escapeHtml(item.status)}</td>
+                <td>${formatAttendanceUnit(item.white)}</td>
+                <td>${formatAttendanceUnit(item.night)}</td>
+                <td>${formatAttendanceUnit(item.rotationPaid)}</td>
+                <td class="${item.deduction > 0 ? "ledger-danger" : ""}">
+                    ${formatAttendanceUnit(item.deduction)}
+                </td>
+                <td class="ledger-positive">
+                    ${formatAttendanceUnit(item.attendance)}
+                </td>
+                <td class="${item.punch.className}">
+                    ${escapeHtml(item.punch.text)}
+                </td>
+                <td>${escapeHtml(item.notes)}</td>
+            </tr>
+        `).join("");
+}
+
 
 function renderHistory() {
     const personId = getPersonId(currentPerson);
@@ -1189,7 +2255,17 @@ if (verifyAccess()) {
     renderProfile();
     startClock();
     renderTodayStatus();
+    renderAttendanceLedger();
     renderHistory();
+
+    window.addEventListener(
+        "storage",
+        function () {
+            renderTodayStatus();
+            renderAttendanceLedger();
+            renderHistory();
+        }
+    );
 }
 </script>
 
