@@ -152,7 +152,44 @@
             line-height: 1.6;
         }
 
+        .leave-halfday-grid {
+            display: grid;
+            grid-template-columns: minmax(0, 1.5fr) minmax(120px, 0.7fr);
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+
+        .leave-halfday-field label {
+            display: block;
+            margin-bottom: 6px;
+        }
+
+        .leave-halfday-field input,
+        .leave-halfday-field select {
+            width: 100%;
+        }
+
+        .leave-days-readonly {
+            background: #f8fafc;
+            color: #0f172a;
+            font-weight: 800;
+        }
+
+        .leave-auto-tip {
+            margin: 6px 0 12px;
+            padding: 9px 10px;
+            border-radius: 9px;
+            background: #eff6ff;
+            color: #1e40af;
+            font-size: 12px;
+            line-height: 1.6;
+        }
+
         @media (max-width: 700px) {
+
+            .leave-halfday-grid {
+                grid-template-columns: 1fr;
+            }
             .leave-policy-grid {
                 grid-template-columns: 1fr;
             }
@@ -878,35 +915,84 @@
 
         <input
             id="leaveDays"
-            type="number"
-            min="0.5"
-            step="0.5"
+            class="leave-days-readonly"
+            type="text"
             value="0.5"
-            inputmode="decimal"
+            readonly
         >
 
-        <p class="leave-unit-tip">
-            只能按0.5天递增，例如：0.5、1、1.5、2天。
+        <p class="leave-auto-tip">
+            选择开始日期、结束日期和“上午 / 下午”后，
+            系统自动计算请假天数，最小单位为0.5天。
         </p>
 
 
-        <label for="leaveStart">
-            开始时间 *
-        </label>
+        <div class="leave-halfday-grid">
 
+            <div class="leave-halfday-field">
+                <label for="leaveStartDate">
+                    开始日期 *
+                </label>
+
+                <input
+                    id="leaveStartDate"
+                    type="date"
+                >
+            </div>
+
+            <div class="leave-halfday-field">
+                <label for="leaveStartHalf">
+                    开始时段 *
+                </label>
+
+                <select id="leaveStartHalf">
+                    <option value="AM">上午</option>
+                    <option value="PM">下午</option>
+                </select>
+            </div>
+
+        </div>
+
+
+        <div class="leave-halfday-grid">
+
+            <div class="leave-halfday-field">
+                <label for="leaveEndDate">
+                    结束日期 *
+                </label>
+
+                <input
+                    id="leaveEndDate"
+                    type="date"
+                >
+            </div>
+
+            <div class="leave-halfday-field">
+                <label for="leaveEndHalf">
+                    结束时段 *
+                </label>
+
+                <select id="leaveEndHalf">
+                    <option value="AM">上午</option>
+                    <option value="PM">下午</option>
+                </select>
+            </div>
+
+        </div>
+
+
+        <!--
+            兼容现有 driver-work.js：
+            下一步由JS根据“日期 + 上午/下午”自动写入这两个隐藏时间字段。
+        -->
         <input
             id="leaveStart"
-            type="datetime-local"
+            type="hidden"
         >
-
-
-        <label for="leaveEnd">
-            结束时间 *
-        </label>
 
         <input
             id="leaveEnd"
-            type="datetime-local"
+            type="hidden"
         >
 
 
@@ -914,8 +1000,8 @@
             id="leaveAttendanceImpact"
             class="leave-impact-box"
         >
-            事假：批准后按实际请假天数扣考勤。<br>
-            轮休假：额度内不扣考勤，超出轮休额度的部分扣考勤。
+            选择请假日期和上午 / 下午后，
+            系统将自动计算请假天数及考勤影响。
         </div>
 
 
@@ -1016,7 +1102,7 @@
 
 
 <footer>
-    矿山管理系统 · 汽车司机端 V2.10.4A
+    矿山管理系统 · 汽车司机端 V2.10.5B-H1
 </footer>
 
 <script src="js/driver-work.js?v=2.10.4R3"></script>
