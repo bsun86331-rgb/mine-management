@@ -89,6 +89,75 @@
                 grid-column: 1 / -1;
             }
         }
+
+        /* =========================================================
+           V2.10.4A 请假申请界面
+           本轮仅调整页面和字段，不改变现有审批数据逻辑
+        ========================================================= */
+
+        .leave-policy-box {
+            margin: 12px 0 16px;
+            padding: 12px;
+            border: 1px solid #dbeafe;
+            border-radius: 12px;
+            background: #f8fbff;
+        }
+
+        .leave-policy-title {
+            margin-bottom: 8px;
+            color: #1e3a8a;
+            font-weight: 800;
+        }
+
+        .leave-policy-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 8px;
+        }
+
+        .leave-policy-item {
+            padding: 9px 10px;
+            border-radius: 9px;
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+        }
+
+        .leave-policy-item span {
+            display: block;
+            color: #64748b;
+            font-size: 11px;
+        }
+
+        .leave-policy-item strong {
+            display: block;
+            margin-top: 3px;
+            color: #0f172a;
+            font-size: 14px;
+        }
+
+        .leave-impact-box {
+            margin: 12px 0;
+            padding: 11px 12px;
+            border-radius: 10px;
+            background: #fff7ed;
+            color: #9a3412;
+            font-size: 12px;
+            line-height: 1.7;
+        }
+
+        .leave-unit-tip {
+            margin: 6px 0 12px;
+            color: #64748b;
+            font-size: 12px;
+            line-height: 1.6;
+        }
+
+        @media (max-width: 700px) {
+            .leave-policy-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
     </style>
 
 </head>
@@ -597,7 +666,7 @@
 
             <div>
                 <h2>🗓 请假申请</h2>
-                <p>司机请假由调度审批</p>
+                <p>仅支持事假、轮休假；最小请假单位0.5天，由调度审批</p>
             </div>
 
             <button
@@ -742,7 +811,8 @@
         <h2>🗓 请假申请</h2>
 
         <div class="approval-tip">
-            卡车司机请假申请自动提交给调度审批。
+            一线司机请假自动提交给调度审批。
+            请假最小单位为0.5天。
         </div>
 
 
@@ -752,13 +822,72 @@
 
         <select id="leaveType">
             <option value="事假">事假</option>
-            <option value="病假">病假</option>
-            <option value="年假">年假</option>
-            <option value="调休">调休</option>
-            <option value="婚假">婚假</option>
-            <option value="丧假">丧假</option>
-            <option value="其他">其他</option>
+            <option value="轮休假">轮休假</option>
         </select>
+
+
+        <div
+            id="rotationLeavePolicyBox"
+            class="leave-policy-box"
+        >
+
+            <div class="leave-policy-title">
+                轮休假额度
+            </div>
+
+            <div class="leave-policy-grid">
+
+                <div class="leave-policy-item">
+                    <span>是否享有轮休假</span>
+                    <strong id="rotationLeaveEligible">-</strong>
+                </div>
+
+                <div class="leave-policy-item">
+                    <span>当前轮休周期</span>
+                    <strong id="rotationLeaveCurrentCycle">-</strong>
+                </div>
+
+                <div class="leave-policy-item">
+                    <span>周期总额度</span>
+                    <strong id="rotationLeaveQuota">-</strong>
+                </div>
+
+                <div class="leave-policy-item">
+                    <span>本周期已使用</span>
+                    <strong id="rotationLeaveUsed">-</strong>
+                </div>
+
+                <div class="leave-policy-item">
+                    <span>本周期剩余</span>
+                    <strong id="rotationLeaveRemaining">-</strong>
+                </div>
+
+                <div class="leave-policy-item">
+                    <span>额度规则</span>
+                    <strong>到期重新计算，不跨周期结转</strong>
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <label for="leaveDays">
+            本次申请天数 *
+        </label>
+
+        <input
+            id="leaveDays"
+            type="number"
+            min="0.5"
+            step="0.5"
+            value="0.5"
+            inputmode="decimal"
+        >
+
+        <p class="leave-unit-tip">
+            只能按0.5天递增，例如：0.5、1、1.5、2天。
+        </p>
 
 
         <label for="leaveStart">
@@ -779,6 +908,15 @@
             id="leaveEnd"
             type="datetime-local"
         >
+
+
+        <div
+            id="leaveAttendanceImpact"
+            class="leave-impact-box"
+        >
+            事假：批准后按实际请假天数扣考勤。<br>
+            轮休假：额度内不扣考勤，超出轮休额度的部分扣考勤。
+        </div>
 
 
         <label for="leaveContactPhone">
@@ -878,7 +1016,7 @@
 
 
 <footer>
-    矿山管理系统 · 汽车司机端 V2.10.3
+    矿山管理系统 · 汽车司机端 V2.10.4A
 </footer>
 
 <script src="js/driver-work.js?v=2.9.2"></script>
