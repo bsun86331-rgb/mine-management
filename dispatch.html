@@ -547,6 +547,59 @@
 
 </style>
 
+
+<style>
+/* =========================================================
+   司机请假待审批醒目提示
+   只做界面提示，不改变原请假审批数据和事件逻辑
+========================================================= */
+
+.leave-todo-header-badge {
+    display: none;
+    margin-left: 10px;
+    padding: 5px 10px;
+    border-radius: 999px;
+    background: #fee2e2;
+    color: #b91c1c;
+    font-size: 12px;
+    font-weight: 800;
+    vertical-align: middle;
+}
+
+.leave-todo-header-badge.is-visible {
+    display: inline-flex;
+    align-items: center;
+}
+
+#openLeaveReviewButton.leave-todo-attention {
+    border: 2px solid #f97316;
+    background: #fff7ed;
+    box-shadow: 0 0 0 3px rgba(249, 115, 22, .10);
+}
+
+#openLeaveReviewButton.leave-todo-attention #leaveTodoCount {
+    color: #dc2626;
+    font-size: 32px;
+    line-height: 1;
+    font-weight: 900;
+}
+
+#openLeaveReviewButton.leave-todo-attention div > span {
+    color: #9a3412;
+    font-weight: 800;
+}
+
+#openLeaveReviewButton.leave-todo-attention .todo-icon {
+    transform: scale(1.08);
+}
+
+@media (max-width: 700px) {
+    #openLeaveReviewButton.leave-todo-attention #leaveTodoCount {
+        font-size: 28px;
+    }
+}
+</style>
+
 </head>
 
 <body class="dispatch-body">
@@ -572,7 +625,13 @@
 
         <div class="dispatch-section-title">
             <div>
-                <h2>🔔 调度待办中心</h2>
+                <h2>
+                    🔔 调度待办中心
+                    <span
+                        id="leaveTodoHeaderBadge"
+                        class="leave-todo-header-badge"
+                    ></span>
+                </h2>
                 <p>维修、换车、GPS、司机请假及罚单统一处理</p>
             </div>
         </div>
@@ -8691,6 +8750,129 @@ setInterval(
     3000
 );
 
+</script>
+
+
+<script>
+"use strict";
+
+/* =========================================================
+   司机请假待审批醒目提示
+   监听现有 leaveTodoCount 的显示值，不接管、不改写原审批逻辑。
+========================================================= */
+
+(function initLeaveTodoAttention() {
+
+    const countElement =
+        document.getElementById(
+            "leaveTodoCount"
+        );
+
+    const leaveButton =
+        document.getElementById(
+            "openLeaveReviewButton"
+        );
+
+    const headerBadge =
+        document.getElementById(
+            "leaveTodoHeaderBadge"
+        );
+
+
+    if (
+        !countElement ||
+        !leaveButton ||
+        !headerBadge
+    ) {
+
+        return;
+    }
+
+
+    function getPendingCount() {
+
+        const text =
+            String(
+                countElement.textContent ||
+                ""
+            );
+
+        const matched =
+            text.match(
+                /\d+/
+            );
+
+
+        return matched
+            ? Number(
+                matched[0]
+            )
+            : 0;
+    }
+
+
+    function refreshLeaveTodoAttention() {
+
+        const count =
+            getPendingCount();
+
+        const hasPending =
+            count > 0;
+
+
+        leaveButton.classList.toggle(
+            "leave-todo-attention",
+            hasPending
+        );
+
+
+        headerBadge.classList.toggle(
+            "is-visible",
+            hasPending
+        );
+
+
+        headerBadge.textContent =
+            hasPending
+                ? count +
+                  " 条请假待审批"
+                : "";
+
+
+        leaveButton.setAttribute(
+            "aria-label",
+            hasPending
+                ? "司机请假，" +
+                  count +
+                  " 条待审批"
+                : "司机请假"
+        );
+    }
+
+
+    /*
+     * 原 dispatch.js 更新 leaveTodoCount 后，
+     * MutationObserver 只负责同步醒目样式。
+     */
+    const observer =
+        new MutationObserver(
+            refreshLeaveTodoAttention
+        );
+
+
+    observer.observe(
+        countElement,
+        {
+            childList: true,
+            subtree: true,
+            characterData: true
+        }
+    );
+
+
+    refreshLeaveTodoAttention();
+
+})();
 </script>
 
 </body>
