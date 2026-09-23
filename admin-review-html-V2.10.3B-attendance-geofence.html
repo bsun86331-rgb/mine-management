@@ -1,0 +1,5154 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <meta name="theme-color" content="#0f172a">
+
+    <title>管理员审核中心 - 矿山管理系统</title>
+
+
+    <!-- =====================================================
+         管理员登录保护
+
+         V2.10.2H 本地测试版：
+         1. 必须存在 managementSession
+         2. 必须是管理员
+         3. 必须在30分钟有效期内
+         4. 必须能在 personnelRecords 找到本人
+         5. 本人仍然必须处于审核通过状态
+         6. 管理员身份使用 adminPersonId，与普通员工 currentPersonId 隔离
+    ====================================================== -->
+
+    <script>
+
+        (function () {
+
+            "use strict";
+
+
+            function getPersonId(person) {
+
+                return (
+                    person?.personId ||
+                    person?.driverId ||
+                    person?.employeeId ||
+                    person?.id ||
+                    ""
+                );
+
+            }
+
+
+            function normalizePosition(position) {
+
+                const map = {
+
+                    "管理员":
+                        "管理员"
+
+                };
+
+
+                return (
+                    map[position] ||
+                    position ||
+                    ""
+                );
+
+            }
+
+
+            function getPersonnelRecords() {
+
+                try {
+
+                    const data =
+                        JSON.parse(
+                            localStorage.getItem(
+                                "personnelRecords"
+                            )
+                        );
+
+
+                    return Array.isArray(data)
+                        ? data
+                        : [];
+
+
+                } catch (error) {
+
+                    return [];
+
+                }
+
+            }
+
+
+            function isApproved(person) {
+
+                if (!person) {
+
+                    return false;
+
+                }
+
+
+                if (
+                    person.status === "rejected" ||
+                    person.approvalStatus === "rejected" ||
+                    person.status === "disabled" ||
+                    person.status === "resigned" ||
+                    person.personnelStatus === "停用" ||
+                    person.personnelStatus === "离职"
+                ) {
+
+                    return false;
+
+                }
+
+
+                return (
+
+                    person.approvalStatus ===
+                        "approved" ||
+
+                    person.status ===
+                        "approved" ||
+
+                    person.status ===
+                        "active" ||
+
+                    person.status ===
+                        "working" ||
+
+                    person.status ===
+                        "leave" ||
+
+                    person.personnelStatus ===
+                        "在职可用" ||
+
+                    person.personnelStatus ===
+                        "作业中" ||
+
+                    person.personnelStatus ===
+                        "请假"
+
+                );
+
+            }
+
+
+            function redirectLogin() {
+
+                sessionStorage.removeItem(
+                    "managementSession"
+                );
+
+
+                const adminPersonId =
+                    localStorage.getItem(
+                        "adminPersonId"
+                    ) ||
+                    "";
+
+
+                if (adminPersonId) {
+
+                    localStorage.setItem(
+                        "pendingProtectedPersonId",
+                        adminPersonId
+                    );
+
+                }
+
+
+                localStorage.setItem(
+                    "pendingProtectedPosition",
+                    "管理员"
+                );
+
+
+                /*
+                 * 不修改 currentPersonId / selectedPosition。
+                 * 这两个键继续保留司机等普通岗位身份。
+                 */
+                location.replace(
+                    "management-login.html?position=" +
+                    encodeURIComponent(
+                        "管理员"
+                    )
+                );
+
+            }
+
+
+            let session = null;
+
+
+            try {
+
+                session =
+                    JSON.parse(
+                        sessionStorage.getItem(
+                            "managementSession"
+                        )
+                    );
+
+            } catch (error) {
+
+                session = null;
+
+            }
+
+
+            if (
+                !session ||
+                session.verified !== true ||
+                normalizePosition(
+                    session.position
+                ) !== "管理员" ||
+                !session.personId ||
+                Number(
+                    session.expiresAt
+                ) <= Date.now()
+            ) {
+
+                redirectLogin();
+
+                return;
+
+            }
+
+
+            const records =
+                getPersonnelRecords();
+
+
+            const administrator =
+                records.find(
+                    person =>
+
+                        getPersonId(person) ===
+                            session.personId &&
+
+                        normalizePosition(
+                            person.position
+                        ) ===
+                            "管理员"
+                );
+
+
+            if (
+                !administrator ||
+                !isApproved(
+                    administrator
+                )
+            ) {
+
+                redirectLogin();
+
+                return;
+
+            }
+
+
+            /*
+             * V2.10.2H
+             * 管理员身份独立保存，不再覆盖普通员工 currentPersonId。
+             */
+            localStorage.setItem(
+                "adminPersonId",
+                session.personId
+            );
+
+
+            window.__ADMIN_SESSION__ =
+                session;
+
+
+            window.__ADMIN_PERSON__ =
+                administrator;
+
+        })();
+
+    </script>
+
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            background: #f1f5f9;
+            color: #0f172a;
+            font-family:
+                Arial,
+                "Microsoft YaHei",
+                sans-serif;
+        }
+
+        header {
+            background: #0f172a;
+            color: #ffffff;
+            padding: 20px 15px;
+        }
+
+        .header-inner {
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 15px;
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 23px;
+        }
+
+        header p {
+            margin: 7px 0 0;
+            color: #cbd5e1;
+            font-size: 13px;
+        }
+
+        .logout-btn {
+            flex-shrink: 0;
+            border: 1px solid #475569;
+            border-radius: 9px;
+            padding: 9px 12px;
+            background: #1e293b;
+            color: #ffffff;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        main {
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px 14px 40px;
+        }
+
+        .session-box {
+            margin-bottom: 16px;
+            padding: 12px 14px;
+            border: 1px solid #bbf7d0;
+            border-radius: 11px;
+            background: #f0fdf4;
+            color: #166534;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns:
+                repeat(4, minmax(0, 1fr));
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .summary-card {
+            padding: 16px;
+            border-radius: 14px;
+            background: #ffffff;
+            box-shadow:
+                0 4px 18px
+                rgba(15, 23, 42, .05);
+        }
+
+        .summary-label {
+            color: #64748b;
+            font-size: 12px;
+        }
+
+        .summary-value {
+            margin-top: 5px;
+            font-size: 25px;
+            font-weight: 800;
+        }
+
+        .toolbar {
+            display: grid;
+            grid-template-columns:
+                minmax(180px, 1fr)
+                180px
+                160px;
+            gap: 10px;
+            margin-bottom: 16px;
+            padding: 14px;
+            border-radius: 14px;
+            background: #ffffff;
+        }
+
+        input,
+        select,
+        textarea {
+            width: 100%;
+            min-height: 42px;
+            padding: 9px 10px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            background: #ffffff;
+            font-size: 14px;
+        }
+
+        textarea {
+            min-height: 90px;
+            resize: vertical;
+        }
+
+        .table-card {
+            overflow: hidden;
+            border-radius: 14px;
+            background: #ffffff;
+            box-shadow:
+                0 4px 18px
+                rgba(15, 23, 42, .05);
+        }
+
+        .table-wrap {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 950px;
+        }
+
+        th,
+        td {
+            padding: 12px 10px;
+            border-bottom: 1px solid #e2e8f0;
+            text-align: left;
+            font-size: 13px;
+            vertical-align: middle;
+        }
+
+        th {
+            background: #f8fafc;
+            color: #475569;
+        }
+
+        tbody tr {
+            cursor: pointer;
+        }
+
+        tbody tr:hover {
+            background: #f8fafc;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 5px 9px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+
+        .badge-pending {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .badge-approved {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .badge-rejected {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .badge-disabled {
+            background: #e2e8f0;
+            color: #475569;
+        }
+
+        .empty {
+            padding: 35px 15px;
+            text-align: center;
+            color: #94a3b8;
+        }
+
+        .action-link {
+            border: 0;
+            padding: 7px 10px;
+            border-radius: 7px;
+            background: #2563eb;
+            color: #ffffff;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .bottom-actions {
+            display: grid;
+            grid-template-columns:
+                repeat(2, minmax(0, 1fr));
+            gap: 10px;
+            margin-top: 16px;
+        }
+
+        .nav-btn {
+            min-height: 44px;
+            border: 0;
+            border-radius: 9px;
+            background: #ffffff;
+            color: #334155;
+            border: 1px solid #cbd5e1;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 2000;
+            padding: 20px 14px;
+            background: rgba(15, 23, 42, .65);
+            overflow-y: auto;
+        }
+
+        .modal.show {
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+        }
+
+        .modal-card {
+            width: 100%;
+            max-width: 760px;
+            margin: auto;
+            padding: 20px;
+            border-radius: 16px;
+            background: #ffffff;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 18px;
+        }
+
+        .modal-header h2 {
+            margin: 0;
+            font-size: 20px;
+        }
+
+        .close-btn {
+            width: 38px;
+            height: 38px;
+            border: 0;
+            border-radius: 999px;
+            background: #f1f5f9;
+            font-size: 20px;
+            cursor: pointer;
+        }
+
+        .detail-grid {
+            display: grid;
+            grid-template-columns:
+                repeat(2, minmax(0, 1fr));
+            gap: 10px 16px;
+        }
+
+        .detail-item {
+            padding: 10px 0;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .detail-label {
+            margin-bottom: 4px;
+            color: #64748b;
+            font-size: 12px;
+        }
+
+        .detail-value {
+            word-break: break-all;
+            font-size: 14px;
+            font-weight: 700;
+        }
+
+        .security-notice {
+            display: none;
+            margin-top: 16px;
+            padding: 12px;
+            border: 1px solid #fed7aa;
+            border-radius: 9px;
+            background: #fff7ed;
+            color: #9a3412;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        .photo-section {
+            margin-top: 20px;
+        }
+
+        .photo-section h3 {
+            margin: 0 0 12px;
+            font-size: 16px;
+        }
+
+        .photo-grid {
+            display: grid;
+            grid-template-columns:
+                repeat(2, minmax(0, 1fr));
+            gap: 12px;
+        }
+
+        .photo-box {
+            padding: 10px;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            background: #f8fafc;
+        }
+
+        .photo-title {
+            margin-bottom: 8px;
+            color: #475569;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .photo-box img {
+            display: none;
+            width: 100%;
+            max-height: 280px;
+            object-fit: contain;
+            border-radius: 7px;
+            background: #ffffff;
+        }
+
+        .no-photo {
+            padding: 25px 8px;
+            text-align: center;
+            color: #94a3b8;
+            font-size: 12px;
+        }
+
+        .reject-area {
+            display: none;
+            margin-top: 18px;
+            padding: 14px;
+            border-radius: 10px;
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+        }
+
+        .reject-area label {
+            display: block;
+            margin-bottom: 7px;
+            color: #991b1b;
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+        .modal-actions {
+            display: grid;
+            grid-template-columns:
+                repeat(3, minmax(0, 1fr));
+            gap: 9px;
+            margin-top: 18px;
+        }
+
+        .modal-actions button {
+            min-height: 43px;
+            border: 0;
+            border-radius: 8px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .approve-btn {
+            background: #16a34a;
+            color: #ffffff;
+        }
+
+        .reject-btn {
+            background: #dc2626;
+            color: #ffffff;
+        }
+
+        .secondary-btn {
+            background: #ffffff;
+            color: #334155;
+            border: 1px solid #cbd5e1 !important;
+        }
+
+        .print-btn {
+            background: #475569;
+            color: #ffffff;
+        }
+
+        @media (max-width: 720px) {
+
+            .summary-grid {
+                grid-template-columns:
+                    repeat(2, minmax(0, 1fr));
+            }
+
+            .toolbar {
+                grid-template-columns: 1fr;
+            }
+
+            .detail-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .photo-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .modal-actions {
+                grid-template-columns: 1fr;
+            }
+
+        }
+
+    </style>
+
+
+<style>
+/* =========================================================
+   V2.10.3B 考勤打卡范围设置
+   当前 V2.x 本机测试版保存到 localStorage。
+   后续联网版可把同一配置对象同步到共享数据库。
+========================================================= */
+
+.attendance-zone-card {
+    margin-bottom: 16px;
+    padding: 16px;
+    border-radius: 14px;
+    background: #ffffff;
+    box-shadow: 0 4px 18px rgba(15, 23, 42, .05);
+}
+
+.attendance-zone-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.attendance-zone-header h2 {
+    margin: 0;
+    font-size: 18px;
+}
+
+.attendance-zone-header p {
+    margin: 6px 0 0;
+    color: #64748b;
+    font-size: 12px;
+    line-height: 1.65;
+}
+
+.attendance-zone-badge {
+    flex: 0 0 auto;
+    padding: 5px 9px;
+    border-radius: 999px;
+    background: #e2e8f0;
+    color: #475569;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.attendance-zone-badge.enabled {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.attendance-zone-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.attendance-zone-field label {
+    display: block;
+    margin-bottom: 6px;
+    color: #475569;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.attendance-zone-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 12px;
+}
+
+.attendance-zone-actions button {
+    min-height: 40px;
+    border: 0;
+    border-radius: 9px;
+    padding: 9px 14px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.attendance-zone-locate-btn {
+    background: #0f766e;
+    color: #ffffff;
+}
+
+.attendance-zone-save-btn {
+    background: #2563eb;
+    color: #ffffff;
+}
+
+.attendance-zone-test-btn {
+    background: #ffffff;
+    color: #334155;
+    border: 1px solid #cbd5e1 !important;
+}
+
+.attendance-zone-summary {
+    margin-top: 12px;
+    padding: 11px 12px;
+    border-radius: 10px;
+    background: #f8fafc;
+    color: #475569;
+    font-size: 12px;
+    line-height: 1.75;
+}
+
+.attendance-zone-summary strong {
+    color: #0f172a;
+}
+
+.attendance-zone-warning {
+    margin-top: 10px;
+    padding: 10px 12px;
+    border: 1px solid #fde68a;
+    border-radius: 10px;
+    background: #fffbeb;
+    color: #92400e;
+    font-size: 12px;
+    line-height: 1.7;
+}
+
+@media (max-width: 900px) {
+    .attendance-zone-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 600px) {
+    .attendance-zone-header {
+        display: block;
+    }
+
+    .attendance-zone-badge {
+        display: inline-block;
+        margin-top: 10px;
+    }
+
+    .attendance-zone-grid {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+
+
+<style>
+/* =========================================================
+   V2.10.3A 轮休假规则设置
+   仅增加员工假勤基础规则，不改变原人员审核逻辑
+========================================================= */
+
+.rotation-leave-box {
+    margin: 16px 0;
+    padding: 14px;
+    border: 1px solid #dbeafe;
+    border-radius: 12px;
+    background: #f8fbff;
+}
+
+.rotation-leave-box h3 {
+    margin: 0 0 6px;
+    font-size: 16px;
+}
+
+.rotation-leave-note {
+    margin: 0 0 12px;
+    color: #64748b;
+    font-size: 12px;
+    line-height: 1.6;
+}
+
+.rotation-leave-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.rotation-leave-field label {
+    display: block;
+    margin-bottom: 6px;
+    color: #475569;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.rotation-leave-field select,
+.rotation-leave-field input {
+    width: 100%;
+    min-height: 40px;
+    padding: 8px 10px;
+    border: 1px solid #cbd5e1;
+    border-radius: 9px;
+    background: #fff;
+    box-sizing: border-box;
+}
+
+.rotation-leave-summary {
+    margin-top: 10px;
+    padding: 9px 10px;
+    border-radius: 9px;
+    background: #eef6ff;
+    color: #1e40af;
+    font-size: 12px;
+    line-height: 1.6;
+}
+
+.rotation-leave-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 10px;
+}
+
+.rotation-leave-save-btn {
+    min-height: 38px;
+    padding: 8px 14px;
+    border: 0;
+    border-radius: 9px;
+    background: #2563eb;
+    color: #fff;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.rotation-leave-save-btn:hover {
+    opacity: .92;
+}
+
+@media (max-width: 760px) {
+    .rotation-leave-grid {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+
+</head>
+
+
+<body>
+
+
+<header>
+
+    <div class="header-inner">
+
+        <div class="header-top">
+
+            <div>
+
+                <h1>
+                    ⚙️ 管理员审核中心
+                </h1>
+
+                <p>
+                    统一人员入职审核 · V2.10.3B
+                </p>
+
+            </div>
+
+
+            <button
+                type="button"
+                class="logout-btn"
+                onclick="logoutAdmin()"
+            >
+                退出登录
+            </button>
+
+        </div>
+
+    </div>
+
+</header>
+
+
+<main>
+
+
+    <div
+        class="session-box"
+        id="sessionBox"
+    >
+        ✅ 当前已通过管理员身份验证
+    </div>
+
+
+    <section class="summary-grid">
+
+        <div class="summary-card">
+
+            <div class="summary-label">
+                全部人员
+            </div>
+
+            <div
+                class="summary-value"
+                id="totalCount"
+            >
+                0
+            </div>
+
+        </div>
+
+
+        <div class="summary-card">
+
+            <div class="summary-label">
+                待审核
+            </div>
+
+            <div
+                class="summary-value"
+                id="pendingCount"
+            >
+                0
+            </div>
+
+        </div>
+
+
+        <div class="summary-card">
+
+            <div class="summary-label">
+                已通过
+            </div>
+
+            <div
+                class="summary-value"
+                id="approvedCount"
+            >
+                0
+            </div>
+
+        </div>
+
+
+        <div class="summary-card">
+
+            <div class="summary-label">
+                已驳回
+            </div>
+
+            <div
+                class="summary-value"
+                id="rejectedCount"
+            >
+                0
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <!-- =====================================================
+         V2.10.3B 考勤打卡范围设置
+    ====================================================== -->
+    <section class="attendance-zone-card">
+
+        <div class="attendance-zone-header">
+            <div>
+                <h2>📍 考勤打卡范围设置</h2>
+                <p>
+                    管理员设置打卡中心点和有效半径。
+                    后续考勤页面将根据员工定位与中心点距离判断是否属于有效打卡。
+                </p>
+            </div>
+
+            <span
+                id="attendanceZoneBadge"
+                class="attendance-zone-badge"
+            >
+                未配置
+            </span>
+        </div>
+
+        <div class="attendance-zone-grid">
+
+            <div class="attendance-zone-field">
+                <label for="attendanceZoneEnabled">
+                    是否启用范围限制
+                </label>
+
+                <select id="attendanceZoneEnabled">
+                    <option value="yes">启用</option>
+                    <option value="no">停用</option>
+                </select>
+            </div>
+
+            <div class="attendance-zone-field">
+                <label for="attendanceZoneName">
+                    打卡地点名称
+                </label>
+
+                <input
+                    id="attendanceZoneName"
+                    type="text"
+                    placeholder="例如：山二采区项目部"
+                >
+            </div>
+
+            <div class="attendance-zone-field">
+                <label for="attendanceZoneRadius">
+                    有效半径（米）
+                </label>
+
+                <input
+                    id="attendanceZoneRadius"
+                    type="number"
+                    min="10"
+                    step="10"
+                    value="200"
+                    inputmode="decimal"
+                >
+            </div>
+
+            <div class="attendance-zone-field">
+                <label for="attendanceZoneAccuracy">
+                    最大定位误差（米）
+                </label>
+
+                <input
+                    id="attendanceZoneAccuracy"
+                    type="number"
+                    min="10"
+                    step="10"
+                    value="100"
+                    inputmode="decimal"
+                >
+            </div>
+
+            <div class="attendance-zone-field">
+                <label for="attendanceZoneLatitude">
+                    中心纬度
+                </label>
+
+                <input
+                    id="attendanceZoneLatitude"
+                    type="number"
+                    step="0.000001"
+                    placeholder="例如：43.012728"
+                    inputmode="decimal"
+                >
+            </div>
+
+            <div class="attendance-zone-field">
+                <label for="attendanceZoneLongitude">
+                    中心经度
+                </label>
+
+                <input
+                    id="attendanceZoneLongitude"
+                    type="number"
+                    step="0.000001"
+                    placeholder="例如：101.228971"
+                    inputmode="decimal"
+                >
+            </div>
+
+            <div class="attendance-zone-field">
+                <label>
+                    最后设置
+                </label>
+
+                <input
+                    id="attendanceZoneUpdatedAt"
+                    type="text"
+                    value="-"
+                    readonly
+                >
+            </div>
+
+            <div class="attendance-zone-field">
+                <label>
+                    设置管理员
+                </label>
+
+                <input
+                    id="attendanceZoneUpdatedBy"
+                    type="text"
+                    value="-"
+                    readonly
+                >
+            </div>
+
+        </div>
+
+        <div class="attendance-zone-actions">
+
+            <button
+                type="button"
+                class="attendance-zone-locate-btn"
+                onclick="useCurrentLocationForAttendanceZone()"
+            >
+                📍 使用当前位置作为中心
+            </button>
+
+            <button
+                type="button"
+                class="attendance-zone-test-btn"
+                onclick="testAttendanceZoneCurrentLocation()"
+            >
+                🧭 测试当前位置
+            </button>
+
+            <button
+                type="button"
+                class="attendance-zone-save-btn"
+                onclick="saveAttendanceZoneConfig()"
+            >
+                💾 保存打卡范围
+            </button>
+
+        </div>
+
+        <div
+            id="attendanceZoneSummary"
+            class="attendance-zone-summary"
+        >
+            尚未配置考勤打卡范围。
+        </div>
+
+        <div class="attendance-zone-warning">
+            当前 V2.x 仍是浏览器本机测试版，这个设置暂存在本机 localStorage。
+            如果管理员和员工使用不同手机/电脑，要实现全员共享同一打卡范围，
+            后续必须把该配置同步到 Supabase 等共享数据库。
+        </div>
+
+    </section>
+
+
+    <section class="toolbar">
+
+        <input
+            id="searchInput"
+            type="search"
+            placeholder="搜索姓名 / 员工编号 / 手机号 / 部门 / 车队"
+            oninput="renderTable()"
+        >
+
+
+        <select
+            id="positionFilter"
+            onchange="renderTable()"
+        >
+
+            <option value="">
+                全部岗位
+            </option>
+
+            <option>挖机司机</option>
+            <option>汽车司机</option>
+
+            <option>铲车司机</option>
+            <option>加油车司机</option>
+            <option>大巴司机</option>
+            <option>平路机司机</option>
+            <option>洒水车司机</option>
+            <option>推土机司机</option>
+
+            <option>车队长</option>
+
+            <option>维修管理</option>
+            <option>维修员</option>
+
+            <option>测量员</option>
+            <option>安全员</option>
+            <option>统计</option>
+            <option>会计</option>
+            <option>后勤</option>
+            <option>库房管理</option>
+
+            <option>总经理</option>
+            <option>管理员</option>
+
+        </select>
+
+
+        <select
+            id="statusFilter"
+            onchange="renderTable()"
+        >
+
+            <option value="">
+                全部状态
+            </option>
+
+            <option value="pending">
+                待审核
+            </option>
+
+            <option value="approved">
+                已通过
+            </option>
+
+            <option value="rejected">
+                已驳回
+            </option>
+
+            <option value="disabled">
+                停用 / 离职
+            </option>
+
+        </select>
+
+    </section>
+
+
+    <section class="table-card">
+
+        <div class="table-wrap">
+
+            <table>
+
+                <thead>
+
+                    <tr>
+
+                        <th>姓名</th>
+
+                        <th>员工编号</th>
+
+                        <th>岗位</th>
+
+                        <th>部门 / 车队</th>
+
+                        <th>手机号</th>
+
+                        <th>提交时间</th>
+
+                        <th>状态</th>
+
+                        <th>操作</th>
+
+                    </tr>
+
+                </thead>
+
+
+                <tbody id="personnelTableBody">
+                </tbody>
+
+            </table>
+
+        </div>
+
+
+        <div
+            class="empty"
+            id="emptyState"
+            style="display:none;"
+        >
+            暂无符合条件的人员资料
+        </div>
+
+    </section>
+
+
+    <div class="bottom-actions">
+
+        <button
+            type="button"
+            class="nav-btn"
+            onclick="location.href='admin-master.html'"
+        >
+            📚 基础资料中心
+        </button>
+
+
+        <button
+            type="button"
+            class="nav-btn"
+            onclick="location.href='index.html'"
+        >
+            🏠 返回系统首页
+        </button>
+
+    </div>
+
+
+</main>
+
+
+<footer style="
+    text-align:center;
+    padding:20px;
+    color:#94a3b8;
+    font-size:12px;
+">
+    矿山管理系统 · 管理员审核中心 V2.10.3B
+</footer>
+
+
+
+<div
+    class="modal"
+    id="detailModal"
+    onclick="modalBackgroundClose(event)"
+>
+
+    <div class="modal-card">
+
+
+        <div class="modal-header">
+
+            <h2>
+                人员资料详情
+            </h2>
+
+            <button
+                type="button"
+                class="close-btn"
+                onclick="closeDetail()"
+            >
+                ×
+            </button>
+
+        </div>
+
+
+        <div class="detail-grid">
+
+
+            <div class="detail-item">
+
+                <div class="detail-label">
+                    姓名
+                </div>
+
+                <div
+                    class="detail-value"
+                    id="detailName"
+                >
+                    -
+                </div>
+
+            </div>
+
+
+            <div class="detail-item">
+
+                <div class="detail-label">
+                    员工编号
+                </div>
+
+                <div
+                    class="detail-value"
+                    id="detailEmployeeNo"
+                >
+                    -
+                </div>
+
+            </div>
+
+
+            <div class="detail-item">
+
+                <div class="detail-label">
+                    手机号
+                </div>
+
+                <div
+                    class="detail-value"
+                    id="detailPhone"
+                >
+                    -
+                </div>
+
+            </div>
+
+
+            <div class="detail-item">
+
+                <div class="detail-label">
+                    岗位
+                </div>
+
+                <div
+                    class="detail-value"
+                    id="detailPosition"
+                >
+                    -
+                </div>
+
+            </div>
+
+
+            <div class="detail-item">
+
+                <div class="detail-label">
+                    人员类别
+                </div>
+
+                <div
+                    class="detail-value"
+                    id="detailCategory"
+                >
+                    -
+                </div>
+
+            </div>
+
+
+            <div class="detail-item">
+
+                <div class="detail-label">
+                    部门 / 车队
+                </div>
+
+                <div
+                    class="detail-value"
+                    id="detailDepartment"
+                >
+                    -
+                </div>
+
+            </div>
+
+
+            <div class="detail-item">
+
+                <div class="detail-label">
+                    入职日期
+                </div>
+
+                <div
+                    class="detail-value"
+                    id="detailEntryDate"
+                >
+                    -
+                </div>
+
+            </div>
+
+
+            <div class="detail-item">
+
+                <div class="detail-label">
+                    身份证号
+                </div>
+
+                <div
+                    class="detail-value"
+                    id="detailIdCard"
+                >
+                    -
+                </div>
+
+            </div>
+
+
+            <div class="detail-item">
+
+                <div class="detail-label">
+                    护照号
+                </div>
+
+                <div
+                    class="detail-value"
+                    id="detailPassport"
+                >
+                    -
+                </div>
+
+            </div>
+
+
+            <div class="detail-item">
+
+                <div class="detail-label">
+                    银行卡号
+                </div>
+
+                <div
+                    class="detail-value"
+                    id="detailBankCard"
+                >
+                    -
+                </div>
+
+            </div>
+
+
+            <div class="detail-item">
+
+                <div class="detail-label">
+                    紧急联系人
+                </div>
+
+                <div
+                    class="detail-value"
+                    id="detailEmergencyContact"
+                >
+                    -
+                </div>
+
+            </div>
+
+
+            <div class="detail-item">
+
+                <div class="detail-label">
+                    紧急联系电话
+                </div>
+
+                <div
+                    class="detail-value"
+                    id="detailEmergencyPhone"
+                >
+                    -
+                </div>
+
+            </div>
+
+
+            <div class="detail-item">
+
+                <div class="detail-label">
+                    当前审核状态
+                </div>
+
+                <div
+                    class="detail-value"
+                    id="detailStatus"
+                >
+                    -
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- V2.10.3A 轮休假规则 -->
+
+        <section class="rotation-leave-box">
+
+            <h3>🗓 轮休假规则</h3>
+
+            <p class="rotation-leave-note">
+                由管理员按员工实际制度设置。周期和额度不写死，
+                例如：1个月4天、3个月12天。轮休额度不跨周期结转。
+            </p>
+
+            <div class="rotation-leave-grid">
+
+                <div class="rotation-leave-field">
+
+                    <label for="rotationLeaveEnabled">
+                        是否享有轮休假
+                    </label>
+
+                    <select
+                        id="rotationLeaveEnabled"
+                        onchange="toggleRotationLeaveFields()"
+                    >
+                        <option value="no">否</option>
+                        <option value="yes">是</option>
+                    </select>
+
+                </div>
+
+
+                <div class="rotation-leave-field">
+
+                    <label for="rotationLeaveCycleMonths">
+                        轮休周期（月）
+                    </label>
+
+                    <input
+                        id="rotationLeaveCycleMonths"
+                        type="number"
+                        oninput="toggleRotationLeaveFields()"
+                        min="1"
+                        step="1"
+                        value="1"
+                    >
+
+                </div>
+
+
+                <div class="rotation-leave-field">
+
+                    <label for="rotationLeaveQuotaDays">
+                        每周期轮休额度（天）
+                    </label>
+
+                    <input
+                        id="rotationLeaveQuotaDays"
+                        type="number"
+                        oninput="toggleRotationLeaveFields()"
+                        min="0.5"
+                        step="0.5"
+                        value="0.5"
+                    >
+
+                </div>
+
+            </div>
+
+
+            <div
+                id="rotationLeaveSummary"
+                class="rotation-leave-summary"
+            >
+                当前员工未启用轮休假。
+            </div>
+
+
+            <div class="rotation-leave-actions">
+
+                <button
+                    type="button"
+                    class="rotation-leave-save-btn"
+                    onclick="saveRotationLeaveRule()"
+                >
+                    保存轮休设置
+                </button>
+
+            </div>
+
+        </section>
+
+
+        <div class="detail-item">
+
+            <div class="detail-label">
+                备注
+            </div>
+
+            <div
+                class="detail-value"
+                id="detailRemark"
+            >
+                -
+            </div>
+
+        </div>
+
+
+        <div
+            class="security-notice"
+            id="securityNotice"
+        >
+            🔐 当前申请岗位属于高权限岗位。
+            管理员批准入职后，该人员仍需要完成管理密码验证，
+            才能进入对应管理页面。
+        </div>
+
+
+        <section class="photo-section">
+
+            <h3>
+                证件照片
+            </h3>
+
+
+            <div class="photo-grid">
+
+
+                <div class="photo-box">
+
+                    <div class="photo-title">
+                        身份证照片
+                    </div>
+
+                    <img
+                        id="detailIdCardPhoto"
+                        alt="身份证照片"
+                    >
+
+                    <div
+                        class="no-photo"
+                        id="detailIdCardPhotoEmpty"
+                    >
+                        未上传
+                    </div>
+
+                </div>
+
+
+                <div class="photo-box">
+
+                    <div class="photo-title">
+                        护照照片
+                    </div>
+
+                    <img
+                        id="detailPassportPhoto"
+                        alt="护照照片"
+                    >
+
+                    <div
+                        class="no-photo"
+                        id="detailPassportPhotoEmpty"
+                    >
+                        未上传
+                    </div>
+
+                </div>
+
+
+                <div class="photo-box">
+
+                    <div class="photo-title">
+                        驾驶证 / 操作证
+                    </div>
+
+                    <img
+                        id="detailLicensePhoto"
+                        alt="驾驶证或操作证"
+                    >
+
+                    <div
+                        class="no-photo"
+                        id="detailLicensePhotoEmpty"
+                    >
+                        未上传
+                    </div>
+
+                </div>
+
+
+                <div class="photo-box">
+
+                    <div class="photo-title">
+                        银行卡照片
+                    </div>
+
+                    <img
+                        id="detailBankPhoto"
+                        alt="银行卡照片"
+                    >
+
+                    <div
+                        class="no-photo"
+                        id="detailBankPhotoEmpty"
+                    >
+                        未上传
+                    </div>
+
+                </div>
+
+
+            </div>
+
+        </section>
+
+
+        <div
+            class="reject-area"
+            id="rejectArea"
+        >
+
+            <label for="rejectReasonInput">
+                驳回原因
+            </label>
+
+            <textarea
+                id="rejectReasonInput"
+                placeholder="请输入需要申请人修改的内容"
+            ></textarea>
+
+
+            <button
+                type="button"
+                class="reject-btn"
+                style="
+                    width:100%;
+                    min-height:43px;
+                    border:0;
+                    border-radius:8px;
+                    margin-top:10px;
+                    font-weight:700;
+                    cursor:pointer;
+                "
+                onclick="confirmReject()"
+            >
+                确认驳回
+            </button>
+
+        </div>
+
+
+        <div class="modal-actions">
+
+            <button
+                type="button"
+                class="approve-btn"
+                id="approveButton"
+                onclick="approveCurrentPerson()"
+            >
+                ✅ 审核通过
+            </button>
+
+
+            <button
+                type="button"
+                class="reject-btn"
+                id="rejectButton"
+                onclick="showRejectArea()"
+            >
+                ❌ 驳回资料
+            </button>
+
+
+            <button
+                type="button"
+                class="print-btn"
+                onclick="printCurrentProfile()"
+            >
+                🖨️ 打印资料
+            </button>
+
+
+            <button
+                type="button"
+                class="print-btn"
+                onclick="printCurrentPhotos()"
+            >
+                🖼️ 打印照片
+            </button>
+
+
+            <button
+                type="button"
+                class="secondary-btn"
+                onclick="closeDetail()"
+            >
+                关闭
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+
+<script>
+
+"use strict";
+
+
+let selectedPersonId = "";
+
+
+/* =========================================================
+   V2.10.3B
+   考勤打卡范围设置
+========================================================= */
+
+const ATTENDANCE_ZONE_STORAGE_KEY =
+    "attendanceGeofenceConfig";
+
+
+function readAttendanceZoneConfig() {
+
+    try {
+
+        const data =
+            JSON.parse(
+                localStorage.getItem(
+                    ATTENDANCE_ZONE_STORAGE_KEY
+                )
+            );
+
+
+        return (
+            data &&
+            typeof data === "object" &&
+            !Array.isArray(data)
+        )
+            ? data
+            : null;
+
+    } catch (error) {
+
+        return null;
+    }
+}
+
+
+function formatAttendanceZoneDateTime(value) {
+
+    if (!value) {
+
+        return "-";
+    }
+
+
+    const date =
+        new Date(value);
+
+
+    if (
+        Number.isNaN(
+            date.getTime()
+        )
+    ) {
+
+        return "-";
+    }
+
+
+    return date.toLocaleString(
+        "zh-CN",
+        {
+            hour12: false
+        }
+    );
+}
+
+
+function getAdminDisplayName() {
+
+    return (
+        window.__ADMIN_PERSON__?.name ||
+        window.__ADMIN_PERSON__?.employeeNo ||
+        "管理员"
+    );
+}
+
+
+function renderAttendanceZoneConfig() {
+
+    const config =
+        readAttendanceZoneConfig();
+
+
+    const enabledSelect =
+        document.getElementById(
+            "attendanceZoneEnabled"
+        );
+
+
+    const nameInput =
+        document.getElementById(
+            "attendanceZoneName"
+        );
+
+
+    const radiusInput =
+        document.getElementById(
+            "attendanceZoneRadius"
+        );
+
+
+    const accuracyInput =
+        document.getElementById(
+            "attendanceZoneAccuracy"
+        );
+
+
+    const latitudeInput =
+        document.getElementById(
+            "attendanceZoneLatitude"
+        );
+
+
+    const longitudeInput =
+        document.getElementById(
+            "attendanceZoneLongitude"
+        );
+
+
+    const updatedAtInput =
+        document.getElementById(
+            "attendanceZoneUpdatedAt"
+        );
+
+
+    const updatedByInput =
+        document.getElementById(
+            "attendanceZoneUpdatedBy"
+        );
+
+
+    const badge =
+        document.getElementById(
+            "attendanceZoneBadge"
+        );
+
+
+    const summary =
+        document.getElementById(
+            "attendanceZoneSummary"
+        );
+
+
+    if (
+        !enabledSelect ||
+        !nameInput ||
+        !radiusInput ||
+        !accuracyInput ||
+        !latitudeInput ||
+        !longitudeInput ||
+        !updatedAtInput ||
+        !updatedByInput ||
+        !badge ||
+        !summary
+    ) {
+
+        return;
+    }
+
+
+    if (!config) {
+
+        enabledSelect.value =
+            "yes";
+
+        nameInput.value =
+            "";
+
+        radiusInput.value =
+            "200";
+
+        accuracyInput.value =
+            "100";
+
+        latitudeInput.value =
+            "";
+
+        longitudeInput.value =
+            "";
+
+        updatedAtInput.value =
+            "-";
+
+        updatedByInput.value =
+            "-";
+
+        badge.textContent =
+            "未配置";
+
+        badge.className =
+            "attendance-zone-badge";
+
+        summary.textContent =
+            "尚未配置考勤打卡范围。";
+
+        return;
+    }
+
+
+    enabledSelect.value =
+        config.enabled === false
+            ? "no"
+            : "yes";
+
+
+    nameInput.value =
+        config.name ||
+        "";
+
+
+    radiusInput.value =
+        Number(
+            config.radiusMeters ||
+            200
+        );
+
+
+    accuracyInput.value =
+        Number(
+            config.maxAccuracyMeters ||
+            100
+        );
+
+
+    latitudeInput.value =
+        Number.isFinite(
+            Number(
+                config.latitude
+            )
+        )
+            ? Number(
+                config.latitude
+              ).toFixed(6)
+            : "";
+
+
+    longitudeInput.value =
+        Number.isFinite(
+            Number(
+                config.longitude
+            )
+        )
+            ? Number(
+                config.longitude
+              ).toFixed(6)
+            : "";
+
+
+    updatedAtInput.value =
+        formatAttendanceZoneDateTime(
+            config.updatedAt
+        );
+
+
+    updatedByInput.value =
+        config.updatedBy ||
+        "-";
+
+
+    badge.textContent =
+        config.enabled === false
+            ? "已停用"
+            : "已启用";
+
+
+    badge.className =
+        config.enabled === false
+            ? "attendance-zone-badge"
+            : "attendance-zone-badge enabled";
+
+
+    summary.innerHTML =
+        "<strong>" +
+        escapeHtml(
+            config.name ||
+            "未命名打卡点"
+        ) +
+        "</strong>" +
+        " · 半径 " +
+        escapeHtml(
+            String(
+                config.radiusMeters ||
+                "-"
+            )
+        ) +
+        " 米" +
+        " · 最大定位误差 " +
+        escapeHtml(
+            String(
+                config.maxAccuracyMeters ||
+                "-"
+            )
+        ) +
+        " 米" +
+        "<br>" +
+        "中心坐标：" +
+        escapeHtml(
+            String(
+                config.latitude ??
+                "-"
+            )
+        ) +
+        ", " +
+        escapeHtml(
+            String(
+                config.longitude ??
+                "-"
+            )
+        );
+}
+
+
+function getCurrentLocationForAttendanceZone() {
+
+    return new Promise(
+        (
+            resolve,
+            reject
+        ) => {
+
+            if (
+                !navigator.geolocation
+            ) {
+
+                reject(
+                    new Error(
+                        "当前浏览器不支持定位。"
+                    )
+                );
+
+                return;
+            }
+
+
+            navigator.geolocation.getCurrentPosition(
+                position => {
+
+                    resolve({
+                        latitude:
+                            position.coords.latitude,
+
+                        longitude:
+                            position.coords.longitude,
+
+                        accuracy:
+                            position.coords.accuracy,
+
+                        capturedAt:
+                            new Date().toISOString()
+                    });
+                },
+
+                error => {
+
+                    let message =
+                        "定位失败。";
+
+
+                    if (
+                        error.code === 1
+                    ) {
+
+                        message =
+                            "定位权限被拒绝，请允许浏览器访问位置。";
+
+                    } else if (
+                        error.code === 2
+                    ) {
+
+                        message =
+                            "暂时无法获取当前位置。";
+
+                    } else if (
+                        error.code === 3
+                    ) {
+
+                        message =
+                            "定位超时，请重试。";
+                    }
+
+
+                    reject(
+                        new Error(
+                            message
+                        )
+                    );
+                },
+
+                {
+                    enableHighAccuracy:
+                        true,
+
+                    timeout:
+                        15000,
+
+                    maximumAge:
+                        0
+                }
+            );
+        }
+    );
+}
+
+
+async function useCurrentLocationForAttendanceZone() {
+
+    try {
+
+        const location =
+            await getCurrentLocationForAttendanceZone();
+
+
+        document.getElementById(
+            "attendanceZoneLatitude"
+        ).value =
+            Number(
+                location.latitude
+            ).toFixed(
+                6
+            );
+
+
+        document.getElementById(
+            "attendanceZoneLongitude"
+        ).value =
+            Number(
+                location.longitude
+            ).toFixed(
+                6
+            );
+
+
+        alert(
+            "已读取当前位置作为中心点。\n\n" +
+            "当前定位精度约 " +
+            Math.round(
+                Number(
+                    location.accuracy ||
+                    0
+                )
+            ) +
+            " 米。\n\n" +
+            "请确认半径后点击“保存打卡范围”。"
+        );
+
+    } catch (error) {
+
+        alert(
+            error.message ||
+            "获取当前位置失败。"
+        );
+    }
+}
+
+
+function readAttendanceZoneForm() {
+
+    const enabled =
+        document.getElementById(
+            "attendanceZoneEnabled"
+        ).value === "yes";
+
+
+    const name =
+        document.getElementById(
+            "attendanceZoneName"
+        ).value.trim();
+
+
+    const radius =
+        Number(
+            document.getElementById(
+                "attendanceZoneRadius"
+            ).value
+        );
+
+
+    const maxAccuracy =
+        Number(
+            document.getElementById(
+                "attendanceZoneAccuracy"
+            ).value
+        );
+
+
+    const latitude =
+        Number(
+            document.getElementById(
+                "attendanceZoneLatitude"
+            ).value
+        );
+
+
+    const longitude =
+        Number(
+            document.getElementById(
+                "attendanceZoneLongitude"
+            ).value
+        );
+
+
+    if (!name) {
+
+        alert(
+            "请填写打卡地点名称。"
+        );
+
+        return null;
+    }
+
+
+    if (
+        !Number.isFinite(radius) ||
+        radius < 10
+    ) {
+
+        alert(
+            "有效半径必须大于等于10米。"
+        );
+
+        return null;
+    }
+
+
+    if (
+        !Number.isFinite(maxAccuracy) ||
+        maxAccuracy < 10
+    ) {
+
+        alert(
+            "最大定位误差必须大于等于10米。"
+        );
+
+        return null;
+    }
+
+
+    if (
+        !Number.isFinite(latitude) ||
+        latitude < -90 ||
+        latitude > 90
+    ) {
+
+        alert(
+            "请输入正确的中心纬度。"
+        );
+
+        return null;
+    }
+
+
+    if (
+        !Number.isFinite(longitude) ||
+        longitude < -180 ||
+        longitude > 180
+    ) {
+
+        alert(
+            "请输入正确的中心经度。"
+        );
+
+        return null;
+    }
+
+
+    return {
+        configVersion:
+            "V2.10.3B",
+
+        enabled,
+
+        name,
+
+        latitude,
+
+        longitude,
+
+        radiusMeters:
+            radius,
+
+        maxAccuracyMeters:
+            maxAccuracy,
+
+        updatedAt:
+            new Date().toISOString(),
+
+        updatedBy:
+            getAdminDisplayName(),
+
+        source:
+            "admin-review"
+    };
+}
+
+
+function saveAttendanceZoneConfig() {
+
+    const config =
+        readAttendanceZoneForm();
+
+
+    if (!config) {
+
+        return;
+    }
+
+
+    localStorage.setItem(
+        ATTENDANCE_ZONE_STORAGE_KEY,
+        JSON.stringify(
+            config
+        )
+    );
+
+
+    renderAttendanceZoneConfig();
+
+
+    alert(
+        "考勤打卡范围已保存。\n\n" +
+        "地点：" +
+        config.name +
+        "\n有效半径：" +
+        config.radiusMeters +
+        " 米\n最大定位误差：" +
+        config.maxAccuracyMeters +
+        " 米"
+    );
+}
+
+
+function getDistanceMeters(
+    latitude1,
+    longitude1,
+    latitude2,
+    longitude2
+) {
+
+    const toRadians =
+        value =>
+            value *
+            Math.PI /
+            180;
+
+
+    const earthRadius =
+        6371000;
+
+
+    const deltaLatitude =
+        toRadians(
+            latitude2 -
+            latitude1
+        );
+
+
+    const deltaLongitude =
+        toRadians(
+            longitude2 -
+            longitude1
+        );
+
+
+    const a =
+        Math.sin(
+            deltaLatitude / 2
+        ) ** 2 +
+        Math.cos(
+            toRadians(
+                latitude1
+            )
+        ) *
+        Math.cos(
+            toRadians(
+                latitude2
+            )
+        ) *
+        Math.sin(
+            deltaLongitude / 2
+        ) ** 2;
+
+
+    return (
+        earthRadius *
+        2 *
+        Math.atan2(
+            Math.sqrt(a),
+            Math.sqrt(
+                1 - a
+            )
+        )
+    );
+}
+
+
+async function testAttendanceZoneCurrentLocation() {
+
+    const config =
+        readAttendanceZoneForm();
+
+
+    if (!config) {
+
+        return;
+    }
+
+
+    try {
+
+        const location =
+            await getCurrentLocationForAttendanceZone();
+
+
+        const distance =
+            getDistanceMeters(
+                config.latitude,
+                config.longitude,
+                Number(
+                    location.latitude
+                ),
+                Number(
+                    location.longitude
+                )
+            );
+
+
+        const accuracy =
+            Number(
+                location.accuracy ||
+                0
+            );
+
+
+        const accuracyOk =
+            accuracy <=
+            config.maxAccuracyMeters;
+
+
+        const inside =
+            distance <=
+            config.radiusMeters;
+
+
+        alert(
+            "当前位置测试结果：\n\n" +
+            "距离中心点约：" +
+            Math.round(distance) +
+            " 米\n" +
+            "当前定位精度约：" +
+            Math.round(accuracy) +
+            " 米\n\n" +
+            (
+                inside &&
+                accuracyOk
+                    ? "✅ 满足有效打卡条件"
+                    : "❌ 当前不满足有效打卡条件"
+            ) +
+            (
+                !inside
+                    ? "\n原因：超出打卡半径"
+                    : ""
+            ) +
+            (
+                !accuracyOk
+                    ? "\n原因：定位误差过大"
+                    : ""
+            )
+        );
+
+    } catch (error) {
+
+        alert(
+            error.message ||
+            "测试当前位置失败。"
+        );
+    }
+}
+
+
+
+
+/* =========================================================
+   岗位兼容
+
+   正式维修岗位：
+   维修管理
+   维修员
+========================================================= */
+
+function normalizePosition(position) {
+
+    const map = {
+
+        "卡车司机":
+            "汽车司机",
+
+        "装载机司机":
+            "铲车司机",
+
+        "大巴":
+            "大巴司机",
+
+        "测量人员":
+            "测量员",
+
+        "后勤人员":
+            "后勤",
+
+        "库房管理员":
+            "库房管理",
+
+
+        /* 维修管理旧名称 */
+
+        "维修管理员":
+            "维修管理",
+
+        "修理厂管理员":
+            "维修管理",
+
+
+        /* 维修员旧名称 */
+
+        "修理工":
+            "维修员",
+
+        "维修人员":
+            "维修员",
+
+
+        "调度员":
+            "车队长"
+
+    };
+
+
+    return (
+        map[position] ||
+        position ||
+        ""
+    );
+
+}
+
+
+
+/* =========================================================
+   人员ID
+========================================================= */
+
+function getPersonId(person) {
+
+    return (
+        person?.personId ||
+        person?.driverId ||
+        person?.employeeId ||
+        person?.id ||
+        ""
+    );
+
+}
+
+
+
+/* =========================================================
+   人员库
+========================================================= */
+
+function getPersonnelRecords() {
+
+    try {
+
+        const data =
+            JSON.parse(
+                localStorage.getItem(
+                    "personnelRecords"
+                )
+            );
+
+
+        return Array.isArray(data)
+            ? data
+            : [];
+
+
+    } catch (error) {
+
+        console.error(
+            "人员资料读取失败：",
+            error
+        );
+
+
+        return [];
+
+    }
+
+}
+
+
+
+function savePersonnelRecords(records) {
+
+    localStorage.setItem(
+        "personnelRecords",
+        JSON.stringify(
+            records
+        )
+    );
+
+}
+
+
+
+/* =========================================================
+   审核状态
+========================================================= */
+
+function getApprovalState(person) {
+
+    if (!person) {
+
+        return "pending";
+
+    }
+
+
+    if (
+        person.status === "rejected" ||
+        person.approvalStatus === "rejected"
+    ) {
+
+        return "rejected";
+
+    }
+
+
+    if (
+        person.status === "disabled" ||
+        person.status === "resigned" ||
+        person.personnelStatus === "停用" ||
+        person.personnelStatus === "离职"
+    ) {
+
+        return "disabled";
+
+    }
+
+
+    if (
+        person.approvalStatus === "approved" ||
+        person.status === "approved" ||
+        person.status === "active" ||
+        person.status === "working" ||
+        person.status === "leave" ||
+        person.personnelStatus === "在职可用" ||
+        person.personnelStatus === "作业中" ||
+        person.personnelStatus === "请假"
+    ) {
+
+        return "approved";
+
+    }
+
+
+    return "pending";
+
+}
+
+
+
+/* =========================================================
+   状态文字
+========================================================= */
+
+function getStateText(state) {
+
+    const map = {
+
+        pending:
+            "待审核",
+
+        approved:
+            "已通过",
+
+        rejected:
+            "已驳回",
+
+        disabled:
+            "停用 / 离职"
+
+    };
+
+
+    return (
+        map[state] ||
+        state
+    );
+
+}
+
+
+
+/* =========================================================
+   状态标签
+========================================================= */
+
+function getStateBadge(state) {
+
+    const classMap = {
+
+        pending:
+            "badge-pending",
+
+        approved:
+            "badge-approved",
+
+        rejected:
+            "badge-rejected",
+
+        disabled:
+            "badge-disabled"
+
+    };
+
+
+    return `
+        <span class="badge ${classMap[state] || "badge-disabled"}">
+            ${escapeHtml(getStateText(state))}
+        </span>
+    `;
+
+}
+
+
+
+/* =========================================================
+   时间
+========================================================= */
+
+function formatDateTime(value) {
+
+    if (!value) {
+
+        return "-";
+
+    }
+
+
+    const date =
+        new Date(value);
+
+
+    if (
+        Number.isNaN(
+            date.getTime()
+        )
+    ) {
+
+        return value;
+
+    }
+
+
+    return date.toLocaleString(
+        "zh-CN",
+        {
+            hour12: false
+        }
+    );
+
+}
+
+
+
+/* =========================================================
+   HTML转义
+========================================================= */
+
+function escapeHtml(value) {
+
+    return String(
+        value ?? ""
+    )
+        .replaceAll(
+            "&",
+            "&amp;"
+        )
+        .replaceAll(
+            "<",
+            "&lt;"
+        )
+        .replaceAll(
+            ">",
+            "&gt;"
+        )
+        .replaceAll(
+            '"',
+            "&quot;"
+        )
+        .replaceAll(
+            "'",
+            "&#039;"
+        );
+
+}
+
+
+
+/* =========================================================
+   统计
+========================================================= */
+
+function renderSummary() {
+
+    const records =
+        getPersonnelRecords();
+
+
+    const states =
+        records.map(
+            getApprovalState
+        );
+
+
+    document.getElementById(
+        "totalCount"
+    ).textContent =
+        records.length;
+
+
+    document.getElementById(
+        "pendingCount"
+    ).textContent =
+        states.filter(
+            state =>
+                state === "pending"
+        ).length;
+
+
+    document.getElementById(
+        "approvedCount"
+    ).textContent =
+        states.filter(
+            state =>
+                state === "approved"
+        ).length;
+
+
+    document.getElementById(
+        "rejectedCount"
+    ).textContent =
+        states.filter(
+            state =>
+                state === "rejected"
+        ).length;
+
+}
+
+
+
+/* =========================================================
+   人员表
+========================================================= */
+
+function renderTable() {
+
+    const search =
+        document
+            .getElementById(
+                "searchInput"
+            )
+            .value
+            .trim()
+            .toLowerCase();
+
+
+    const positionFilter =
+        document.getElementById(
+            "positionFilter"
+        ).value;
+
+
+    const statusFilter =
+        document.getElementById(
+            "statusFilter"
+        ).value;
+
+
+    let records =
+        getPersonnelRecords();
+
+
+    records =
+        records.filter(
+            person => {
+
+                const position =
+                    normalizePosition(
+                        person.position
+                    );
+
+
+                const state =
+                    getApprovalState(
+                        person
+                    );
+
+
+                const searchText = [
+
+                    person.name,
+
+                    person.employeeNo,
+
+                    person.phone,
+
+                    person.department,
+
+                    person.team,
+
+                    position
+
+                ]
+                    .join(" ")
+                    .toLowerCase();
+
+
+                if (
+                    search &&
+                    !searchText.includes(
+                        search
+                    )
+                ) {
+
+                    return false;
+
+                }
+
+
+                if (
+                    positionFilter &&
+                    position !==
+                        positionFilter
+                ) {
+
+                    return false;
+
+                }
+
+
+                if (
+                    statusFilter &&
+                    state !==
+                        statusFilter
+                ) {
+
+                    return false;
+
+                }
+
+
+                return true;
+
+            }
+        );
+
+
+    const stateOrder = {
+
+        pending: 0,
+        rejected: 1,
+        approved: 2,
+        disabled: 3
+
+    };
+
+
+    records.sort(
+        (a, b) => {
+
+            const stateDifference =
+
+                stateOrder[
+                    getApprovalState(a)
+                ] -
+
+                stateOrder[
+                    getApprovalState(b)
+                ];
+
+
+            if (stateDifference !== 0) {
+
+                return stateDifference;
+
+            }
+
+
+            const aTime =
+                new Date(
+                    a.submittedAt ||
+                    a.updatedAt ||
+                    a.createdAt ||
+                    0
+                ).getTime();
+
+
+            const bTime =
+                new Date(
+                    b.submittedAt ||
+                    b.updatedAt ||
+                    b.createdAt ||
+                    0
+                ).getTime();
+
+
+            return bTime - aTime;
+
+        }
+    );
+
+
+    const tbody =
+        document.getElementById(
+            "personnelTableBody"
+        );
+
+
+    const empty =
+        document.getElementById(
+            "emptyState"
+        );
+
+
+    if (!records.length) {
+
+        tbody.innerHTML =
+            "";
+
+
+        empty.style.display =
+            "block";
+
+
+        return;
+
+    }
+
+
+    empty.style.display =
+        "none";
+
+
+    tbody.innerHTML =
+        records
+            .map(
+                person => {
+
+                    const id =
+                        getPersonId(
+                            person
+                        );
+
+
+                    const state =
+                        getApprovalState(
+                            person
+                        );
+
+
+                    return `
+
+                        <tr onclick="openDetail('${escapeHtml(id)}')">
+
+                            <td>
+                                ${escapeHtml(person.name || "-")}
+                            </td>
+
+                            <td>
+                                ${escapeHtml(person.employeeNo || "待生成")}
+                            </td>
+
+                            <td>
+                                ${escapeHtml(normalizePosition(person.position) || "-")}
+                            </td>
+
+                            <td>
+                                ${escapeHtml(person.department || person.team || "-")}
+                            </td>
+
+                            <td>
+                                ${escapeHtml(person.phone || "-")}
+                            </td>
+
+                            <td>
+                                ${escapeHtml(formatDateTime(
+                                    person.submittedAt ||
+                                    person.updatedAt ||
+                                    person.createdAt
+                                ))}
+                            </td>
+
+                            <td>
+                                ${getStateBadge(state)}
+                            </td>
+
+                            <td>
+
+                                <button
+                                    type="button"
+                                    class="action-link"
+                                    onclick="
+                                        event.stopPropagation();
+                                        openDetail('${escapeHtml(id)}');
+                                    "
+                                >
+                                    查看
+                                </button>
+
+                            </td>
+
+                        </tr>
+
+                    `;
+
+                }
+            )
+            .join("");
+
+}
+
+
+
+/* =========================================================
+   查找人员
+========================================================= */
+
+function findPerson(personId) {
+
+    return (
+        getPersonnelRecords()
+            .find(
+                person =>
+                    getPersonId(person) ===
+                    personId
+            ) ||
+        null
+    );
+
+}
+
+
+
+/* =========================================================
+   打开详情
+========================================================= */
+
+function openDetail(personId) {
+
+    const person =
+        findPerson(
+            personId
+        );
+
+
+    if (!person) {
+
+        alert(
+            "未找到人员资料。"
+        );
+
+
+        return;
+
+    }
+
+
+    selectedPersonId =
+        personId;
+
+
+    const position =
+        normalizePosition(
+            person.position
+        );
+
+
+    const state =
+        getApprovalState(
+            person
+        );
+
+
+    setText(
+        "detailName",
+        person.name
+    );
+
+
+    setText(
+        "detailEmployeeNo",
+        person.employeeNo ||
+        "待生成"
+    );
+
+
+    setText(
+        "detailPhone",
+        person.phone
+    );
+
+
+    setText(
+        "detailPosition",
+        position
+    );
+
+
+    setText(
+        "detailCategory",
+        person.personnelCategory ||
+        person.category
+    );
+
+
+    setText(
+        "detailDepartment",
+        person.department ||
+        person.team
+    );
+
+
+    setText(
+        "detailEntryDate",
+        person.entryDate
+    );
+
+
+    setText(
+        "detailIdCard",
+        person.idCardNumber
+    );
+
+
+    setText(
+        "detailPassport",
+        person.passportNumber
+    );
+
+
+    setText(
+        "detailBankCard",
+        person.bankCardNumber
+    );
+
+
+    setText(
+        "detailEmergencyContact",
+        person.emergencyContact
+    );
+
+
+    setText(
+        "detailEmergencyPhone",
+        person.emergencyPhone
+    );
+
+
+    setText(
+        "detailStatus",
+        getStateText(
+            state
+        )
+    );
+
+
+    setText(
+        "detailRemark",
+        person.remark
+    );
+
+
+    /*
+     * V2.10.3A
+     * 加载员工轮休假基础规则。
+     */
+    loadRotationLeaveRule(
+        person
+    );
+
+
+    setPhoto(
+        "detailIdCardPhoto",
+        "detailIdCardPhotoEmpty",
+        person.idCardPhoto
+    );
+
+
+    setPhoto(
+        "detailPassportPhoto",
+        "detailPassportPhotoEmpty",
+        person.passportPhoto
+    );
+
+
+    setPhoto(
+        "detailLicensePhoto",
+        "detailLicensePhotoEmpty",
+        person.driverLicensePhoto ||
+        person.licensePhoto
+    );
+
+
+    setPhoto(
+        "detailBankPhoto",
+        "detailBankPhotoEmpty",
+        person.bankCardPhoto
+    );
+
+
+    document.getElementById(
+        "securityNotice"
+    ).style.display =
+        (
+            position === "总经理" ||
+            position === "管理员"
+        )
+            ? "block"
+            : "none";
+
+
+    document.getElementById(
+        "rejectArea"
+    ).style.display =
+        "none";
+
+
+    document.getElementById(
+        "rejectReasonInput"
+    ).value =
+        person.rejectReason ||
+        person.rejectionReason ||
+        "";
+
+
+    const disabled =
+        state === "disabled";
+
+
+    document.getElementById(
+        "approveButton"
+    ).style.display =
+        disabled
+            ? "none"
+            : "block";
+
+
+    document.getElementById(
+        "rejectButton"
+    ).style.display =
+        disabled
+            ? "none"
+            : "block";
+
+
+    document.getElementById(
+        "detailModal"
+    ).classList.add(
+        "show"
+    );
+
+}
+
+
+
+/* =========================================================
+   详情文字
+========================================================= */
+
+function setText(
+    elementId,
+    value
+) {
+
+    document.getElementById(
+        elementId
+    ).textContent =
+        value ||
+        "-";
+
+}
+
+
+
+/* =========================================================
+   图片
+========================================================= */
+
+function setPhoto(
+    imageId,
+    emptyId,
+    data
+) {
+
+    const image =
+        document.getElementById(
+            imageId
+        );
+
+
+    const empty =
+        document.getElementById(
+            emptyId
+        );
+
+
+    if (data) {
+
+        image.src =
+            data;
+
+
+        image.style.display =
+            "block";
+
+
+        empty.style.display =
+            "none";
+
+    } else {
+
+        image.removeAttribute(
+            "src"
+        );
+
+
+        image.style.display =
+            "none";
+
+
+        empty.style.display =
+            "block";
+
+    }
+
+}
+
+
+
+/* =========================================================
+   V2.10.3A
+   员工轮休假基础规则
+========================================================= */
+
+function loadRotationLeaveRule(person) {
+
+    const enabled =
+        person.rotationLeaveEnabled === true ||
+        person.rotationLeaveEnabled === "true";
+
+
+    const enabledSelect =
+        document.getElementById(
+            "rotationLeaveEnabled"
+        );
+
+
+    const cycleInput =
+        document.getElementById(
+            "rotationLeaveCycleMonths"
+        );
+
+
+    const quotaInput =
+        document.getElementById(
+            "rotationLeaveQuotaDays"
+        );
+
+
+    enabledSelect.value =
+        enabled
+            ? "yes"
+            : "no";
+
+
+    cycleInput.value =
+        Number(
+            person.rotationLeaveCycleMonths ||
+            1
+        );
+
+
+    quotaInput.value =
+        Number(
+            person.rotationLeaveQuotaDays ||
+            0.5
+        );
+
+
+    toggleRotationLeaveFields();
+
+}
+
+
+function toggleRotationLeaveFields() {
+
+    const enabled =
+        document.getElementById(
+            "rotationLeaveEnabled"
+        ).value === "yes";
+
+
+    const cycleInput =
+        document.getElementById(
+            "rotationLeaveCycleMonths"
+        );
+
+
+    const quotaInput =
+        document.getElementById(
+            "rotationLeaveQuotaDays"
+        );
+
+
+    const summary =
+        document.getElementById(
+            "rotationLeaveSummary"
+        );
+
+
+    cycleInput.disabled =
+        !enabled;
+
+
+    quotaInput.disabled =
+        !enabled;
+
+
+    if (!enabled) {
+
+        summary.textContent =
+            "当前员工未启用轮休假。";
+
+        return;
+    }
+
+
+    const cycleMonths =
+        Number(
+            cycleInput.value ||
+            0
+        );
+
+
+    const quotaDays =
+        Number(
+            quotaInput.value ||
+            0
+        );
+
+
+    summary.textContent =
+        "当前规则：" +
+        (
+            cycleMonths > 0
+                ? cycleMonths
+                : "-"
+        ) +
+        "个月 / " +
+        (
+            quotaDays > 0
+                ? quotaDays
+                : "-"
+        ) +
+        "天；额度到周期结束后重新计算，不跨周期结转。";
+
+}
+
+
+function readRotationLeaveRuleForm(person) {
+
+    const enabled =
+        document.getElementById(
+            "rotationLeaveEnabled"
+        ).value === "yes";
+
+
+    if (!enabled) {
+
+        return {
+            rotationLeaveEnabled:
+                false,
+
+            rotationLeaveCycleMonths:
+                0,
+
+            rotationLeaveQuotaDays:
+                0,
+
+            rotationLeaveCycleAnchor:
+                "",
+
+            rotationLeaveRuleUpdatedAt:
+                new Date().toISOString()
+        };
+    }
+
+
+    const cycleMonths =
+        Number(
+            document.getElementById(
+                "rotationLeaveCycleMonths"
+            ).value
+        );
+
+
+    const quotaDays =
+        Number(
+            document.getElementById(
+                "rotationLeaveQuotaDays"
+            ).value
+        );
+
+
+    if (
+        !Number.isInteger(
+            cycleMonths
+        ) ||
+        cycleMonths < 1
+    ) {
+
+        alert(
+            "轮休周期必须填写大于等于1的整数月。"
+        );
+
+        return null;
+    }
+
+
+    if (
+        !Number.isFinite(
+            quotaDays
+        ) ||
+        quotaDays < 0.5 ||
+        (
+            quotaDays * 2
+        ) % 1 !== 0
+    ) {
+
+        alert(
+            "轮休额度最小为0.5天，并按0.5天递增。"
+        );
+
+        return null;
+    }
+
+
+    const oldEnabled =
+        person.rotationLeaveEnabled === true ||
+        person.rotationLeaveEnabled === "true";
+
+
+    const oldCycleMonths =
+        Number(
+            person.rotationLeaveCycleMonths ||
+            0
+        );
+
+
+    const oldQuotaDays =
+        Number(
+            person.rotationLeaveQuotaDays ||
+            0
+        );
+
+
+    const ruleChanged =
+        !oldEnabled ||
+        oldCycleMonths !== cycleMonths ||
+        oldQuotaDays !== quotaDays;
+
+
+    /*
+     * 首次启用或管理员改变周期/额度时，
+     * 以当天作为新的轮休周期锚点。
+     * 后续假勤模块据此计算1个月、3个月等周期。
+     */
+    const anchor =
+        ruleChanged
+            ? getLocalDateKey(
+                new Date()
+              )
+            : (
+                person.rotationLeaveCycleAnchor ||
+                getLocalDateKey(
+                    new Date()
+                )
+              );
+
+
+    return {
+        rotationLeaveEnabled:
+            true,
+
+        rotationLeaveCycleMonths:
+            cycleMonths,
+
+        rotationLeaveQuotaDays:
+            quotaDays,
+
+        rotationLeaveCycleAnchor:
+            anchor,
+
+        rotationLeaveRuleUpdatedAt:
+            new Date().toISOString()
+    };
+
+}
+
+
+function saveRotationLeaveRule() {
+
+    if (!selectedPersonId) {
+
+        return;
+    }
+
+
+    const records =
+        getPersonnelRecords();
+
+
+    const index =
+        records.findIndex(
+            person =>
+                getPersonId(person) ===
+                selectedPersonId
+        );
+
+
+    if (index < 0) {
+
+        alert(
+            "未找到人员资料。"
+        );
+
+        return;
+    }
+
+
+    const person =
+        records[index];
+
+
+    const rule =
+        readRotationLeaveRuleForm(
+            person
+        );
+
+
+    if (!rule) {
+
+        return;
+    }
+
+
+    records[index] = {
+
+        ...person,
+        ...rule,
+
+        updatedAt:
+            new Date().toISOString()
+    };
+
+
+    savePersonnelRecords(
+        records
+    );
+
+
+    alert(
+        rule.rotationLeaveEnabled
+            ? (
+                "轮休规则已保存：" +
+                rule.rotationLeaveCycleMonths +
+                "个月 / " +
+                rule.rotationLeaveQuotaDays +
+                "天。"
+              )
+            : "已设置为不享有轮休假。"
+    );
+
+
+    openDetail(
+        selectedPersonId
+    );
+
+}
+
+
+/*
+ * 返回本地日期 YYYY-MM-DD。
+ * 避免使用 toISOString() 导致本地日期跨天。
+ */
+function getLocalDateKey(date) {
+
+    const year =
+        date.getFullYear();
+
+
+    const month =
+        String(
+            date.getMonth() + 1
+        ).padStart(
+            2,
+            "0"
+        );
+
+
+    const day =
+        String(
+            date.getDate()
+        ).padStart(
+            2,
+            "0"
+        );
+
+
+    return (
+        year +
+        "-" +
+        month +
+        "-" +
+        day
+    );
+
+}
+
+
+/* =========================================================
+   审核通过
+========================================================= */
+
+function approveCurrentPerson() {
+
+    if (!selectedPersonId) {
+
+        return;
+
+    }
+
+
+    const records =
+        getPersonnelRecords();
+
+
+    const index =
+        records.findIndex(
+            person =>
+                getPersonId(person) ===
+                selectedPersonId
+        );
+
+
+    if (index < 0) {
+
+        alert(
+            "未找到人员资料。"
+        );
+
+
+        return;
+
+    }
+
+
+    const person =
+        records[index];
+
+
+    /*
+     * V2.10.3A
+     * 审核通过时同时保存管理员设置的轮休规则。
+     * 这里只增加字段，不改变原审核状态、员工编号等逻辑。
+     */
+    const rotationLeaveRule =
+        readRotationLeaveRuleForm(
+            person
+        );
+
+
+    if (!rotationLeaveRule) {
+
+        return;
+    }
+
+
+    if (
+        getApprovalState(person) ===
+        "disabled"
+    ) {
+
+        alert(
+            "停用或离职人员不能直接进行入职审核。"
+        );
+
+
+        return;
+
+    }
+
+
+    const confirmed =
+        confirm(
+            "确认审核通过“" +
+            (
+                person.name ||
+                "该人员"
+            ) +
+            "”的入职申请吗？"
+        );
+
+
+    if (!confirmed) {
+
+        return;
+
+    }
+
+
+    const now =
+        new Date().toISOString();
+
+
+    /* ===== 审核通过时生成可读员工编号 ===== */
+
+    const team =
+        String(
+            person.team ||
+            person.department ||
+            ""
+        ).trim();
+
+
+    const employeeNoRules = {
+
+        "生产A组": {
+            prefix: "A",
+            digits: 4
+        },
+
+        "生产B组": {
+            prefix: "B",
+            digits: 4
+        },
+
+        "修理组": {
+            prefix: "WX",
+            digits: 3
+        },
+
+        "行政办公室": {
+            prefix: "XZ",
+            digits: 3
+        }
+
+    };
+
+
+    let employeeNo =
+        String(
+            person.employeeNo ||
+            ""
+        ).trim();
+
+
+    if (!employeeNo) {
+
+        const rule =
+            employeeNoRules[team];
+
+
+        if (!rule) {
+
+            alert(
+                "请先为该人员设置正确的部门 / 车队。"
+            );
+
+
+            return;
+
+        }
+
+
+        let maxNumber = 0;
+
+
+        records.forEach(
+            function (item) {
+
+                const code =
+                    String(
+                        item.employeeNo ||
+                        ""
+                    ).trim();
+
+
+                if (
+                    !code.startsWith(
+                        rule.prefix
+                    )
+                ) {
+
+                    return;
+
+                }
+
+
+                const numberPart =
+                    code.slice(
+                        rule.prefix.length
+                    );
+
+
+                const number =
+                    parseInt(
+                        numberPart,
+                        10
+                    );
+
+
+                if (
+                    !Number.isNaN(
+                        number
+                    )
+                ) {
+
+                    maxNumber =
+                        Math.max(
+                            maxNumber,
+                            number
+                        );
+
+                }
+
+            }
+        );
+
+
+        employeeNo =
+            rule.prefix +
+            String(
+                maxNumber + 1
+            ).padStart(
+                rule.digits,
+                "0"
+            );
+
+    }
+
+
+    records[index] = {
+
+        ...person,
+
+        personId:
+            getPersonId(person),
+
+        employeeNo:
+            employeeNo,
+
+        /*
+         * 员工轮休规则
+         */
+        ...rotationLeaveRule,
+
+        position:
+            normalizePosition(
+                person.position
+            ),
+
+        status:
+            "approved",
+
+        approvalStatus:
+            "approved",
+
+        personnelStatus:
+            "在职可用",
+
+        approvedAt:
+            now,
+
+        reviewedAt:
+            now,
+
+        approvedBy:
+            "管理员",
+
+        reviewedBy:
+            "管理员",
+
+        updatedAt:
+            now
+
+    };
+
+
+    delete records[index].rejectReason;
+    delete records[index].rejectionReason;
+    delete records[index].rejectedAt;
+    delete records[index].reviewRemark;
+    delete records[index].approvalRemark;
+
+
+    savePersonnelRecords(
+        records
+    );
+
+
+    alert(
+        "审核通过。员工编号：" +
+        employeeNo
+    );
+
+
+    closeDetail();
+
+    refreshPage();
+
+}
+
+
+
+/* =========================================================
+   显示驳回输入
+========================================================= */
+
+function showRejectArea() {
+
+    document.getElementById(
+        "rejectArea"
+    ).style.display =
+        "block";
+
+
+    document.getElementById(
+        "rejectReasonInput"
+    ).focus();
+
+}
+
+
+
+/* =========================================================
+   确认驳回
+========================================================= */
+
+function confirmReject() {
+
+    if (!selectedPersonId) {
+
+        return;
+
+    }
+
+
+    const reason =
+        document
+            .getElementById(
+                "rejectReasonInput"
+            )
+            .value
+            .trim();
+
+
+    if (!reason) {
+
+        alert(
+            "请填写驳回原因。"
+        );
+
+
+        return;
+
+    }
+
+
+    const records =
+        getPersonnelRecords();
+
+
+    const index =
+        records.findIndex(
+            person =>
+                getPersonId(person) ===
+                selectedPersonId
+        );
+
+
+    if (index < 0) {
+
+        alert(
+            "未找到人员资料。"
+        );
+
+
+        return;
+
+    }
+
+
+    const person =
+        records[index];
+
+
+    if (
+        getApprovalState(person) ===
+        "disabled"
+    ) {
+
+        alert(
+            "停用或离职人员不能执行此操作。"
+        );
+
+
+        return;
+
+    }
+
+
+    const confirmed =
+        confirm(
+            "确认驳回“" +
+            (
+                person.name ||
+                "该人员"
+            ) +
+            "”的入职申请吗？"
+        );
+
+
+    if (!confirmed) {
+
+        return;
+
+    }
+
+
+    const now =
+        new Date().toISOString();
+
+
+    records[index] = {
+
+        ...person,
+
+        personId:
+            getPersonId(person),
+        position:
+            normalizePosition(
+                person.position
+            ),
+
+        status:
+            "rejected",
+
+        approvalStatus:
+            "rejected",
+
+        personnelStatus:
+            "待审核",
+
+        rejectReason:
+            reason,
+
+        rejectionReason:
+            reason,
+
+        reviewRemark:
+            reason,
+
+        rejectedAt:
+            now,
+
+        reviewedAt:
+            now,
+
+        reviewedBy:
+            "管理员",
+
+        updatedAt:
+            now
+
+    };
+
+
+    delete records[index].approvedAt;
+    delete records[index].approvedBy;
+
+
+    savePersonnelRecords(
+        records
+    );
+
+
+    alert(
+        "资料已驳回，申请人可以修改后重新提交。"
+    );
+
+
+    closeDetail();
+
+    refreshPage();
+
+}
+
+
+
+/* =========================================================
+   关闭详情
+========================================================= */
+
+function closeDetail() {
+
+    selectedPersonId =
+        "";
+
+
+    document.getElementById(
+        "detailModal"
+    ).classList.remove(
+        "show"
+    );
+
+}
+
+
+
+/* =========================================================
+   点击背景关闭
+========================================================= */
+
+function modalBackgroundClose(event) {
+
+    if (
+        event.target.id ===
+        "detailModal"
+    ) {
+
+        closeDetail();
+
+    }
+
+}
+
+
+
+/* =========================================================
+   打印人员资料
+========================================================= */
+
+function printCurrentProfile() {
+
+    const person =
+        findPerson(
+            selectedPersonId
+        );
+
+
+    if (!person) {
+
+        return;
+
+    }
+
+
+    const printWindow =
+        window.open(
+            "",
+            "_blank"
+        );
+
+
+    if (!printWindow) {
+
+        alert(
+            "浏览器阻止了打印窗口，请允许弹出窗口后重试。"
+        );
+
+
+        return;
+
+    }
+
+
+    const state =
+        getStateText(
+            getApprovalState(
+                person
+            )
+        );
+
+
+    printWindow.document.write(`
+
+        <!DOCTYPE html>
+
+        <html lang="zh-CN">
+
+        <head>
+
+            <meta charset="UTF-8">
+
+            <title>
+                人员资料
+            </title>
+
+            <style>
+
+                body {
+                    font-family:
+                        Arial,
+                        "Microsoft YaHei",
+                        sans-serif;
+                    padding: 30px;
+                    color: #111827;
+                }
+
+                h1 {
+                    text-align: center;
+                }
+
+                table {
+                    width: 100%;
+                    border-collapse: collapse;
+                }
+
+                td {
+                    border: 1px solid #d1d5db;
+                    padding: 10px;
+                }
+
+                td:first-child {
+                    width: 30%;
+                    font-weight: bold;
+                    background: #f3f4f6;
+                }
+
+            </style>
+
+        </head>
+
+        <body>
+
+            <h1>
+                矿山管理系统人员资料
+            </h1>
+
+            <table>
+
+                <tr>
+                    <td>姓名</td>
+                    <td>${escapeHtml(person.name || "-")}</td>
+                </tr>
+
+                <tr>
+                    <td>员工编号</td>
+                    <td>${escapeHtml(person.employeeNo || "待生成")}</td>
+                </tr>
+
+                <tr>
+                    <td>手机号</td>
+                    <td>${escapeHtml(person.phone || "-")}</td>
+                </tr>
+
+                <tr>
+                    <td>岗位</td>
+                    <td>${escapeHtml(normalizePosition(person.position) || "-")}</td>
+                </tr>
+
+                <tr>
+                    <td>人员类别</td>
+                    <td>${escapeHtml(person.personnelCategory || "-")}</td>
+                </tr>
+
+                <tr>
+                    <td>部门 / 车队</td>
+                    <td>${escapeHtml(person.department || person.team || "-")}</td>
+                </tr>
+
+                <tr>
+                    <td>入职日期</td>
+                    <td>${escapeHtml(person.entryDate || "-")}</td>
+                </tr>
+
+                <tr>
+                    <td>身份证号</td>
+                    <td>${escapeHtml(person.idCardNumber || "-")}</td>
+                </tr>
+
+                <tr>
+                    <td>护照号</td>
+                    <td>${escapeHtml(person.passportNumber || "-")}</td>
+                </tr>
+
+                <tr>
+                    <td>银行卡号</td>
+                    <td>${escapeHtml(person.bankCardNumber || "-")}</td>
+                </tr>
+
+                <tr>
+                    <td>紧急联系人</td>
+                    <td>${escapeHtml(person.emergencyContact || "-")}</td>
+                </tr>
+
+                <tr>
+                    <td>紧急联系电话</td>
+                    <td>${escapeHtml(person.emergencyPhone || "-")}</td>
+                </tr>
+
+                <tr>
+                    <td>审核状态</td>
+                    <td>${escapeHtml(state)}</td>
+                </tr>
+
+                <tr>
+                    <td>备注</td>
+                    <td>${escapeHtml(person.remark || "-")}</td>
+                </tr>
+
+            </table>
+
+        </body>
+
+        </html>
+
+    `);
+
+
+    printWindow.document.close();
+
+    printWindow.focus();
+
+    printWindow.print();
+
+}
+
+
+
+/* =========================================================
+   打印证件照片
+========================================================= */
+
+function printCurrentPhotos() {
+
+    const person =
+        findPerson(
+            selectedPersonId
+        );
+
+
+    if (!person) {
+
+        return;
+
+    }
+
+
+    const photos = [
+
+        {
+            title:
+                "身份证照片",
+
+            data:
+                person.idCardPhoto
+        },
+
+        {
+            title:
+                "护照照片",
+
+            data:
+                person.passportPhoto
+        },
+
+        {
+            title:
+                "驾驶证 / 操作证",
+
+            data:
+                person.driverLicensePhoto ||
+                person.licensePhoto
+        },
+
+        {
+            title:
+                "银行卡照片",
+
+            data:
+                person.bankCardPhoto
+        }
+
+    ].filter(
+        item =>
+            item.data
+    );
+
+
+    if (!photos.length) {
+
+        alert(
+            "该人员没有上传证件照片。"
+        );
+
+
+        return;
+
+    }
+
+
+    const printWindow =
+        window.open(
+            "",
+            "_blank"
+        );
+
+
+    if (!printWindow) {
+
+        alert(
+            "浏览器阻止了打印窗口，请允许弹出窗口后重试。"
+        );
+
+
+        return;
+
+    }
+
+
+    printWindow.document.write(`
+
+        <!DOCTYPE html>
+
+        <html lang="zh-CN">
+
+        <head>
+
+            <meta charset="UTF-8">
+
+            <title>
+                证件照片
+            </title>
+
+            <style>
+
+                body {
+                    font-family:
+                        Arial,
+                        "Microsoft YaHei",
+                        sans-serif;
+                    padding: 25px;
+                }
+
+                h1 {
+                    text-align: center;
+                }
+
+                .photo {
+                    margin-bottom: 30px;
+                    page-break-inside: avoid;
+                }
+
+                .photo h2 {
+                    font-size: 17px;
+                }
+
+                img {
+                    max-width: 100%;
+                    max-height: 800px;
+                    display: block;
+                    margin: 0 auto;
+                }
+
+            </style>
+
+        </head>
+
+        <body>
+
+            <h1>
+                ${escapeHtml(person.name || "人员")}
+                ·
+                证件照片
+            </h1>
+
+
+            ${
+
+                photos
+                    .map(
+                        item => `
+
+                            <div class="photo">
+
+                                <h2>
+                                    ${escapeHtml(item.title)}
+                                </h2>
+
+                                <img
+                                    src="${item.data}"
+                                    alt="${escapeHtml(item.title)}"
+                                >
+
+                            </div>
+
+                        `
+                    )
+                    .join("")
+
+            }
+
+        </body>
+
+        </html>
+
+    `);
+
+
+    printWindow.document.close();
+
+    printWindow.focus();
+
+    printWindow.print();
+
+}
+
+
+
+/* =========================================================
+   刷新
+========================================================= */
+
+function refreshPage() {
+
+    renderSummary();
+
+    renderTable();
+
+}
+
+
+
+/* =========================================================
+   退出管理员
+========================================================= */
+
+function logoutAdmin() {
+
+    const confirmed =
+        confirm(
+            "确认退出管理员登录吗？"
+        );
+
+
+    if (!confirmed) {
+
+        return;
+
+    }
+
+
+    sessionStorage.removeItem(
+        "managementSession"
+    );
+
+
+    localStorage.removeItem(
+        "pendingProtectedPersonId"
+    );
+
+
+    localStorage.removeItem(
+        "pendingProtectedPosition"
+    );
+
+
+    /*
+     * 只退出管理员会话。
+     * 不删除 currentPersonId / selectedPosition，
+     * 因此司机等普通员工身份仍然可以继续使用。
+     *
+     * adminPersonId 保留用于下次管理员身份恢复，
+     * 不影响普通岗位。
+     */
+    location.href =
+        "index.html";
+
+}
+
+
+
+/* =========================================================
+   ESC关闭详情
+========================================================= */
+
+document.addEventListener(
+    "keydown",
+    function (event) {
+
+        if (
+            event.key ===
+            "Escape"
+        ) {
+
+            closeDetail();
+
+        }
+
+    }
+);
+
+
+
+/* =========================================================
+   初始化
+========================================================= */
+
+(function initialize() {
+
+    const admin =
+        window.__ADMIN_PERSON__;
+
+
+    if (admin) {
+
+        document.getElementById(
+            "sessionBox"
+        ).textContent =
+
+            "✅ 当前管理员：" +
+            (
+                admin.name ||
+                "管理员"
+            ) +
+            " · 身份验证有效";
+
+    }
+
+
+    refreshPage();
+
+    renderAttendanceZoneConfig();
+
+
+    setInterval(
+        refreshPage,
+        5000
+    );
+
+})();
+
+</script>
+
+
+</body>
+
+</html>
