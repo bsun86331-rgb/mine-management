@@ -6471,4 +6471,1255 @@ document.addEventListener("DOMContentLoaded", function () {
                         item.driverId,
                         item.driverName
                     ) &&
-                    item.status === "approved"
+                    item.status === "approved" &&
+                    !item.appliedToDriverTask &&
+                    (
+                        !item.taskId ||
+                        item.taskId ===
+                        currentTask.taskId
+                    )
+            );
+
+        if (index < 0) {
+            return;
+        }
+
+        const request =
+            records[index];
+
+        const newVehicle =
+            request.approvedVehicleNumber ||
+            request.approvedVehicleId;
+
+        if (!newVehicle) {
+            return;
+        }
+
+        const oldVehicle =
+            request.oldVehicleNumber ||
+            request.oldVehicleId ||
+            getVehicleNumber(currentTask);
+
+        currentTask.vehicleNumber =
+            newVehicle;
+
+        currentTask.vehicleId =
+            newVehicle;
+
+        currentTask.vehicleClaimed =
+            false;
+
+        currentTask.status =
+            "assigned";
+
+        currentTask.vehicleChangedAt =
+            new Date().toISOString();
+
+        saveCurrentTask(currentTask);
+
+        /*
+        同步修改调度任务设备绑定。
+        */
+
+        replaceTruckInDispatchTask(
+            currentTask.taskId,
+            oldVehicle,
+            newVehicle
+        );
+
+        records[index]
+            .appliedToDriverTask = true;
+
+        records[index]
+            .appliedAt =
+            new Date().toISOString();
+
+        saveVehicleChangeRequests(records);
+
+        alert(
+            "调度已批准换车。\n\n" +
+            oldVehicle +
+            " → " +
+            newVehicle +
+            "\n\n请重新领取新车辆后继续原任务。"
+        );
+    }
+
+
+    function replaceTruckInDispatchTask(
+        taskId,
+        oldVehicle,
+        newVehicle
+    ) {
+
+        if (!taskId) {
+            return;
+        }
+
+        const tasks =
+            readJson(
+                STORAGE.DISPATCH_TASKS,
+                []
+            );
+
+        if (!Array.isArray(tasks)) {
+            return;
+        }
+
+        const index =
+            tasks.findIndex(
+                task =>
+                    task.taskId === taskId
+            );
+
+        if (index < 0) {
+            return;
+        }
+
+        let replaced = false;
+
+        (tasks[index].bindings || [])
+            .forEach(
+                binding => {
+
+                    binding.truckIds =
+                        (binding.truckIds || [])
+                            .map(
+                                truckId => {
+
+                                    if (
+                                        truckId === oldVehicle
+                                    ) {
+                                        replaced = true;
+                                        return newVehicle;
+                                    }
+
+                                    return truckId;
+                                }
+                            );
+                }
+            );
+
+        if (replaced) {
+
+            tasks[index]
+                .equipmentAdjustments =
+                tasks[index]
+                    .equipmentAdjustments ||
+                [];
+
+            tasks[index]
+                .equipmentAdjustments
+                .push({
+
+                    adjustmentId:
+                        "ADJ_CHANGE_" +
+                        Date.now(),
+
+                    time:
+                        new Date()
+                            .toISOString(),
+
+                    summary:
+                        "司机故障换车：" +
+                        oldVehicle +
+                        " → " +
+                        newVehicle,
+
+                    reason:
+                        "调度批准司机换车申请"
+                });
+
+            localStorage.setItem(
+                STORAGE.DISPATCH_TASKS,
+                JSON.stringify(tasks)
+            );
+        }
+    }
+
+
+    function refreshVehicleChangeRecords() {
+
+        const records =
+            getMyVehicleChangeRequests()
+                .sort(
+                    (a, b) =>
+                        new Date(b.requestedAt) -
+                        new Date(a.requestedAt)
+                );
+
+        const box =
+            $("vehicleChangeRecordList");
+
+        if (!records.length) {
+
+            box.innerHTML =
+                '<div class="empty-box">暂无换车申请</div>';
+
+            return;
+        }
+
+        box.innerHTML =
+            records.map(
+                item => {
+
+                    const status =
+                        getChangeStatus(item);
+
+                    return `
+                        <div class="record-card">
+
+                            <div class="record-top">
+
+                                <strong>
+                                    ${escapeHtml(item.oldVehicleNumber || "-")}
+                                    ${
+                                        item.approvedVehicleNumber
+                                            ? " → " +
+                                              escapeHtml(item.approvedVehicleNumber)
+                                            : ""
+                                    }
+                                </strong>
+
+                                <span class="${status.className}">
+                                    ${status.text}
+                                </span>
+
+                            </div>
+
+                            <div class="record-note">
+                                ${escapeHtml(item.reason || "-")}
+                            </div>
+
+                            <div class="record-time">
+                                ${formatDateTime(item.requestedAt)}
+                            </div>
+
+                        </div>
+                    `;
+                }
+            )
+            .join("");
+    }
+
+
+    function getChangeStatus(item) {
+
+        if (item.status === "approved") {
+            return {
+                text: "已批准",
+                className:
+                    "record-status green-text"
+            };
+        }
+
+        if (item.status === "rejected") {
+            return {
+                text: "已驳回",
+                className:
+                    "record-status red-text"
+            };
+        }
+
+        return {
+            text: "待调度审批",
+            className:
+                "record-status orange-text"
+        };
+    }
+
+
+    /*
+    ===============================================
+    请假
+    ===============================================
+    */
+
+    function openLeaveModal() {
+
+        $("leaveReason").value = "";
+
+        showModal("leaveModal");
+    }
+
+
+    function submitLeave() {
+
+        const type =
+            $("leaveType").value;
+
+        const start =
+            $("leaveStart").value;
+
+        const end =
+            $("leaveEnd").value;
+
+        const phone =
+            $("leaveContactPhone")
+                .value
+                .trim();
+
+        const reason =
+            $("leaveReason")
+                .value
+                .trim();
+
+        if (
+            !start ||
+            !end ||
+            !reason
+        ) {
+            alert("请完整填写请假时间和原因。");
+            return;
+        }
+
+        if (
+            new Date(end) <=
+            new Date(start)
+        ) {
+            alert("请假结束时间必须晚于开始时间。");
+            return;
+        }
+
+        if (
+            hasOverlappingPendingOrApprovedLeave(
+                start,
+                end
+            )
+        ) {
+            alert(
+                "当前时间段已有待审批或已批准请假申请。"
+            );
+            return;
+        }
+
+        const records =
+            getLeaveRequests();
+
+        records.push({
+
+            leaveId:
+                "LEAVE_" + Date.now(),
+
+            applicantId:
+                profile.driverId || profile.personId || "",
+
+            personId:
+                profile.driverId || profile.personId || "",
+
+            applicantName:
+                profile.name || "",
+
+            personName:
+                profile.name || "",
+
+            employeeNo:
+                profile.employeeNo || "",
+
+            role:
+                "driver",
+
+            position:
+                profile.position ||
+                "卡车司机",
+
+            team:
+                profile.team ||
+                profile.department ||
+                "",
+
+            department:
+                profile.department ||
+                profile.team ||
+                "",
+
+            employeeLevel:
+                "frontline",
+
+            leaveType:
+                type,
+
+            startTime:
+                new Date(start)
+                    .toISOString(),
+
+            endTime:
+                new Date(end)
+                    .toISOString(),
+
+            contactPhone:
+                phone,
+
+            reason,
+
+            status:
+                "pending",
+
+            approverRole:
+                "dispatch",
+
+            approvalLevel:
+                "调度审批",
+
+            submittedAt:
+                new Date()
+                    .toISOString(),
+
+            approvedAt: null,
+
+            approvedBy: "",
+
+            approvalRemark: ""
+        });
+
+        saveLeaveRequests(records);
+
+        hideModal("leaveModal");
+
+        $("leaveStart").value = "";
+        $("leaveEnd").value = "";
+        $("leaveReason").value = "";
+
+        refreshAll();
+
+        alert(
+            "请假申请已提交。\n审批人：调度。"
+        );
+    }
+
+
+    function getLeaveRequests() {
+
+        const data =
+            readJson(
+                STORAGE.LEAVE_REQUESTS,
+                []
+            );
+
+        return Array.isArray(data)
+            ? data
+            : [];
+    }
+
+
+    function saveLeaveRequests(records) {
+
+        localStorage.setItem(
+            STORAGE.LEAVE_REQUESTS,
+            JSON.stringify(records)
+        );
+    }
+
+
+    function getMyLeaveRequests() {
+
+        return getLeaveRequests()
+            .filter(
+                item =>
+                    samePerson(
+                        item.applicantId ||
+                        item.personId,
+                        item.applicantName ||
+                        item.personName
+                    )
+            );
+    }
+
+
+    function hasOverlappingPendingOrApprovedLeave(
+        start,
+        end
+    ) {
+
+        const newStart =
+            new Date(start);
+
+        const newEnd =
+            new Date(end);
+
+        return getMyLeaveRequests()
+            .some(
+                item => {
+
+                    if (
+                        item.status !== "pending" &&
+                        item.status !== "approved"
+                    ) {
+                        return false;
+                    }
+
+                    const oldStart =
+                        new Date(item.startTime);
+
+                    const oldEnd =
+                        new Date(item.endTime);
+
+                    return (
+                        oldStart < newEnd &&
+                        oldEnd > newStart
+                    );
+                }
+            );
+    }
+
+
+    function isOnApprovedLeaveNow() {
+
+        const now =
+            new Date();
+
+        return getMyLeaveRequests()
+            .some(
+                item => {
+
+                    if (
+                        item.status !== "approved"
+                    ) {
+                        return false;
+                    }
+
+                    return (
+                        new Date(item.startTime) <= now &&
+                        new Date(item.endTime) >= now
+                    );
+                }
+            );
+    }
+
+
+    function refreshLeaveRecords() {
+
+        const records =
+            getMyLeaveRequests()
+                .sort(
+                    (a, b) =>
+                        new Date(b.submittedAt) -
+                        new Date(a.submittedAt)
+                );
+
+        const box =
+            $("leaveRecordList");
+
+        if (!records.length) {
+
+            box.innerHTML =
+                '<div class="empty-box">暂无请假记录</div>';
+
+            return;
+        }
+
+        box.innerHTML =
+            records.map(
+                item => {
+
+                    const status =
+                        getLeaveStatus(item);
+
+                    return `
+                        <div class="record-card">
+
+                            <div class="record-top">
+
+                                <strong>
+                                    ${escapeHtml(item.leaveType || "请假")}
+                                </strong>
+
+                                <span class="${status.className}">
+                                    ${status.text}
+                                </span>
+
+                            </div>
+
+                            <div class="record-grid">
+
+                                <div>
+                                    <span>开始</span>
+                                    <strong>
+                                        ${formatDateTime(item.startTime)}
+                                    </strong>
+                                </div>
+
+                                <div>
+                                    <span>结束</span>
+                                    <strong>
+                                        ${formatDateTime(item.endTime)}
+                                    </strong>
+                                </div>
+
+                            </div>
+
+                            <div class="record-note">
+                                ${escapeHtml(item.reason || "-")}
+                            </div>
+
+                            ${
+                                item.approvalRemark
+                                    ? `
+                                        <div class="record-note">
+                                            审批备注：
+                                            ${escapeHtml(item.approvalRemark)}
+                                        </div>
+                                    `
+                                    : ""
+                            }
+
+                            ${
+                                item.status === "pending"
+                                    ? `
+                                        <button
+                                            type="button"
+                                            class="mini-danger-button"
+                                            data-cancel-leave="${escapeHtml(item.leaveId)}"
+                                        >
+                                            撤回申请
+                                        </button>
+                                    `
+                                    : ""
+                            }
+
+                        </div>
+                    `;
+                }
+            )
+            .join("");
+
+        box.querySelectorAll(
+            "[data-cancel-leave]"
+        )
+        .forEach(
+            button => {
+
+                button.addEventListener(
+                    "click",
+                    function () {
+                        cancelLeaveRequest(
+                            button.dataset.cancelLeave
+                        );
+                    }
+                );
+            }
+        );
+    }
+
+
+    function cancelLeaveRequest(leaveId) {
+
+        if (
+            !confirm(
+                "确认撤回这条请假申请吗？"
+            )
+        ) {
+            return;
+        }
+
+        const records =
+            getLeaveRequests();
+
+        const index =
+            records.findIndex(
+                item =>
+                    item.leaveId === leaveId &&
+                    samePerson(
+                        item.applicantId ||
+                        item.personId,
+                        item.applicantName ||
+                        item.personName
+                    )
+            );
+
+        if (index < 0) {
+            return;
+        }
+
+        if (
+            records[index].status !==
+            "pending"
+        ) {
+            alert("只有待审批申请可以撤回。");
+            return;
+        }
+
+        records[index].status =
+            "cancelled";
+
+        records[index].withdrawnAt =
+            new Date().toISOString();
+
+        saveLeaveRequests(records);
+
+        refreshAll();
+    }
+
+
+    function getLeaveStatus(item) {
+
+        if (item.status === "approved") {
+            return {
+                text: "已批准",
+                className:
+                    "record-status green-text"
+            };
+        }
+
+        if (item.status === "rejected") {
+            return {
+                text: "已驳回",
+                className:
+                    "record-status red-text"
+            };
+        }
+
+        if (
+            item.status === "cancelled" ||
+            item.status === "withdrawn"
+        ) {
+            return {
+                text: "已撤回",
+                className:
+                    "record-status gray-text"
+            };
+        }
+
+        return {
+            text: "待调度审批",
+            className:
+                "record-status orange-text"
+        };
+    }
+
+
+    /*
+    ===============================================
+    罚单
+    ===============================================
+    */
+
+    function getPenalties() {
+
+        const data =
+            readJson(
+                STORAGE.PENALTIES,
+                []
+            );
+
+        return Array.isArray(data)
+            ? data
+            : [];
+    }
+
+
+    function savePenalties(records) {
+
+        localStorage.setItem(
+            STORAGE.PENALTIES,
+            JSON.stringify(records)
+        );
+    }
+
+
+    function getMyPenalties() {
+
+        return getPenalties()
+            .filter(
+                item =>
+                    samePerson(
+                        item.personId,
+                        item.personName
+                    )
+            );
+    }
+
+
+    function refreshPenaltyRecords() {
+
+        const records =
+            getMyPenalties()
+                .sort(
+                    (a, b) =>
+                        new Date(b.issuedAt) -
+                        new Date(a.issuedAt)
+                );
+
+        const box =
+            $("penaltyRecordList");
+
+        if (!records.length) {
+
+            box.innerHTML =
+                '<div class="empty-box">暂无罚单</div>';
+
+            return;
+        }
+
+        box.innerHTML =
+            records.map(
+                item => {
+
+                    const pending =
+                        item.status ===
+                        "pending_acknowledgement";
+
+                    return `
+                        <div class="record-card penalty-card">
+
+                            <div class="record-top">
+
+                                <strong>
+                                    ⚠️
+                                    ${escapeHtml(item.violationType || "违规处理")}
+                                </strong>
+
+                                <span class="${
+                                    pending
+                                        ? "record-status orange-text"
+                                        : "record-status green-text"
+                                }">
+                                    ${
+                                        pending
+                                            ? "待确认"
+                                            : item.status === "processed"
+                                                ? "已处理"
+                                                : "已知晓"
+                                    }
+                                </span>
+
+                            </div>
+
+                            <div class="record-grid">
+
+                                <div>
+                                    <span>车辆</span>
+                                    <strong>
+                                        ${escapeHtml(item.vehicleNumber || "-")}
+                                    </strong>
+                                </div>
+
+                                <div>
+                                    <span>处罚金额</span>
+                                    <strong>
+                                        ¥ ${Number(item.amount || 0)}
+                                    </strong>
+                                </div>
+
+                                <div>
+                                    <span>扣分</span>
+                                    <strong>
+                                        ${Number(item.points || 0)}
+                                    </strong>
+                                </div>
+
+                                <div>
+                                    <span>时间</span>
+                                    <strong>
+                                        ${formatDateTime(item.issuedAt)}
+                                    </strong>
+                                </div>
+
+                            </div>
+
+                            <div class="record-note">
+                                ${escapeHtml(item.description || "-")}
+                            </div>
+
+                            ${
+                                pending
+                                    ? `
+                                        <button
+                                            type="button"
+                                            class="ack-button"
+                                            data-ack-penalty="${escapeHtml(item.penaltyId)}"
+                                        >
+                                            我已知晓
+                                        </button>
+                                    `
+                                    : ""
+                            }
+
+                        </div>
+                    `;
+                }
+            )
+            .join("");
+
+        box.querySelectorAll(
+            "[data-ack-penalty]"
+        )
+        .forEach(
+            button => {
+
+                button.addEventListener(
+                    "click",
+                    function () {
+
+                        acknowledgePenalty(
+                            button.dataset.ackPenalty
+                        );
+                    }
+                );
+            }
+        );
+    }
+
+
+    function acknowledgePenalty(
+        penaltyId
+    ) {
+
+        if (
+            !confirm(
+                "确认已经阅读并知晓本罚单吗？"
+            )
+        ) {
+            return;
+        }
+
+        const records =
+            getPenalties();
+
+        const index =
+            records.findIndex(
+                item =>
+                    item.penaltyId === penaltyId &&
+                    samePerson(
+                        item.personId,
+                        item.personName
+                    )
+            );
+
+        if (index < 0) {
+            return;
+        }
+
+        records[index].status =
+            "acknowledged";
+
+        records[index].acknowledgedAt =
+            new Date().toISOString();
+
+        savePenalties(records);
+
+        refreshAll();
+    }
+
+
+    /*
+    ===============================================
+    待办数量
+    ===============================================
+    */
+
+    function refreshTodoCounts() {
+
+        const myLeaves =
+            getMyLeaveRequests();
+
+        const leaveCount =
+            myLeaves.filter(
+                item =>
+                    item.status === "pending"
+            ).length;
+
+        const penaltyCount =
+            getMyPenalties()
+                .filter(
+                    item =>
+                        item.status ===
+                        "pending_acknowledgement"
+                )
+                .length;
+
+        const changeCount =
+            getMyVehicleChangeRequests()
+                .filter(
+                    item =>
+                        item.status === "pending"
+                )
+                .length;
+
+        const gpsReviewCount =
+            getMyTrips()
+                .filter(
+                    item => {
+
+                        return (
+                            item.gpsStatus !== "正常" &&
+                            item.gpsStatus !== "normal" &&
+                            (
+                                !item.dispatchConfirmation ||
+                                item.dispatchConfirmation ===
+                                "pending"
+                            )
+                        );
+                    }
+                )
+                .length;
+
+        setText(
+            "leaveTodoCount",
+            leaveCount
+        );
+
+        setText(
+            "penaltyTodoCount",
+            penaltyCount
+        );
+
+        setText(
+            "changeTodoCount",
+            changeCount
+        );
+
+        setText(
+            "gpsReviewTodoCount",
+            gpsReviewCount
+        );
+    }
+
+
+    /*
+    ===============================================
+    司机总状态
+    ===============================================
+    */
+
+    function refreshDriverStatus() {
+
+        const badge =
+            $("driverStatusBadge");
+
+        if (isOnApprovedLeaveNow()) {
+
+            badge.textContent =
+                "请假";
+
+            badge.className =
+                "status-badge status-leave";
+
+            return;
+        }
+
+        if (hasPendingVehicleChange()) {
+
+            badge.textContent =
+                "换车审批中";
+
+            badge.className =
+                "status-badge status-warning";
+
+            return;
+        }
+
+        if (
+            currentTask &&
+            currentTask.status === "working"
+        ) {
+
+            badge.textContent =
+                "作业中";
+
+            badge.className =
+                "status-badge status-working";
+
+            return;
+        }
+
+        if (currentTask) {
+
+            badge.textContent =
+                "有任务";
+
+            badge.className =
+                "status-badge status-ready";
+
+            return;
+        }
+
+        badge.textContent =
+            "待命";
+
+        badge.className =
+            "status-badge";
+    }
+
+
+    /*
+    ===============================================
+    通用
+    ===============================================
+    */
+
+    function samePerson(
+        id,
+        name
+    ) {
+
+        if (
+            id &&
+            (
+                profile.driverId ||
+                profile.personId
+            )
+        ) {
+            return String(id) ===
+                String(
+                    profile.driverId ||
+                    profile.personId
+                );
+        }
+
+        return (
+            String(name || "").trim() !== "" &&
+            String(name || "").trim() ===
+            String(profile.name || "").trim()
+        );
+    }
+
+
+    function getVehicleNumber(task) {
+
+        return (
+            task?.vehicleNumber ||
+            task?.vehicleId ||
+            ""
+        );
+    }
+
+
+    function readJson(
+        key,
+        fallback
+    ) {
+
+        try {
+
+            const raw =
+                localStorage.getItem(key);
+
+            return raw
+                ? JSON.parse(raw)
+                : fallback;
+
+        } catch (error) {
+
+            console.error(
+                "读取数据失败：",
+                key,
+                error
+            );
+
+            return fallback;
+        }
+    }
+
+
+    function setText(
+        id,
+        value
+    ) {
+
+        const element = $(id);
+
+        if (element) {
+            element.textContent = value;
+        }
+    }
+
+
+    function showModal(id) {
+
+        $(id)
+            ?.classList
+            .remove("hidden");
+
+        document.body
+            .classList
+            .add("modal-open");
+    }
+
+
+    function hideModal(id) {
+
+        $(id)
+            ?.classList
+            .add("hidden");
+
+        document.body
+            .classList
+            .remove("modal-open");
+    }
+
+
+    function scrollToSection(id) {
+
+        $(id)
+            ?.scrollIntoView({
+                behavior: "smooth",
+                block: "start"
+            });
+    }
+
+
+    function getDateKey(date) {
+
+        if (
+            !date ||
+            Number.isNaN(date.getTime())
+        ) {
+            return "";
+        }
+
+        return (
+            date.getFullYear() +
+            "-" +
+            String(
+                date.getMonth() + 1
+            ).padStart(2, "0") +
+            "-" +
+            String(
+                date.getDate()
+            ).padStart(2, "0")
+        );
+    }
+
+
+    function formatDateTime(value) {
+
+        if (!value) {
+            return "-";
+        }
+
+        const date =
+            new Date(value);
+
+        if (
+            Number.isNaN(
+                date.getTime()
+            )
+        ) {
+            return "-";
+        }
+
+        return date.toLocaleString(
+            "zh-CN",
+            {
+                month: "2-digit",
+                day: "2-digit",
+                hour: "2-digit",
+                minute: "2-digit"
+            }
+        );
+    }
+
+
+    function escapeHtml(value) {
+
+        const div =
+            document.createElement("div");
+
+        div.textContent =
+            String(value ?? "");
+
+        return div.innerHTML;
+    }
+
+});
