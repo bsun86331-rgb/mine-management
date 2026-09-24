@@ -1,0 +1,1783 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0f172a">
+<title>工资标准与奖扣规则设置 - 矿山管理系统</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#f1f5f9;color:#0f172a;font-family:Arial,"Microsoft YaHei",sans-serif}
+header{position:sticky;top:0;z-index:30;background:#0f172a;color:#fff}
+.header-inner{max-width:1200px;margin:auto;padding:15px 14px;display:flex;justify-content:space-between;gap:12px;align-items:center}
+h1{margin:0;font-size:22px}.sub{margin-top:5px;color:#cbd5e1;font-size:12px}
+main{max-width:1200px;margin:auto;padding:16px 14px 40px}
+.card{background:#fff;border-radius:16px;padding:17px;margin-bottom:14px;box-shadow:0 5px 20px rgba(15,23,42,.06)}
+.notice{margin-bottom:14px;padding:13px;border:1px solid #bfdbfe;border-radius:12px;background:#eff6ff;color:#1e40af;font-size:13px;line-height:1.7}
+.section-title{display:flex;justify-content:space-between;gap:12px;margin-bottom:14px}.section-title h2{margin:0;font-size:18px}.section-title p{margin:5px 0 0;color:#64748b;font-size:12px;line-height:1.6}
+.profile-grid,.grid-3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.grid-2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.info{padding:12px;border-radius:11px;background:#f8fafc}.info span{display:block;color:#64748b;font-size:12px;margin-bottom:6px}.info strong{font-size:15px}
+label{display:block;margin-bottom:6px;font-size:13px;font-weight:700}.form-group{margin-bottom:12px}
+input,select,textarea{width:100%;min-height:42px;padding:9px 10px;border:1px solid #cbd5e1;border-radius:8px;background:#fff;font-size:14px}textarea{min-height:82px}
+button{border:0;border-radius:10px;min-height:42px;padding:10px 14px;font-weight:700;cursor:pointer}
+.primary{background:#2563eb;color:#fff}.success{background:#16a34a;color:#fff}.danger{background:#dc2626;color:#fff}.secondary{background:#fff;color:#334155;border:1px solid #cbd5e1}.header-btn{background:#1e293b;color:#fff;border:1px solid #475569}
+.badge{display:inline-block;padding:5px 9px;border-radius:999px;font-size:12px;font-weight:700}.green{background:#dcfce7;color:#166534}.red{background:#fee2e2;color:#991b1b}.gray{background:#e2e8f0;color:#475569}
+.formula{margin-top:10px;padding:12px 14px;border:1px solid #ddd6fe;border-radius:11px;background:#f5f3ff;color:#5b21b6;font-size:12px;line-height:1.75}
+.table-wrap{overflow-x:auto}table{width:100%;min-width:980px;border-collapse:collapse}th,td{padding:10px 9px;border-bottom:1px solid #e2e8f0;text-align:left;font-size:13px}th{background:#f8fafc;color:#475569}
+.toolbar{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}.toolbar input,.toolbar select{width:auto;min-width:180px}
+.rule-box{padding:14px;border:1px solid #e2e8f0;border-radius:12px;background:#f8fafc}.rule-box h3{margin:0 0 8px;font-size:15px}.rule-box p{margin:0 0 10px;color:#64748b;font-size:12px;line-height:1.6}
+.empty{text-align:center;color:#94a3b8;padding:22px}
+footer{text-align:center;padding:20px;color:#94a3b8;font-size:12px}
+@media(max-width:760px){.profile-grid,.grid-2,.grid-3{grid-template-columns:1fr}.header-inner{align-items:flex-start}.toolbar input,.toolbar select{width:100%}}
+</style>
+</head>
+<body>
+<header>
+<div class="header-inner">
+<div><h1>💰 工资标准与奖扣规则设置</h1><div class="sub">Payroll Settings · V2.10.1J</div></div>
+<button class="header-btn" onclick="goHome()">首页</button>
+</div>
+</header>
+
+<main>
+<div class="notice">
+仅管理员、总经理和会计可进入。汽车司机/挖机司机按岗位绩效工资；辅助车辆司机按岗位固定月薪且无实习期；其他人员按个人设置实习期工资和转正后工资。
+</div>
+
+<section class="card">
+<div class="section-title"><div><h2>👤 当前操作人员</h2><p>系统自动识别已审核人员。</p></div><span id="accessBadge" class="badge gray">识别中</span></div>
+<div class="profile-grid">
+<div class="info"><span>姓名</span><strong id="personName">-</strong></div>
+<div class="info"><span>岗位</span><strong id="personPosition">-</strong></div>
+<div class="info"><span>人员编号</span><strong id="personId">-</strong></div>
+</div>
+</section>
+
+<section class="card">
+<div class="section-title">
+<div>
+<h2>⚙️ 工资标准设置</h2>
+<p>
+工资分三类：汽车司机/挖机司机按岗位绩效；
+辅助车辆司机按岗位固定月薪且无实习期；
+其他人员按个人设置实习期工资和转正后工资。
+</p>
+</div>
+</div>
+
+<div class="rule-box" style="margin-bottom:14px;">
+<h3>🚚 一线绩效岗位工资标准</h3>
+<p>
+汽车司机、挖机司机不再逐人设置工资。
+同一岗位统一执行：基本工资 + 绩效工资 + 奖励 + 加班 - 扣款。
+绩效工资 = 有效车数 / 有效装车数 × 每车金额。
+</p>
+
+<div class="grid-3">
+<div class="form-group">
+<label>岗位 *</label>
+<select id="frontlinePosition" onchange="loadFrontlineStandard()">
+<option value="汽车司机">汽车司机</option>
+<option value="挖机司机">挖机司机</option>
+</select>
+</div>
+
+<div class="form-group">
+<label>基本工资 *</label>
+<input id="frontlineBaseSalary" type="number" min="0" step="0.01">
+</div>
+
+<div class="form-group">
+<label>每车金额 / 绩效单价 *</label>
+<input id="frontlinePerformanceUnitPrice" type="number" min="0" step="0.01">
+</div>
+
+<div class="form-group">
+<label>生效日期 *</label>
+<input id="frontlineEffectiveDate" type="date">
+</div>
+</div>
+
+<div class="form-group">
+<label>备注</label>
+<textarea id="frontlineRemark" placeholder="例如：2026年10月起执行"></textarea>
+</div>
+
+<div class="formula">
+汽车司机 = 基本工资 +（有效运输车数 × 每车金额）+ 奖励 + 加班 - 扣款<br>
+挖机司机 = 基本工资 +（有效装车数 × 每车金额）+ 奖励 + 加班 - 扣款
+</div>
+
+<div style="margin-top:12px">
+<button class="primary" onclick="saveFrontlineStandard()">保存一线绩效岗位标准</button>
+</div>
+</div>
+
+
+<div class="rule-box" style="margin-bottom:14px;">
+<h3>🚜 辅助车辆司机固定月薪</h3>
+<p>
+辅助车辆司机属于一线岗位，但工资不按车数计算。
+按岗位统一设置固定月薪，不设置实习期工资和转正后工资。
+</p>
+
+<div class="grid-3">
+<div class="form-group">
+<label>辅助车辆岗位 *</label>
+<select id="auxiliaryPosition" onchange="loadAuxiliaryStandard()">
+<option value="铲车司机">铲车司机</option>
+<option value="加油车司机">加油车司机</option>
+<option value="大巴司机">大巴司机</option>
+<option value="平路机司机">平路机司机</option>
+<option value="洒水车司机">洒水车司机</option>
+<option value="推土机司机">推土机司机</option>
+<option value="其他辅助车辆司机">其他辅助车辆司机</option>
+</select>
+</div>
+
+<div class="form-group">
+<label>固定月薪 *</label>
+<input id="auxiliaryMonthlySalary" type="number" min="0" step="0.01">
+</div>
+
+<div class="form-group">
+<label>生效日期 *</label>
+<input id="auxiliaryEffectiveDate" type="date">
+</div>
+</div>
+
+<div class="form-group">
+<label>备注</label>
+<textarea id="auxiliaryRemark" placeholder="例如：辅助车辆岗位固定月薪标准"></textarea>
+</div>
+
+<div class="formula">
+辅助车辆司机 = 固定月薪 + 奖励 + 加班 - 扣款<br>
+无实习期工资，不区分实习期 / 转正后工资。
+</div>
+
+<div style="margin-top:12px">
+<button class="primary" onclick="saveAuxiliaryStandard()">保存辅助车辆岗位标准</button>
+</div>
+</div>
+
+
+<div class="rule-box">
+<h3>👥 其他人员固定月薪</h3>
+<p>
+除汽车司机、挖机司机和辅助车辆司机外，其他人员按个人设置。
+同时保存实习期工资和转正后工资；“当前工资阶段”只属于工资标准，不修改人员档案。
+</p>
+
+<div class="grid-3">
+<div class="form-group">
+<label>人员 *</label>
+<select id="fixedPerson" onchange="loadFixedStandard()"></select>
+</div>
+
+<div class="form-group">
+<label>当前工资阶段 *</label>
+<select id="salaryStage">
+<option value="probation">实习期</option>
+<option value="regular">已转正</option>
+</select>
+</div>
+
+<div class="form-group">
+<label>实习期工资 *</label>
+<input id="probationSalary" type="number" min="0" step="0.01">
+</div>
+
+<div class="form-group">
+<label>转正后工资 *</label>
+<input id="regularSalary" type="number" min="0" step="0.01">
+</div>
+
+<div class="form-group">
+<label>生效日期 *</label>
+<input id="fixedEffectiveDate" type="date">
+</div>
+</div>
+
+<div class="form-group">
+<label>备注</label>
+<textarea id="fixedRemark" placeholder="例如：实习期工资标准；转正后切换为正式工资"></textarea>
+</div>
+
+<div class="formula">
+其他固定月薪人员：<br>
+实习期 = 实习期工资 + 奖励 + 加班 - 扣款<br>
+转正后 = 转正后工资 + 奖励 + 加班 - 扣款<br>
+工资核算时按“当前工资阶段”读取对应工资。
+</div>
+
+<div style="margin-top:12px">
+<button class="primary" onclick="saveFixedStandard()">保存固定月薪标准</button>
+</div>
+</div>
+</section>
+
+<section class="card">
+<div class="section-title">
+<div>
+<h2>📋 工资标准列表</h2>
+<p>汽车司机/挖机司机显示岗位绩效标准；辅助车辆司机显示岗位固定月薪；其他人员显示个人实习期 / 转正后工资。</p>
+</div>
+</div>
+
+<div class="toolbar">
+<input id="searchKeyword" type="search" placeholder="搜索姓名 / 人员编号 / 岗位" oninput="renderStandards()">
+<select id="positionFilter" onchange="renderStandards()">
+<option value="">全部岗位</option>
+<option>汽车司机</option>
+<option>挖机司机</option>
+<option>铲车司机</option>
+<option>加油车司机</option>
+<option>大巴司机</option>
+<option>平路机司机</option>
+<option>洒水车司机</option>
+<option>推土机司机</option>
+<option>其他辅助车辆司机</option>
+<option>车队长</option>
+<option>统计</option>
+<option>会计</option>
+<option>后勤</option>
+<option>维修员</option>
+<option>维修管理</option>
+<option>测量员</option>
+<option>安全员</option>
+<option>库房管理</option>
+</select>
+</div>
+
+<div class="table-wrap">
+<table>
+<thead>
+<tr>
+<th>适用对象</th>
+<th>岗位</th>
+<th>工资类型</th>
+<th>基本/当前工资</th>
+<th>实习期工资</th>
+<th>转正后工资</th>
+<th>每车金额</th>
+<th>生效日期</th>
+<th>状态</th>
+<th>操作</th>
+</tr>
+</thead>
+<tbody id="standardTableBody"></tbody>
+</table>
+</div>
+</section>
+
+<section class="card">
+<div class="section-title"><div><h2>🏆 绩效排名奖扣规则</h2><p>前三奖励、后三扣款全部可配置。</p></div></div>
+<div class="grid-3">
+<div class="rule-box"><h3>🥇 第一名奖励</h3><p>进入工资奖励项。</p><input id="rank1Reward" type="number" min="0" step="0.01"></div>
+<div class="rule-box"><h3>🥈 第二名奖励</h3><p>进入工资奖励项。</p><input id="rank2Reward" type="number" min="0" step="0.01"></div>
+<div class="rule-box"><h3>🥉 第三名奖励</h3><p>进入工资奖励项。</p><input id="rank3Reward" type="number" min="0" step="0.01"></div>
+<div class="rule-box"><h3>倒数第一扣款</h3><p>进入工资扣款项。</p><input id="bottom1Deduction" type="number" min="0" step="0.01"></div>
+<div class="rule-box"><h3>倒数第二扣款</h3><p>进入工资扣款项。</p><input id="bottom2Deduction" type="number" min="0" step="0.01"></div>
+<div class="rule-box"><h3>倒数第三扣款</h3><p>进入工资扣款项。</p><input id="bottom3Deduction" type="number" min="0" step="0.01"></div>
+</div>
+<div style="margin-top:12px"><button class="success" onclick="saveRules()">保存奖扣规则</button></div>
+</section>
+
+<section class="card">
+<div class="section-title"><div><h2>➕ 奖励 / 扣款来源</h2><p>后续统一从业务台账自动汇总。</p></div></div>
+<div class="grid-2">
+<div class="rule-box"><h3>奖励来源</h3><p>绩效排名前三、车队长奖励、安全奖励、节油奖励、优秀员工奖励及其他批准奖励。</p></div>
+<div class="rule-box"><h3>扣款来源</h3><p>车队长罚单、丢失可回收后勤物资、重新申领赔偿、绩效排名后三及其他财务扣款。</p></div>
+</div>
+</section>
+</main>
+
+<footer>矿山管理系统 · 工资标准与奖扣规则设置 V2.10.1J</footer>
+
+<script>
+"use strict";
+
+const STORAGE={STANDARDS:"payrollStandards",RULES:"payrollRules"};
+const PAYROLL_ALLOWED_POSITIONS=["管理员","总经理","会计"];
+let currentPerson=null;
+
+function normalizePosition(position){
+ const map={
+   "卡车司机":"汽车司机",
+   "挖掘机司机":"挖机司机",
+   "装载机司机":"铲车司机",
+   "大巴":"大巴司机",
+   "测量人员":"测量员",
+   "安全人员":"安全员",
+   "统计员":"统计",
+   "财务":"会计",
+   "会计员":"会计",
+   "后勤人员":"后勤",
+   "库房管理员":"库房管理",
+   "维修管理员":"维修管理",
+   "修理厂管理员":"维修管理",
+   "修理工":"维修员",
+   "维修人员":"维修员",
+   "调度员":"车队长"
+ };
+ return map[position]||position||"";
+}
+
+function getPersonId(person){
+ return String(
+   person?.personId||
+   person?.employeeId||
+   person?.driverId||
+   person?.id||
+   person?.employeeNo||
+   ""
+ );
+}
+
+function readArray(key){
+ try{const d=JSON.parse(localStorage.getItem(key));return Array.isArray(d)?d:[];}catch(e){return [];}
+}
+function saveArray(key,data){localStorage.setItem(key,JSON.stringify(data));}
+function getPersonnelRecords(){return readArray("personnelRecords");}
+
+function isApproved(person){
+ if(!person)return false;
+ if(person.status==="rejected"||person.approvalStatus==="rejected"||person.status==="disabled"||person.status==="resigned"||person.personnelStatus==="停用"||person.personnelStatus==="离职")return false;
+ return person.approvalStatus==="approved"||person.status==="approved"||person.status==="active"||person.status==="working"||person.status==="leave"||person.personnelStatus==="在职可用"||person.personnelStatus==="作业中"||person.personnelStatus==="请假";
+}
+
+function readManagementSession(){
+ try{
+   const session=JSON.parse(
+     sessionStorage.getItem("managementSession")
+   );
+
+   return (
+     session&&
+     typeof session==="object"
+   )
+     ? session
+     : null;
+
+ }catch(e){
+
+   return null;
+ }
+}
+
+
+function readRolePersonMap(){
+ try{
+   const data=JSON.parse(
+     localStorage.getItem("rolePersonIds")
+   );
+
+   return (
+     data&&
+     typeof data==="object"&&
+     !Array.isArray(data)
+   )
+     ? data
+     : {};
+
+ }catch(e){
+
+   return {};
+ }
+}
+
+
+function personMatchesId(person,id){
+ const target=String(id||"");
+
+ if(!target)return false;
+
+ return [
+   person?.personId,
+   person?.employeeId,
+   person?.driverId,
+   person?.id,
+   person?.employeeNo
+ ]
+ .filter(Boolean)
+ .map(String)
+ .includes(target);
+}
+
+
+function findAllowedPersonById(records,id,requiredPosition){
+ const normalizedRequired=
+   normalizePosition(requiredPosition||"");
+
+ return (
+   records.find(person=>{
+     if(!personMatchesId(person,id)){
+       return false;
+     }
+
+     if(!isApproved(person)){
+       return false;
+     }
+
+     const position=
+       normalizePosition(person.position);
+
+     if(
+       !PAYROLL_ALLOWED_POSITIONS.includes(
+         position
+       )
+     ){
+       return false;
+     }
+
+     if(
+       normalizedRequired&&
+       position!==normalizedRequired
+     ){
+       return false;
+     }
+
+     return true;
+   })
+   ||
+   null
+ );
+}
+
+
+function findCurrentPerson(){
+ const records=
+   getPersonnelRecords();
+
+ /*
+  * V2.10.1H
+  * 工资标准设置属于高权限页面。
+  *
+  * 关键修复：
+  * 1. 只返回“管理员 / 总经理 / 会计”身份；
+  * 2. 普通司机 currentPersonId 即使存在，也不能抢占管理员身份；
+  * 3. 同时兼容 managementSession、adminPersonId、
+  *    managerPersonId、rolePersonIds、pendingProtectedPersonId；
+  * 4. ID 同时兼容 personId / employeeId / driverId / id / employeeNo。
+  */
+
+ const session=
+   readManagementSession();
+
+ if(
+   session&&
+   session.verified===true&&
+   session.personId&&
+   Number(session.expiresAt||0)>Date.now()
+ ){
+   const sessionPosition=
+     normalizePosition(
+       session.position||""
+     );
+
+   if(
+     PAYROLL_ALLOWED_POSITIONS.includes(
+       sessionPosition
+     )
+   ){
+     const person=
+       findAllowedPersonById(
+         records,
+         session.personId,
+         sessionPosition
+       )
+       ||
+       findAllowedPersonById(
+         records,
+         session.personId,
+         ""
+       );
+
+     if(person){
+       return person;
+     }
+   }
+ }
+
+
+ const roleMap=
+   readRolePersonMap();
+
+
+ const protectedCandidates=[
+   {
+     id:
+       localStorage.getItem(
+         "adminPersonId"
+       ),
+     position:
+       "管理员"
+   },
+   {
+     id:
+       localStorage.getItem(
+         "managerPersonId"
+       ),
+     position:
+       "总经理"
+   },
+   {
+     id:
+       localStorage.getItem(
+         "accountantPersonId"
+       ),
+     position:
+       "会计"
+   },
+   {
+     id:
+       roleMap["管理员"],
+     position:
+       "管理员"
+   },
+   {
+     id:
+       roleMap["总经理"],
+     position:
+       "总经理"
+   },
+   {
+     id:
+       roleMap["会计"],
+     position:
+       "会计"
+   }
+ ];
+
+
+ for(
+   const candidate
+   of protectedCandidates
+ ){
+   if(!candidate.id){
+     continue;
+   }
+
+   const person=
+     findAllowedPersonById(
+       records,
+       candidate.id,
+       candidate.position
+     )
+     ||
+     findAllowedPersonById(
+       records,
+       candidate.id,
+       ""
+     );
+
+   if(person){
+     return person;
+   }
+ }
+
+
+ const pendingPosition=
+   normalizePosition(
+     localStorage.getItem(
+       "pendingProtectedPosition"
+     )||""
+   );
+
+ const pendingId=
+   localStorage.getItem(
+     "pendingProtectedPersonId"
+   );
+
+ if(
+   pendingId&&
+   PAYROLL_ALLOWED_POSITIONS.includes(
+     pendingPosition
+   )
+ ){
+   const person=
+     findAllowedPersonById(
+       records,
+       pendingId,
+       pendingPosition
+     );
+
+   if(person){
+     return person;
+   }
+ }
+
+
+ /*
+  * 普通身份键仅在其本身就是允许岗位时才采用。
+  * 这里是 V2.10.1G 的关键漏洞：
+  * 原来会把司机等普通岗位直接 return，
+  * 随后 verifyAccess 才弹“没有工资标准设置权限”。
+  */
+ const currentId=
+   String(
+     localStorage.getItem(
+       "currentPersonId"
+     )||""
+   );
+
+ const selected=
+   normalizePosition(
+     localStorage.getItem(
+       "selectedPosition"
+     )||""
+   );
+
+ if(
+   currentId&&
+   (
+     !selected||
+     PAYROLL_ALLOWED_POSITIONS.includes(
+       selected
+     )
+   )
+ ){
+   const person=
+     findAllowedPersonById(
+       records,
+       currentId,
+       PAYROLL_ALLOWED_POSITIONS.includes(
+         selected
+       )
+         ? selected
+         : ""
+     );
+
+   if(person){
+     return person;
+   }
+ }
+
+
+ if(
+   PAYROLL_ALLOWED_POSITIONS.includes(
+     selected
+   )
+ ){
+   const matches=
+     records.filter(person=>
+       isApproved(person)&&
+       normalizePosition(
+         person.position
+       )===selected
+     );
+
+   if(matches.length===1){
+     return matches[0];
+   }
+ }
+
+
+ return null;
+}
+
+
+function redirectToProtectedLogin(){
+ const records=
+   getPersonnelRecords();
+
+ /*
+  * 当前系统管理员审核中心已经使用 management-login。
+  * 工资标准页找不到有效高权限身份时，
+  * 不再按普通岗位直接拒绝，而是进入管理员二次验证。
+  */
+
+ const adminIdCandidates=[
+   localStorage.getItem(
+     "adminPersonId"
+   ),
+   readRolePersonMap()[
+     "管理员"
+   ]
+ ]
+ .filter(Boolean)
+ .map(String);
+
+
+ let administrator=
+   null;
+
+
+ for(
+   const id
+   of adminIdCandidates
+ ){
+   administrator=
+     findAllowedPersonById(
+       records,
+       id,
+       "管理员"
+     );
+
+   if(administrator){
+     break;
+   }
+ }
+
+
+ if(!administrator){
+   const admins=
+     records.filter(person=>
+       isApproved(person)&&
+       normalizePosition(
+         person.position
+       )==="管理员"
+     );
+
+   /*
+    * 只有唯一管理员时才自动确定身份，
+    * 避免多管理员环境误选人员。
+    */
+   if(admins.length===1){
+     administrator=
+       admins[0];
+   }
+ }
+
+
+ if(administrator){
+   const adminId=
+     getPersonId(
+       administrator
+     );
+
+   localStorage.setItem(
+     "adminPersonId",
+     adminId
+   );
+
+   localStorage.setItem(
+     "pendingProtectedPersonId",
+     adminId
+   );
+ }
+
+
+ localStorage.setItem(
+   "pendingProtectedPosition",
+   "管理员"
+ );
+
+
+ location.replace(
+   "management-login.html?position="+
+   encodeURIComponent(
+     "管理员"
+   )
+ );
+}
+
+
+function verifyAccess(){
+ currentPerson=
+   findCurrentPerson();
+
+ if(!currentPerson){
+   redirectToProtectedLogin();
+   return false;
+ }
+
+
+ if(!isApproved(currentPerson)){
+   redirectToProtectedLogin();
+   return false;
+ }
+
+
+ const position=
+   normalizePosition(
+     currentPerson.position
+   );
+
+
+ if(
+   !PAYROLL_ALLOWED_POSITIONS.includes(
+     position
+   )
+ ){
+   /*
+    * 理论上 findCurrentPerson 已不会返回普通岗位。
+    * 为防旧缓存异常，统一转管理员验证，不再弹死路提示。
+    */
+   redirectToProtectedLogin();
+   return false;
+ }
+
+
+ if(position==="管理员"){
+   localStorage.setItem(
+     "adminPersonId",
+     getPersonId(
+       currentPerson
+     )
+   );
+ }
+
+
+ if(position==="总经理"){
+   localStorage.setItem(
+     "managerPersonId",
+     getPersonId(
+       currentPerson
+     )
+   );
+ }
+
+
+ return true;
+}
+
+
+function renderProfile(){
+ document.getElementById("personName").textContent=currentPerson.name||"-";
+ document.getElementById("personPosition").textContent=normalizePosition(currentPerson.position)||"-";
+ document.getElementById("personId").textContent=getPersonId(currentPerson)||"-";
+ const b=document.getElementById("accessBadge");b.textContent="已授权";b.className="badge green";
+}
+
+function getApprovedPeople(){
+ return getPersonnelRecords()
+   .filter(isApproved)
+   .sort((a,b)=>
+     String(a.name||"")
+       .localeCompare(
+         String(b.name||""),
+         "zh-CN"
+       )
+   );
+}
+
+function isFrontlinePayrollPosition(position){
+ return [
+   "汽车司机",
+   "挖机司机"
+ ].includes(
+   normalizePosition(position)
+ );
+}
+
+const AUXILIARY_PAYROLL_POSITIONS=[
+ "铲车司机",
+ "加油车司机",
+ "大巴司机",
+ "平路机司机",
+ "洒水车司机",
+ "推土机司机",
+ "其他辅助车辆司机"
+];
+
+function isAuxiliaryPayrollPosition(position){
+ return AUXILIARY_PAYROLL_POSITIONS.includes(
+   normalizePosition(position)
+ );
+}
+
+function getFixedSalaryPeople(){
+ return getApprovedPeople()
+   .filter(person=>
+     !isFrontlinePayrollPosition(
+       person.position
+     )&&
+     !isAuxiliaryPayrollPosition(
+       person.position
+     )
+   );
+}
+
+function renderPersonOptions(){
+ const select=
+   document.getElementById(
+     "fixedPerson"
+   );
+
+ if(!select)return;
+
+ const people=
+   getFixedSalaryPeople();
+
+ select.innerHTML=
+   '<option value="">请选择人员</option>'+
+   people.map(person=>
+     `<option value="${escapeHtml(getPersonId(person))}">`+
+     `${escapeHtml(person.name||"-")} · `+
+     `${escapeHtml(normalizePosition(person.position)||"-")} · `+
+     `${escapeHtml(person.employeeNo||getPersonId(person)||"-")}`+
+     `</option>`
+   ).join("");
+}
+
+function getStandards(){
+ return readArray(
+   STORAGE.STANDARDS
+ );
+}
+
+function activeStandards(){
+ return getStandards()
+   .filter(item=>
+     item.status!=="disabled"
+   );
+}
+
+function findFrontlineStandard(position){
+ const normalized=
+   normalizePosition(position);
+
+ return activeStandards()
+   .filter(item=>
+     item.scope==="position"&&
+     normalizePosition(item.position)===normalized
+   )
+   .sort((a,b)=>
+     String(b.effectiveDate||"")
+       .localeCompare(
+         String(a.effectiveDate||"")
+       )
+   )[0]||null;
+}
+
+function saveFrontlineStandard(){
+ const position=
+   normalizePosition(
+     document.getElementById(
+       "frontlinePosition"
+     ).value
+   );
+
+ const baseSalary=
+   Number(
+     document.getElementById(
+       "frontlineBaseSalary"
+     ).value||0
+   );
+
+ const performanceUnitPrice=
+   Number(
+     document.getElementById(
+       "frontlinePerformanceUnitPrice"
+     ).value||0
+   );
+
+ const effectiveDate=
+   document.getElementById(
+     "frontlineEffectiveDate"
+   ).value;
+
+ if(!isFrontlinePayrollPosition(position)){
+   alert("请选择汽车司机或挖机司机。");
+   return;
+ }
+
+ if(!Number.isFinite(baseSalary)||baseSalary<0){
+   alert("请输入正确的基本工资。");
+   return;
+ }
+
+ if(!Number.isFinite(performanceUnitPrice)||performanceUnitPrice<0){
+   alert("请输入正确的每车金额。");
+   return;
+ }
+
+ if(!effectiveDate){
+   alert("请选择生效日期。");
+   return;
+ }
+
+ const standards=getStandards();
+
+ const existing=
+   standards.find(item=>
+     item.scope==="position"&&
+     normalizePosition(item.position)===position&&
+     item.status!=="disabled"
+   );
+
+ const now=new Date().toISOString();
+
+ const data={
+   standardId:
+     existing?.standardId||
+     (
+       "PAY_POS_"+
+       position+
+       "_"+
+       Date.now()
+     ),
+
+   scope:"position",
+   standardType:"frontline_position",
+
+   personId:"",
+   personName:"全体"+position,
+   position,
+
+   salaryMode:"performance",
+   baseSalary,
+   fixedAllowance:0,
+   performanceUnitPrice,
+   unitAmount:performanceUnitPrice,
+
+   effectiveDate,
+
+   remark:
+     document.getElementById(
+       "frontlineRemark"
+     ).value.trim(),
+
+   status:"active",
+   createdAt:existing?.createdAt||now,
+   updatedAt:now
+ };
+
+ if(existing){
+   Object.assign(existing,data);
+ }else{
+   standards.push(data);
+ }
+
+ saveArray(
+   STORAGE.STANDARDS,
+   standards
+ );
+
+ renderStandards();
+
+ alert(position+"岗位工资标准已保存。");
+}
+
+function loadFrontlineStandard(){
+ const position=
+   normalizePosition(
+     document.getElementById(
+       "frontlinePosition"
+     ).value
+   );
+
+ const standard=
+   findFrontlineStandard(
+     position
+   );
+
+ document.getElementById(
+   "frontlineBaseSalary"
+ ).value=
+   standard?.baseSalary??"";
+
+ document.getElementById(
+   "frontlinePerformanceUnitPrice"
+ ).value=
+   standard?.performanceUnitPrice??
+   standard?.unitAmount??
+   "";
+
+ document.getElementById(
+   "frontlineEffectiveDate"
+ ).value=
+   standard?.effectiveDate||
+   today();
+
+ document.getElementById(
+   "frontlineRemark"
+ ).value=
+   standard?.remark||
+   "";
+}
+
+function findAuxiliaryStandard(position){
+ const normalized=
+   normalizePosition(position);
+
+ return activeStandards()
+   .filter(item=>
+     item.scope==="position"&&
+     item.standardType==="auxiliary_fixed_position"&&
+     normalizePosition(item.position)===normalized
+   )
+   .sort((a,b)=>
+     String(b.effectiveDate||"")
+       .localeCompare(
+         String(a.effectiveDate||"")
+       )
+   )[0]||null;
+}
+
+function saveAuxiliaryStandard(){
+ const position=
+   normalizePosition(
+     document.getElementById(
+       "auxiliaryPosition"
+     ).value
+   );
+
+ const monthlySalary=
+   Number(
+     document.getElementById(
+       "auxiliaryMonthlySalary"
+     ).value||0
+   );
+
+ const effectiveDate=
+   document.getElementById(
+     "auxiliaryEffectiveDate"
+   ).value;
+
+ if(!isAuxiliaryPayrollPosition(position)){
+   alert("请选择有效的辅助车辆司机岗位。");
+   return;
+ }
+
+ if(!Number.isFinite(monthlySalary)||monthlySalary<0){
+   alert("请输入正确的固定月薪。");
+   return;
+ }
+
+ if(!effectiveDate){
+   alert("请选择生效日期。");
+   return;
+ }
+
+ const standards=
+   getStandards();
+
+ const existing=
+   standards.find(item=>
+     item.scope==="position"&&
+     item.standardType==="auxiliary_fixed_position"&&
+     normalizePosition(item.position)===position&&
+     item.status!=="disabled"
+   );
+
+ const now=
+   new Date().toISOString();
+
+ const data={
+   standardId:
+     existing?.standardId||
+     (
+       "PAY_AUX_"+
+       position+
+       "_"+
+       Date.now()
+     ),
+
+   scope:"position",
+   standardType:"auxiliary_fixed_position",
+
+   personId:"",
+   personName:"全体"+position,
+   position,
+
+   salaryMode:"fixed",
+   baseSalary:monthlySalary,
+   monthlySalary,
+
+   fixedAllowance:0,
+   performanceUnitPrice:0,
+
+   /*
+    * 辅助车辆司机没有实习期 / 转正工资。
+    */
+   salaryStage:"regular",
+   probationSalary:null,
+   regularSalary:null,
+
+   effectiveDate,
+
+   remark:
+     document.getElementById(
+       "auxiliaryRemark"
+     ).value.trim(),
+
+   status:"active",
+   createdAt:existing?.createdAt||now,
+   updatedAt:now
+ };
+
+ if(existing){
+   Object.assign(existing,data);
+ }else{
+   standards.push(data);
+ }
+
+ saveArray(
+   STORAGE.STANDARDS,
+   standards
+ );
+
+ renderStandards();
+
+ alert(position+"固定月薪标准已保存。");
+}
+
+function loadAuxiliaryStandard(){
+ const position=
+   normalizePosition(
+     document.getElementById(
+       "auxiliaryPosition"
+     ).value
+   );
+
+ const standard=
+   findAuxiliaryStandard(
+     position
+   );
+
+ document.getElementById(
+   "auxiliaryMonthlySalary"
+ ).value=
+   standard?.monthlySalary??
+   standard?.baseSalary??
+   "";
+
+ document.getElementById(
+   "auxiliaryEffectiveDate"
+ ).value=
+   standard?.effectiveDate||
+   today();
+
+ document.getElementById(
+   "auxiliaryRemark"
+ ).value=
+   standard?.remark||
+   "";
+}
+
+
+function findFixedStandard(personId){
+ return activeStandards()
+   .filter(item=>
+     item.scope!=="position"&&
+     String(item.personId||"")===
+       String(personId||"")
+   )
+   .sort((a,b)=>
+     String(b.effectiveDate||"")
+       .localeCompare(
+         String(a.effectiveDate||"")
+       )
+   )[0]||null;
+}
+
+function saveFixedStandard(){
+ const personId=
+   document.getElementById(
+     "fixedPerson"
+   ).value;
+
+ const effectiveDate=
+   document.getElementById(
+     "fixedEffectiveDate"
+   ).value;
+
+ const salaryStage=
+   document.getElementById(
+     "salaryStage"
+   ).value;
+
+ const probationSalary=
+   Number(
+     document.getElementById(
+       "probationSalary"
+     ).value||0
+   );
+
+ const regularSalary=
+   Number(
+     document.getElementById(
+       "regularSalary"
+     ).value||0
+   );
+
+ if(!personId){
+   alert("请选择人员。");
+   return;
+ }
+
+ if(!effectiveDate){
+   alert("请选择生效日期。");
+   return;
+ }
+
+ if(!["probation","regular"].includes(salaryStage)){
+   alert("请选择当前工资阶段。");
+   return;
+ }
+
+ if(!Number.isFinite(probationSalary)||probationSalary<0){
+   alert("请输入正确的实习期工资。");
+   return;
+ }
+
+ if(!Number.isFinite(regularSalary)||regularSalary<0){
+   alert("请输入正确的转正后工资。");
+   return;
+ }
+
+ const person=
+   getFixedSalaryPeople()
+   .find(item=>
+     getPersonId(item)===personId
+   );
+
+ if(!person){
+   alert("没有找到该人员资料。");
+   return;
+ }
+
+ const standards=
+   getStandards();
+
+ const existing=
+   standards.find(item=>
+     item.scope!=="position"&&
+     String(item.personId||"")===
+       String(personId)&&
+     item.status!=="disabled"
+   );
+
+ const currentSalary=
+   salaryStage==="probation"
+     ? probationSalary
+     : regularSalary;
+
+ const now=
+   new Date().toISOString();
+
+ const data={
+   standardId:
+     existing?.standardId||
+     (
+       "PAY_PERSON_"+
+       Date.now()+
+       "_"+
+       Math.random()
+         .toString(36)
+         .slice(2,7)
+     ),
+
+   scope:"person",
+   standardType:"fixed_person",
+
+   personId,
+   personName:person.name||"",
+   employeeNo:person.employeeNo||"",
+   position:normalizePosition(person.position),
+
+   salaryMode:"fixed",
+
+   salaryStage,
+   probationSalary,
+   regularSalary,
+
+   /*
+    * 保持 baseSalary 为当前实际工资，
+    * 兼容现有工资核算逻辑。
+    */
+   baseSalary:currentSalary,
+
+   fixedAllowance:0,
+   performanceUnitPrice:0,
+
+   effectiveDate,
+
+   remark:
+     document.getElementById(
+       "fixedRemark"
+     ).value.trim(),
+
+   status:"active",
+   createdAt:existing?.createdAt||now,
+   updatedAt:now
+ };
+
+ if(existing){
+   Object.assign(existing,data);
+ }else{
+   standards.push(data);
+ }
+
+ saveArray(
+   STORAGE.STANDARDS,
+   standards
+ );
+
+ renderStandards();
+
+ alert("固定月薪标准已保存。");
+}
+
+function loadFixedStandard(){
+ const personId=
+   document.getElementById(
+     "fixedPerson"
+   ).value;
+
+ const standard=
+   findFixedStandard(
+     personId
+   );
+
+ document.getElementById(
+   "salaryStage"
+ ).value=
+   standard?.salaryStage||
+   "probation";
+
+ const legacyBase=
+   standard?.baseSalary??"";
+
+ document.getElementById(
+   "probationSalary"
+ ).value=
+   standard?.probationSalary??
+   (
+     standard?.salaryStage==="probation"
+       ? legacyBase
+       : ""
+   );
+
+ document.getElementById(
+   "regularSalary"
+ ).value=
+   standard?.regularSalary??
+   (
+     standard?.salaryStage==="regular"
+       ? legacyBase
+       : ""
+   );
+
+ document.getElementById(
+   "fixedEffectiveDate"
+ ).value=
+   standard?.effectiveDate||
+   today();
+
+ document.getElementById(
+   "fixedRemark"
+ ).value=
+   standard?.remark||
+   "";
+}
+
+function renderStandards(){
+ const keyword=
+   (
+     document.getElementById(
+       "searchKeyword"
+     )?.value||
+     ""
+   )
+   .trim()
+   .toLowerCase();
+
+ const filter=
+   document.getElementById(
+     "positionFilter"
+   )?.value||
+   "";
+
+ const rows=
+   getStandards()
+   .filter(item=>{
+     const rowText=[
+       item.personName,
+       item.personId,
+       item.employeeNo,
+       item.position
+     ]
+     .join(" ")
+     .toLowerCase();
+
+     return (
+       (!keyword||rowText.includes(keyword))&&
+       (!filter||normalizePosition(item.position)===filter)
+     );
+   })
+   .sort((a,b)=>{
+     const positionCompare=
+       String(a.position||"")
+         .localeCompare(
+           String(b.position||""),
+           "zh-CN"
+         );
+
+     if(positionCompare){
+       return positionCompare;
+     }
+
+     return String(a.personName||"")
+       .localeCompare(
+         String(b.personName||""),
+         "zh-CN"
+       );
+   });
+
+ const body=
+   document.getElementById(
+     "standardTableBody"
+   );
+
+ body.innerHTML=
+   rows.length
+     ? rows.map(item=>{
+
+         const frontline=
+           item.standardType==="frontline_position"||
+           (
+             item.scope==="position"&&
+             isFrontlinePayrollPosition(
+               item.position
+             )
+           );
+
+         const auxiliary=
+           item.standardType==="auxiliary_fixed_position"||
+           (
+             item.scope==="position"&&
+             isAuxiliaryPayrollPosition(
+               item.position
+             )
+           );
+
+         const stageText=
+           item.salaryStage==="regular"
+             ? "已转正"
+             : "实习期";
+
+         const currentSalary=
+           (
+             frontline||
+             auxiliary
+           )
+             ? Number(
+                 item.monthlySalary??
+                 item.baseSalary??
+                 0
+               )
+             : (
+                 item.salaryStage==="regular"
+                   ? Number(item.regularSalary??item.baseSalary??0)
+                   : Number(item.probationSalary??item.baseSalary??0)
+               );
+
+         const targetText=
+           (
+             frontline||
+             auxiliary
+           )
+             ? "全体"+(item.position||"-")
+             : (
+                 (item.personName||"-")+
+                 (
+                   item.employeeNo
+                     ? " · "+item.employeeNo
+                     : ""
+                 )
+               );
+
+         const salaryType=
+           frontline
+             ? "岗位绩效"
+             : (
+                 auxiliary
+                   ? "辅助车辆固定月薪"
+                   : (
+                       "固定月薪 · "+
+                       stageText
+                     )
+               );
+
+         return `
+         <tr>
+          <td>${escapeHtml(targetText)}</td>
+          <td>${escapeHtml(item.position||"-")}</td>
+          <td>${escapeHtml(salaryType)}</td>
+          <td>${currentSalary.toFixed(2)}</td>
+          <td>${(frontline||auxiliary)?"-":Number(item.probationSalary??0).toFixed(2)}</td>
+          <td>${(frontline||auxiliary)?"-":Number(item.regularSalary??0).toFixed(2)}</td>
+          <td>${frontline?Number(item.performanceUnitPrice||item.unitAmount||0).toFixed(2):"-"}</td>
+          <td>${escapeHtml(item.effectiveDate||"-")}</td>
+          <td>
+           <span class="badge ${item.status==="disabled"?"red":"green"}">
+            ${item.status==="disabled"?"已停用":"启用"}
+           </span>
+          </td>
+          <td>
+           <button
+            class="secondary"
+            onclick="editStandard('${escapeJs(item.standardId)}')"
+           >
+            编辑
+           </button>
+           <button
+            class="${item.status==="disabled"?"success":"danger"}"
+            onclick="toggleStandard('${escapeJs(item.standardId)}')"
+           >
+            ${item.status==="disabled"?"启用":"停用"}
+           </button>
+          </td>
+         </tr>`;
+       }).join("")
+     : `<tr><td colspan="10" class="empty">暂无工资标准</td></tr>`;
+}
+
+function editStandard(standardId){
+ const standard=
+   getStandards()
+   .find(item=>
+     item.standardId===standardId
+   );
+
+ if(!standard)return;
+
+ if(
+   standard.standardType==="frontline_position"||
+   (
+     standard.scope==="position"&&
+     isFrontlinePayrollPosition(
+       standard.position
+     )
+   )
+ ){
+   document.getElementById(
+     "frontlinePosition"
+   ).value=
+     normalizePosition(
+       standard.position
+     );
+
+   loadFrontlineStandard();
+
+ }else if(
+   standard.standardType==="auxiliary_fixed_position"||
+   (
+     standard.scope==="position"&&
+     isAuxiliaryPayrollPosition(
+       standard.position
+     )
+   )
+ ){
+   document.getElementById(
+     "auxiliaryPosition"
+   ).value=
+     normalizePosition(
+       standard.position
+     );
+
+   loadAuxiliaryStandard();
+
+ }else{
+   document.getElementById(
+     "fixedPerson"
+   ).value=
+     standard.personId||
+     "";
+
+   loadFixedStandard();
+ }
+
+ window.scrollTo({
+   top:0,
+   behavior:"smooth"
+ });
+}
+
+function toggleStandard(id){
+ const arr=
+   getStandards();
+
+ const target=
+   arr.find(item=>
+     item.standardId===id
+   );
+
+ if(!target)return;
+
+ target.status=
+   target.status==="disabled"
+     ? "active"
+     : "disabled";
+
+ target.updatedAt=
+   new Date().toISOString();
+
+ saveArray(
+   STORAGE.STANDARDS,
+   arr
+ );
+
+ renderStandards();
+}
+
+function getRules(){
+ try{const d=JSON.parse(localStorage.getItem(STORAGE.RULES));return d&&typeof d==="object"?d:{};}catch(e){return {};}
+}
+
+function loadRules(){
+ const r=getRules();
+ ["rank1Reward","rank2Reward","rank3Reward","bottom1Deduction","bottom2Deduction","bottom3Deduction"].forEach(id=>{
+   document.getElementById(id).value=Number(r[id]||0);
+ });
+}
+
+function saveRules(){
+ const ids=["rank1Reward","rank2Reward","rank3Reward","bottom1Deduction","bottom2Deduction","bottom3Deduction"];
+ const r={updatedAt:new Date().toISOString()};
+ ids.forEach(id=>r[id]=Number(document.getElementById(id).value||0));
+ localStorage.setItem(STORAGE.RULES,JSON.stringify(r));
+ alert("绩效奖扣规则已保存。");
+}
+
+function today(){
+ const now=new Date();
+ return new Date(now.getTime()-now.getTimezoneOffset()*60000).toISOString().slice(0,10);
+}
+
+function escapeHtml(value){
+ const d=document.createElement("div");d.textContent=String(value??"");return d.innerHTML;
+}
+
+function escapeJs(value){
+ return String(value??"").replaceAll("\\","\\\\").replaceAll("'","\\'").replaceAll("\n","\\n").replaceAll("\r","\\r");
+}
+
+function goHome(){location.href="index.html";}
+
+if(verifyAccess()){
+ renderProfile();
+
+ renderPersonOptions();
+
+ document.getElementById(
+   "frontlineEffectiveDate"
+ ).value=
+   today();
+
+ document.getElementById(
+   "auxiliaryEffectiveDate"
+ ).value=
+   today();
+
+ document.getElementById(
+   "fixedEffectiveDate"
+ ).value=
+   today();
+
+ loadFrontlineStandard();
+
+ loadAuxiliaryStandard();
+
+ loadRules();
+
+ renderStandards();
+}
+</script>
+</body>
+</html>
+
