@@ -1,0 +1,3809 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <meta
+        name="theme-color"
+        content="#0f172a"
+    >
+
+    <title>
+        挖机司机工作端 - 矿山管理系统
+    </title>
+
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+        }
+
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family:
+                Arial,
+                "Microsoft YaHei",
+                sans-serif;
+            background: #f1f5f9;
+            color: #0f172a;
+        }
+
+
+        header {
+            position: sticky;
+            top: 0;
+            z-index: 20;
+            padding: 18px 14px;
+            background: #0f172a;
+            color: #ffffff;
+            box-shadow:
+                0 3px 14px
+                rgba(15, 23, 42, .18);
+        }
+
+
+        .header-inner {
+            width: 100%;
+            max-width: 820px;
+            margin: 0 auto;
+        }
+
+
+        .header-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+
+        header h1 {
+            margin: 0;
+            font-size: 22px;
+        }
+
+
+        header p {
+            margin: 6px 0 0;
+            color: #cbd5e1;
+            font-size: 12px;
+        }
+
+
+        .header-button {
+            flex-shrink: 0;
+            min-height: 42px;
+            padding: 8px 13px;
+            border: 1px solid #475569;
+            border-radius: 9px;
+            background: #1e293b;
+            color: #ffffff;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+
+        main {
+            width: 100%;
+            max-width: 820px;
+            margin: 0 auto;
+            padding: 16px 14px 38px;
+        }
+
+
+        .notice {
+            margin-bottom: 15px;
+            padding: 13px 14px;
+            border: 1px solid #bfdbfe;
+            border-radius: 12px;
+            background: #eff6ff;
+            color: #1e40af;
+            font-size: 13px;
+            line-height: 1.7;
+        }
+
+
+        .card {
+            margin-bottom: 15px;
+            padding: 17px;
+            border-radius: 16px;
+            background: #ffffff;
+            box-shadow:
+                0 5px 20px
+                rgba(15, 23, 42, .06);
+        }
+
+
+        .section-title {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 10px;
+            margin-bottom: 14px;
+        }
+
+
+        .section-title h2 {
+            margin: 0;
+            font-size: 18px;
+        }
+
+
+        .section-title p {
+            margin: 5px 0 0;
+            color: #64748b;
+            font-size: 12px;
+            line-height: 1.5;
+        }
+
+
+        .badge {
+            display: inline-block;
+            flex-shrink: 0;
+            padding: 5px 10px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+
+        .badge.default {
+            background: #e2e8f0;
+            color: #475569;
+        }
+
+
+        .badge.pending {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+
+        .badge.active {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+
+        .badge.completed {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+
+        .badge.disabled {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+
+        .info-grid {
+            display: grid;
+            grid-template-columns:
+                repeat(2, minmax(0, 1fr));
+            gap: 10px;
+        }
+
+
+        .info-box {
+            min-width: 0;
+            padding: 12px;
+            border-radius: 11px;
+            background: #f8fafc;
+        }
+
+
+        .info-box span {
+            display: block;
+            margin-bottom: 5px;
+            color: #64748b;
+            font-size: 12px;
+        }
+
+
+        .info-box strong {
+            display: block;
+            font-size: 15px;
+            line-height: 1.45;
+            word-break: break-word;
+        }
+
+
+        .task-route {
+            margin-top: 12px;
+            padding: 12px;
+            border-radius: 11px;
+            background: #eff6ff;
+            color: #1e40af;
+            font-size: 13px;
+            line-height: 1.7;
+        }
+
+
+        .task-note {
+            margin-top: 10px;
+            padding: 12px;
+            border-radius: 11px;
+            background: #f8fafc;
+            color: #475569;
+            font-size: 13px;
+            line-height: 1.7;
+        }
+
+
+        .truck-tag-area {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 7px;
+            margin-top: 10px;
+        }
+
+
+        .truck-tag {
+            padding: 6px 9px;
+            border-radius: 999px;
+            background: #e2e8f0;
+            color: #334155;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+
+        .trip-total {
+            padding: 22px 15px;
+            border-radius: 15px;
+            background: #0f172a;
+            color: #ffffff;
+            text-align: center;
+        }
+
+
+        .trip-total span {
+            display: block;
+            margin-bottom: 7px;
+            color: #cbd5e1;
+            font-size: 13px;
+        }
+
+
+        .trip-total strong {
+            display: block;
+            font-size: 42px;
+            line-height: 1;
+        }
+
+
+        .trip-total small {
+            display: block;
+            margin-top: 8px;
+            color: #cbd5e1;
+            font-size: 12px;
+        }
+
+
+        .truck-list {
+            display: grid;
+            gap: 10px;
+            margin-top: 14px;
+        }
+
+
+        .truck-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 13px;
+            border: 1px solid #e2e8f0;
+            border-radius: 11px;
+            background: #f8fafc;
+        }
+
+
+        .truck-info {
+            min-width: 0;
+        }
+
+
+        .truck-info strong {
+            display: block;
+            font-size: 15px;
+        }
+
+
+        .truck-info span {
+            display: block;
+            margin-top: 4px;
+            color: #64748b;
+            font-size: 12px;
+        }
+
+
+        .truck-count {
+            flex-shrink: 0;
+            min-width: 70px;
+            text-align: right;
+        }
+
+
+        .truck-count strong {
+            font-size: 25px;
+        }
+
+
+        .truck-count span {
+            margin-left: 3px;
+            color: #64748b;
+            font-size: 12px;
+        }
+
+
+        .empty {
+            padding: 30px 12px;
+            text-align: center;
+            color: #94a3b8;
+            font-size: 14px;
+            line-height: 1.8;
+        }
+
+
+        .history-list {
+            display: grid;
+            gap: 10px;
+        }
+
+
+        .history-item {
+            padding: 13px;
+            border: 1px solid #e2e8f0;
+            border-radius: 11px;
+            background: #ffffff;
+        }
+
+
+        .history-top {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+
+        .history-top strong {
+            font-size: 14px;
+        }
+
+
+        .history-detail {
+            margin-top: 8px;
+            color: #64748b;
+            font-size: 12px;
+            line-height: 1.7;
+        }
+
+
+        .history-trucks {
+            margin-top: 8px;
+            padding: 9px;
+            border-radius: 9px;
+            background: #f8fafc;
+            color: #475569;
+            font-size: 12px;
+            line-height: 1.6;
+        }
+
+
+        .action-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 10px;
+        }
+
+
+        .maintenance-button {
+            width: 100%;
+            min-height: 52px;
+            padding: 13px 16px;
+            border: 1px solid #fecaca;
+            border-radius: 11px;
+            background: #fff1f2;
+            color: #b91c1c;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+
+        .maintenance-button:active {
+            transform: translateY(1px);
+        }
+
+
+        .warning-box {
+            padding: 13px;
+            border: 1px solid #fed7aa;
+            border-radius: 11px;
+            background: #fff7ed;
+            color: #9a3412;
+            font-size: 13px;
+            line-height: 1.7;
+        }
+
+
+        footer {
+            padding: 20px;
+            text-align: center;
+            color: #94a3b8;
+            font-size: 12px;
+        }
+
+
+        @media (
+            max-width: 560px
+        ) {
+
+            .info-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+
+<header>
+
+    <div class="header-inner">
+
+        <div class="header-top">
+
+            <div>
+
+                <h1>
+                    🚜 挖机司机工作端
+                </h1>
+
+                <p>
+                    Excavator Operator · V2.10.0L
+                </p>
+
+            </div>
+
+
+            <button
+                type="button"
+                class="header-button"
+                onclick="goHome()"
+            >
+                返回首页
+            </button>
+
+        </div>
+
+    </div>
+
+</header>
+
+
+<main>
+
+
+    <div class="notice">
+
+        本页面不允许手工填写挖机车数。
+
+        <br>
+
+        挖机车数由跟随该挖机的汽车有效运输趟数自动汇总，
+        GPS 被调度判定无效的运输记录不会计入正式车数。
+
+    </div>
+
+
+
+    <!-- =====================================================
+         当前人员
+    ====================================================== -->
+
+    <section class="card">
+
+        <div class="section-title">
+
+            <div>
+
+                <h2>
+                    👷 当前人员
+                </h2>
+
+                <p>
+                    统一人员库
+                </p>
+
+            </div>
+
+
+            <span
+                id="personStatusBadge"
+                class="badge default"
+            >
+                -
+            </span>
+
+        </div>
+
+
+        <div class="info-grid">
+
+            <div class="info-box">
+
+                <span>
+                    姓名
+                </span>
+
+                <strong id="personName">
+                    -
+                </strong>
+
+            </div>
+
+
+            <div class="info-box">
+
+                <span>
+                    岗位
+                </span>
+
+                <strong id="personPosition">
+                    挖机司机
+                </strong>
+
+            </div>
+
+
+            <div class="info-box">
+
+                <span>
+                    部门 / 车队
+                </span>
+
+                <strong id="personDepartment">
+                    -
+                </strong>
+
+            </div>
+
+
+            <div class="info-box">
+
+                <span>
+                    人员编号
+                </span>
+
+                <strong id="personId">
+                    -
+                </strong>
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+
+    <!-- =====================================================
+         当前任务
+    ====================================================== -->
+
+    <section class="card">
+
+        <div class="section-title">
+
+            <div>
+
+                <h2>
+                    📋 当前生产任务
+                </h2>
+
+                <p>
+                    调度端统一分配
+                </p>
+
+            </div>
+
+
+            <span
+                id="taskStatusBadge"
+                class="badge default"
+            >
+                无任务
+            </span>
+
+        </div>
+
+
+        <div id="currentTaskArea">
+
+            <div class="empty">
+                当前没有生产任务
+            </div>
+
+        </div>
+
+    </section>
+
+
+
+    <!-- =====================================================
+         异常上报 / 设备维修
+    ====================================================== -->
+
+    <section class="card">
+
+        <div class="section-title">
+
+            <div>
+
+                <h2>
+                    ⚠️ 异常上报
+                </h2>
+
+                <p>
+                    挖机发生故障时提交设备维修申请
+                </p>
+
+            </div>
+
+        </div>
+
+
+        <div class="action-grid">
+
+            <button
+                type="button"
+                class="maintenance-button"
+                onclick="openMaintenanceReport()"
+            >
+                🔧 设备故障 / 申请维修
+            </button>
+
+        </div>
+
+
+        <div class="task-note">
+
+            生产设备维修申请提交后，
+            先进入调度审批。
+
+            <br>
+
+            调度批准后，
+            再进入维修管理和维修员流程。
+
+        </div>
+
+    </section>
+
+
+
+    <!-- =====================================================
+         自动车数
+    ====================================================== -->
+
+    <section
+        class="card"
+        id="tripSection"
+        style="display:none;"
+    >
+
+        <div class="section-title">
+
+            <div>
+
+                <h2>
+                    🚚 挖机自动车数
+                </h2>
+
+                <p>
+                    自动读取汽车有效运输趟数
+                </p>
+
+            </div>
+
+
+            <span class="badge active">
+                自动统计
+            </span>
+
+        </div>
+
+
+        <div class="trip-total">
+
+            <span>
+                当前任务累计
+            </span>
+
+            <strong id="totalTripCount">
+                0
+            </strong>
+
+            <small>
+                车
+            </small>
+
+        </div>
+
+
+        <div
+            class="truck-list"
+            id="truckTripList"
+        >
+        </div>
+
+    </section>
+
+
+
+    <!-- =====================================================
+         历史任务
+    ====================================================== -->
+
+    <section class="card">
+
+        <div class="section-title">
+
+            <div>
+
+                <h2>
+                    📚 历史作业
+                </h2>
+
+                <p>
+                    最近完成的挖机任务
+                </p>
+
+            </div>
+
+        </div>
+
+
+        <div
+            class="history-list"
+            id="historyList"
+        >
+
+            <div class="empty">
+                暂无历史任务
+            </div>
+
+        </div>
+
+    </section>
+
+
+</main>
+
+
+<footer>
+
+    矿山管理系统 · 挖机司机端 V2.11.0E V2.10.0L
+
+</footer>
+
+
+<script>
+
+"use strict";
+
+
+/* =========================================================
+   数据键
+========================================================= */
+
+const STORAGE = {
+
+    PERSONNEL:
+        "personnelRecords",
+
+    TASKS:
+        "dispatchPublishedTasks",
+
+    TRIPS:
+        "driverTripRecords",
+
+    TEAM_TRANSFER_REQUESTS:
+        "teamTransferRequests"
+};
+
+
+
+/* =========================================================
+   当前状态
+========================================================= */
+
+let currentPerson =
+    null;
+
+
+let currentTask =
+    null;
+
+
+let currentExcavatorAssignment =
+    null;
+
+
+
+/* =========================================================
+   页面启动
+========================================================= */
+
+initialize();
+
+
+function initialize() {
+
+    currentPerson =
+        getCurrentPerson();
+
+
+    if (
+        !currentPerson
+    ) {
+
+        showNoPerson();
+
+        return;
+    }
+
+
+    renderPerson();
+
+
+    installTeamTransferUi();
+
+
+    refreshAll();
+
+
+    /*
+     * 每5秒自动刷新：
+     * 1. 当前任务
+     * 2. 跟随汽车
+     * 3. 运输车数
+     * 4. 历史任务
+     */
+    setInterval(
+        refreshAll,
+        5000
+    );
+}
+
+
+
+/* =========================================================
+   总刷新
+========================================================= */
+
+function refreshAll() {
+
+    /*
+     * 每次刷新重新确认当前人员，
+     * 防止人员被停用或离职后仍继续工作。
+     */
+    const latestPerson =
+        getCurrentPerson();
+
+
+    if (
+        !latestPerson
+    ) {
+
+        showNoPerson();
+
+        return;
+    }
+
+
+    currentPerson =
+        latestPerson;
+
+
+    renderPerson();
+
+
+    findCurrentTask();
+
+
+    renderCurrentTask();
+
+
+    renderTripStatistics();
+
+
+    renderHistory();
+}
+
+
+
+/* =========================================================
+   人员库
+========================================================= */
+
+function getPersonnelRecords() {
+
+    return readArray(
+        STORAGE.PERSONNEL
+    );
+}
+
+
+
+function getPersonId(
+    person
+) {
+
+    return String(
+
+        person?.personId ||
+
+        person?.driverId ||
+
+        person?.employeeId ||
+
+        person?.id ||
+
+        ""
+
+    );
+}
+
+
+
+function normalizePosition(
+    position
+) {
+
+    const map = {
+
+        "挖掘机司机":
+            "挖机司机",
+
+        "挖掘机操作手":
+            "挖机司机",
+
+        "挖机操作手":
+            "挖机司机"
+    };
+
+
+    return (
+        map[position] ||
+        position ||
+        ""
+    );
+}
+
+
+
+function isApprovedPerson(
+    person
+) {
+
+    if (
+        !person
+    ) {
+
+        return false;
+    }
+
+
+    /*
+     * 明确不可使用状态
+     */
+    if (
+        person.enabled ===
+            false
+
+        ||
+
+        person.status ===
+            "disabled"
+
+        ||
+
+        person.status ===
+            "resigned"
+
+        ||
+
+        person.status ===
+            "rejected"
+
+        ||
+
+        person.approvalStatus ===
+            "rejected"
+
+        ||
+
+        person.personnelStatus ===
+            "停用"
+
+        ||
+
+        person.personnelStatus ===
+            "离职"
+    ) {
+
+        return false;
+    }
+
+
+    return (
+
+        person.status ===
+            "approved"
+
+        ||
+
+        person.status ===
+            "active"
+
+        ||
+
+        person.status ===
+            "working"
+
+        ||
+
+        person.status ===
+            "leave"
+
+        ||
+
+        person.approvalStatus ===
+            "approved"
+
+        ||
+
+        person.personnelStatus ===
+            "在职可用"
+
+        ||
+
+        person.personnelStatus ===
+            "作业中"
+
+        ||
+
+        person.personnelStatus ===
+            "请假"
+    );
+}
+
+
+
+/* =========================================================
+   当前挖机司机识别
+========================================================= */
+
+function getCurrentPerson() {
+
+    const records =
+        getPersonnelRecords();
+
+
+    const currentPersonId =
+        localStorage.getItem(
+            "currentPersonId"
+        );
+
+
+    /*
+     * 第一优先级：
+     * currentPersonId
+     */
+    if (
+        currentPersonId
+    ) {
+
+        const person =
+            records.find(
+                item =>
+
+                    getPersonId(
+                        item
+                    ) ===
+                        currentPersonId
+
+                    &&
+
+                    normalizePosition(
+                        item.position
+                    ) ===
+                        "挖机司机"
+
+                    &&
+
+                    isApprovedPerson(
+                        item
+                    )
+            );
+
+
+        if (
+            person
+        ) {
+
+            return person;
+        }
+    }
+
+
+    /*
+     * 测试阶段兼容：
+     * 如果浏览器内只有一个已审核挖机司机，
+     * 自动识别。
+     */
+    const excavatorDrivers =
+        records.filter(
+            item =>
+
+                normalizePosition(
+                    item.position
+                ) ===
+                    "挖机司机"
+
+                &&
+
+                isApprovedPerson(
+                    item
+                )
+        );
+
+
+    if (
+        excavatorDrivers.length ===
+        1
+    ) {
+
+        const person =
+            excavatorDrivers[0];
+
+
+        localStorage.setItem(
+            "currentPersonId",
+            getPersonId(
+                person
+            )
+        );
+
+
+        return person;
+    }
+
+
+    return null;
+}
+
+
+
+/* =========================================================
+   人员显示
+========================================================= */
+
+function renderPerson() {
+
+    if (
+        !currentPerson
+    ) {
+
+        return;
+    }
+
+
+    setText(
+        "personName",
+        currentPerson.name ||
+        "-"
+    );
+
+
+    setText(
+        "personPosition",
+        normalizePosition(
+            currentPerson.position
+        ) ||
+        "挖机司机"
+    );
+
+
+    setText(
+        "personDepartment",
+        currentPerson.department ||
+        currentPerson.team ||
+        "-"
+    );
+
+
+    setText(
+        "personId",
+        getPersonId(
+            currentPerson
+        ) ||
+        "-"
+    );
+
+
+    const badge =
+        document.getElementById(
+            "personStatusBadge"
+        );
+
+
+    const personnelStatus =
+        currentPerson.personnelStatus ||
+        currentPerson.status ||
+        "在职可用";
+
+
+    if (
+        badge
+    ) {
+
+        badge.textContent =
+            personnelStatus;
+
+
+        badge.className =
+            "badge active";
+    }
+}
+
+
+
+/* =========================================================
+   未找到人员
+========================================================= */
+
+function showNoPerson() {
+
+    setText(
+        "personName",
+        "-"
+    );
+
+
+    setText(
+        "personId",
+        "-"
+    );
+
+
+    setText(
+        "personDepartment",
+        "-"
+    );
+
+
+    const badge =
+        document.getElementById(
+            "personStatusBadge"
+        );
+
+
+    if (
+        badge
+    ) {
+
+        badge.textContent =
+            "不可使用";
+
+
+        badge.className =
+            "badge disabled";
+    }
+
+
+    const taskArea =
+        document.getElementById(
+            "currentTaskArea"
+        );
+
+
+    if (
+        taskArea
+    ) {
+
+        taskArea.innerHTML = `
+
+            <div class="warning-box">
+
+                当前没有找到已通过管理员审核的挖机司机资料。
+
+                <br>
+
+                请返回系统首页重新进入。
+
+            </div>
+        `;
+    }
+
+
+    document.getElementById(
+        "tripSection"
+    ).style.display =
+        "none";
+}
+
+
+
+/* =========================================================
+   生产任务
+========================================================= */
+
+function getTasks() {
+
+    return readArray(
+        STORAGE.TASKS
+    );
+}
+
+
+
+/* =========================================================
+   找当前任务
+
+   调度端保存：
+   task.excavatorDriverAssignments
+========================================================= */
+
+function findCurrentTask() {
+
+    currentTask =
+        null;
+
+
+    currentExcavatorAssignment =
+        null;
+
+
+    if (
+        !currentPerson
+    ) {
+
+        return;
+    }
+
+
+    const personId =
+        getPersonId(
+            currentPerson
+        );
+
+
+    const personName =
+        String(
+            currentPerson.name ||
+            ""
+        ).trim();
+
+
+    const tasks =
+        getTasks()
+            .filter(
+                task =>
+
+                    task.status ===
+                        "pending"
+
+                    ||
+
+                    task.status ===
+                        "active"
+            )
+            .sort(
+                (
+                    a,
+                    b
+                ) =>
+                    new Date(
+                        b.publishedAt ||
+                        0
+                    ) -
+                    new Date(
+                        a.publishedAt ||
+                        0
+                    )
+            );
+
+
+    for (
+        const task of
+        tasks
+    ) {
+
+        const assignments =
+            Array.isArray(
+                task.excavatorDriverAssignments
+            )
+                ? task.excavatorDriverAssignments
+                : [];
+
+
+        const assignment =
+            assignments.find(
+                item => {
+
+                    const assignmentId =
+                        String(
+                            item.driverId ||
+                            item.personId ||
+                            ""
+                        );
+
+
+                    const assignmentName =
+                        String(
+                            item.driverName ||
+                            item.personName ||
+                            ""
+                        ).trim();
+
+
+                    /*
+                     * 优先人员ID
+                     */
+                    if (
+                        personId &&
+                        assignmentId
+                    ) {
+
+                        return (
+                            personId ===
+                            assignmentId
+                        );
+                    }
+
+
+                    /*
+                     * 老数据兼容：
+                     * ID缺失时按姓名
+                     */
+                    if (
+                        personName &&
+                        assignmentName
+                    ) {
+
+                        return (
+                            personName ===
+                            assignmentName
+                        );
+                    }
+
+
+                    return false;
+                }
+            );
+
+
+        if (
+            assignment
+        ) {
+
+            currentTask =
+                task;
+
+
+            currentExcavatorAssignment =
+                assignment;
+
+
+            return;
+        }
+    }
+}
+
+
+
+/* =========================================================
+   当前任务显示
+========================================================= */
+
+function renderCurrentTask() {
+
+    const area =
+        document.getElementById(
+            "currentTaskArea"
+        );
+
+
+    const badge =
+        document.getElementById(
+            "taskStatusBadge"
+        );
+
+
+    if (
+        !currentTask ||
+        !currentExcavatorAssignment
+    ) {
+
+        if (
+            badge
+        ) {
+
+            badge.textContent =
+                "无任务";
+
+
+            badge.className =
+                "badge default";
+        }
+
+
+        if (
+            area
+        ) {
+
+            area.innerHTML = `
+
+                <div class="empty">
+
+                    当前没有调度分配的挖机任务。
+
+                    <br>
+
+                    调度发布任务并指定挖机司机后，
+                    本页面会自动显示任务。
+
+                </div>
+            `;
+        }
+
+
+        document.getElementById(
+            "tripSection"
+        ).style.display =
+            "none";
+
+
+        return;
+    }
+
+
+    const excavatorId =
+        currentExcavatorAssignment.excavatorId ||
+        currentExcavatorAssignment.excavatorNumber ||
+        "";
+
+
+    const binding =
+        findExcavatorBinding(
+            currentTask,
+            excavatorId
+        );
+
+
+    const trucks =
+        binding?.truckIds ||
+        [];
+
+
+    if (
+        badge
+    ) {
+
+        if (
+            currentTask.status ===
+            "active"
+        ) {
+
+            badge.textContent =
+                "执行中";
+
+
+            badge.className =
+                "badge active";
+
+        } else {
+
+            badge.textContent =
+                "待执行";
+
+
+            badge.className =
+                "badge pending";
+        }
+    }
+
+
+    if (
+        area
+    ) {
+
+        area.innerHTML = `
+
+            <div class="info-grid">
+
+                <div class="info-box">
+
+                    <span>
+                        作业区域
+                    </span>
+
+                    <strong>
+                        ${escapeHtml(currentTask.area || "-")}
+                    </strong>
+
+                </div>
+
+
+                <div class="info-box">
+
+                    <span>
+                        班次
+                    </span>
+
+                    <strong>
+                        ${escapeHtml(currentTask.shift || "-")}
+                    </strong>
+
+                </div>
+
+
+                <div class="info-box">
+
+                    <span>
+                        当前挖机
+                    </span>
+
+                    <strong>
+                        🚜 ${escapeHtml(excavatorId || "-")}
+                    </strong>
+
+                </div>
+
+
+                <div class="info-box">
+
+                    <span>
+                        当前跟随汽车
+                    </span>
+
+                    <strong>
+                        ${trucks.length} 台
+                    </strong>
+
+                </div>
+
+            </div>
+
+
+            <div class="task-route">
+
+                <strong>
+                    运输路线
+                </strong>
+
+                <br>
+
+                ${escapeHtml(currentTask.loadingPoint || "-")}
+
+                →
+
+                ${escapeHtml(currentTask.unloadingPoint || "-")}
+
+            </div>
+
+
+            <div class="task-note">
+
+                <strong>
+                    跟随汽车
+                </strong>
+
+
+                <div class="truck-tag-area">
+
+                    ${
+                        trucks.length
+
+                            ?
+
+                            trucks
+                                .map(
+                                    truckId => `
+                                        <span class="truck-tag">
+                                            🚚 ${escapeHtml(truckId)}
+                                        </span>
+                                    `
+                                )
+                                .join(
+                                    ""
+                                )
+
+                            :
+
+                            '<span class="truck-tag">暂无汽车</span>'
+                    }
+
+                </div>
+
+            </div>
+
+
+            ${
+                currentTask.remark
+
+                    ?
+
+                    `
+
+                    <div class="task-note">
+
+                        <strong>
+                            调度备注
+                        </strong>
+
+                        <br>
+
+                        ${escapeHtml(currentTask.remark)}
+
+                    </div>
+                    `
+
+                    :
+
+                    ""
+            }
+        `;
+    }
+
+
+    document.getElementById(
+        "tripSection"
+    ).style.display =
+        "block";
+}
+
+
+
+/* =========================================================
+   查找当前挖机绑定
+========================================================= */
+
+function findExcavatorBinding(
+    task,
+    excavatorId
+) {
+
+    return (
+        (
+            task.bindings ||
+            []
+        )
+            .find(
+                item =>
+                    String(
+                        item.excavatorId ||
+                        ""
+                    ) ===
+                    String(
+                        excavatorId ||
+                        ""
+                    )
+            )
+        ||
+        null
+    );
+}
+
+
+
+/* =========================================================
+   运输记录
+========================================================= */
+
+function getTrips() {
+
+    return readArray(
+        STORAGE.TRIPS
+    );
+}
+
+
+
+function getTaskTrips(
+    task
+) {
+
+    return getTrips()
+        .filter(
+            trip =>
+
+                trip.taskId ===
+                    task.taskId
+
+                ||
+
+                trip.dispatchTaskId ===
+                    task.taskId
+        );
+}
+
+
+
+/* =========================================================
+   有效运输记录
+
+   排除：
+   1. 调度明确 rejected
+   2. officialCountEligible === false
+========================================================= */
+
+function getValidTaskTrips(
+    task
+) {
+
+    return getTaskTrips(
+        task
+    )
+        .filter(
+            trip =>
+
+                trip.dispatchConfirmation !==
+                    "rejected"
+
+                &&
+
+                trip.officialCountEligible !==
+                    false
+        );
+}
+
+
+
+/* =========================================================
+   运输车辆编号
+========================================================= */
+
+function getTripVehicleNumber(
+    trip
+) {
+
+    return String(
+
+        trip.vehicleNumber ||
+
+        trip.vehicleId ||
+
+        trip.truckNumber ||
+
+        trip.truckId ||
+
+        ""
+
+    );
+}
+
+
+
+/* =========================================================
+   运输发生时间
+========================================================= */
+
+function getTripTime(
+    trip
+) {
+
+    const value =
+
+        trip.completedAt ||
+
+        trip.unloadedAt ||
+
+        trip.unloadTime ||
+
+        trip.endTime ||
+
+        trip.recordedAt ||
+
+        trip.createdAt ||
+
+        trip.time ||
+
+        trip.timestamp;
+
+
+    if (
+        !value
+    ) {
+
+        return null;
+    }
+
+
+    const date =
+        new Date(
+            value
+        );
+
+
+    if (
+        Number.isNaN(
+            date.getTime()
+        )
+    ) {
+
+        return null;
+    }
+
+
+    return date;
+}
+
+
+
+/* =========================================================
+   挖机自动车数核心
+
+   优先级：
+
+   1. 运输记录本身有 excavatorId
+   2. truckBindingHistory 时间段匹配
+   3. 老任务没有绑定历史时，按当前 bindings 兼容
+========================================================= */
+
+function getExcavatorTripStats(
+    task,
+    excavatorId
+) {
+
+    const validTrips =
+        getValidTaskTrips(
+            task
+        );
+
+
+    const bindingHistory =
+        Array.isArray(
+            task.truckBindingHistory
+        )
+            ? task.truckBindingHistory
+            : [];
+
+
+    const currentBinding =
+        findExcavatorBinding(
+            task,
+            excavatorId
+        );
+
+
+    const currentTruckIds =
+        currentBinding?.truckIds ||
+        [];
+
+
+    const truckCounts =
+        new Map();
+
+
+    let total =
+        0;
+
+
+
+    function addTrip(
+        truckId
+    ) {
+
+        total +=
+            1;
+
+
+        truckCounts.set(
+            truckId,
+            (
+                truckCounts.get(
+                    truckId
+                ) ||
+                0
+            ) +
+            1
+        );
+    }
+
+
+
+    validTrips.forEach(
+        trip => {
+
+            const truckId =
+                getTripVehicleNumber(
+                    trip
+                );
+
+
+            if (
+                !truckId
+            ) {
+
+                return;
+            }
+
+
+            /*
+             * 第一优先：
+             * 运输记录直接保存了挖机编号
+             */
+            const directExcavatorId =
+                String(
+
+                    trip.excavatorId ||
+
+                    trip.excavatorNumber ||
+
+                    ""
+
+                );
+
+
+            if (
+                directExcavatorId
+            ) {
+
+                if (
+                    directExcavatorId ===
+                    String(
+                        excavatorId
+                    )
+                ) {
+
+                    addTrip(
+                        truckId
+                    );
+                }
+
+
+                return;
+            }
+
+
+
+            /*
+             * 第二优先：
+             * 根据绑定历史判断当时跟随哪台挖机
+             */
+            const tripTime =
+                getTripTime(
+                    trip
+                );
+
+
+            if (
+                tripTime &&
+                bindingHistory.length
+            ) {
+
+                const matched =
+                    bindingHistory.some(
+                        record => {
+
+                            if (
+                                String(
+                                    record.excavatorId ||
+                                    ""
+                                ) !==
+                                String(
+                                    excavatorId ||
+                                    ""
+                                )
+                            ) {
+
+                                return false;
+                            }
+
+
+                            if (
+                                String(
+                                    record.truckId ||
+                                    ""
+                                ) !==
+                                truckId
+                            ) {
+
+                                return false;
+                            }
+
+
+                            const start =
+                                new Date(
+                                    record.startAt ||
+                                    0
+                                );
+
+
+                            if (
+                                Number.isNaN(
+                                    start.getTime()
+                                )
+                            ) {
+
+                                return false;
+                            }
+
+
+                            let end =
+                                null;
+
+
+                            if (
+                                record.endAt
+                            ) {
+
+                                end =
+                                    new Date(
+                                        record.endAt
+                                    );
+
+
+                                if (
+                                    Number.isNaN(
+                                        end.getTime()
+                                    )
+                                ) {
+
+                                    end =
+                                        null;
+                                }
+                            }
+
+
+                            return (
+
+                                tripTime >=
+                                    start
+
+                                &&
+
+                                (
+                                    !end
+
+                                    ||
+
+                                    tripTime <=
+                                        end
+                                )
+                            );
+                        }
+                    );
+
+
+                if (
+                    matched
+                ) {
+
+                    addTrip(
+                        truckId
+                    );
+                }
+
+
+                return;
+            }
+
+
+
+            /*
+             * 第三优先：
+             * 兼容老任务
+             */
+            if (
+                currentTruckIds.includes(
+                    truckId
+                )
+            ) {
+
+                addTrip(
+                    truckId
+                );
+            }
+        }
+    );
+
+
+    return {
+
+        total,
+
+        trucks:
+            [
+                ...truckCounts.entries()
+            ]
+                .map(
+                    (
+                        [
+                            truckId,
+                            count
+                        ]
+                    ) => ({
+
+                        truckId,
+
+                        count
+                    })
+                )
+                .sort(
+                    (
+                        a,
+                        b
+                    ) =>
+                        String(
+                            a.truckId
+                        )
+                            .localeCompare(
+                                String(
+                                    b.truckId
+                                ),
+                                "zh-CN",
+                                {
+                                    numeric:
+                                        true
+                                }
+                            )
+                )
+    };
+}
+
+
+
+/* =========================================================
+   当前任务车数显示
+========================================================= */
+
+function renderTripStatistics() {
+
+    const section =
+        document.getElementById(
+            "tripSection"
+        );
+
+
+    if (
+        !currentTask ||
+        !currentExcavatorAssignment
+    ) {
+
+        section.style.display =
+            "none";
+
+
+        return;
+    }
+
+
+    const excavatorId =
+        currentExcavatorAssignment.excavatorId ||
+        currentExcavatorAssignment.excavatorNumber ||
+        "";
+
+
+    const stats =
+        getExcavatorTripStats(
+            currentTask,
+            excavatorId
+        );
+
+
+    setText(
+        "totalTripCount",
+        stats.total
+    );
+
+
+    const currentBinding =
+        findExcavatorBinding(
+            currentTask,
+            excavatorId
+        );
+
+
+    const currentTruckIds =
+        currentBinding?.truckIds ||
+        [];
+
+
+    /*
+     * 历史跟随车辆 + 当前跟随车辆
+     */
+    const allTruckIds =
+        new Set();
+
+
+    currentTruckIds.forEach(
+        id =>
+            allTruckIds.add(
+                id
+            )
+    );
+
+
+    stats.trucks.forEach(
+        item =>
+            allTruckIds.add(
+                item.truckId
+            )
+    );
+
+
+    /*
+     * truckBindingHistory 中可能有换掉的旧车辆
+     */
+    (
+        currentTask.truckBindingHistory ||
+        []
+    )
+        .filter(
+            item =>
+                String(
+                    item.excavatorId ||
+                    ""
+                ) ===
+                String(
+                    excavatorId
+                )
+        )
+        .forEach(
+            item => {
+
+                if (
+                    item.truckId
+                ) {
+
+                    allTruckIds.add(
+                        item.truckId
+                    );
+                }
+            }
+        );
+
+
+    const box =
+        document.getElementById(
+            "truckTripList"
+        );
+
+
+    if (
+        !allTruckIds.size
+    ) {
+
+        box.innerHTML = `
+
+            <div class="empty">
+                当前没有跟随汽车
+            </div>
+        `;
+
+
+        return;
+    }
+
+
+    box.innerHTML =
+        [
+            ...allTruckIds
+        ]
+            .sort(
+                (
+                    a,
+                    b
+                ) =>
+                    String(
+                        a
+                    )
+                        .localeCompare(
+                            String(
+                                b
+                            ),
+                            "zh-CN",
+                            {
+                                numeric:
+                                    true
+                            }
+                        )
+            )
+            .map(
+                truckId => {
+
+                    const stat =
+                        stats.trucks.find(
+                            item =>
+                                String(
+                                    item.truckId
+                                ) ===
+                                String(
+                                    truckId
+                                )
+                        );
+
+
+                    const count =
+                        stat?.count ||
+                        0;
+
+
+                    const isCurrent =
+                        currentTruckIds.includes(
+                            truckId
+                        );
+
+
+                    return `
+
+                    <div class="truck-row">
+
+                        <div class="truck-info">
+
+                            <strong>
+                                🚚 ${escapeHtml(truckId)}
+                            </strong>
+
+                            <span>
+                                ${
+                                    isCurrent
+                                        ? "当前跟随车辆"
+                                        : "历史跟随车辆"
+                                }
+                            </span>
+
+                        </div>
+
+
+                        <div class="truck-count">
+
+                            <strong>
+                                ${count}
+                            </strong>
+
+                            <span>
+                                车
+                            </span>
+
+                        </div>
+
+                    </div>
+                    `;
+                }
+            )
+            .join(
+                ""
+            );
+}
+
+
+
+/* =========================================================
+   历史作业
+
+   直接读取 completed 生产任务
+========================================================= */
+
+function renderHistory() {
+
+    if (
+        !currentPerson
+    ) {
+
+        return;
+    }
+
+
+    const personId =
+        getPersonId(
+            currentPerson
+        );
+
+
+    const personName =
+        String(
+            currentPerson.name ||
+            ""
+        ).trim();
+
+
+    const tasks =
+        getTasks()
+            .filter(
+                task =>
+                    task.status ===
+                    "completed"
+            )
+            .filter(
+                task => {
+
+                    const assignments =
+                        task.excavatorDriverAssignments ||
+                        [];
+
+
+                    return assignments.some(
+                        item => {
+
+                            const assignmentId =
+                                String(
+                                    item.driverId ||
+                                    item.personId ||
+                                    ""
+                                );
+
+
+                            const assignmentName =
+                                String(
+                                    item.driverName ||
+                                    item.personName ||
+                                    ""
+                                ).trim();
+
+
+                            if (
+                                personId &&
+                                assignmentId
+                            ) {
+
+                                return (
+                                    personId ===
+                                    assignmentId
+                                );
+                            }
+
+
+                            return (
+                                personName &&
+                                assignmentName &&
+                                personName ===
+                                    assignmentName
+                            );
+                        }
+                    );
+                }
+            )
+            .sort(
+                (
+                    a,
+                    b
+                ) =>
+                    new Date(
+                        b.completedAt ||
+                        b.publishedAt ||
+                        0
+                    ) -
+                    new Date(
+                        a.completedAt ||
+                        a.publishedAt ||
+                        0
+                    )
+            )
+            .slice(
+                0,
+                10
+            );
+
+
+    const box =
+        document.getElementById(
+            "historyList"
+        );
+
+
+    if (
+        !tasks.length
+    ) {
+
+        box.innerHTML = `
+
+            <div class="empty">
+                暂无历史任务
+            </div>
+        `;
+
+
+        return;
+    }
+
+
+    box.innerHTML =
+        tasks.map(
+            task => {
+
+                const assignment =
+                    (
+                        task.excavatorDriverAssignments ||
+                        []
+                    )
+                        .find(
+                            item => {
+
+                                const assignmentId =
+                                    String(
+                                        item.driverId ||
+                                        item.personId ||
+                                        ""
+                                    );
+
+
+                                const assignmentName =
+                                    String(
+                                        item.driverName ||
+                                        item.personName ||
+                                        ""
+                                    ).trim();
+
+
+                                if (
+                                    personId &&
+                                    assignmentId
+                                ) {
+
+                                    return (
+                                        personId ===
+                                        assignmentId
+                                    );
+                                }
+
+
+                                return (
+                                    personName &&
+                                    assignmentName &&
+                                    personName ===
+                                        assignmentName
+                                );
+                            }
+                        );
+
+
+                const excavatorId =
+                    assignment?.excavatorId ||
+                    assignment?.excavatorNumber ||
+                    "";
+
+
+                const stats =
+                    getExcavatorTripStats(
+                        task,
+                        excavatorId
+                    );
+
+
+                return `
+
+                <div class="history-item">
+
+                    <div class="history-top">
+
+                        <strong>
+
+                            🚜 ${escapeHtml(excavatorId || "-")}
+
+                            ·
+
+                            ${escapeHtml(task.area || "-")}
+
+                        </strong>
+
+
+                        <span class="badge completed">
+
+                            ${stats.total}车
+
+                        </span>
+
+                    </div>
+
+
+                    <div class="history-detail">
+
+                        班次：
+                        ${escapeHtml(task.shift || "-")}
+
+                        <br>
+
+                        路线：
+                        ${escapeHtml(task.loadingPoint || "-")}
+                        →
+                        ${escapeHtml(task.unloadingPoint || "-")}
+
+                        <br>
+
+                        完成时间：
+                        ${escapeHtml(
+                            formatDateTime(
+                                task.completedAt
+                            )
+                        )}
+
+                    </div>
+
+
+                    <div class="history-trucks">
+
+                        ${
+                            stats.trucks.length
+
+                                ?
+
+                                stats.trucks
+                                    .map(
+                                        item =>
+                                            `🚚 ${escapeHtml(item.truckId)}：${item.count}车`
+                                    )
+                                    .join(
+                                        "　"
+                                    )
+
+                                :
+
+                                "暂无有效运输记录"
+                        }
+
+                    </div>
+
+                </div>
+                `;
+            }
+        )
+            .join(
+                ""
+            );
+}
+
+
+
+
+/* =========================================================
+   V2.11.0E
+   一线人员换组申请（挖机司机端）
+========================================================= */
+
+function normalizeTeam(
+    value
+) {
+
+    const raw =
+        String(
+            value ||
+            ""
+        )
+        .trim();
+
+
+    const map = {
+        "A班":
+            "生产A组",
+
+        "生产A组":
+            "生产A组",
+
+        "B班":
+            "生产B组",
+
+        "生产B组":
+            "生产B组"
+    };
+
+
+    return (
+        map[
+            raw
+        ] ||
+        raw
+    );
+}
+
+
+function getLatestPersonnelRecord() {
+
+    const personId =
+        getPersonId(
+            currentPerson
+        );
+
+
+    if (
+        !personId
+    ) {
+
+        return null;
+    }
+
+
+    return (
+        getPersonnelRecords()
+            .find(
+                person =>
+                    getPersonId(
+                        person
+                    ) ===
+                        personId
+            )
+        ||
+        null
+    );
+}
+
+
+function getCurrentTeam() {
+
+    const latest =
+        getLatestPersonnelRecord();
+
+
+    return normalizeTeam(
+        latest?.team ||
+        ""
+    );
+}
+
+
+function getTeamTransferRequests() {
+
+    return readArray(
+        STORAGE.TEAM_TRANSFER_REQUESTS
+    );
+}
+
+
+function saveTeamTransferRequests(
+    rows
+) {
+
+    localStorage.setItem(
+        STORAGE.TEAM_TRANSFER_REQUESTS,
+        JSON.stringify(
+            rows
+        )
+    );
+}
+
+
+function getLatestMyTeamTransfer() {
+
+    const personId =
+        getPersonId(
+            currentPerson
+        );
+
+
+    return (
+        getTeamTransferRequests()
+            .filter(
+                item =>
+                    String(
+                        item.personId ||
+                        ""
+                    ) ===
+                        String(
+                            personId ||
+                            ""
+                        )
+            )
+            .sort(
+                (
+                    a,
+                    b
+                ) =>
+                    new Date(
+                        b.createdAt ||
+                        0
+                    ) -
+                    new Date(
+                        a.createdAt ||
+                        0
+                    )
+            )[0]
+        ||
+        null
+    );
+}
+
+
+function installTeamTransferUi() {
+
+    if (
+        document.getElementById(
+            "excavatorTeamTransferButton"
+        )
+    ) {
+
+        refreshTeamTransferUi();
+
+        return;
+    }
+
+
+    const style =
+        document.createElement(
+            "style"
+        );
+
+
+    style.textContent = `
+        #excavatorTeamTransferButton {
+            position: fixed;
+            right: 18px;
+            bottom: 18px;
+            z-index: 9998;
+            border: 0;
+            border-radius: 999px;
+            padding: 12px 18px;
+            background: #2563eb;
+            color: #fff;
+            font-weight: 800;
+            cursor: pointer;
+            box-shadow: 0 8px 24px rgba(37,99,235,.28);
+        }
+
+        #excavatorTeamTransferModal {
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 18px;
+            background: rgba(15,23,42,.46);
+        }
+
+        #excavatorTeamTransferModal.show {
+            display: flex;
+        }
+
+        .exc-team-transfer-card {
+            width: min(520px, 100%);
+            background: #fff;
+            border-radius: 16px;
+            padding: 18px;
+            box-shadow: 0 18px 50px rgba(15,23,42,.22);
+        }
+
+        .exc-team-transfer-row {
+            margin-top: 12px;
+        }
+
+        .exc-team-transfer-row label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 800;
+        }
+
+        .exc-team-transfer-row select,
+        .exc-team-transfer-row textarea {
+            width: 100%;
+            box-sizing: border-box;
+            min-height: 42px;
+            border: 1px solid #cbd5e1;
+            border-radius: 9px;
+            padding: 9px 10px;
+            font: inherit;
+        }
+
+        .exc-team-transfer-row textarea {
+            min-height: 96px;
+            resize: vertical;
+        }
+
+        .exc-team-transfer-status {
+            margin-top: 12px;
+            padding: 10px 12px;
+            border-radius: 9px;
+            background: #f8fafc;
+            color: #475569;
+            line-height: 1.65;
+            font-size: 13px;
+        }
+
+        .exc-team-transfer-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 16px;
+        }
+
+        .exc-team-transfer-actions button {
+            min-height: 42px;
+            border: 0;
+            border-radius: 9px;
+            cursor: pointer;
+            font-weight: 800;
+        }
+
+        .exc-team-transfer-cancel {
+            background: #e2e8f0;
+            color: #334155;
+        }
+
+        .exc-team-transfer-submit {
+            background: #16a34a;
+            color: #fff;
+        }
+    `;
+
+
+    document.head.appendChild(
+        style
+    );
+
+
+    const button =
+        document.createElement(
+            "button"
+        );
+
+
+    button.id =
+        "excavatorTeamTransferButton";
+
+    button.type =
+        "button";
+
+    button.textContent =
+        "🔄 申请换组";
+
+
+    document.body.appendChild(
+        button
+    );
+
+
+    const modal =
+        document.createElement(
+            "div"
+        );
+
+
+    modal.id =
+        "excavatorTeamTransferModal";
+
+
+    modal.innerHTML = `
+        <div class="exc-team-transfer-card">
+
+            <h2 style="margin:0;">
+                🔄 换组申请
+            </h2>
+
+            <div
+                id="excTeamTransferCurrentTeam"
+                class="exc-team-transfer-status"
+            >
+                当前班组：-
+            </div>
+
+            <div class="exc-team-transfer-status">
+                班组读取自最新人员档案 personnelRecords.team；
+                本人不能直接修改，管理员审核通过后才正式换组。
+            </div>
+
+            <div class="exc-team-transfer-row">
+                <label>申请转入班组 *</label>
+
+                <select id="excTeamTransferTargetTeam">
+                    <option value="">请选择</option>
+                    <option value="生产A组">生产A组</option>
+                    <option value="生产B组">生产B组</option>
+                </select>
+            </div>
+
+            <div class="exc-team-transfer-row">
+                <label>换组原因 *</label>
+
+                <textarea
+                    id="excTeamTransferReason"
+                    placeholder="请输入换组原因"
+                ></textarea>
+            </div>
+
+            <div
+                id="excTeamTransferLatestStatus"
+                class="exc-team-transfer-status"
+            >
+                暂无换组申请
+            </div>
+
+            <div class="exc-team-transfer-actions">
+
+                <button
+                    id="excTeamTransferCancelButton"
+                    type="button"
+                    class="exc-team-transfer-cancel"
+                >
+                    取消
+                </button>
+
+                <button
+                    id="excTeamTransferSubmitButton"
+                    type="button"
+                    class="exc-team-transfer-submit"
+                >
+                    提交管理员审核
+                </button>
+
+            </div>
+
+        </div>
+    `;
+
+
+    document.body.appendChild(
+        modal
+    );
+
+
+    button.addEventListener(
+        "click",
+        openTeamTransferModal
+    );
+
+
+    document
+        .getElementById(
+            "excTeamTransferCancelButton"
+        )
+        ?.addEventListener(
+            "click",
+            closeTeamTransferModal
+        );
+
+
+    document
+        .getElementById(
+            "excTeamTransferSubmitButton"
+        )
+        ?.addEventListener(
+            "click",
+            submitTeamTransferRequest
+        );
+
+
+    refreshTeamTransferUi();
+}
+
+
+function openTeamTransferModal() {
+
+    const latest =
+        getLatestPersonnelRecord();
+
+
+    if (
+        latest
+    ) {
+
+        currentPerson =
+            latest;
+
+        renderPerson();
+    }
+
+
+    refreshTeamTransferUi();
+
+
+    document
+        .getElementById(
+            "excavatorTeamTransferModal"
+        )
+        ?.classList
+        .add(
+            "show"
+        );
+}
+
+
+function closeTeamTransferModal() {
+
+    document
+        .getElementById(
+            "excavatorTeamTransferModal"
+        )
+        ?.classList
+        .remove(
+            "show"
+        );
+}
+
+
+function refreshTeamTransferUi() {
+
+    const currentTeam =
+        getCurrentTeam();
+
+
+    const currentBox =
+        document.getElementById(
+            "excTeamTransferCurrentTeam"
+        );
+
+
+    if (
+        currentBox
+    ) {
+
+        currentBox.textContent =
+            "当前班组：" +
+            (
+                currentTeam ||
+                "未设置"
+            );
+    }
+
+
+    const latest =
+        getLatestMyTeamTransfer();
+
+
+    const latestBox =
+        document.getElementById(
+            "excTeamTransferLatestStatus"
+        );
+
+
+    if (
+        latestBox
+    ) {
+
+        if (
+            !latest
+        ) {
+
+            latestBox.textContent =
+                "暂无换组申请";
+
+        } else {
+
+            const statusMap = {
+                pending:
+                    "待管理员审核",
+
+                approved:
+                    "已通过",
+
+                rejected:
+                    "已驳回"
+            };
+
+
+            latestBox.textContent =
+                "最近申请：" +
+                (
+                    latest.fromTeam ||
+                    "-"
+                ) +
+                " → " +
+                (
+                    latest.toTeam ||
+                    "-"
+                ) +
+                "；状态：" +
+                (
+                    statusMap[
+                        latest.status
+                    ] ||
+                    latest.status ||
+                    "-"
+                );
+        }
+    }
+
+
+    const targetSelect =
+        document.getElementById(
+            "excTeamTransferTargetTeam"
+        );
+
+
+    if (
+        targetSelect
+    ) {
+
+        [
+            ...targetSelect.options
+        ]
+        .forEach(
+            option => {
+
+                option.disabled =
+                    Boolean(
+                        option.value &&
+                        option.value ===
+                            currentTeam
+                    );
+            }
+        );
+    }
+}
+
+
+function submitTeamTransferRequest() {
+
+    const latest =
+        getLatestPersonnelRecord();
+
+
+    if (
+        latest
+    ) {
+
+        currentPerson =
+            latest;
+    }
+
+
+    const personId =
+        getPersonId(
+            currentPerson
+        );
+
+
+    const fromTeam =
+        getCurrentTeam();
+
+
+    const toTeam =
+        String(
+            document.getElementById(
+                "excTeamTransferTargetTeam"
+            )?.value ||
+            ""
+        )
+        .trim();
+
+
+    const reason =
+        String(
+            document.getElementById(
+                "excTeamTransferReason"
+            )?.value ||
+            ""
+        )
+        .trim();
+
+
+    if (
+        !personId
+    ) {
+
+        alert(
+            "没有找到当前人员编号。"
+        );
+
+        return;
+    }
+
+
+    if (
+        ![
+            "生产A组",
+            "生产B组"
+        ]
+        .includes(
+            fromTeam
+        )
+    ) {
+
+        alert(
+            "当前人员档案中没有有效的生产班组。\n\n" +
+            "请先联系管理员，在人员档案中设置所属班组为“生产A组”或“生产B组”，" +
+            "管理员保存后再重新申请换组。"
+        );
+
+        return;
+    }
+
+
+    if (
+        !toTeam
+    ) {
+
+        alert(
+            "请选择申请转入班组。"
+        );
+
+        return;
+    }
+
+
+    if (
+        toTeam ===
+            fromTeam
+    ) {
+
+        alert(
+            "申请转入班组不能与当前班组相同。"
+        );
+
+        return;
+    }
+
+
+    if (
+        !reason
+    ) {
+
+        alert(
+            "请填写换组原因。"
+        );
+
+        return;
+    }
+
+
+    const rows =
+        getTeamTransferRequests();
+
+
+    const hasPending =
+        rows.some(
+            item =>
+                String(
+                    item.personId ||
+                    ""
+                ) ===
+                    String(
+                        personId
+                    ) &&
+                item.status ===
+                    "pending"
+        );
+
+
+    if (
+        hasPending
+    ) {
+
+        alert(
+            "你已经有一条待审核的换组申请，请等待管理员处理。"
+        );
+
+        return;
+    }
+
+
+    const now =
+        new Date()
+            .toISOString();
+
+
+    rows.push({
+        requestId:
+            "TEAM_" +
+            Date.now(),
+
+        personId:
+            personId,
+
+        employeeNo:
+            currentPerson.employeeNo ||
+            "",
+
+        name:
+            currentPerson.name ||
+            "",
+
+        position:
+            normalizePosition(
+                currentPerson.position
+            ) ||
+            "挖机司机",
+
+        fromTeam:
+            fromTeam,
+
+        toTeam:
+            toTeam,
+
+        reason:
+            reason,
+
+        status:
+            "pending",
+
+        createdAt:
+            now,
+
+        updatedAt:
+            now,
+
+        reviewedAt:
+            "",
+
+        reviewedBy:
+            "",
+
+        reviewRemark:
+            ""
+    });
+
+
+    saveTeamTransferRequests(
+        rows
+    );
+
+
+    const reasonBox =
+        document.getElementById(
+            "excTeamTransferReason"
+        );
+
+
+    if (
+        reasonBox
+    ) {
+
+        reasonBox.value =
+            "";
+    }
+
+
+    const targetSelect =
+        document.getElementById(
+            "excTeamTransferTargetTeam"
+        );
+
+
+    if (
+        targetSelect
+    ) {
+
+        targetSelect.value =
+            "";
+    }
+
+
+    refreshTeamTransferUi();
+
+
+    alert(
+        "换组申请已提交，等待管理员审核。"
+    );
+}
+
+
+/* =========================================================
+   工具：读取数组
+========================================================= */
+
+function readArray(
+    key
+) {
+
+    try {
+
+        const raw =
+            localStorage.getItem(
+                key
+            );
+
+
+        if (
+            !raw
+        ) {
+
+            return [];
+        }
+
+
+        const data =
+            JSON.parse(
+                raw
+            );
+
+
+        return Array.isArray(
+            data
+        )
+            ? data
+            : [];
+
+
+    } catch (
+        error
+    ) {
+
+        console.error(
+            "读取数据失败：",
+            key,
+            error
+        );
+
+
+        return [];
+    }
+}
+
+
+
+/* =========================================================
+   工具：设置文本
+========================================================= */
+
+function setText(
+    id,
+    value
+) {
+
+    const element =
+        document.getElementById(
+            id
+        );
+
+
+    if (
+        element
+    ) {
+
+        element.textContent =
+            value;
+    }
+}
+
+
+
+/* =========================================================
+   工具：日期时间
+========================================================= */
+
+function formatDateTime(
+    value
+) {
+
+    if (
+        !value
+    ) {
+
+        return "-";
+    }
+
+
+    const date =
+        new Date(
+            value
+        );
+
+
+    if (
+        Number.isNaN(
+            date.getTime()
+        )
+    ) {
+
+        return "-";
+    }
+
+
+    return date
+        .toLocaleString(
+            "zh-CN",
+            {
+
+                year:
+                    "numeric",
+
+                month:
+                    "2-digit",
+
+                day:
+                    "2-digit",
+
+                hour:
+                    "2-digit",
+
+                minute:
+                    "2-digit"
+            }
+        );
+}
+
+
+
+/* =========================================================
+   工具：HTML转义
+========================================================= */
+
+function escapeHtml(
+    value
+) {
+
+    const div =
+        document.createElement(
+            "div"
+        );
+
+
+    div.textContent =
+        String(
+            value ??
+            ""
+        );
+
+
+    return div.innerHTML;
+}
+
+
+
+/* =========================================================
+   设备维修上报
+========================================================= */
+
+function openMaintenanceReport() {
+
+    if (
+        currentPerson
+    ) {
+
+        const personId =
+            getPersonId(
+                currentPerson
+            );
+
+
+        if (
+            personId
+        ) {
+
+            localStorage.setItem(
+                "currentPersonId",
+                personId
+            );
+        }
+
+
+        localStorage.setItem(
+            "selectedPosition",
+            "挖机司机"
+        );
+    }
+
+
+    location.href =
+        "maintenance-report.html";
+}
+
+
+
+/* =========================================================
+   返回首页
+========================================================= */
+
+function goHome() {
+
+    location.href =
+        "index.html";
+}
+
+</script>
+
+
+</body>
+
+</html>
