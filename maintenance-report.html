@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>设备维修上报</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#f1f5f9;color:#0f172a;font-family:Arial,"Microsoft YaHei",sans-serif}
+header{background:#0f172a;color:#fff;padding:18px}
+.header-inner{max-width:900px;margin:auto;display:flex;justify-content:space-between;align-items:center;gap:16px}
+.header-inner h1{margin:0;font-size:22px}.header-inner p{margin:5px 0 0;color:#cbd5e1;font-size:13px}
+.header-inner button{border:0;border-radius:8px;padding:9px 14px;font-weight:700;cursor:pointer}
+main{max-width:900px;margin:18px auto;padding:0 14px 30px}
+.card{background:#fff;border:1px solid #dbe3ee;border-radius:14px;padding:18px;margin-bottom:14px}
+.notice{background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:12px 14px;color:#1e3a8a;line-height:1.65;font-size:13px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+label{display:block;font-weight:800;margin:0 0 6px;font-size:13px}
+input,select,textarea{width:100%;border:1px solid #cbd5e1;border-radius:9px;padding:10px 11px;font:inherit;background:#fff}
+textarea{min-height:110px;resize:vertical}
+.row{margin-top:12px}
+.info-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.info{background:#f8fafc;border:1px solid #e2e8f0;border-radius:9px;padding:10px}
+.info span{display:block;color:#64748b;font-size:11px}.info strong{display:block;margin-top:4px;font-size:14px}
+.actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px}
+.actions button{min-height:44px;border:0;border-radius:9px;font-weight:800;cursor:pointer}
+.cancel{background:#e2e8f0;color:#334155}.submit{background:#dc2626;color:#fff}
+.release-note{margin-top:12px;padding:11px 13px;border-radius:9px;background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;line-height:1.65;font-size:13px}
+@media(max-width:700px){.grid,.info-grid,.actions{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header>
+  <div class="header-inner">
+    <div>
+      <h1>⚠️ 设备故障 / 维修上报</h1>
+      <p>汽车、挖机、辅助设备统一入口</p>
+    </div>
+    <button type="button" onclick="history.back()">返回</button>
+  </div>
+</header>
+
+<main>
+  <div class="notice">
+    提交维修申请后，故障设备会立即退出当前生产绑定。
+    原任务不会结束；调度在“生产任务看板 → 调整绑定”中重新安排设备和司机即可。
+    挖机故障时，该挖机当前跟随汽车组会一起释放，方便转挂到其他挖机。
+  </div>
+
+  <section class="card">
+    <h2 style="margin-top:0">当前识别信息</h2>
+    <div class="info-grid">
+      <div class="info"><span>上报人</span><strong id="reporterName">-</strong></div>
+      <div class="info"><span>岗位</span><strong id="reporterPosition">-</strong></div>
+      <div class="info"><span>当前任务</span><strong id="currentTaskText">-</strong></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2 style="margin-top:0">维修申请</h2>
+
+    <div class="grid">
+      <div>
+        <label for="equipmentType">设备类型 *</label>
+        <select id="equipmentType">
+          <option value="">请选择</option>
+          <option value="汽车">汽车</option>
+          <option value="挖机">挖机</option>
+          <option value="辅助设备">辅助设备</option>
+        </select>
+      </div>
+
+      <div>
+        <label for="equipmentNumber">设备编号 *</label>
+        <input id="equipmentNumber" type="text" placeholder="例如：T-001 / W-001">
+      </div>
+    </div>
+
+    <div class="grid row">
+      <div>
+        <label for="faultType">故障类型 *</label>
+        <input id="faultType" type="text" placeholder="例如：发动机故障 / 液压故障 / 轮胎故障">
+      </div>
+
+      <div>
+        <label for="severity">故障等级 *</label>
+        <select id="severity">
+          <option value="一般">一般</option>
+          <option value="较重">较重</option>
+          <option value="严重">严重</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="row">
+      <label for="canMove">设备是否可以自行移动 *</label>
+      <select id="canMove">
+        <option value="true">可以自行移动</option>
+        <option value="false">不能自行移动</option>
+      </select>
+    </div>
+
+    <div class="row">
+      <label for="description">故障说明 *</label>
+      <textarea id="description" placeholder="请说明故障现象、当前位置及是否影响继续作业"></textarea>
+    </div>
+
+    <div class="row">
+      <label for="photoInput">现场照片（可选）</label>
+      <input id="photoInput" type="file" accept="image/*" capture="environment">
+    </div>
+
+    <div class="release-note">
+      提交成功后：设备进入维修状态并自动从当前生产任务解绑。
+      汽车司机、挖机司机、辅助设备司机无需再提交“换车申请”，等待调度重新绑定即可。
+    </div>
+
+    <div class="actions">
+      <button type="button" class="cancel" onclick="history.back()">取消</button>
+      <button id="submitButton" type="button" class="submit">提交维修申请</button>
+    </div>
+  </section>
+</main>
+
+<script>
+"use strict";
+
+const STORAGE = {
+    PERSONNEL: "personnelRecords",
+    TASKS: "dispatchPublishedTasks",
+    SHIFT_EXECUTIONS: "dispatchShiftExecutions",
+    REQUESTS: "maintenanceRequests",
+    DRAFT: "maintenanceReportDraft",
+    DRIVER_CURRENT_TASK: "driverCurrentTask",
+    OPERATIONAL_STATUS: "equipmentOperationalStatus",
+    LEGACY_CHANGE: "driverVehicleChangeRequests"
+};
+
+let currentPerson = null;
+let currentContext = null;
+let photoData = "";
+
+function readJson(key,fallback){
+    try{
+        const raw=localStorage.getItem(key);
+        return raw?JSON.parse(raw):fallback;
+    }catch(error){
+        return fallback;
+    }
+}
+
+function readArray(key){
+    const data=readJson(key,[]);
+    return Array.isArray(data)?data:[];
+}
+
+function writeArray(key,rows){
+    localStorage.setItem(key,JSON.stringify(rows));
+}
+
+function getPersonId(person){
+    return String(
+        person?.personId ||
+        person?.employeeId ||
+        person?.driverId ||
+        person?.id ||
+        ""
+    );
+}
+
+function normalizePosition(value){
+    const raw=String(value||"").trim();
+    const map={
+        "卡车司机":"汽车司机",
+        "挖掘机司机":"挖机司机",
+        "挖掘机操作手":"挖机司机",
+        "挖机操作手":"挖机司机"
+    };
+    return map[raw]||raw;
+}
+
+function inferType(position){
+    const p=normalizePosition(position);
+    if(p==="汽车司机") return "汽车";
+    if(p==="挖机司机") return "挖机";
+    return "辅助设备";
+}
+
+function samePerson(row,person){
+    const rid=String(
+        row?.driverId ||
+        row?.personId ||
+        row?.operatorId ||
+        ""
+    );
+    const pid=getPersonId(person);
+
+    if(rid&&pid){
+        return rid===pid;
+    }
+
+    const rn=String(
+        row?.driverName ||
+        row?.personName ||
+        row?.operatorName ||
+        ""
+    ).trim();
+
+    const pn=String(
+        person?.name ||
+        ""
+    ).trim();
+
+    return Boolean(rn&&pn&&rn===pn);
+}
+
+function activeTask(item){
+    return ![
+        "completed",
+        "cancelled",
+        "withdrawn",
+        "handed_over"
+    ].includes(
+        String(
+            item?.status ||
+            ""
+        )
+    );
+}
+
+function findPerson(){
+    const rows=readArray(STORAGE.PERSONNEL);
+    const id=String(localStorage.getItem("currentPersonId")||"");
+
+    if(id){
+        const found=rows.find(item=>getPersonId(item)===id);
+        if(found) return found;
+    }
+
+    const position=normalizePosition(
+        localStorage.getItem("selectedPosition")||""
+    );
+
+    const matches=rows.filter(
+        item=>normalizePosition(item.position)===position
+    );
+
+    return matches.length===1?matches[0]:null;
+}
+
+function bindingExcavator(binding){
+    return String(
+        binding?.excavatorNumber ||
+        binding?.excavatorId ||
+        binding?.excavator ||
+        ""
+    );
+}
+
+function truckId(value){
+    if(value&&typeof value==="object"){
+        return String(
+            value.vehicleNumber ||
+            value.vehicleId ||
+            value.truckNumber ||
+            value.truckId ||
+            ""
+        );
+    }
+    return String(value||"");
+}
+
+function findContext(person){
+    const draft=readJson(STORAGE.DRAFT,null);
+    const driverTask=readJson(STORAGE.DRIVER_CURRENT_TASK,null);
+
+    if(driverTask&&normalizePosition(person?.position)==="汽车司机"){
+        return {
+            taskId:String(driverTask.taskId||driverTask.dispatchTaskId||""),
+            shiftId:String(driverTask.shiftId||""),
+            equipmentNumber:String(driverTask.vehicleNumber||driverTask.vehicleId||""),
+            equipmentType:"汽车"
+        };
+    }
+
+    if(draft?.equipmentNumber){
+        return {
+            taskId:String(draft.taskId||""),
+            shiftId:String(draft.shiftId||""),
+            equipmentNumber:String(draft.equipmentNumber||""),
+            equipmentType:String(draft.equipmentType||inferType(person?.position))
+        };
+    }
+
+    const collections=[
+        ...readArray(STORAGE.SHIFT_EXECUTIONS),
+        ...readArray(STORAGE.TASKS)
+    ].filter(activeTask);
+
+    for(const item of collections){
+
+        const excavatorBinding=(item.bindings||[]).find(binding=>{
+            const id=String(binding.excavatorDriverId||binding.operatorId||"");
+            const name=String(binding.excavatorDriverName||binding.operatorName||"").trim();
+            return (
+                (id&&id===getPersonId(person)) ||
+                (!id&&name&&name===String(person?.name||"").trim())
+            );
+        });
+
+        if(excavatorBinding){
+            return {
+                taskId:String(item.taskId||item.dispatchTaskId||""),
+                shiftId:String(item.shiftId||item.currentShiftId||""),
+                equipmentNumber:bindingExcavator(excavatorBinding),
+                equipmentType:"挖机"
+            };
+        }
+
+        const truck=(item.driverAssignments||[]).find(
+            row=>samePerson(row,person)
+        );
+
+        if(truck){
+            return {
+                taskId:String(item.taskId||item.dispatchTaskId||""),
+                shiftId:String(item.shiftId||item.currentShiftId||""),
+                equipmentNumber:String(
+                    truck.vehicleNumber ||
+                    truck.vehicleId ||
+                    truck.truckNumber ||
+                    truck.truckId ||
+                    ""
+                ),
+                equipmentType:"汽车"
+            };
+        }
+
+        const aux=(item.auxiliaryAssignments||[]).find(
+            row=>samePerson(row,person)
+        );
+
+        if(aux){
+            return {
+                taskId:String(item.taskId||item.dispatchTaskId||""),
+                shiftId:String(item.shiftId||item.currentShiftId||""),
+                equipmentNumber:String(
+                    aux.equipmentNumber ||
+                    aux.equipmentId ||
+                    aux.vehicleNumber ||
+                    aux.vehicleId ||
+                    ""
+                ),
+                equipmentType:"辅助设备"
+            };
+        }
+    }
+
+    return {
+        taskId:"",
+        shiftId:"",
+        equipmentNumber:"",
+        equipmentType:inferType(person?.position)
+    };
+}
+
+function setOperationalMaintenance(equipmentId){
+    if(!equipmentId) return;
+
+    const rows=readArray(STORAGE.OPERATIONAL_STATUS);
+    const index=rows.findIndex(
+        row=>String(row.equipmentId||"")===String(equipmentId)
+    );
+
+    const next={
+        equipmentId:String(equipmentId),
+        status:"maintenance",
+        source:"maintenance_request",
+        updatedAt:new Date().toISOString()
+    };
+
+    if(index>=0){
+        rows[index]={...rows[index],...next};
+    }else{
+        rows.push(next);
+    }
+
+    writeArray(STORAGE.OPERATIONAL_STATUS,rows);
+}
+
+function retireLegacyVehicleChanges(){
+    const rows=readArray(STORAGE.LEGACY_CHANGE);
+    let changed=false;
+
+    rows.forEach(item=>{
+        if(
+            ["pending","approved"].includes(String(item?.status||"")) &&
+            item?.appliedToDriverTask !== true
+        ){
+            item.status="legacy_cancelled";
+            item.legacyCancelReason=
+                "独立换车流程已停用，故障统一走维修申请 + 调度重新绑定";
+            item.updatedAt=new Date().toISOString();
+            changed=true;
+        }
+    });
+
+    if(changed){
+        writeArray(STORAGE.LEGACY_CHANGE,rows);
+    }
+}
+
+function init(){
+    currentPerson=findPerson();
+    currentContext=findContext(currentPerson);
+
+    document.getElementById("reporterName").textContent=
+        currentPerson?.name||"-";
+
+    document.getElementById("reporterPosition").textContent=
+        currentPerson?.position||
+        localStorage.getItem("selectedPosition")||
+        "-";
+
+    document.getElementById("currentTaskText").textContent=
+        currentContext?.taskId||
+        "当前未绑定生产任务";
+
+    document.getElementById("equipmentType").value=
+        currentContext?.equipmentType||"";
+
+    document.getElementById("equipmentNumber").value=
+        currentContext?.equipmentNumber||"";
+
+    retireLegacyVehicleChanges();
+}
+
+document
+    .getElementById("photoInput")
+    .addEventListener(
+        "change",
+        event=>{
+            const file=event.target.files?.[0];
+
+            if(!file){
+                photoData="";
+                return;
+            }
+
+            const reader=new FileReader();
+
+            reader.onload=()=>{
+                photoData=String(reader.result||"");
+            };
+
+            reader.readAsDataURL(file);
+        }
+    );
+
+document
+    .getElementById("submitButton")
+    .addEventListener(
+        "click",
+        ()=>{
+
+            const equipmentType=
+                document.getElementById("equipmentType").value;
+
+            const equipmentNumber=
+                document.getElementById("equipmentNumber").value.trim();
+
+            const faultType=
+                document.getElementById("faultType").value.trim();
+
+            const severity=
+                document.getElementById("severity").value;
+
+            const canMove=
+                document.getElementById("canMove").value==="true";
+
+            const description=
+                document.getElementById("description").value.trim();
+
+            if(
+                !equipmentType ||
+                !equipmentNumber ||
+                !faultType ||
+                !description
+            ){
+                alert(
+                    "请完整填写设备类型、设备编号、故障类型和故障说明。"
+                );
+                return;
+            }
+
+            const requests=readArray(STORAGE.REQUESTS);
+
+            const activeStatuses=new Set([
+                "pending_dispatch",
+                "waiting_entry",
+                "waiting_assignment",
+                "assigned",
+                "working",
+                "waiting_parts",
+                "waiting_inspection",
+                "inspection_passed",
+                "rework"
+            ]);
+
+            const duplicate=requests.some(item=>{
+                const id=String(
+                    item.equipmentNumber ||
+                    item.equipmentId ||
+                    item.vehicleNumber ||
+                    item.vehicleId ||
+                    ""
+                );
+
+                return (
+                    id===equipmentNumber &&
+                    activeStatuses.has(String(item.status||""))
+                );
+            });
+
+            if(duplicate){
+                alert(
+                    "该设备已经存在未结束的维修流程，请勿重复提交。"
+                );
+                return;
+            }
+
+            const now=new Date().toISOString();
+            const requestId=
+                "MR_"+Date.now()+"_"+Math.random().toString(36).slice(2,7);
+
+            requests.push({
+                requestId,
+                maintenanceRequestId:requestId,
+                equipmentType,
+                equipmentNumber,
+                equipmentId:equipmentNumber,
+                applicantId:getPersonId(currentPerson),
+                personId:getPersonId(currentPerson),
+                applicantName:currentPerson?.name||"",
+                personName:currentPerson?.name||"",
+                applicantPosition:
+                    currentPerson?.position||
+                    localStorage.getItem("selectedPosition")||
+                    "",
+                position:
+                    currentPerson?.position||
+                    localStorage.getItem("selectedPosition")||
+                    "",
+                taskId:currentContext?.taskId||"",
+                shiftId:currentContext?.shiftId||"",
+                faultType,
+                severity,
+                description,
+                canMove,
+                photoData,
+                dispatchRequired:true,
+                dispatchStatus:"pending",
+                status:"pending_dispatch",
+                productionReleased:false,
+                createdAt:now,
+                reportedAt:now,
+                updatedAt:now
+            });
+
+            writeArray(STORAGE.REQUESTS,requests);
+
+            setOperationalMaintenance(
+                equipmentNumber
+            );
+
+            localStorage.removeItem(
+                STORAGE.DRAFT
+            );
+
+            alert(
+                "维修申请已提交。\n\n"+
+                "故障设备已经进入维修状态。\n"+
+                "调度端会自动解除当前生产绑定，"+
+                "随后可在生产任务看板中重新绑定设备和司机。"
+            );
+
+            history.back();
+        }
+    );
+
+init();
+</script>
+</body>
+</html>
