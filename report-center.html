@@ -5311,13 +5311,17 @@ function renderProduction() {
         )?.value ||
         selectedDate.slice(0, 7);
 
-    const allRecords =
-        getAllProductionTripRecords();
+  const allRecords =
+    deduplicateProductionRecords(
+        getAllProductionTripRecords()
+    );
 
-    const scopedRecords =
+const scopedRecords =
+    deduplicateProductionRecords(
         filterProductionRecordsByScope(
             allRecords
-        );
+        )
+    );
 
     const dayGroups =
         aggregateProductionRecords(
