@@ -1,0 +1,2105 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>司机工作台</title>
+
+    <link
+        rel="stylesheet"
+        href="css/style.css"
+    >
+
+    <link
+        rel="stylesheet"
+        href="css/driver-work.css?v=2.9.2"
+    >
+
+    <style>
+        .shift-kpi-card {
+            padding: 16px;
+        }
+
+        .shift-kpi-grid {
+            display: grid;
+            grid-template-columns: 1.35fr 1fr 1fr;
+            gap: 10px;
+        }
+
+        .shift-kpi-item {
+            min-height: 106px;
+            padding: 14px 12px;
+            border: 1px solid #dbeafe;
+            border-radius: 14px;
+            background: #f8fafc;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
+
+        .shift-kpi-item.primary {
+            background: #eff6ff;
+            border-color: #bfdbfe;
+        }
+
+        .shift-kpi-label {
+            color: #64748b;
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+        .shift-kpi-value {
+            margin-top: 5px;
+            color: #0f172a;
+            font-size: 30px;
+            line-height: 1.05;
+            font-weight: 900;
+        }
+
+        .shift-kpi-item.primary .shift-kpi-value {
+            color: #1d4ed8;
+            font-size: 48px;
+        }
+
+        .shift-kpi-sub {
+            margin-top: 5px;
+            color: #94a3b8;
+            font-size: 11px;
+        }
+
+        .employee-line {
+            margin-top: 5px;
+            color: #64748b;
+            font-size: 12px;
+        }
+
+        @media (max-width: 700px) {
+            .shift-kpi-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .shift-kpi-item.primary {
+                grid-column: 1 / -1;
+            }
+        }
+
+        /* =========================================================
+           V2.10.4A 请假申请界面
+           本轮仅调整页面和字段，不改变现有审批数据逻辑
+        ========================================================= */
+
+        .leave-policy-box {
+            margin: 12px 0 16px;
+            padding: 12px;
+            border: 1px solid #dbeafe;
+            border-radius: 12px;
+            background: #f8fbff;
+        }
+
+        .leave-policy-title {
+            margin-bottom: 8px;
+            color: #1e3a8a;
+            font-weight: 800;
+        }
+
+        .leave-policy-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 8px;
+        }
+
+        .leave-policy-item {
+            padding: 9px 10px;
+            border-radius: 9px;
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+        }
+
+        .leave-policy-item span {
+            display: block;
+            color: #64748b;
+            font-size: 11px;
+        }
+
+        .leave-policy-item strong {
+            display: block;
+            margin-top: 3px;
+            color: #0f172a;
+            font-size: 14px;
+        }
+
+        .leave-impact-box {
+            margin: 12px 0;
+            padding: 11px 12px;
+            border-radius: 10px;
+            background: #fff7ed;
+            color: #9a3412;
+            font-size: 12px;
+            line-height: 1.7;
+        }
+
+        .leave-unit-tip {
+            margin: 6px 0 12px;
+            color: #64748b;
+            font-size: 12px;
+            line-height: 1.6;
+        }
+
+        .leave-halfday-grid {
+            display: grid;
+            grid-template-columns: minmax(0, 1.5fr) minmax(120px, 0.7fr);
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+
+        .leave-halfday-field label {
+            display: block;
+            margin-bottom: 6px;
+        }
+
+        .leave-halfday-field input,
+        .leave-halfday-field select {
+            width: 100%;
+        }
+
+        .leave-days-readonly {
+            background: #f8fafc;
+            color: #0f172a;
+            font-weight: 800;
+        }
+
+        .leave-auto-tip {
+            margin: 6px 0 12px;
+            padding: 9px 10px;
+            border-radius: 9px;
+            background: #eff6ff;
+            color: #1e40af;
+            font-size: 12px;
+            line-height: 1.6;
+        }
+
+        @media (max-width: 700px) {
+
+            .leave-halfday-grid {
+                grid-template-columns: 1fr;
+            }
+            .leave-policy-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+    </style>
+
+
+<style>
+/* V2.13.5
+   旧“申请换车”界面停用。
+   汽车端运输/GPS/趟数核心 JS 不修改。
+*/
+#changeShortcut,
+#vehicleFaultButton,
+#changeSection,
+#vehicleChangeModal {
+    display: none !important;
+}
+</style>
+
+
+<style>
+/* V2.13.7 临时非卸载区域卸料 */
+#temporaryUnloadButton {
+    margin-top: 10px;
+    width: 100%;
+}
+.temp-unload-status {
+    margin-top: 10px;
+    padding: 10px 12px;
+    border: 1px solid #fde68a;
+    border-radius: 10px;
+    background: #fffbeb;
+    color: #92400e;
+    font-size: 12px;
+    line-height: 1.6;
+}
+.temp-unload-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+.temp-unload-grid > div {
+    min-width: 0;
+}
+.temp-unload-gps {
+    margin: 10px 0 14px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: #eff6ff;
+    color: #1e3a8a;
+    font-size: 12px;
+    line-height: 1.6;
+}
+@media (max-width: 700px) {
+    .temp-unload-grid {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+
+</head>
+
+<body class="driver-body">
+
+<header class="driver-header">
+
+    <div>
+        <h1>🚚 司机工作台</h1>
+        <p>Driver Workbench</p>
+    </div>
+
+    <span
+        id="driverStatusBadge"
+        class="status-badge"
+    >
+        待命
+    </span>
+
+</header>
+
+
+<main class="driver-main">
+
+    <!-- 人员信息 -->
+
+    <section class="driver-card profile-card">
+
+        <div class="profile-main">
+
+            <div class="profile-icon">
+                👷
+            </div>
+
+            <div>
+                <h2 id="driverName">-</h2>
+
+                <p>
+                    <span id="driverPosition">
+                        卡车司机
+                    </span>
+                    ·
+                    <span id="driverTeam">
+                        -
+                    </span>
+                </p>
+
+                <p class="employee-line">
+                    员工编号：
+                    <span id="driverEmployeeNo">-</span>
+                </p>
+            </div>
+
+        </div>
+
+        <div class="profile-status">
+            已审核通过
+        </div>
+
+    </section>
+
+
+    <!-- 本班核心数据 -->
+
+    <section class="driver-card shift-kpi-card">
+
+        <div class="section-title">
+            <div>
+                <h2>📈 本班实时数据</h2>
+                <p>趟数、趟数排名、绩效排名实时显示</p>
+            </div>
+        </div>
+
+        <div class="shift-kpi-grid">
+
+            <div class="shift-kpi-item primary">
+                <span class="shift-kpi-label">本班趟数</span>
+                <strong
+                    id="todayTripCount"
+                    class="shift-kpi-value"
+                >
+                    0
+                </strong>
+                <span class="shift-kpi-sub">
+                    当前班次累计
+                </span>
+            </div>
+
+            <div class="shift-kpi-item">
+                <span class="shift-kpi-label">本班趟数排名</span>
+                <strong
+                    id="tripRankValue"
+                    class="shift-kpi-value"
+                >
+                    --
+                </strong>
+                <span
+                    id="tripRankScope"
+                    class="shift-kpi-sub"
+                >
+                    当前班次车辆
+                </span>
+            </div>
+
+            <div class="shift-kpi-item">
+                <span class="shift-kpi-label">本班绩效排名</span>
+                <strong
+                    id="performanceRankValue"
+                    class="shift-kpi-value"
+                >
+                    --
+                </strong>
+                <span
+                    id="performanceRankScope"
+                    class="shift-kpi-sub"
+                >
+                    当前班次司机
+                </span>
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <!-- 快捷待办 -->
+
+    <section class="driver-card">
+
+        <div class="section-title">
+            <div>
+                <h2>我的待办</h2>
+                <p>请假、罚单及GPS审核</p>
+            </div>
+        </div>
+
+
+        <div class="todo-grid">
+
+            <button
+                id="leaveShortcut"
+                type="button"
+                class="todo-button"
+            >
+                <span>🗓</span>
+                <strong id="leaveTodoCount">0</strong>
+                <small>请假记录</small>
+            </button>
+
+
+            <button
+                id="penaltyShortcut"
+                type="button"
+                class="todo-button"
+            >
+                <span>⚠️</span>
+                <strong id="penaltyTodoCount">0</strong>
+                <small>待确认罚单</small>
+            </button>
+
+
+            <button
+                id="changeShortcut"
+                type="button"
+                class="todo-button"
+            >
+                <span>🔧</span>
+                <strong id="changeTodoCount">0</strong>
+                <small>换车申请</small>
+            </button>
+
+
+            <button
+                id="gpsReviewShortcut"
+                type="button"
+                class="todo-button"
+            >
+                <span>📍</span>
+                <strong id="gpsReviewTodoCount">0</strong>
+                <small>GPS审核</small>
+            </button>
+
+        </div>
+
+    </section>
+
+
+    <!-- GPS -->
+
+    <section
+        id="gpsSection"
+        class="driver-card"
+    >
+
+        <div class="section-title">
+
+            <div>
+                <h2>📍 手机定位</h2>
+                <p>用于运输趟次现场位置记录</p>
+            </div>
+
+            <span
+                id="gpsStatusBadge"
+                class="mini-badge gray"
+            >
+                未定位
+            </span>
+
+        </div>
+
+
+        <div class="gps-grid">
+
+            <div>
+                <span>定位状态</span>
+                <strong id="gpsStatus">
+                    未启动
+                </strong>
+            </div>
+
+            <div>
+                <span>定位精度</span>
+                <strong id="gpsAccuracy">
+                    -
+                </strong>
+            </div>
+
+            <div>
+                <span>最后更新</span>
+                <strong id="gpsUpdateTime">
+                    -
+                </strong>
+            </div>
+
+            <div>
+                <span>坐标</span>
+                <strong id="gpsCoordinates">
+                    -
+                </strong>
+            </div>
+
+        </div>
+
+
+        <button
+            id="startGpsButton"
+            type="button"
+            class="primary-button full-button"
+        >
+            📍 开启 / 刷新定位
+        </button>
+
+        <p class="tip-text">
+            浏览器定位需要允许位置权限。测试阶段每完成一趟会重新获取一次GPS。
+        </p>
+
+    </section>
+
+
+    <!-- 当前任务 -->
+
+    <section
+        id="taskSection"
+        class="driver-card"
+    >
+
+        <div class="section-title">
+
+            <div>
+                <h2>📋 当前生产任务</h2>
+                <p>只执行调度分配给你的车辆和任务</p>
+            </div>
+
+            <span
+                id="taskStatus"
+                class="mini-badge gray"
+            >
+                待调度
+            </span>
+
+        </div>
+
+
+        <div
+            id="noTaskMessage"
+            class="empty-box"
+        >
+            当前没有生产任务，请等待调度分配。
+        </div>
+
+
+        <div
+            id="taskContent"
+            class="hidden"
+        >
+
+            <div class="task-grid">
+
+                <div>
+                    <span>任务编号</span>
+                    <strong id="taskId">-</strong>
+                </div>
+
+                <div>
+                    <span>当前车辆</span>
+                    <strong id="taskVehicle">-</strong>
+                </div>
+
+                <div>
+                    <span>跟随挖机</span>
+                    <strong id="taskExcavator">-</strong>
+                </div>
+
+                <div>
+                    <span>作业区域</span>
+                    <strong id="taskArea">-</strong>
+                </div>
+
+                <div>
+                    <span>班次</span>
+                    <strong id="taskShift">-</strong>
+                </div>
+
+
+            </div>
+
+
+            <div class="route-box">
+
+                <div>
+                    <span>装载点</span>
+                    <strong id="taskLoadingPoint">-</strong>
+                </div>
+
+                <div class="route-arrow">
+                    →
+                </div>
+
+                <div>
+                    <span>卸载点</span>
+                    <strong id="taskUnloadingPoint">-</strong>
+                </div>
+
+            </div>
+
+
+            <div
+                id="taskRemarkBox"
+                class="info-box"
+            >
+                <strong>调度说明：</strong>
+                <span id="taskRemark">无</span>
+            </div>
+
+
+            <div
+                id="equipmentCheckBox"
+                class="claim-box"
+            >
+
+                <div>
+                    <strong>设备使用检查</strong>
+                    <p>
+                        接班后先检查车辆，记录公里数和仪表照片；
+                        发现异常时进入异常留证及维修流程。
+                    </p>
+                </div>
+
+                <button
+                    id="equipmentCheckButton"
+                    type="button"
+                    class="primary-button"
+                    onclick="location.href='equipment-check.html'"
+                >
+                    🧰 设备使用检查
+                </button>
+
+            </div>
+
+
+            <div
+                id="vehicleClaimBox"
+                class="claim-box"
+            >
+
+                <div>
+                    <strong>车辆领取状态</strong>
+                    <p id="vehicleClaimText">
+                        尚未领取调度车辆
+                    </p>
+                </div>
+
+                <button
+                    id="claimVehicleButton"
+                    type="button"
+                    class="primary-button"
+                >
+                    领取车辆
+                </button>
+
+            </div>
+
+
+            <div class="work-button-grid">
+
+                <button
+                    id="startWorkButton"
+                    type="button"
+                    class="success-button"
+                >
+                    ▶ 开始作业
+                </button>
+
+                <button
+                    id="pauseWorkButton"
+                    type="button"
+                    class="warning-button hidden"
+                >
+                    ⏸ 暂停作业
+                </button>
+
+                <button
+                    id="resumeWorkButton"
+                    type="button"
+                    class="success-button hidden"
+                >
+                    ▶ 恢复作业
+                </button>
+
+            </div>
+
+
+            <button
+                id="addTripButton"
+                type="button"
+                class="trip-button hidden"
+            >
+                🚚 完成一趟
+            </button>
+
+
+            <button
+                id="vehicleFaultButton"
+                type="button"
+                class="danger-outline-button"
+            >
+                🔧 车辆故障 / 申请换车
+            </button>
+
+            <button
+                id="maintenanceReportButton"
+                type="button"
+                class="danger-outline-button"
+                onclick="location.href='maintenance-report.html'"
+            >
+                ⚠️ 异常上报 / 设备维修
+            </button>
+
+        </div>
+
+    </section>
+
+
+
+    <!-- 临时非卸载区卸料 -->
+    <section
+        id="temporaryUnloadSection"
+        class="driver-card"
+    >
+        <div class="section-title">
+            <div>
+                <h2>📍 临时非卸载区卸料</h2>
+                <p>
+                    仅用于修路垫料、填坑、场地平整、临时排险等现场临时卸料。
+                    提交后需调度确认，确认前不计入正式趟数。
+                </p>
+            </div>
+        </div>
+
+        <button
+            id="temporaryUnloadButton"
+            type="button"
+            class="warning-button"
+            disabled
+        >
+            📍 当前无生产任务
+        </button>
+
+        <div
+            id="temporaryUnloadStatus"
+            class="temp-unload-status hidden"
+        ></div>
+    </section>
+
+
+    <!-- 今日记录 -->
+
+    <section
+        id="tripSection"
+        class="driver-card"
+    >
+
+        <div class="section-title">
+            <div>
+                <h2>📊 本班运输记录</h2>
+                <p>按当前班次统计，包含GPS状态及调度审核结果</p>
+            </div>
+
+            <span
+                id="tripCountBadge"
+                class="mini-badge blue"
+            >
+                0趟
+            </span>
+
+        </div>
+
+        <div id="tripRecordList">
+            <div class="empty-box">
+                暂无运输记录
+            </div>
+
+        </div>
+
+    </section>
+
+
+
+    <!-- 班组调整 -->
+    <section
+        id="teamTransferPanel"
+        class="driver-card"
+    >
+        <div class="section-title">
+            <div>
+                <h2>🔄 班组调整</h2>
+                <p>如需调整生产班组，在这里提交申请；不再使用悬浮按钮。</p>
+            </div>
+        </div>
+
+        <div id="teamTransferPanelSlot">
+            <div class="empty-box">
+                正在加载换组申请入口……
+            </div>
+        </div>
+    </section>
+
+
+    <!-- 请假 -->
+
+    <section
+        id="leaveSection"
+        class="driver-card"
+    >
+
+        <div class="section-title">
+
+            <div>
+                <h2>🗓 请假申请</h2>
+                <p>仅支持事假、轮休假；最小请假单位0.5天，由调度审批</p>
+            </div>
+            <button
+                id="openLeaveButton"
+                type="button"
+                class="primary-small-button"
+            >
+                + 申请请假
+            </button>
+
+        </div>
+
+        <div id="leaveRecordList">
+            <div class="empty-box">
+                暂无请假记录
+            </div>
+        </div>
+
+    </section>
+
+
+    <!-- 罚单 -->
+
+    <section
+        id="penaltySection"
+        class="driver-card"
+    >
+
+        <div class="section-title">
+
+            <div>
+                <h2>⚠️ 我的罚单</h2>
+                <p>司机可以查看和确认，不能自行删除</p>
+            </div>
+
+        </div>
+
+        <div id="penaltyRecordList">
+            <div class="empty-box">
+                暂无罚单
+            </div>
+        </div>
+
+    </section>
+
+
+    <!-- 换车记录 -->
+
+    <section
+        id="changeSection"
+        class="driver-card"
+    >
+
+        <div class="section-title">
+            <div>
+                <h2>🔧 换车记录</h2>
+                <p>换车不换任务，原任务趟数继续累计</p>
+            </div>
+        </div>
+
+        <div id="vehicleChangeRecordList">
+            <div class="empty-box">
+                暂无换车申请
+            </div>
+        </div>
+
+    </section>
+
+
+    <!-- 我的信息 -->
+
+    <section class="driver-card">
+
+        <div class="section-title">
+            <div>
+                <h2>👤 我的信息</h2>
+            </div>
+        </div>
+
+        <div class="task-grid">
+
+            <div>
+                <span>姓名</span>
+                <strong id="profileName">-</strong>
+            </div>
+
+            <div>
+                <span>员工编号</span>
+                <strong id="profileEmployeeNo">-</strong>
+            </div>
+
+            <div>
+                <span>手机号</span>
+                <strong id="profilePhone">-</strong>
+            </div>
+
+            <div>
+                <span>岗位</span>
+                <strong id="profilePosition">-</strong>
+            </div>
+
+            <div>
+                <span>部门 / 车队</span>
+                <strong id="profileTeam">-</strong>
+            </div>
+
+            <div>
+                <span>入职日期</span>
+                <strong id="profileEntryDate">-</strong>
+            </div>
+
+            <div>
+                <span>审核状态</span>
+                <strong>已通过</strong>
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <button
+        type="button"
+        class="home-button"
+        onclick="location.href='index.html'"
+    >
+        返回系统首页
+    </button>
+
+</main>
+
+
+<!-- 请假弹窗 -->
+
+<div
+    id="leaveModal"
+    class="modal hidden"
+>
+
+    <div class="modal-card">
+
+        <h2>🗓 请假申请</h2>
+
+        <div class="approval-tip">
+            一线司机请假自动提交给调度审批。
+            请假最小单位为0.5天。
+        </div>
+
+
+        <label for="leaveType">
+            请假类型 *
+        </label>
+
+        <select id="leaveType">
+            <option value="事假">事假</option>
+            <option value="轮休假">轮休假</option>
+        </select>
+
+
+        <div
+            id="rotationLeavePolicyBox"
+            class="leave-policy-box"
+        >
+
+            <div class="leave-policy-title">
+                轮休假额度
+            </div>
+
+            <div class="leave-policy-grid">
+
+                <div class="leave-policy-item">
+                    <span>是否享有轮休假</span>
+                    <strong id="rotationLeaveEligible">-</strong>
+                </div>
+
+                <div class="leave-policy-item">
+                    <span>当前轮休周期</span>
+                    <strong id="rotationLeaveCurrentCycle">-</strong>
+                </div>
+
+                <div class="leave-policy-item">
+                    <span>周期总额度</span>
+                    <strong id="rotationLeaveQuota">-</strong>
+                </div>
+
+                <div class="leave-policy-item">
+                    <span>本周期已使用</span>
+                    <strong id="rotationLeaveUsed">-</strong>
+                </div>
+
+                <div class="leave-policy-item">
+                    <span>本周期剩余</span>
+                    <strong id="rotationLeaveRemaining">-</strong>
+                </div>
+
+                <div class="leave-policy-item">
+                    <span>额度规则</span>
+                    <strong>到期重新计算，不跨周期结转</strong>
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <label for="leaveDays">
+            本次申请天数 *
+        </label>
+
+        <input
+            id="leaveDays"
+            class="leave-days-readonly"
+            type="text"
+            value="0.5"
+            readonly
+        >
+
+        <p class="leave-auto-tip">
+            选择开始日期、结束日期和“上午 / 下午”后，
+            系统自动计算请假天数，最小单位为0.5天。
+        </p>
+
+
+        <div class="leave-halfday-grid">
+
+            <div class="leave-halfday-field">
+                <label for="leaveStartDate">
+                    开始日期 *
+                </label>
+
+                <input
+                    id="leaveStartDate"
+                    type="date"
+                >
+            </div>
+
+            <div class="leave-halfday-field">
+                <label for="leaveStartHalf">
+                    开始时段 *
+                </label>
+
+                <select id="leaveStartHalf">
+                    <option value="AM">上午</option>
+                    <option value="PM">下午</option>
+                </select>
+            </div>
+
+        </div>
+
+
+        <div class="leave-halfday-grid">
+
+            <div class="leave-halfday-field">
+                <label for="leaveEndDate">
+                    结束日期 *
+                </label>
+
+                <input
+                    id="leaveEndDate"
+                    type="date"
+                >
+            </div>
+
+            <div class="leave-halfday-field">
+                <label for="leaveEndHalf">
+                    结束时段 *
+                </label>
+
+                <select id="leaveEndHalf">
+                    <option value="AM">上午</option>
+                    <option value="PM">下午</option>
+                </select>
+            </div>
+
+        </div>
+
+
+        <!--
+            兼容现有 driver-work.js：
+            下一步由JS根据“日期 + 上午/下午”自动写入这两个隐藏时间字段。
+        -->
+        <input
+            id="leaveStart"
+            type="hidden"
+        >
+
+        <input
+            id="leaveEnd"
+            type="hidden"
+        >
+
+
+        <div
+            id="leaveAttendanceImpact"
+            class="leave-impact-box"
+        >
+            选择请假日期和上午 / 下午后，
+            系统将自动计算请假天数及考勤影响。
+        </div>
+
+
+        <label for="leaveContactPhone">
+            联系电话
+        </label>
+
+        <input
+            id="leaveContactPhone"
+            type="tel"
+        >
+
+
+        <label for="leaveReason">
+            请假原因 *
+        </label>
+
+        <textarea
+            id="leaveReason"
+            placeholder="请输入请假原因"
+        ></textarea>
+
+
+        <div class="modal-buttons">
+
+            <button
+                id="submitLeaveButton"
+                type="button"
+                class="success-button"
+            >
+                提交调度审批
+            </button>
+
+            <button
+                id="closeLeaveButton"
+                type="button"
+                class="secondary-button"
+            >
+                取消
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+
+<!-- 临时非卸载区卸料弹窗 -->
+<div
+    id="temporaryUnloadModal"
+    class="modal hidden"
+>
+    <div class="modal-card">
+        <h2>📍 临时非卸载区卸料</h2>
+
+        <div class="approval-tip">
+            仅用于修路垫料、填坑、场地平整、临时排险等现场临时卸料。
+            提交后不会立即计入正式趟数，需调度确认。
+        </div>
+
+        <div class="temp-unload-grid">
+            <div>
+                <label for="temporaryUnloadMaterial">物料类型 *</label>
+                <select id="temporaryUnloadMaterial">
+                    <option value="渣" selected>渣</option>
+                    <option value="煤">煤</option>
+                    <option value="只记车数">只记车数</option>
+                </select>
+            </div>
+
+            <div>
+                <label for="temporaryUnloadReason">临时卸料原因 *</label>
+                <select id="temporaryUnloadReason">
+                    <option value="修路垫料">修路垫料</option>
+                    <option value="填坑">填坑</option>
+                    <option value="场地平整">场地平整</option>
+                    <option value="临时排险">临时排险</option>
+                    <option value="其他">其他</option>
+                </select>
+            </div>
+        </div>
+
+        <label for="temporaryUnloadRemark">说明</label>
+        <textarea
+            id="temporaryUnloadRemark"
+            placeholder="例如：主运输道路K3+200处临时垫渣2车"
+        ></textarea>
+
+        <div id="temporaryUnloadGpsPreview" class="temp-unload-gps">
+            提交时将重新获取一次实时GPS，并记录坐标与定位精度。
+        </div>
+
+        <div class="modal-buttons">
+            <button
+                id="submitTemporaryUnloadButton"
+                type="button"
+                class="success-button"
+            >
+                提交调度确认
+            </button>
+
+            <button
+                id="closeTemporaryUnloadButton"
+                type="button"
+                class="secondary-button"
+            >
+                取消
+            </button>
+        </div>
+    </div>
+</div>
+
+
+<!-- 换车弹窗 -->
+
+<div
+    id="vehicleChangeModal"
+    class="modal hidden"
+>
+
+    <div class="modal-card">
+
+        <h2>🔧 车辆故障 / 申请换车</h2>
+
+        <div class="approval-tip">
+            调度批准新车辆以前，不能使用新车记录运输趟数。
+        </div>
+
+
+        <label for="vehicleFaultReason">
+            故障或换车原因 *
+        </label>
+
+        <textarea
+            id="vehicleFaultReason"
+            placeholder="例如：右后轮故障，车辆无法继续正常作业。"
+        ></textarea>
+
+
+        <div class="modal-buttons">
+
+            <button
+                id="submitVehicleChangeButton"
+                type="button"
+                class="danger-button"
+            >
+                提交换车申请
+            </button>
+
+            <button
+                id="closeVehicleChangeButton"
+                type="button"
+                class="secondary-button"
+            >
+                取消
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<footer>
+    矿山管理系统 · 汽车司机端 V2.10.5B-H1 · 临时卸料 V2.13.7B
+</footer>
+
+<script src="js/driver-work.js?v=2.10.4R3"></script>
+
+
+<script>
+/* V2.13.5：独立换车流程停用，清理旧待审批状态，避免继续阻断运输趟数。 */
+(function () {
+    try {
+        const key = "driverVehicleChangeRequests";
+        const rows = JSON.parse(localStorage.getItem(key) || "[]");
+
+        if (!Array.isArray(rows)) {
+            return;
+        }
+
+        let changed = false;
+
+        rows.forEach(item => {
+            if (
+                ["pending", "approved"].includes(String(item?.status || "")) &&
+                item?.appliedToDriverTask !== true
+            ) {
+                item.status = "legacy_cancelled";
+                item.legacyCancelReason =
+                    "独立换车流程已停用，故障统一走维修申请 + 调度重新绑定";
+                item.updatedAt = new Date().toISOString();
+                changed = true;
+            }
+        });
+
+        if (changed) {
+            localStorage.setItem(key, JSON.stringify(rows));
+        }
+    } catch (error) {
+        console.warn("旧换车记录兼容处理失败", error);
+    }
+})();
+</script>
+
+
+
+<script>
+/* =========================================================
+   V2.13.7 临时非卸载区域卸料
+   - 只允许已完成装载并驶离装载区后的车辆使用
+   - 必须获取实时GPS，精度 <= 100m
+   - 如果当前位置已在任务允许卸载区内，要求走正常“完成一趟”
+   - 提交后写入 temporaryUnloadRequests，状态 pending_dispatch
+   - 不直接写正式 tripRecords / driverTripRecords
+   - 调度确认后再由调度端生成正式趟次
+========================================================= */
+(function () {
+    "use strict";
+
+    const REQUEST_KEY = "temporaryUnloadRequests";
+    const TASK_KEY = "driverCurrentTask";
+    const PROFILE_KEY = "driverProfile";
+    const CYCLE_KEY = "driverTransportCycleState";
+    const ZONE_KEY = "transportZones";
+
+    const $ = id => document.getElementById(id);
+
+    function readJson(key, fallback) {
+        try {
+            const value = JSON.parse(localStorage.getItem(key) || "null");
+            return value === null ? fallback : value;
+        } catch (error) {
+            return fallback;
+        }
+    }
+
+    function writeJson(key, value) {
+        localStorage.setItem(key, JSON.stringify(value));
+    }
+
+    function getTask() {
+        return readJson(TASK_KEY, null);
+    }
+
+    function getProfile() {
+        return readJson(PROFILE_KEY, null);
+    }
+
+    function getCycle() {
+        return readJson(CYCLE_KEY, null);
+    }
+
+    function getZones() {
+        const rows = readJson(ZONE_KEY, []);
+        return Array.isArray(rows) ? rows : [];
+    }
+
+    function splitNames(value) {
+        if (Array.isArray(value)) {
+            return value.map(String).map(v => v.trim()).filter(Boolean);
+        }
+
+        return String(value || "")
+            .split(/[、,，;；|]/)
+            .map(v => v.trim())
+            .filter(Boolean);
+    }
+
+    function toRad(value) {
+        return Number(value || 0) * Math.PI / 180;
+    }
+
+    function distanceMeters(lat1, lon1, lat2, lon2) {
+        const R = 6371000;
+        const p1 = toRad(lat1);
+        const p2 = toRad(lat2);
+        const dp = toRad(Number(lat2) - Number(lat1));
+        const dl = toRad(Number(lon2) - Number(lon1));
+
+        const a =
+            Math.sin(dp / 2) * Math.sin(dp / 2) +
+            Math.cos(p1) * Math.cos(p2) *
+            Math.sin(dl / 2) * Math.sin(dl / 2);
+
+        return 2 * R * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    }
+
+    function getAllowedUnloadZones(task) {
+        if (!task) return [];
+
+        const ids = Array.isArray(task.unloadingZoneIds)
+            ? task.unloadingZoneIds.map(String)
+            : splitNames(task.unloadingZoneIds || "");
+
+        const names = splitNames(
+            task.unloadingZoneNames ||
+            task.unloadingPoint ||
+            task.taskUnloadingPoint ||
+            ""
+        );
+
+        return getZones().filter(zone => {
+            if (!zone || zone.enabled === false || zone.zoneType !== "unloading") {
+                return false;
+            }
+
+            if (
+                ids.length &&
+                ids.includes(String(zone.zoneId || ""))
+            ) {
+                return true;
+            }
+
+            return (
+                names.length &&
+                names.includes(String(zone.name || "").trim())
+            );
+        });
+    }
+
+    function isInsideAllowedUnload(position, task) {
+        const lat = Number(position.coords.latitude);
+        const lon = Number(position.coords.longitude);
+
+        return getAllowedUnloadZones(task).some(zone => {
+            const zLat = Number(zone.latitude ?? zone.lat);
+            const zLon = Number(zone.longitude ?? zone.lng ?? zone.lon);
+            const radius = Number(zone.radius || 0);
+
+            if (
+                !Number.isFinite(zLat) ||
+                !Number.isFinite(zLon) ||
+                !Number.isFinite(radius) ||
+                radius <= 0
+            ) {
+                return false;
+            }
+
+            return distanceMeters(lat, lon, zLat, zLon) <= radius;
+        });
+    }
+
+    function currentDriverId(profile) {
+        return String(
+            profile?.driverId ||
+            profile?.personId ||
+            profile?.employeeId ||
+            profile?.id ||
+            ""
+        );
+    }
+
+    function currentVehicle(task) {
+        return String(
+            task?.vehicleNumber ||
+            task?.vehicleId ||
+            task?.truckNumber ||
+            task?.truckId ||
+            ""
+        );
+    }
+
+    function currentExcavator(task) {
+        return String(
+            task?.excavatorNumber ||
+            task?.excavatorId ||
+            ""
+        );
+    }
+
+    function getRequestRows() {
+        const rows = readJson(REQUEST_KEY, []);
+        return Array.isArray(rows) ? rows : [];
+    }
+
+    function latestDriverRequest() {
+        const profile = getProfile();
+        const driverId = currentDriverId(profile);
+
+        return getRequestRows()
+            .filter(item =>
+                String(item.driverId || item.personId || "") === driverId
+            )
+            .sort((a, b) =>
+                new Date(b.createdAt || 0) - new Date(a.createdAt || 0)
+            )[0] || null;
+    }
+
+    function statusText(status) {
+        const map = {
+            pending_dispatch: "待调度确认",
+            approved: "已确认，已计入正式趟次",
+            rejected: "已驳回，不计正式趟次"
+        };
+        return map[status] || String(status || "-");
+    }
+
+    function refreshTemporaryUnloadUi() {
+        const button = $("temporaryUnloadButton");
+        const statusBox = $("temporaryUnloadStatus");
+
+        if (!button || !statusBox) return;
+
+        const task = getTask();
+        const cycle = getCycle();
+
+        statusBox.classList.add("hidden");
+
+        button.classList.remove("hidden");
+        button.disabled = true;
+        button.textContent = "📍 需先完成装车并驶离装载区";
+
+        if (
+            task &&
+            task.status === "working" &&
+            cycle &&
+            cycle.phase === "enroute_unload" &&
+            cycle.loadedAt &&
+            cycle.departedLoadingAt
+        ) {
+            button.disabled = false;
+            button.textContent = "📍 临时非卸载区卸料";
+        } else if (
+            !task
+        ) {
+            button.textContent = "📍 当前无生产任务";
+        } else if (
+            task.status !== "working"
+        ) {
+            button.textContent = "📍 请先开始作业";
+        } else if (
+            cycle &&
+            cycle.phase === "waiting_loading"
+        ) {
+            button.textContent = "📍 请先进入装载区完成装车";
+        } else if (
+            cycle &&
+            cycle.phase === "loaded_wait_departure"
+        ) {
+            button.textContent = "📍 已装车，请先驶离装载区";
+        }
+
+        const latest = latestDriverRequest();
+
+        if (latest) {
+            statusBox.classList.remove("hidden");
+            statusBox.innerHTML =
+                "<strong>最近一次临时卸料：</strong>" +
+                statusText(latest.status) +
+                "<br>原因：" +
+                String(latest.reason || "-") +
+                "；物料：" +
+                String(latest.materialType || "-");
+        }
+    }
+
+    function openModal() {
+        const task = getTask();
+        const cycle = getCycle();
+
+        if (!task || task.status !== "working") {
+            alert("当前未处于作业中，不能提交临时卸料。");
+            return;
+        }
+
+        if (
+            !cycle ||
+            cycle.phase !== "enroute_unload" ||
+            !cycle.loadedAt ||
+            !cycle.departedLoadingAt
+        ) {
+            alert("必须先在装载区完成装车并驶离装载区，才能使用临时卸料。");
+            return;
+        }
+
+        $("temporaryUnloadRemark").value = "";
+        $("temporaryUnloadMaterial").value = "渣";
+        $("temporaryUnloadReason").value = "修路垫料";
+        $("temporaryUnloadGpsPreview").textContent =
+            "提交时将重新获取一次实时GPS，并记录坐标与定位精度。";
+
+        $("temporaryUnloadModal")?.classList.remove("hidden");
+    }
+
+    function closeModal() {
+        $("temporaryUnloadModal")?.classList.add("hidden");
+    }
+
+    function getFreshPosition() {
+        return new Promise((resolve, reject) => {
+            if (!navigator.geolocation) {
+                reject(new Error("当前浏览器不支持GPS定位"));
+                return;
+            }
+
+            navigator.geolocation.getCurrentPosition(
+                resolve,
+                error => reject(
+                    new Error(
+                        error?.message ||
+                        "无法获取当前位置"
+                    )
+                ),
+                {
+                    enableHighAccuracy: true,
+                    maximumAge: 0,
+                    timeout: 15000
+                }
+            );
+        });
+    }
+
+    function resetCycleForNextTrip(task, profile) {
+        const fresh = {
+            cycleKey: [
+                String(task?.taskId || task?.dispatchTaskId || ""),
+                String(task?.shiftId || ""),
+                currentVehicle(task),
+                currentDriverId(profile)
+            ].join("|"),
+
+            phase: "waiting_loading",
+            taskId: task?.taskId || task?.dispatchTaskId || "",
+            shiftId: task?.shiftId || "",
+            vehicleNumber: currentVehicle(task),
+
+            loadingCandidateAt: null,
+            departureCandidateAt: null,
+            loadedAt: null,
+            loadingGps: null,
+            loadingZoneId: "",
+            loadingZoneName: "",
+            departedLoadingAt: null,
+            arrivedUnloadAt: null,
+            unloadingZoneId: "",
+            unloadingZoneName: "",
+            materialType: "",
+            unloadingGps: null,
+            updatedAt: new Date().toISOString()
+        };
+
+        writeJson(CYCLE_KEY, fresh);
+    }
+
+    async function submitTemporaryUnload() {
+        const submitButton = $("submitTemporaryUnloadButton");
+
+        const task = getTask();
+        const profile = getProfile();
+        const cycle = getCycle();
+
+        if (
+            !task ||
+            !profile ||
+            !cycle ||
+            cycle.phase !== "enroute_unload" ||
+            !cycle.loadedAt ||
+            !cycle.departedLoadingAt
+        ) {
+            alert("当前运输闭环状态已变化，请重新确认装车和行驶状态。");
+            closeModal();
+            return;
+        }
+
+        const materialType = String(
+            $("temporaryUnloadMaterial")?.value || ""
+        );
+
+        const reason = String(
+            $("temporaryUnloadReason")?.value || ""
+        );
+
+        const remark = String(
+            $("temporaryUnloadRemark")?.value || ""
+        ).trim();
+
+        if (!materialType || !reason) {
+            alert("请选择物料类型和临时卸料原因。");
+            return;
+        }
+
+        if (reason === "其他" && !remark) {
+            alert("选择“其他”时，请填写临时卸料说明。");
+            return;
+        }
+
+        submitButton.disabled = true;
+        submitButton.textContent = "正在获取实时GPS...";
+
+        try {
+            const position = await getFreshPosition();
+            const accuracy = Number(position.coords.accuracy || 9999);
+
+            $("temporaryUnloadGpsPreview").textContent =
+                "实时GPS：" +
+                Number(position.coords.latitude).toFixed(6) +
+                ", " +
+                Number(position.coords.longitude).toFixed(6) +
+                "；精度 ±" +
+                accuracy.toFixed(0) +
+                "m";
+
+            if (accuracy > 100) {
+                throw new Error("GPS精度超过100米，请移动到开阔位置后重新提交");
+            }
+
+            if (isInsideAllowedUnload(position, task)) {
+                throw new Error("当前位置已在本任务允许卸载区内，请使用正常“完成一趟”");
+            }
+
+            const rows = getRequestRows();
+            const requestId =
+                "TEMP-UNLOAD-" +
+                Date.now() +
+                "-" +
+                Math.random().toString(36).slice(2, 7).toUpperCase();
+
+            const createdAt = new Date().toISOString();
+
+            const row = {
+                requestId,
+
+                taskId:
+                    task.taskId ||
+                    task.dispatchTaskId ||
+                    "",
+
+                dispatchTaskId:
+                    task.taskId ||
+                    task.dispatchTaskId ||
+                    "",
+
+                shiftId:
+                    task.shiftId ||
+                    "",
+
+                shift:
+                    task.shift ||
+                    "",
+
+                shiftDate:
+                    task.shiftDate ||
+                    "",
+
+                driverId:
+                    currentDriverId(profile),
+
+                personId:
+                    currentDriverId(profile),
+
+                driverName:
+                    profile.name ||
+                    task.driverName ||
+                    "",
+
+                vehicleNumber:
+                    currentVehicle(task),
+
+                vehicleId:
+                    currentVehicle(task),
+
+                excavatorNumber:
+                    currentExcavator(task),
+
+                excavatorId:
+                    currentExcavator(task),
+
+                loadingZoneId:
+                    cycle.loadingZoneId ||
+                    task.loadingZoneId ||
+                    "",
+
+                loadingZoneName:
+                    cycle.loadingZoneName ||
+                    task.loadingZoneName ||
+                    task.loadingPoint ||
+                    "",
+
+                loadedAt:
+                    cycle.loadedAt,
+
+                departedLoadingAt:
+                    cycle.departedLoadingAt,
+
+                loadingGps:
+                    cycle.loadingGps ||
+                    null,
+
+                materialType,
+                material: materialType,
+
+                reason,
+                remark,
+
+                temporaryUnloadGps: {
+                    latitude:
+                        Number(position.coords.latitude),
+
+                    longitude:
+                        Number(position.coords.longitude),
+
+                    accuracy,
+
+                    timestamp:
+                        new Date(
+                            position.timestamp ||
+                            Date.now()
+                        ).toISOString()
+                },
+
+                unloadLatitude:
+                    Number(position.coords.latitude),
+
+                unloadLongitude:
+                    Number(position.coords.longitude),
+
+                gpsAccuracy:
+                    accuracy,
+
+                status:
+                    "pending_dispatch",
+
+                dispatchConfirmation:
+                    "pending",
+
+                officialCountEligible:
+                    false,
+
+                source:
+                    "driver_temp_unload",
+
+                createdAt,
+                updatedAt:
+                    createdAt
+            };
+
+            rows.push(row);
+            writeJson(REQUEST_KEY, rows);
+
+            /*
+             * 司机现场已经完成实际卸料。
+             * 即使等待调度确认，也必须允许进入下一趟装车，
+             * 因此提交后立即重置GPS闭环到 waiting_loading。
+             */
+            resetCycleForNextTrip(task, profile);
+
+            closeModal();
+            refreshTemporaryUnloadUi();
+
+            window.dispatchEvent(
+                new StorageEvent(
+                    "storage",
+                    {
+                        key: REQUEST_KEY
+                    }
+                )
+            );
+
+            alert(
+                "临时卸料已提交调度确认。\n\n" +
+                "本次不会立即增加正式趟数；\n" +
+                "调度确认后才会计入生产统计。"
+            );
+
+        } catch (error) {
+            alert(
+                error?.message ||
+                "临时卸料提交失败"
+            );
+        } finally {
+            submitButton.disabled = false;
+            submitButton.textContent = "提交调度确认";
+        }
+    }
+
+    $("temporaryUnloadButton")
+        ?.addEventListener(
+            "click",
+            openModal
+        );
+
+    $("closeTemporaryUnloadButton")
+        ?.addEventListener(
+            "click",
+            closeModal
+        );
+
+    $("submitTemporaryUnloadButton")
+        ?.addEventListener(
+            "click",
+            submitTemporaryUnload
+        );
+
+    window.addEventListener(
+        "storage",
+        event => {
+            if (
+                [
+                    REQUEST_KEY,
+                    TASK_KEY,
+                    CYCLE_KEY
+                ]
+                .includes(event.key)
+            ) {
+                refreshTemporaryUnloadUi();
+            }
+        }
+    );
+
+    setInterval(
+        refreshTemporaryUnloadUi,
+        2000
+    );
+
+    refreshTemporaryUnloadUi();
+})();
+</script>
+
+<script src="js/driver-temp-loading.js?v=2.13.6"></script>
+
+
+<script>
+/* =========================================================
+   V2.13.7B
+   “申请换组”入口移入司机工作台面板
+   - 不修改原换组申请业务逻辑
+   - 不复制按钮、不重绑事件
+   - 仅移动 driver-work.js 已创建的原按钮
+   - 避免悬浮按钮覆盖其他弹窗的提交按钮
+========================================================= */
+(function () {
+    "use strict";
+
+    function moveTeamTransferButtonIntoPanel() {
+        const button =
+            document.getElementById(
+                "teamTransferFloatingButton"
+            );
+
+        const slot =
+            document.getElementById(
+                "teamTransferPanelSlot"
+            );
+
+        if (
+            !button ||
+            !slot
+        ) {
+            return false;
+        }
+
+        if (
+            button.parentElement !==
+                slot
+        ) {
+            slot.innerHTML = "";
+            slot.appendChild(button);
+        }
+
+        /*
+         * driver-work.js 会给该按钮注入 fixed 样式。
+         * 这里仅覆盖布局，不改变按钮ID、点击事件和换组业务。
+         */
+        button.style.setProperty(
+            "position",
+            "static",
+            "important"
+        );
+
+        button.style.setProperty(
+            "right",
+            "auto",
+            "important"
+        );
+
+        button.style.setProperty(
+            "bottom",
+            "auto",
+            "important"
+        );
+
+        button.style.setProperty(
+            "z-index",
+            "auto",
+            "important"
+        );
+
+        button.style.setProperty(
+            "width",
+            "100%",
+            "important"
+        );
+
+        button.style.setProperty(
+            "display",
+            "block",
+            "important"
+        );
+
+        button.style.setProperty(
+            "border-radius",
+            "9px",
+            "important"
+        );
+
+        button.style.setProperty(
+            "box-shadow",
+            "none",
+            "important"
+        );
+
+        button.style.setProperty(
+            "margin",
+            "0",
+            "important"
+        );
+
+        button.style.setProperty(
+            "min-height",
+            "44px",
+            "important"
+        );
+
+        return true;
+    }
+
+
+    function installTeamTransferPanelRelocator() {
+
+        if (
+            moveTeamTransferButtonIntoPanel()
+        ) {
+            return;
+        }
+
+        const observer =
+            new MutationObserver(
+                function () {
+
+                    if (
+                        moveTeamTransferButtonIntoPanel()
+                    ) {
+                        observer.disconnect();
+                    }
+                }
+            );
+
+        observer.observe(
+            document.body,
+            {
+                childList:
+                    true,
+
+                subtree:
+                    true
+            }
+        );
+
+
+        setTimeout(
+            function () {
+
+                moveTeamTransferButtonIntoPanel();
+
+                observer.disconnect();
+            },
+            5000
+        );
+    }
+
+
+    if (
+        document.readyState ===
+            "loading"
+    ) {
+
+        document.addEventListener(
+            "DOMContentLoaded",
+            installTeamTransferPanelRelocator
+        );
+
+    } else {
+
+        installTeamTransferPanelRelocator();
+    }
+
+})();
+</script>
+
+</body>
+</html>
