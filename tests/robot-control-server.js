@@ -23,14 +23,22 @@ const {
     "./bots/truck-driver-bot"
 );
 
+const {
+    initializeTruckDriverTestEnvironment,
+    clearRobotTestEnvironment
+} = require(
+    "./robot-test-fixture"
+);
+
 
 /*
 =========================================================
-R0-3 RobotControlServer
+R0-4 RobotControlServer
 机器人测试控制中心后台 + Playwright 执行器
 
 当前已接入：
 - TruckDriverBot：真实打开 GitHub Pages
+- 机器人专用 TEST 环境初始化
 - TEST 身份检查
 - TEST 任务 / TEST 车辆检查
 - 临时卸料按钮状态检查
@@ -494,6 +502,210 @@ async function captureFailure(
 }
 
 
+
+/*
+=========================================================
+TruckDriverBot：机器人专用 TEST 环境
+=========================================================
+*/
+
+
+async function prepareTruckDriverTestEnvironment() {
+
+    const botName =
+        "TruckDriverBot";
+
+
+    const bot =
+        await getTruckDriverBot();
+
+
+    try {
+
+        updateBot(
+            botName,
+            "running",
+            "正在准备机器人专用 TEST 司机环境"
+        );
+
+
+        robotMessage(
+            botName,
+            "开始初始化 TEST 司机、TEST 任务、TEST 车辆和 TEST 运输状态。"
+        );
+
+
+        const testData =
+            await initializeTruckDriverTestEnvironment(
+                bot.page
+            );
+
+
+        robotMessage(
+            botName,
+            "TEST 环境写入完成：" +
+            testData.driverId +
+            " / " +
+            testData.taskId +
+            " / " +
+            testData.vehicleId +
+            " / " +
+            testData.excavatorId
+        );
+
+
+        updateBot(
+            botName,
+            "running",
+            "正在验证 TEST 环境"
+        );
+
+
+        await bot.assertTestIdentity();
+        await bot.assertTestTask();
+
+
+        const cycle =
+            await bot.getTransportCycle();
+
+
+        if (
+            !cycle
+        ) {
+
+            throw new Error(
+                "TEST 环境初始化失败：未找到运输闭环状态"
+            );
+        }
+
+
+        robotMessage(
+            botName,
+            "TEST 环境验证通过：phase = " +
+            String(
+                cycle.phase ||
+                "-"
+            )
+        );
+
+
+        updateBot(
+            botName,
+            "pass",
+            "TEST司机环境已准备完成"
+        );
+
+
+        return {
+            ok:
+                true,
+
+            action:
+                "prepare-test-driver-environment",
+
+            testData,
+
+            cycle
+        };
+
+
+    } catch (
+        error
+    ) {
+
+        const message =
+            error?.message ||
+            String(
+                error
+            );
+
+
+        updateBot(
+            botName,
+            "fail",
+            message
+        );
+
+
+        robotMessage(
+            botName,
+            "TEST环境准备失败：" +
+            message
+        );
+
+
+        try {
+
+            await captureFailure(
+                botName,
+                truckDriverPage,
+                "prepare-test-environment"
+            );
+
+        } catch (
+            screenshotError
+        ) {}
+
+
+        throw error;
+    }
+}
+
+
+async function clearTruckDriverTestEnvironment() {
+
+    const botName =
+        "TruckDriverBot";
+
+
+    const bot =
+        await getTruckDriverBot();
+
+
+    updateBot(
+        botName,
+        "running",
+        "正在清理机器人 TEST 环境"
+    );
+
+
+    await bot.open();
+
+
+    await clearRobotTestEnvironment(
+        bot.page
+    );
+
+
+    await bot.page.reload({
+        waitUntil:
+            "domcontentloaded"
+    });
+
+
+    updateBot(
+        botName,
+        "pass",
+        "机器人 TEST 环境已清理"
+    );
+
+
+    robotMessage(
+        botName,
+        "机器人自己的 TEST localStorage 已清理。"
+    );
+
+
+    return {
+        ok:
+            true,
+
+        action:
+            "clear-test-driver-environment"
+    };
+}
+
+
 /*
 =========================================================
 TruckDriverBot 真实动作
@@ -845,6 +1057,26 @@ async function executeTruckDriverCommand(
 
 
     if (
+        /准备.*TEST.*司机.*环境|初始化.*TEST.*司机|准备测试司机环境/i.test(
+            text
+        )
+    ) {
+
+        return await prepareTruckDriverTestEnvironment();
+    }
+
+
+    if (
+        /清理.*TEST.*环境|清空.*TEST.*环境|恢复空白测试环境/i.test(
+            text
+        )
+    ) {
+
+        return await clearTruckDriverTestEnvironment();
+    }
+
+
+    if (
         /临时.*卸料.*按钮|检查.*临时.*卸料|临时非卸载区.*检查/.test(
             text
         )
@@ -877,7 +1109,7 @@ async function executeTruckDriverCommand(
 
     robotMessage(
         "TruckDriverBot",
-        "我已经接入真实 Playwright，但当前版本只允许安全检查，不执行提交/审批等业务写操作。"
+        "当前版本只允许：准备TEST司机环境、检查司机端、检查临时卸料按钮、清理TEST环境；不执行提交/审批等业务写操作。"
     );
 
 
@@ -948,10 +1180,16 @@ async function executeCommand({
         requestedBot ===
             "TestManager" &&
         (
+            /准备.*TEST.*司机.*环境|初始化.*TEST.*司机|准备测试司机环境/i.test(
+                command
+            ) ||
             /检查司机端|检查司机|司机端检查/i.test(
                 command
             ) ||
             /临时.*卸料.*按钮|检查.*临时.*卸料/.test(
+                command
+            ) ||
+            /清理.*TEST.*环境|清空.*TEST.*环境/.test(
                 command
             )
         )
@@ -1020,7 +1258,7 @@ async function executeCommand({
 
     robotMessage(
         "TestManager",
-        "当前 R0-3 已接入 TruckDriverBot 的真实检查动作。请尝试命令：“检查司机端”或“检查临时卸料按钮”。"
+        "当前 R0-4 已接入 TruckDriverBot 的 TEST 环境初始化。可用命令：“准备TEST司机环境”“检查司机端”“检查临时卸料按钮”“清理TEST环境”。"
     );
 
 
@@ -1477,7 +1715,7 @@ server.listen(
         );
 
         console.log(
-            "🤖 机器人测试控制中心 R0-3 已启动"
+            "🤖 机器人测试控制中心 R0-4 已启动"
         );
 
         console.log(
@@ -1494,7 +1732,7 @@ server.listen(
         );
 
         console.log(
-            "TruckDriverBot：已接入真实 Playwright"
+            "TruckDriverBot：已接入真实 Playwright + TEST环境初始化"
         );
 
         console.log(
