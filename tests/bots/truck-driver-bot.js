@@ -391,6 +391,210 @@ class TruckDriverBot {
     }
 
 
+    async inspectTemporaryUnloadModal() {
+
+        await this.openTemporaryUnloadModal();
+
+
+        const checks = {
+
+            modal:
+                "#temporaryUnloadModal",
+
+            material:
+                "#temporaryUnloadMaterial",
+
+            reason:
+                "#temporaryUnloadReason",
+
+            remark:
+                "#temporaryUnloadRemark",
+
+            gpsPreview:
+                "#temporaryUnloadGpsPreview",
+
+            submitButton:
+                "#submitTemporaryUnloadButton",
+
+            closeButton:
+                "#closeTemporaryUnloadButton"
+        };
+
+
+        const result = {};
+
+
+        for (
+            const [
+                name,
+                selector
+            ]
+            of Object.entries(
+                checks
+            )
+        ) {
+
+            const locator =
+                this.page.locator(
+                    selector
+                );
+
+
+            await locator.waitFor({
+                state:
+                    "attached"
+            });
+
+
+            const visible =
+                await locator.isVisible();
+
+
+            if (
+                !visible
+            ) {
+
+                throw new Error(
+                    "TruckDriverBot：临时卸料弹窗字段不可见：" +
+                    name
+                );
+            }
+
+
+            result[
+                name
+            ] = {
+                visible:
+                    true,
+
+                text:
+                    (
+                        await locator.textContent()
+                    )?.trim() ||
+                    ""
+            };
+        }
+
+
+        const materialOptions =
+            await this.page
+                .locator(
+                    "#temporaryUnloadMaterial option"
+                )
+                .count();
+
+
+        const reasonOptions =
+            await this.page
+                .locator(
+                    "#temporaryUnloadReason option"
+                )
+                .count();
+
+
+        if (
+            materialOptions <
+                1
+        ) {
+
+            throw new Error(
+                "TruckDriverBot：物料类型没有可选项"
+            );
+        }
+
+
+        if (
+            reasonOptions <
+                1
+        ) {
+
+            throw new Error(
+                "TruckDriverBot：临时卸料原因没有可选项"
+            );
+        }
+
+
+        const gpsText =
+            (
+                await this.page
+                    .locator(
+                        "#temporaryUnloadGpsPreview"
+                    )
+                    .textContent()
+            )?.trim() ||
+            "";
+
+
+        if (
+            !gpsText
+        ) {
+
+            throw new Error(
+                "TruckDriverBot：GPS提示为空"
+            );
+        }
+
+
+        result.materialOptions =
+            materialOptions;
+
+        result.reasonOptions =
+            reasonOptions;
+
+        result.gpsText =
+            gpsText;
+
+        result.submitButtonText =
+            (
+                await this.page
+                    .locator(
+                        "#submitTemporaryUnloadButton"
+                    )
+                    .textContent()
+            )?.trim() ||
+            "";
+
+        result.closeButtonText =
+            (
+                await this.page
+                    .locator(
+                        "#closeTemporaryUnloadButton"
+                    )
+                    .textContent()
+            )?.trim() ||
+            "";
+
+
+        /*
+         * 本步骤只验证弹窗，不提交任何业务数据。
+         * 最后点击关闭，确认关闭逻辑正常。
+         */
+
+        await this.page
+            .locator(
+                "#closeTemporaryUnloadButton"
+            )
+            .click();
+
+
+        await this.page
+            .locator(
+                "#temporaryUnloadModal"
+            )
+            .waitFor({
+                state:
+                    "hidden"
+            });
+
+
+        result.closeVerified =
+            true;
+
+
+        return result;
+    }
+
+
     async selectTemporaryUnloadOptions({
         material =
             "渣",
