@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>机器人测试控制中心</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Microsoft YaHei",Arial,sans-serif;background:#f3f6fb;color:#0f172a}
+header{background:#0f172a;color:#fff;padding:16px;position:sticky;top:0;z-index:10}
+.head{max-width:1300px;margin:auto;display:flex;justify-content:space-between;gap:12px;align-items:center}
+h1{margin:0;font-size:22px}.sub{margin-top:4px;color:#cbd5e1;font-size:12px}
+.safe{padding:8px 12px;border-radius:999px;background:#052e16;color:#bbf7d0;border:1px solid #166534;font-weight:800;font-size:12px}
+main{max-width:1300px;margin:16px auto;padding:0 12px 28px}
+.notice{padding:12px 14px;background:#fffbeb;border:1px solid #fde68a;border-radius:12px;color:#92400e;font-size:13px;line-height:1.6;margin-bottom:12px}
+.connection{padding:10px 12px;border-radius:10px;margin-bottom:12px;font-size:13px;font-weight:800}
+.connection.ok{background:#dcfce7;color:#166534;border:1px solid #86efac}
+.connection.bad{background:#fee2e2;color:#b91c1c;border:1px solid #fecaca}
+.grid{display:grid;grid-template-columns:340px 1fr;gap:12px}
+.panel{background:#fff;border:1px solid #dbe3ef;border-radius:14px;box-shadow:0 4px 16px rgba(15,23,42,.05)}
+.title{padding:13px 15px;border-bottom:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center}
+.title h2{font-size:17px;margin:0}.bots{padding:12px;display:grid;gap:9px}
+.bot{padding:12px;border:1px solid #dbe3ef;border-radius:11px;background:#fbfdff;cursor:pointer}.bot:hover{border-color:#93c5fd}
+.bothead{display:flex;justify-content:space-between;gap:10px}.name{font-weight:900}.role{font-size:12px;color:#64748b;margin-top:5px;line-height:1.5}
+.step{font-size:12px;margin-top:8px;background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:8px}
+.badge{font-size:11px;font-weight:800;padding:4px 8px;border-radius:999px}
+.idle{background:#e2e8f0;color:#475569}.running{background:#dbeafe;color:#1d4ed8}.waiting{background:#fef3c7;color:#92400e}.pass{background:#dcfce7;color:#166534}.fail{background:#fee2e2;color:#b91c1c}
+.right{min-height:70vh;display:grid;grid-template-rows:auto 1fr auto}
+.flow{padding:12px 14px;border-bottom:1px solid #e2e8f0;display:flex;justify-content:space-between;gap:10px}
+.flow small{display:block;color:#64748b;margin-top:3px}.chip{padding:7px 10px;background:#eef2ff;color:#4338ca;border-radius:999px;font-size:12px;font-weight:800;height:max-content}
+.messages{padding:14px;background:#f8fafc;overflow:auto;max-height:58vh}
+.msg{display:flex;margin-bottom:10px}.msg.user{justify-content:flex-end}
+.bubble{max-width:88%;padding:10px 12px;border-radius:12px;font-size:13px;line-height:1.65;white-space:pre-wrap;word-break:break-word}
+.botmsg .bubble{background:#fff;border:1px solid #dbe3ee}.user .bubble{background:#2563eb;color:#fff}
+.meta{font-size:11px;color:#94a3b8;margin-bottom:4px}
+.command{padding:12px;border-top:1px solid #e2e8f0}
+.commandrow{display:grid;grid-template-columns:220px 1fr auto;gap:8px}
+select,textarea,button{font:inherit}select,textarea{width:100%;border:1px solid #cbd5e1;border-radius:9px;padding:9px 10px}
+textarea{min-height:72px;resize:vertical}.send{border:0;border-radius:9px;background:#2563eb;color:white;font-weight:900;padding:0 16px;cursor:pointer}.send:disabled{opacity:.5;cursor:not-allowed}
+.quick{display:flex;gap:7px;flex-wrap:wrap;margin-top:8px}.quick button{border:1px solid #cbd5e1;background:#f8fafc;border-radius:8px;padding:7px 10px;font-size:12px;font-weight:700;cursor:pointer}
+.timeline{margin-top:12px}.tl{padding:12px 16px;max-height:240px;overflow:auto}
+.tli{display:grid;grid-template-columns:70px 130px 1fr;gap:10px;padding:7px 0;border-bottom:1px dashed #e2e8f0;font-size:12px}
+.tlt{color:#94a3b8}.tlb{font-weight:800}.tld{color:#475569}
+@media(max-width:900px){.grid{grid-template-columns:1fr}.commandrow{grid-template-columns:1fr}.send{min-height:44px}.messages{max-height:50vh}}
+</style>
+</head>
+<body>
+<header>
+  <div class="head">
+    <div><h1>🤖 机器人测试控制中心</h1><div class="sub">Robot Test Control Center · mine-management</div></div>
+    <div class="safe">🔒 仅允许 TEST- 数据</div>
+  </div>
+</header>
+
+<main>
+  <div class="notice">
+    <strong>最高安全规则：</strong>
+    所有机器人只能操作 <code>TEST-</code> 开头的数据。
+    本页面必须通过本地 <code>robot-control-server.js</code> 打开，不要直接从 GitHub Pages 打开。
+  </div>
+
+  <div id="connection" class="connection bad">🔴 正在连接机器人后台……</div>
+
+  <div class="grid">
+    <section class="panel">
+      <div class="title"><h2>机器人</h2><span>3 个</span></div>
+      <div id="bots" class="bots"></div>
+    </section>
+
+    <section class="panel right">
+      <div class="flow">
+        <div>
+          <strong id="flowTitle">当前流程：待命</strong>
+          <small id="flowDesc">等待你下发测试命令</small>
+        </div>
+        <div id="flowChip" class="chip">IDLE</div>
+      </div>
+
+      <div id="messages" class="messages"></div>
+
+      <div class="command">
+        <div class="commandrow">
+          <select id="target">
+            <option value="TestManager">TestManager · 总控</option>
+            <option value="DispatchBot">DispatchBot · 调度</option>
+            <option value="TruckDriverBot">TruckDriverBot · 汽车司机</option>
+          </select>
+
+          <textarea id="input" placeholder="例如：开始测试临时非卸载区卸料完整闭环"></textarea>
+
+          <button id="send" class="send" disabled>下发命令</button>
+        </div>
+
+        <div class="quick">
+          <button data-cmd="开始测试临时非卸载区卸料完整闭环">▶ 临时卸料闭环</button>
+          <button data-cmd="检查当前机器人卡在哪一步">📍 当前卡点</button>
+          <button data-cmd="输出当前测试报告">📄 测试报告</button>
+          <button data-cmd="全部机器人恢复待命">↺ 全部待命</button>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <section class="panel timeline">
+    <div class="title"><h2>执行时间线</h2><span>实时反馈</span></div>
+    <div id="timeline" class="tl"></div>
+  </section>
+</main>
+
+<script>
+"use strict";
+
+const botsState = {
+  TestManager:{name:"TestManager",icon:"🧠",role:"测试总控：分配步骤、判断 PASS / FAIL、汇总报告",status:"idle",step:"等待测试命令"},
+  DispatchBot:{name:"DispatchBot",icon:"📋",role:"调度机器人：审核 TEST 任务、GPS异常、临时卸料",status:"idle",step:"待命"},
+  TruckDriverBot:{name:"TruckDriverBot",icon:"🚚",role:"汽车司机机器人：执行 TEST 司机端运输流程",status:"idle",step:"待命"}
+};
+
+const messageRows = [];
+const timelineRows = [];
+let connected = false;
+let eventSource = null;
+
+function time(){
+  return new Date().toLocaleTimeString("zh-CN",{hour:"2-digit",minute:"2-digit",second:"2-digit"});
+}
+
+function esc(v){
+  return String(v??"")
+    .replaceAll("&","&amp;")
+    .replaceAll("<","&lt;")
+    .replaceAll(">","&gt;")
+    .replaceAll('"',"&quot;")
+    .replaceAll("'","&#039;");
+}
+
+function statusLabel(s){
+  return ({idle:"待命",running:"执行中",waiting:"等待用户",pass:"通过",fail:"失败"})[s]||s;
+}
+
+function renderBots(){
+  bots.innerHTML = Object.values(botsState).map(b=>`
+    <div class="bot" data-name="${esc(b.name)}">
+      <div class="bothead">
+        <div class="name">${b.icon} ${esc(b.name)}</div>
+        <span class="badge ${esc(b.status)}">${statusLabel(b.status)}</span>
+      </div>
+      <div class="role">${esc(b.role)}</div>
+      <div class="step"><strong>当前：</strong>${esc(b.step)}</div>
+    </div>
+  `).join("");
+
+  bots.querySelectorAll(".bot").forEach(x=>{
+    x.onclick=()=>target.value=x.dataset.name;
+  });
+}
+
+function renderMessages(){
+  messages.innerHTML = messageRows.length
+    ? messageRows.map(m=>`
+        <div class="msg ${m.type==="user"?"user":"botmsg"}">
+          <div class="bubble">
+            <div class="meta">${esc(m.sender)} · ${esc(m.time)}</div>
+            ${esc(m.text)}
+          </div>
+        </div>
+      `).join("")
+    : `<div class="msg botmsg"><div class="bubble"><div class="meta">TestManager · ${time()}</div>等待连接本地机器人后台。</div></div>`;
+
+  messages.scrollTop=messages.scrollHeight;
+}
+
+function renderTimeline(){
+  timeline.innerHTML = timelineRows.length
+    ? timelineRows.slice().reverse().map(x=>`
+        <div class="tli">
+          <div class="tlt">${esc(x.time)}</div>
+          <div class="tlb">${esc(x.bot)}</div>
+          <div class="tld">${esc(x.text)}</div>
+        </div>
+      `).join("")
+    : `<div style="color:#94a3b8;font-size:12px">暂无执行记录</div>`;
+}
+
+function addMessage(sender,text,type="bot"){
+  messageRows.push({sender,text,type,time:time()});
+  renderMessages();
+}
+
+function addTimeline(bot,text){
+  timelineRows.push({bot,text,time:time()});
+  if(timelineRows.length>200) timelineRows.shift();
+  renderTimeline();
+}
+
+function setBot(name,status,step){
+  if(!botsState[name]) return;
+  botsState[name].status=status;
+  botsState[name].step=step||"";
+  renderBots();
+}
+
+function setFlow(title,desc,chip){
+  flowTitle.textContent=title;
+  flowDesc.textContent=desc;
+  flowChip.textContent=chip;
+}
+
+function setConnection(ok,text){
+  connected=ok;
+  connection.className="connection "+(ok?"ok":"bad");
+  connection.textContent=(ok?"🟢 ":"🔴 ")+text;
+  send.disabled=!ok;
+}
+
+async function loadStatus(){
+  try{
+    const response=await fetch("/api/status",{cache:"no-store"});
+    if(!response.ok) throw new Error("status "+response.status);
+
+    const data=await response.json();
+
+    Object.entries(data.robots||{}).forEach(([name,row])=>{
+      setBot(name,row.status||"idle",row.step||"");
+    });
+
+    setConnection(true,"机器人后台已连接 · http://127.0.0.1:4310");
+    return true;
+  }catch(error){
+    setConnection(false,"机器人后台未连接。请先运行：node tests/robot-control-server.js");
+    return false;
+  }
+}
+
+function connectEvents(){
+  if(eventSource) eventSource.close();
+
+  eventSource=new EventSource("/api/events");
+
+  eventSource.onopen=()=>{
+    setConnection(true,"机器人后台已连接 · 实时反馈通道正常");
+  };
+
+  eventSource.onerror=()=>{
+    setConnection(false,"与机器人后台的实时连接中断");
+  };
+
+  eventSource.onmessage=event=>{
+    let data;
+    try{
+      data=JSON.parse(event.data);
+    }catch(error){
+      return;
+    }
+
+    if(data.type==="bot-status"){
+      setBot(data.bot,data.status,data.step);
+      addTimeline(data.bot,`${statusLabel(data.status)}：${data.step||""}`);
+
+      if(data.status==="running"){
+        setFlow(`当前机器人：${data.bot}`,data.step||"执行中","RUNNING");
+      }else if(data.status==="waiting"){
+        setFlow(`当前卡点：${data.bot}`,data.step||"等待用户","WAITING");
+      }else if(data.status==="pass"){
+        setFlow(`已通过：${data.bot}`,data.step||"完成","PASS");
+      }else if(data.status==="fail"){
+        setFlow(`失败：${data.bot}`,data.step||"失败","FAIL");
+      }
+    }
+
+    if(data.type==="message"){
+      addMessage(data.bot||"TestManager",data.message||"");
+      addTimeline(data.bot||"TestManager",data.message||"");
+    }
+  };
+}
+
+async function sendCommand(){
+  const command=input.value.trim();
+  const targetName=target.value;
+
+  if(!command){
+    alert("请输入测试命令");
+    return;
+  }
+
+  if(!connected){
+    alert("机器人后台尚未连接");
+    return;
+  }
+
+  addMessage("你 → "+targetName,command,"user");
+  addTimeline("USER",`${targetName} ← ${command}`);
+
+  send.disabled=true;
+
+  try{
+    const response=await fetch("/api/command",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({
+        target:targetName,
+        command
+      })
+    });
+
+    const data=await response.json();
+
+    if(!response.ok || !data.ok){
+      throw new Error(data.error||"命令执行失败");
+    }
+
+    input.value="";
+  }catch(error){
+    addMessage("TestSafetyGuard",error.message||String(error));
+    addTimeline("TestSafetyGuard",error.message||String(error));
+    setFlow("当前流程：命令失败",error.message||String(error),"FAIL");
+  }finally{
+    send.disabled=!connected;
+  }
+}
+
+send.onclick=sendCommand;
+
+input.onkeydown=e=>{
+  if(e.key==="Enter"&&(e.ctrlKey||e.metaKey)){
+    sendCommand();
+  }
+};
+
+document.querySelectorAll("[data-cmd]").forEach(button=>{
+  button.onclick=()=>{
+    target.value="TestManager";
+    input.value=button.dataset.cmd;
+    sendCommand();
+  };
+});
+
+renderBots();
+renderMessages();
+renderTimeline();
+setFlow("当前流程：连接后台","正在检查本地机器人服务","CONNECTING");
+
+loadStatus().then(ok=>{
+  if(ok){
+    connectEvents();
+    addMessage("TestManager","控制面板已连接本地机器人后台。");
+    addTimeline("TestManager","控制通道已建立");
+    setFlow("当前流程：待命","等待你下发测试命令","IDLE");
+  }
+});
+
+setInterval(loadStatus,5000);
+</script>
+</body>
+</html>
