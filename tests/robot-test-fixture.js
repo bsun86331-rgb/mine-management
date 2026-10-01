@@ -2,7 +2,7 @@
 
 /*
 =========================================================
-R0-4C RobotTestFixture
+R0-4D RobotTestFixture
 机器人专用 TEST 测试环境
 
 本版修复：
@@ -163,6 +163,202 @@ async function initializeTruckDriverTestEnvironment(
 
     const payload =
         buildFixturePayload();
+
+
+    /*
+     * R0-4D
+     * 在页面业务脚本执行前安装 TEST GPS。
+     *
+     * 之前在页面加载完成后再覆盖 navigator.geolocation，
+     * 某些 Chromium 环境最终 getCurrentPosition() 仍可能回落到
+     * 浏览器真实实现，返回 accuracy=0/null。
+     *
+     * 这里通过 addInitScript 在 driver-work.js 之前安装，
+     * 保证 watchPosition / getCurrentPosition 全程使用 TEST GPS。
+     */
+    await page.addInitScript(
+        () => {
+
+            if (
+                window.__robotDeterministicGpsInstalled
+            ) {
+
+                return;
+            }
+
+
+            window.__robotTestGpsState = {
+                latitude:
+                    43.850000,
+
+                longitude:
+                    105.750000,
+
+                accuracy:
+                    10
+            };
+
+
+            const watchers =
+                new Map();
+
+
+            let watcherId =
+                1;
+
+
+            const buildPosition =
+                () => {
+
+                    const state =
+                        window.__robotTestGpsState ||
+                        {};
+
+
+                    return {
+                        coords: {
+                            latitude:
+                                Number(
+                                    state.latitude
+                                ),
+
+                            longitude:
+                                Number(
+                                    state.longitude
+                                ),
+
+                            accuracy:
+                                Number(
+                                    state.accuracy ||
+                                    10
+                                ),
+
+                            altitude:
+                                null,
+
+                            altitudeAccuracy:
+                                null,
+
+                            heading:
+                                null,
+
+                            speed:
+                                null
+                        },
+
+                        timestamp:
+                            Date.now()
+                    };
+                };
+
+
+            const fakeGeolocation = {
+
+                getCurrentPosition(
+                    success,
+                    error,
+                    options
+                ) {
+
+                    setTimeout(
+                        () => {
+
+                            success(
+                                buildPosition()
+                            );
+                        },
+                        30
+                    );
+                },
+
+
+                watchPosition(
+                    success,
+                    error,
+                    options
+                ) {
+
+                    const id =
+                        watcherId++;
+
+
+                    const timer =
+                        setInterval(
+                            () => {
+
+                                success(
+                                    buildPosition()
+                                );
+                            },
+                            250
+                        );
+
+
+                    watchers.set(
+                        id,
+                        timer
+                    );
+
+
+                    setTimeout(
+                        () => {
+
+                            success(
+                                buildPosition()
+                            );
+                        },
+                        20
+                    );
+
+
+                    return id;
+                },
+
+
+                clearWatch(
+                    id
+                ) {
+
+                    const timer =
+                        watchers.get(
+                            id
+                        );
+
+
+                    if (
+                        timer
+                    ) {
+
+                        clearInterval(
+                            timer
+                        );
+
+
+                        watchers.delete(
+                            id
+                        );
+                    }
+                }
+            };
+
+
+            Object.defineProperty(
+                navigator,
+                "geolocation",
+                {
+                    configurable:
+                        true,
+
+                    value:
+                        fakeGeolocation
+                }
+            );
+
+
+            window.__robotDeterministicGpsInstalled =
+                true;
+        }
+    );
 
 
     /*
