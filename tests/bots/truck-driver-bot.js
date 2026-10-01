@@ -644,6 +644,481 @@ class TruckDriverBot {
     }
 
 
+    async submitTestTemporaryUnload() {
+
+        const {
+            profile,
+            task
+        } =
+            await this.assertSafeContext();
+
+
+        const driverId =
+            profile.driverId ||
+            profile.personId ||
+            profile.employeeId ||
+            profile.id ||
+            "";
+
+
+        const taskId =
+            task.taskId ||
+            task.dispatchTaskId ||
+            task.id ||
+            "";
+
+
+        const vehicleId =
+            task.vehicleNumber ||
+            task.vehicleId ||
+            task.truckNumber ||
+            task.truckId ||
+            "";
+
+
+        assertTestId(
+            driverId,
+            "司机"
+        );
+
+
+        assertTestId(
+            taskId,
+            "生产任务"
+        );
+
+
+        assertTestId(
+            vehicleId,
+            "汽车"
+        );
+
+
+        await this.assertTemporaryUnloadReady();
+
+
+        /*
+         * 使用 Playwright 测试GPS。
+         * 只作用于机器人自己的浏览器上下文。
+         */
+
+        await this.page
+            .context()
+            .grantPermissions(
+                [
+                    "geolocation"
+                ]
+            );
+
+
+        await this.page
+            .context()
+            .setGeolocation({
+                latitude:
+                    43.85,
+
+                longitude:
+                    105.75,
+
+                accuracy:
+                    10
+            });
+
+
+        /*
+         * 业务页面原本会生成 TEMP-UNLOAD-*。
+         * 为坚持“机器人只产生 TEST- 数据”，
+         * 在机器人浏览器中仅针对 temporaryUnloadRequests
+         * 将 TEST 任务产生的新申请ID改为 TEST- 前缀。
+         */
+
+        await this.page.evaluate(
+            () => {
+
+                if (
+                    window.__robotTestTempUnloadGuardInstalled
+                ) {
+
+                    return;
+                }
+
+
+                const originalSetItem =
+                    localStorage.setItem.bind(
+                        localStorage
+                    );
+
+
+                localStorage.setItem =
+                    function (
+                        key,
+                        value
+                    ) {
+
+                        if (
+                            key ===
+                                "temporaryUnloadRequests"
+                        ) {
+
+                            try {
+
+                                const rows =
+                                    JSON.parse(
+                                        value ||
+                                        "[]"
+                                    );
+
+
+                                if (
+                                    Array.isArray(
+                                        rows
+                                    )
+                                ) {
+
+                                    rows.forEach(
+                                        item => {
+
+                                            const taskId =
+                                                String(
+                                                    item?.taskId ||
+                                                    item?.dispatchTaskId ||
+                                                    ""
+                                                );
+
+
+                                            if (
+                                                taskId.startsWith(
+                                                    "TEST-"
+                                                ) &&
+                                                !String(
+                                                    item?.requestId ||
+                                                    ""
+                                                )
+                                                .startsWith(
+                                                    "TEST-"
+                                                )
+                                            ) {
+
+                                                item.requestId =
+                                                    "TEST-" +
+                                                    String(
+                                                        item.requestId ||
+                                                        (
+                                                            "TEMP-UNLOAD-" +
+                                                            Date.now()
+                                                        )
+                                                    );
+                                            }
+                                        }
+                                    );
+
+
+                                    value =
+                                        JSON.stringify(
+                                            rows
+                                        );
+                                }
+
+                            } catch (
+                                error
+                            ) {
+
+                                console.warn(
+                                    "[TruckDriverBot] TEST临时卸料申请ID保护失败",
+                                    error
+                                );
+                            }
+                        }
+
+
+                        return originalSetItem(
+                            key,
+                            value
+                        );
+                    };
+
+
+                window.__robotTestTempUnloadGuardInstalled =
+                    true;
+            }
+        );
+
+
+        const beforeRequests =
+            await this.readLocalStorage(
+                "temporaryUnloadRequests"
+            ) ||
+            [];
+
+
+        const beforeCount =
+            Array.isArray(
+                beforeRequests
+            )
+                ? beforeRequests.length
+                : 0;
+
+
+        const beforeTripCount =
+            await this.readCurrentTripCount();
+
+
+        await this.openTemporaryUnloadModal();
+
+
+        await this.selectTemporaryUnloadOptions({
+            material:
+                "渣",
+
+            reason:
+                "修路垫料",
+
+            remark:
+                "TEST-机器人临时卸料测试"
+        });
+
+
+        /*
+         * 页面提交成功后会 alert。
+         */
+
+        this.page.once(
+            "dialog",
+            async dialog => {
+
+                await dialog.accept();
+            }
+        );
+
+
+        await this.page
+            .locator(
+                "#submitTemporaryUnloadButton"
+            )
+            .click();
+
+
+        await this.page.waitForTimeout(
+            800
+        );
+
+
+        const afterRequests =
+            await this.readLocalStorage(
+                "temporaryUnloadRequests"
+            );
+
+
+        if (
+            !Array.isArray(
+                afterRequests
+            ) ||
+            afterRequests.length !==
+                beforeCount +
+                1
+        ) {
+
+            throw new Error(
+                "TruckDriverBot：临时卸料申请没有新增1条"
+            );
+        }
+
+
+        const row =
+            afterRequests[
+                afterRequests.length -
+                1
+            ];
+
+
+        const requestId =
+            String(
+                row?.requestId ||
+                ""
+            );
+
+
+        assertTestId(
+            requestId,
+            "临时卸料申请"
+        );
+
+
+        assertTestId(
+            row?.taskId ||
+            row?.dispatchTaskId ||
+            "",
+            "临时卸料申请任务"
+        );
+
+
+        assertTestId(
+            row?.driverId ||
+            row?.personId ||
+            "",
+            "临时卸料申请司机"
+        );
+
+
+        assertTestId(
+            row?.vehicleNumber ||
+            row?.vehicleId ||
+            "",
+            "临时卸料申请车辆"
+        );
+
+
+        if (
+            String(
+                row?.taskId ||
+                row?.dispatchTaskId ||
+                ""
+            ) !==
+                taskId
+        ) {
+
+            throw new Error(
+                "TruckDriverBot：临时卸料申请任务不匹配"
+            );
+        }
+
+
+        if (
+            String(
+                row?.driverId ||
+                row?.personId ||
+                ""
+            ) !==
+                driverId
+        ) {
+
+            throw new Error(
+                "TruckDriverBot：临时卸料申请司机不匹配"
+            );
+        }
+
+
+        if (
+            String(
+                row?.vehicleNumber ||
+                row?.vehicleId ||
+                ""
+            ) !==
+                vehicleId
+        ) {
+
+            throw new Error(
+                "TruckDriverBot：临时卸料申请车辆不匹配"
+            );
+        }
+
+
+        if (
+            row?.status !==
+                "pending_dispatch"
+        ) {
+
+            throw new Error(
+                "TruckDriverBot：临时卸料申请未进入 pending_dispatch"
+            );
+        }
+
+
+        if (
+            row?.officialCountEligible !==
+                false
+        ) {
+
+            throw new Error(
+                "TruckDriverBot：临时卸料申请被错误标记为可直接计正式趟次"
+            );
+        }
+
+
+        if (
+            row?.materialType !==
+                "渣"
+        ) {
+
+            throw new Error(
+                "TruckDriverBot：物料类型不是“渣”"
+            );
+        }
+
+
+        if (
+            row?.reason !==
+                "修路垫料"
+        ) {
+
+            throw new Error(
+                "TruckDriverBot：临时卸料原因不是“修路垫料”"
+            );
+        }
+
+
+        const afterTripCount =
+            await this.readCurrentTripCount();
+
+
+        if (
+            afterTripCount !==
+                beforeTripCount
+        ) {
+
+            throw new Error(
+                "TruckDriverBot：临时卸料提交后正式趟数被立即增加"
+            );
+        }
+
+
+        const cycle =
+            await this.getTransportCycle();
+
+
+        if (
+            !cycle ||
+            cycle.phase !==
+                "waiting_loading"
+        ) {
+
+            throw new Error(
+                "TruckDriverBot：提交后运输闭环没有重置为 waiting_loading"
+            );
+        }
+
+
+        return {
+            requestId,
+            taskId,
+            driverId,
+            vehicleId,
+
+            status:
+                row.status,
+
+            officialCountEligible:
+                row.officialCountEligible,
+
+            materialType:
+                row.materialType,
+
+            reason:
+                row.reason,
+
+            beforeTripCount,
+            afterTripCount,
+
+            cyclePhase:
+                cycle.phase,
+
+            gps:
+                row.temporaryUnloadGps ||
+                null
+        };
+    }
+
+
     async readCurrentTripCount() {
 
         const value =
