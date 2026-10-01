@@ -39,7 +39,7 @@ const {
 
 /*
 =========================================================
-R0-6 RobotControlServer
+R0-7 RobotControlServer
 机器人测试控制中心后台 + Playwright 执行器
 
 当前已接入：
@@ -1679,6 +1679,150 @@ async function runTestManagerTemporaryUnloadFullCycle() {
 }
 
 
+async function runNormalTransportClosedLoopTest() {
+
+    const botName =
+        "TestManager";
+
+
+    try {
+
+        updateBot(
+            botName,
+            "running",
+            "正在执行正常装卸运输完整闭环"
+        );
+
+
+        robotMessage(
+            botName,
+            "步骤 1/2：准备 TEST 司机、车辆、运输区域和设备检查环境。"
+        );
+
+
+        await prepareTruckDriverTestEnvironment();
+
+
+        robotMessage(
+            botName,
+            "步骤 2/2：TruckDriverBot 模拟进入装载区 → 稳定装车 → 驶离 → 进入TEST排土场 → 完成一趟。"
+        );
+
+
+        const bot =
+            await getTruckDriverBot();
+
+
+        await bot.open();
+
+
+        const result =
+            await bot.testNormalTransportClosedLoop();
+
+
+        robotMessage(
+            botName,
+            "正常运输闭环通过：正式TEST趟次 " +
+            result.tripId +
+            "；本班趟数 " +
+            result.beforeUiCount +
+            " → " +
+            result.afterUiCount
+        );
+
+
+        robotMessage(
+            botName,
+            "验证：任务 " +
+            result.taskId +
+            "；司机 " +
+            result.driverId +
+            "；车辆 " +
+            result.vehicleId +
+            "；物料 " +
+            result.materialType +
+            "；transportValidation=" +
+            result.transportValidation +
+            "；下一趟状态=" +
+            result.cyclePhase
+        );
+
+
+        updateBot(
+            "TruckDriverBot",
+            "pass",
+            "正常GPS装卸运输闭环通过"
+        );
+
+
+        updateBot(
+            botName,
+            "pass",
+            "正常装卸运输完整闭环测试通过"
+        );
+
+
+        return {
+            ok:
+                true,
+
+            action:
+                "normal-transport-full-cycle-test",
+
+            result
+        };
+
+
+    } catch (
+        error
+    ) {
+
+        const message =
+            error?.message ||
+            String(
+                error
+            );
+
+
+        updateBot(
+            botName,
+            "fail",
+            message
+        );
+
+
+        updateBot(
+            "TruckDriverBot",
+            "fail",
+            message
+        );
+
+
+        robotMessage(
+            botName,
+            "正常运输完整闭环失败：" +
+            message
+        );
+
+
+        try {
+
+            await captureFailure(
+                "TruckDriverBot",
+                truckDriverPage,
+                "normal-transport-full-cycle"
+            );
+
+        } catch (
+            screenshotError
+        ) {}
+
+
+        throw error;
+    }
+}
+
+
 /*
 =========================================================
 命令路由
@@ -1822,6 +1966,23 @@ async function executeCommand({
         requestedBot ===
             "TestManager" &&
         (
+            /测试.*正常.*装卸.*运输.*完整.*闭环/i.test(
+                command
+            ) ||
+            /正常.*运输.*完整.*闭环/i.test(
+                command
+            )
+        )
+    ) {
+
+        return await runNormalTransportClosedLoopTest();
+    }
+
+
+    if (
+        requestedBot ===
+            "TestManager" &&
+        (
             /测试临时非卸载区卸料完整闭环/i.test(
                 command
             ) ||
@@ -1915,7 +2076,7 @@ async function executeCommand({
 
     robotMessage(
         "TestManager",
-        "当前已接入 TruckDriverBot + DispatchBot。TestManager 可用命令：“测试临时非卸载区卸料完整闭环”。"
+        "当前已接入 TruckDriverBot + DispatchBot。TestManager 可用命令：“测试正常装卸运输完整闭环”“测试临时非卸载区卸料完整闭环”。"
     );
 
 
@@ -2372,7 +2533,7 @@ server.listen(
         );
 
         console.log(
-            "🤖 机器人测试控制中心 R0-6 已启动"
+            "🤖 机器人测试控制中心 R0-7 已启动"
         );
 
         console.log(
