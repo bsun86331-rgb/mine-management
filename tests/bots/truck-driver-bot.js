@@ -1119,6 +1119,690 @@ class TruckDriverBot {
     }
 
 
+    async testNormalTransportClosedLoop() {
+
+        const {
+            profile,
+            task
+        } =
+            await this.assertSafeContext();
+
+
+        const driverId =
+            profile.driverId ||
+            profile.personId ||
+            "";
+
+
+        const taskId =
+            task.taskId ||
+            task.dispatchTaskId ||
+            "";
+
+
+        const vehicleId =
+            task.vehicleNumber ||
+            task.vehicleId ||
+            "";
+
+
+        assertTestId(
+            driverId,
+            "司机"
+        );
+
+
+        assertTestId(
+            taskId,
+            "生产任务"
+        );
+
+
+        assertTestId(
+            vehicleId,
+            "汽车"
+        );
+
+
+        const context =
+            this.page.context();
+
+
+        await context.grantPermissions(
+            [
+                "geolocation"
+            ]
+        );
+
+
+        /*
+         * 正常运输测试必须从 waiting_loading 开始，
+         * 不复用临时卸料测试的 enroute_unload 状态。
+         */
+        await this.page.evaluate(
+            ({
+                taskId,
+                shiftId,
+                vehicleId,
+                driverId
+            }) => {
+
+                localStorage.setItem(
+                    "driverTransportCycleState",
+                    JSON.stringify({
+                        cycleKey:
+                            [
+                                taskId,
+                                shiftId,
+                                vehicleId,
+                                driverId
+                            ].join("|"),
+
+                        phase:
+                            "waiting_loading",
+
+                        taskId,
+                        shiftId,
+                        vehicleNumber:
+                            vehicleId,
+
+                        loadingCandidateAt:
+                            null,
+
+                        departureCandidateAt:
+                            null,
+
+                        loadedAt:
+                            null,
+
+                        loadingGps:
+                            null,
+
+                        departedLoadingAt:
+                            null,
+
+                        arrivedUnloadAt:
+                            null,
+
+                        unloadingZoneId:
+                            "",
+
+                        unloadingZoneName:
+                            "",
+
+                        materialType:
+                            "",
+
+                        unloadingGps:
+                            null,
+
+                        updatedAt:
+                            new Date().toISOString(),
+
+                        robotFixture:
+                            true
+                    })
+                );
+            },
+            {
+                taskId,
+                shiftId:
+                    task.shiftId ||
+                    "TEST-SHIFT-001",
+                vehicleId,
+                driverId
+            }
+        );
+
+
+        /*
+         * 保护正常趟次ID：
+         * 正式页面默认生成 TRIP_*，
+         * 机器人测试统一改为 TEST-TRIP-*。
+         */
+        await this.page.evaluate(
+            () => {
+
+                if (
+                    window.__robotTestNormalTripGuardInstalled
+                ) {
+
+                    return;
+                }
+
+
+                const originalSetItem =
+                    localStorage.setItem.bind(
+                        localStorage
+                    );
+
+
+                localStorage.setItem =
+                    function (
+                        key,
+                        value
+                    ) {
+
+                        if (
+                            key ===
+                                "driverTripRecords"
+                        ) {
+
+                            try {
+
+                                const rows =
+                                    JSON.parse(
+                                        value ||
+                                        "[]"
+                                    );
+
+
+                                if (
+                                    Array.isArray(
+                                        rows
+                                    )
+                                ) {
+
+                                    rows.forEach(
+                                        item => {
+
+                                            const taskId =
+                                                String(
+                                                    item?.taskId ||
+                                                    item?.dispatchTaskId ||
+                                                    ""
+                                                );
+
+
+                                            if (
+                                                taskId.startsWith(
+                                                    "TEST-"
+                                                )
+                                            ) {
+
+                                                const id =
+                                                    String(
+                                                        item?.tripId ||
+                                                        item?.id ||
+                                                        ""
+                                                    );
+
+
+                                                if (
+                                                    !id.startsWith(
+                                                        "TEST-"
+                                                    )
+                                                ) {
+
+                                                    const testId =
+                                                        "TEST-TRIP-" +
+                                                        (
+                                                            id ||
+                                                            Date.now()
+                                                        )
+                                                        .replace(
+                                                            /^TRIP[_-]?/,
+                                                            ""
+                                                        );
+
+
+                                                    item.tripId =
+                                                        testId;
+
+                                                    item.id =
+                                                        testId;
+
+                                                    item.recordId =
+                                                        testId;
+                                                }
+                                            }
+                                        }
+                                    );
+
+
+                                    value =
+                                        JSON.stringify(
+                                            rows
+                                        );
+                                }
+
+                            } catch (
+                                error
+                            ) {
+
+                                console.warn(
+                                    "[TruckDriverBot] TEST正常趟次ID保护失败",
+                                    error
+                                );
+                            }
+                        }
+
+
+                        return originalSetItem(
+                            key,
+                            value
+                        );
+                    };
+
+
+                window.__robotTestNormalTripGuardInstalled =
+                    true;
+            }
+        );
+
+
+        const beforeRecords =
+            await this.readLocalStorage(
+                "driverTripRecords"
+            ) ||
+            [];
+
+
+        const beforeRecordCount =
+            Array.isArray(
+                beforeRecords
+            )
+                ? beforeRecords.length
+                : 0;
+
+
+        const beforeUiCount =
+            await this.readCurrentTripCount();
+
+
+        const refreshGps =
+            async () => {
+
+                const button =
+                    this.page.locator(
+                        "#startGpsButton"
+                    );
+
+
+                await button.click();
+
+
+                await this.page.waitForTimeout(
+                    500
+                );
+            };
+
+
+        /*
+         * 阶段1：进入装载区并稳定至少4秒。
+         */
+        await context.setGeolocation({
+            latitude:
+                43.850000,
+
+            longitude:
+                105.750000,
+
+            accuracy:
+                10
+        });
+
+
+        await refreshGps();
+
+
+        await this.page.waitForTimeout(
+            4300
+        );
+
+
+        await refreshGps();
+
+
+        let cycle =
+            await this.getTransportCycle();
+
+
+        if (
+            cycle?.phase !==
+                "loaded_wait_departure"
+        ) {
+
+            throw new Error(
+                "TruckDriverBot：进入装载区后未自动确认装车，phase=" +
+                String(
+                    cycle?.phase ||
+                    "-"
+                )
+            );
+        }
+
+
+        /*
+         * 阶段2：驶离装载区并稳定至少4秒。
+         * 使用中间测试坐标，既不在装载区，也不在卸载区。
+         */
+        await context.setGeolocation({
+            latitude:
+                43.855000,
+
+            longitude:
+                105.755000,
+
+            accuracy:
+                10
+        });
+
+
+        await refreshGps();
+
+
+        await this.page.waitForTimeout(
+            4300
+        );
+
+
+        await refreshGps();
+
+
+        cycle =
+            await this.getTransportCycle();
+
+
+        if (
+            cycle?.phase !==
+                "enroute_unload"
+        ) {
+
+            throw new Error(
+                "TruckDriverBot：驶离装载区后未进入运输中，phase=" +
+                String(
+                    cycle?.phase ||
+                    "-"
+                )
+            );
+        }
+
+
+        /*
+         * 阶段3：进入允许卸载区。
+         */
+        await context.setGeolocation({
+            latitude:
+                43.860000,
+
+            longitude:
+                105.760000,
+
+            accuracy:
+                10
+        });
+
+
+        await refreshGps();
+
+
+        await this.page.waitForTimeout(
+            700
+        );
+
+
+        cycle =
+            await this.getTransportCycle();
+
+
+        if (
+            cycle?.phase !==
+                "at_unloading"
+        ) {
+
+            throw new Error(
+                "TruckDriverBot：进入卸载区后未进入 at_unloading，phase=" +
+                String(
+                    cycle?.phase ||
+                    "-"
+                )
+            );
+        }
+
+
+        if (
+            String(
+                cycle?.unloadingZoneId ||
+                ""
+            ) !==
+                "TEST-UNLOAD-WASTE"
+        ) {
+
+            throw new Error(
+                "TruckDriverBot：识别到的卸载区不是 TEST-UNLOAD-WASTE"
+            );
+        }
+
+
+        const tripButton =
+            this.page.locator(
+                "#addTripButton"
+            );
+
+
+        await tripButton.waitFor({
+            state:
+                "visible"
+        });
+
+
+        if (
+            !await tripButton.isEnabled()
+        ) {
+
+            throw new Error(
+                "TruckDriverBot：到达TEST卸载区后“完成一趟”按钮仍不可点击"
+            );
+        }
+
+
+        const dialogHandler =
+            async dialog => {
+
+                await dialog.accept();
+            };
+
+
+        this.page.on(
+            "dialog",
+            dialogHandler
+        );
+
+
+        try {
+
+            await tripButton.click();
+
+
+            await this.page.waitForTimeout(
+                900
+            );
+
+        } finally {
+
+            this.page.off(
+                "dialog",
+                dialogHandler
+            );
+        }
+
+
+        const afterRecords =
+            await this.readLocalStorage(
+                "driverTripRecords"
+            );
+
+
+        if (
+            !Array.isArray(
+                afterRecords
+            ) ||
+            afterRecords.length !==
+                beforeRecordCount +
+                1
+        ) {
+
+            throw new Error(
+                "TruckDriverBot：正常运输完成后没有恰好新增1条趟次记录"
+            );
+        }
+
+
+        const record =
+            afterRecords[
+                afterRecords.length -
+                1
+            ];
+
+
+        const tripId =
+            String(
+                record?.tripId ||
+                record?.id ||
+                ""
+            );
+
+
+        assertTestId(
+            tripId,
+            "正常运输趟次"
+        );
+
+
+        assertTestId(
+            record?.taskId ||
+            record?.dispatchTaskId ||
+            "",
+            "正常运输任务"
+        );
+
+
+        assertTestId(
+            record?.driverId ||
+            record?.personId ||
+            "",
+            "正常运输司机"
+        );
+
+
+        assertTestId(
+            record?.vehicleNumber ||
+            record?.vehicleId ||
+            "",
+            "正常运输车辆"
+        );
+
+
+        if (
+            record?.materialType !==
+                "渣"
+        ) {
+
+            throw new Error(
+                "TruckDriverBot：正常运输物料类型不是“渣”"
+            );
+        }
+
+
+        if (
+            record?.manualOverride !==
+                false
+        ) {
+
+            throw new Error(
+                "TruckDriverBot：正常运输被错误标记为 manualOverride"
+            );
+        }
+
+
+        if (
+            record?.officialCountEligible !==
+                true
+        ) {
+
+            throw new Error(
+                "TruckDriverBot：正常运输没有直接进入正式统计"
+            );
+        }
+
+
+        if (
+            record?.transportValidation !==
+                "gps_geofence_closed_loop"
+        ) {
+
+            throw new Error(
+                "TruckDriverBot：正常运输缺少 gps_geofence_closed_loop 验证标记"
+            );
+        }
+
+
+        const afterUiCount =
+            await this.readCurrentTripCount();
+
+
+        if (
+            afterUiCount !==
+                beforeUiCount +
+                1
+        ) {
+
+            throw new Error(
+                "TruckDriverBot：本班趟数没有增加1"
+            );
+        }
+
+
+        cycle =
+            await this.getTransportCycle();
+
+
+        if (
+            cycle?.phase !==
+                "waiting_loading"
+        ) {
+
+            throw new Error(
+                "TruckDriverBot：完成一趟后运输闭环没有重置为 waiting_loading"
+            );
+        }
+
+
+        return {
+            tripId,
+
+            taskId:
+                record.taskId ||
+                record.dispatchTaskId,
+
+            driverId:
+                record.driverId ||
+                record.personId,
+
+            vehicleId:
+                record.vehicleNumber ||
+                record.vehicleId,
+
+            materialType:
+                record.materialType,
+
+            beforeUiCount,
+            afterUiCount,
+
+            beforeRecordCount,
+            afterRecordCount:
+                afterRecords.length,
+
+            transportValidation:
+                record.transportValidation,
+
+            cyclePhase:
+                cycle.phase
+        };
+    }
+
+
     async readCurrentTripCount() {
 
         const value =
