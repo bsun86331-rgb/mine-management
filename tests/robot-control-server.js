@@ -916,6 +916,105 @@ async function runTruckDriverCheck() {
 }
 
 
+async function runTruckDriverTemporaryUnloadModalCheck() {
+
+    const botName =
+        "TruckDriverBot";
+
+
+    const bot =
+        await getTruckDriverBot();
+
+
+    try {
+
+        updateBot(
+            botName,
+            "running",
+            "正在打开并检查临时卸料弹窗"
+        );
+
+
+        await bot.open();
+
+
+        const result =
+            await bot.inspectTemporaryUnloadModal();
+
+
+        robotMessage(
+            botName,
+            "弹窗检查通过：物料类型、临时卸料原因、说明、GPS提示、提交按钮、关闭按钮均正常。"
+        );
+
+
+        robotMessage(
+            botName,
+            "弹窗已正常关闭；本步骤未提交任何业务数据。"
+        );
+
+
+        updateBot(
+            botName,
+            "pass",
+            "临时卸料弹窗字段检查完成"
+        );
+
+
+        return {
+            ok:
+                true,
+
+            action:
+                "temporary-unload-modal-check",
+
+            result
+        };
+
+
+    } catch (
+        error
+    ) {
+
+        const message =
+            error?.message ||
+            String(
+                error
+            );
+
+
+        updateBot(
+            botName,
+            "fail",
+            message
+        );
+
+
+        robotMessage(
+            botName,
+            "临时卸料弹窗检查失败：" +
+            message
+        );
+
+
+        try {
+
+            await captureFailure(
+                botName,
+                truckDriverPage,
+                "temporary-unload-modal"
+            );
+
+        } catch (
+            screenshotError
+        ) {}
+
+
+        throw error;
+    }
+}
+
+
 async function runTruckDriverTemporaryUnloadButtonCheck() {
 
     const botName =
@@ -1077,6 +1176,16 @@ async function executeTruckDriverCommand(
 
 
     if (
+        /自动点击.*临时.*卸料|打开.*临时.*卸料.*弹窗|检查.*临时.*卸料.*弹窗|临时非卸载区.*弹窗/.test(
+            text
+        )
+    ) {
+
+        return await runTruckDriverTemporaryUnloadModalCheck();
+    }
+
+
+    if (
         /临时.*卸料.*按钮|检查.*临时.*卸料|临时非卸载区.*检查/.test(
             text
         )
@@ -1109,7 +1218,7 @@ async function executeTruckDriverCommand(
 
     robotMessage(
         "TruckDriverBot",
-        "当前版本只允许：准备TEST司机环境、检查司机端、检查临时卸料按钮、清理TEST环境；不执行提交/审批等业务写操作。"
+        "当前版本只允许：准备TEST司机环境、检查司机端、检查临时卸料按钮、检查临时卸料弹窗、清理TEST环境；不执行提交/审批等业务写操作。"
     );
 
 
@@ -1186,7 +1295,7 @@ async function executeCommand({
             /检查司机端|检查司机|司机端检查/i.test(
                 command
             ) ||
-            /临时.*卸料.*按钮|检查.*临时.*卸料/.test(
+            /自动点击.*临时.*卸料|打开.*临时.*卸料.*弹窗|检查.*临时.*卸料.*弹窗|临时非卸载区.*弹窗|临时.*卸料.*按钮|检查.*临时.*卸料/.test(
                 command
             ) ||
             /清理.*TEST.*环境|清空.*TEST.*环境/.test(
