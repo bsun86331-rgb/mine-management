@@ -931,7 +931,7 @@ class DispatchBot {
         await card.waitFor({
             state:
                 "visible"
-        );
+        });
 
 
         const rejectButton =
