@@ -1119,6 +1119,259 @@ class TruckDriverBot {
     }
 
 
+    async installDeterministicTestGeolocation() {
+
+        await this.page.evaluate(
+            () => {
+
+                if (
+                    window.__robotDeterministicGpsInstalled
+                ) {
+
+                    return;
+                }
+
+
+                window.__robotTestGpsState = {
+                    latitude:
+                        43.850000,
+
+                    longitude:
+                        105.750000,
+
+                    accuracy:
+                        10
+                };
+
+
+                const watchers =
+                    new Map();
+
+
+                let watcherId =
+                    1;
+
+
+                const buildPosition =
+                    () => {
+
+                        const state =
+                            window.__robotTestGpsState ||
+                            {};
+
+
+                        return {
+                            coords: {
+                                latitude:
+                                    Number(
+                                        state.latitude
+                                    ),
+
+                                longitude:
+                                    Number(
+                                        state.longitude
+                                    ),
+
+                                accuracy:
+                                    Number(
+                                        state.accuracy ||
+                                        10
+                                    ),
+
+                                altitude:
+                                    null,
+
+                                altitudeAccuracy:
+                                    null,
+
+                                heading:
+                                    null,
+
+                                speed:
+                                    null
+                            },
+
+                            timestamp:
+                                Date.now()
+                        };
+                    };
+
+
+                const geolocation =
+                    navigator.geolocation;
+
+
+                if (
+                    !geolocation
+                ) {
+
+                    throw new Error(
+                        "浏览器没有 geolocation 对象"
+                    );
+                }
+
+
+                Object.defineProperty(
+                    geolocation,
+                    "getCurrentPosition",
+                    {
+                        configurable:
+                            true,
+
+                        value:
+                            (
+                                success,
+                                error,
+                                options
+                            ) => {
+
+                                setTimeout(
+                                    () => {
+
+                                        success(
+                                            buildPosition()
+                                        );
+                                    },
+                                    30
+                                );
+                            }
+                    }
+                );
+
+
+                Object.defineProperty(
+                    geolocation,
+                    "watchPosition",
+                    {
+                        configurable:
+                            true,
+
+                        value:
+                            (
+                                success,
+                                error,
+                                options
+                            ) => {
+
+                                const id =
+                                    watcherId++;
+
+
+                                const timer =
+                                    setInterval(
+                                        () => {
+
+                                            success(
+                                                buildPosition()
+                                            );
+                                        },
+                                        250
+                                    );
+
+
+                                watchers.set(
+                                    id,
+                                    timer
+                                );
+
+
+                                setTimeout(
+                                    () => {
+
+                                        success(
+                                            buildPosition()
+                                        );
+                                    },
+                                    20
+                                );
+
+
+                                return id;
+                            }
+                    }
+                );
+
+
+                Object.defineProperty(
+                    geolocation,
+                    "clearWatch",
+                    {
+                        configurable:
+                            true,
+
+                        value:
+                            id => {
+
+                                const timer =
+                                    watchers.get(
+                                        id
+                                    );
+
+
+                                if (
+                                    timer
+                                ) {
+
+                                    clearInterval(
+                                        timer
+                                    );
+
+
+                                    watchers.delete(
+                                        id
+                                    );
+                                }
+                            }
+                    }
+                );
+
+
+                window.__robotDeterministicGpsInstalled =
+                    true;
+            }
+        );
+    }
+
+
+    async setDeterministicTestGeolocation({
+        latitude,
+        longitude,
+        accuracy = 10
+    }) {
+
+        await this.page.evaluate(
+            ({
+                latitude,
+                longitude,
+                accuracy
+            }) => {
+
+                window.__robotTestGpsState = {
+                    latitude:
+                        Number(
+                            latitude
+                        ),
+
+                    longitude:
+                        Number(
+                            longitude
+                        ),
+
+                    accuracy:
+                        Number(
+                            accuracy
+                        )
+                };
+            },
+            {
+                latitude,
+                longitude,
+                accuracy
+            }
+        );
+    }
+
+
     async testNormalTransportClosedLoop() {
 
         const {
@@ -1173,6 +1426,15 @@ class TruckDriverBot {
                 "geolocation"
             ]
         );
+
+
+        /*
+         * Playwright setGeolocation() 在部分 Chromium 环境里，
+         * 业务页最终 getCurrentPosition() 可能返回 accuracy=0 / null。
+         * 测试环境改用确定性的浏览器 GPS 模拟层，
+         * 但业务页面仍然走真实 navigator.geolocation API。
+         */
+        await this.installDeterministicTestGeolocation();
 
 
         /*
@@ -1443,6 +1705,18 @@ class TruckDriverBot {
         });
 
 
+        await this.setDeterministicTestGeolocation({
+            latitude:
+                43.850000,
+
+            longitude:
+                105.750000,
+
+            accuracy:
+                10
+        });
+
+
         await refreshGps();
 
 
@@ -1489,6 +1763,18 @@ class TruckDriverBot {
         });
 
 
+        await this.setDeterministicTestGeolocation({
+            latitude:
+                43.855000,
+
+            longitude:
+                105.755000,
+
+            accuracy:
+                10
+        });
+
+
         await refreshGps();
 
 
@@ -1523,6 +1809,18 @@ class TruckDriverBot {
          * 阶段3：进入允许卸载区。
          */
         await context.setGeolocation({
+            latitude:
+                43.860000,
+
+            longitude:
+                105.760000,
+
+            accuracy:
+                10
+        });
+
+
+        await this.setDeterministicTestGeolocation({
             latitude:
                 43.860000,
 
