@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
+    "robot:server": "node tests/robot-control-server.js",
     "test:robots": "playwright test",
     "test:robots:ui": "playwright test --ui",
     "test:temporary-unload": "playwright test temporary-unload.spec.js"
