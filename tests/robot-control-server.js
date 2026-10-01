@@ -1818,6 +1818,26 @@ async function executeCommand({
     );
 
 
+    if (
+        requestedBot ===
+            "TestManager" &&
+        (
+            /测试临时非卸载区卸料完整闭环/i.test(
+                command
+            ) ||
+            /临时非卸载区卸料完整闭环/i.test(
+                command
+            ) ||
+            /临时.*卸料.*完整.*闭环/i.test(
+                command
+            )
+        )
+    ) {
+
+        return await runTestManagerTemporaryUnloadFullCycle();
+    }
+
+
     /*
      * 直接发给汽车司机机器人。
      */
