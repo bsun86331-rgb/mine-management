@@ -7311,6 +7311,41 @@ function dispatchTodayDateString(){
     return `${y}-${m}-${day}`;
 }
 
+/*
+ * V2.13.7A
+ * 今日统计统一按浏览器/现场本地日期判断。
+ *
+ * 不能直接对 ISO UTC 字符串 slice(0,10)，
+ * 否则凌晨时段会被错误归到前一天。
+ */
+function dispatchLocalDateString(value){
+    if(!value){
+        return "";
+    }
+
+    /*
+     * 本身就是 YYYY-MM-DD 的日期字段时，
+     * 直接保留，避免时区再次转换。
+     */
+    const raw = String(value).trim();
+
+    if(/^\d{4}-\d{2}-\d{2}$/.test(raw)){
+        return raw;
+    }
+
+    const d = new Date(value);
+
+    if(Number.isNaN(d.getTime())){
+        return raw.slice(0,10);
+    }
+
+    const y = d.getFullYear();
+    const m = String(d.getMonth()+1).padStart(2,"0");
+    const day = String(d.getDate()).padStart(2,"0");
+
+    return `${y}-${m}-${day}`;
+}
+
 function dispatchGetUnifiedTrips(){
     /*
      * 新版正式读取 tripRecords。
@@ -7373,7 +7408,7 @@ function dispatchRenderTripStats(){
                 item.createdAt ||
                 "";
 
-            return String(time).slice(0,10) === today;
+            return dispatchLocalDateString(time) === today;
         });
 
     const total = todayTrips.length;
