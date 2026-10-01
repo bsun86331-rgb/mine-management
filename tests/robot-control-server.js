@@ -24,6 +24,12 @@ const {
 );
 
 const {
+    DispatchBot
+} = require(
+    "./bots/dispatch-bot"
+);
+
+const {
     initializeTruckDriverTestEnvironment,
     clearRobotTestEnvironment
 } = require(
@@ -33,7 +39,7 @@ const {
 
 /*
 =========================================================
-R0-4 RobotControlServer
+R0-5 RobotControlServer
 机器人测试控制中心后台 + Playwright 执行器
 
 当前已接入：
@@ -47,7 +53,7 @@ R0-4 RobotControlServer
 
 当前仍未开放：
 - 非 TEST 正式业务提交
-- DispatchBot 自动审批
+- 非 TEST 的 DispatchBot 审批
 - 非 TEST 数据操作
 =========================================================
 */
@@ -113,6 +119,14 @@ let truckDriverPage =
 
 
 let truckDriverBot =
+    null;
+
+
+let dispatchPage =
+    null;
+
+
+let dispatchBot =
     null;
 
 
@@ -426,6 +440,54 @@ async function getTruckDriverBot() {
 
 
     return truckDriverBot;
+}
+
+
+async function getDispatchBot() {
+
+    await ensureBrowser();
+
+
+    if (
+        dispatchPage &&
+        !dispatchPage.isClosed() &&
+        dispatchBot
+    ) {
+
+        return dispatchBot;
+    }
+
+
+    dispatchPage =
+        await browserContext.newPage();
+
+
+    dispatchPage.on(
+        "console",
+        message => {
+
+            if (
+                message.type() ===
+                    "error"
+            ) {
+
+                robotMessage(
+                    "DispatchBot",
+                    "调度端控制台错误：" +
+                    message.text()
+                );
+            }
+        }
+    );
+
+
+    dispatchBot =
+        new DispatchBot(
+            dispatchPage
+        );
+
+
+    return dispatchBot;
 }
 
 
@@ -1256,6 +1318,204 @@ async function runTruckDriverTemporaryUnloadButtonCheck() {
 }
 
 
+async function runDispatchApproveLatestTestTemporaryUnload() {
+
+    const botName =
+        "DispatchBot";
+
+
+    const bot =
+        await getDispatchBot();
+
+
+    try {
+
+        updateBot(
+            botName,
+            "running",
+            "正在审核 TEST 临时卸料申请"
+        );
+
+
+        await bot.open();
+
+
+        const pending =
+            await bot.findLatestPendingTestTemporaryUnload();
+
+
+        robotMessage(
+            botName,
+            "找到待审核TEST申请：" +
+            pending.requestId +
+            "；任务 " +
+            (
+                pending.taskId ||
+                pending.dispatchTaskId ||
+                "-"
+            ) +
+            "；司机 " +
+            (
+                pending.driverId ||
+                pending.personId ||
+                "-"
+            ) +
+            "；车辆 " +
+            (
+                pending.vehicleNumber ||
+                pending.vehicleId ||
+                "-"
+            )
+        );
+
+
+        const result =
+            await bot.approveLatestTestTemporaryUnload();
+
+
+        robotMessage(
+            botName,
+            "审核通过：" +
+            result.requestId +
+            " → 正式趟次 " +
+            result.tripId
+        );
+
+
+        robotMessage(
+            botName,
+            "安全验证通过：申请状态 " +
+            result.requestStatus +
+            "；dispatchConfirmation=" +
+            result.dispatchConfirmation +
+            "；officialCountEligible=" +
+            result.officialCountEligible
+        );
+
+
+        robotMessage(
+            botName,
+            "正式趟次数量前/后：" +
+            result.beforeTripCount +
+            " / " +
+            result.afterTripCount +
+            "；今日调度统计 总/煤/渣：" +
+            result.stats.total +
+            " / " +
+            result.stats.coal +
+            " / " +
+            result.stats.waste
+        );
+
+
+        updateBot(
+            botName,
+            "pass",
+            "TEST临时卸料已审核并计入正式趟次"
+        );
+
+
+        return {
+            ok:
+                true,
+
+            action:
+                "dispatch-approve-test-temporary-unload",
+
+            result
+        };
+
+
+    } catch (
+        error
+    ) {
+
+        const message =
+            error?.message ||
+            String(
+                error
+            );
+
+
+        updateBot(
+            botName,
+            "fail",
+            message
+        );
+
+
+        robotMessage(
+            botName,
+            "TEST临时卸料审核失败：" +
+            message
+        );
+
+
+        try {
+
+            await captureFailure(
+                botName,
+                dispatchPage,
+                "dispatch-approve-test-temporary-unload"
+            );
+
+        } catch (
+            screenshotError
+        ) {}
+
+
+        throw error;
+    }
+}
+
+
+async function executeDispatchCommand(
+    command
+) {
+
+    const text =
+        String(
+            command ||
+            ""
+        );
+
+
+    if (
+        /审核.*TEST.*临时.*卸料|确认.*TEST.*临时.*卸料|批准.*TEST.*临时.*卸料|TEST.*临时.*卸料.*审核/i.test(
+            text
+        )
+    ) {
+
+        return await runDispatchApproveLatestTestTemporaryUnload();
+    }
+
+
+    updateBot(
+        "DispatchBot",
+        "waiting",
+        "当前调度命令尚未开放"
+    );
+
+
+    robotMessage(
+        "DispatchBot",
+        "当前可用命令：审核TEST临时卸料。只允许处理 TEST- 数据。"
+    );
+
+
+    return {
+        ok:
+            true,
+
+        target:
+            "DispatchBot",
+
+        status:
+            "waiting"
+    };
+}
+
+
 /*
 =========================================================
 命令路由
@@ -1452,38 +1712,14 @@ async function executeCommand({
     }
 
 
-    /*
-     * DispatchBot 下一阶段接入。
-     */
-
     if (
         requestedBot ===
             "DispatchBot"
     ) {
 
-        updateBot(
-            "DispatchBot",
-            "waiting",
-            "尚未接入真实 Playwright 执行器"
+        return await executeDispatchCommand(
+            command
         );
-
-
-        robotMessage(
-            "DispatchBot",
-            "当前已保留调度机器人位置，下一阶段接入真实调度端。"
-        );
-
-
-        return {
-            ok:
-                true,
-
-            target:
-                "DispatchBot",
-
-            status:
-                "waiting"
-        };
     }
 
 
@@ -1953,7 +2189,7 @@ server.listen(
         );
 
         console.log(
-            "🤖 机器人测试控制中心 R0-4 已启动"
+            "🤖 机器人测试控制中心 R0-5 已启动"
         );
 
         console.log(
@@ -1974,7 +2210,7 @@ server.listen(
         );
 
         console.log(
-            "DispatchBot：待下一阶段接入"
+            "DispatchBot：已接入真实 Playwright TEST临时卸料审核"
         );
 
         console.log(
