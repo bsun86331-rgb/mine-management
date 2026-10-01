@@ -39,7 +39,7 @@ const {
 
 /*
 =========================================================
-R0-5 RobotControlServer
+R0-6 RobotControlServer
 机器人测试控制中心后台 + Playwright 执行器
 
 当前已接入：
@@ -1516,6 +1516,169 @@ async function executeDispatchCommand(
 }
 
 
+async function runTestManagerTemporaryUnloadFullCycle() {
+
+    const botName =
+        "TestManager";
+
+
+    try {
+
+        updateBot(
+            botName,
+            "running",
+            "正在执行临时非卸载区卸料完整闭环"
+        );
+
+
+        robotMessage(
+            botName,
+            "步骤 1/3：准备 TEST 司机环境。"
+        );
+
+
+        const prepare =
+            await prepareTruckDriverTestEnvironment();
+
+
+        robotMessage(
+            botName,
+            "步骤 1/3 完成：TEST 司机环境准备通过。"
+        );
+
+
+        robotMessage(
+            botName,
+            "步骤 2/3：TruckDriverBot 提交 TEST 临时卸料申请。"
+        );
+
+
+        const submit =
+            await runTruckDriverTemporaryUnloadSubmitTest();
+
+
+        robotMessage(
+            botName,
+            "步骤 2/3 完成：申请 " +
+            submit.result.requestId +
+            " 已进入 pending_dispatch。"
+        );
+
+
+        robotMessage(
+            botName,
+            "步骤 3/3：DispatchBot 审核 TEST 临时卸料申请。"
+        );
+
+
+        const approve =
+            await runDispatchApproveLatestTestTemporaryUnload();
+
+
+        if (
+            approve.result.requestStatus !==
+                "approved" ||
+            approve.result.dispatchConfirmation !==
+                "confirmed" ||
+            approve.result.officialCountEligible !==
+                true
+        ) {
+
+            throw new Error(
+                "完整闭环失败：调度审核结果不满足正式计数条件"
+            );
+        }
+
+
+        if (
+            approve.result.afterTripCount !==
+                approve.result.beforeTripCount +
+                1
+        ) {
+
+            throw new Error(
+                "完整闭环失败：正式趟次数量没有增加1"
+            );
+        }
+
+
+        robotMessage(
+            botName,
+            "完整闭环通过：司机提交 → pending_dispatch → 调度审核 → approved → 正式趟次 +1。"
+        );
+
+
+        robotMessage(
+            botName,
+            "最终结果：申请 " +
+            approve.result.requestId +
+            "；正式趟次 " +
+            approve.result.tripId +
+            "；今日统计 总/煤/渣：" +
+            approve.result.stats.total +
+            " / " +
+            approve.result.stats.coal +
+            " / " +
+            approve.result.stats.waste
+        );
+
+
+        updateBot(
+            botName,
+            "pass",
+            "临时非卸载区卸料完整闭环测试通过"
+        );
+
+
+        return {
+            ok:
+                true,
+
+            action:
+                "temporary-unload-full-cycle-test",
+
+            prepare:
+                prepare.result ||
+                prepare,
+
+            submit:
+                submit.result,
+
+            approve:
+                approve.result
+        };
+
+
+    } catch (
+        error
+    ) {
+
+        const message =
+            error?.message ||
+            String(
+                error
+            );
+
+
+        updateBot(
+            botName,
+            "fail",
+            message
+        );
+
+
+        robotMessage(
+            botName,
+            "完整闭环测试失败：" +
+            message
+        );
+
+
+        throw error;
+    }
+}
+
+
 /*
 =========================================================
 命令路由
@@ -1732,7 +1895,7 @@ async function executeCommand({
 
     robotMessage(
         "TestManager",
-        "当前 R0-4 已接入 TruckDriverBot 的 TEST 环境初始化。可用命令：“准备TEST司机环境”“检查司机端”“检查临时卸料按钮”“清理TEST环境”。"
+        "当前已接入 TruckDriverBot + DispatchBot。TestManager 可用命令：“测试临时非卸载区卸料完整闭环”。"
     );
 
 
@@ -2189,7 +2352,7 @@ server.listen(
         );
 
         console.log(
-            "🤖 机器人测试控制中心 R0-5 已启动"
+            "🤖 机器人测试控制中心 R0-6 已启动"
         );
 
         console.log(
