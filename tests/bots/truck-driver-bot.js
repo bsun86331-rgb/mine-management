@@ -1121,215 +1121,25 @@ class TruckDriverBot {
 
     async installDeterministicTestGeolocation() {
 
-        await this.page.evaluate(
-            () => {
-
-                if (
-                    window.__robotDeterministicGpsInstalled
-                ) {
-
-                    return;
-                }
+        const installed =
+            await this.page.evaluate(
+                () =>
+                    window.__robotDeterministicGpsInstalled ===
+                    true
+            );
 
 
-                window.__robotTestGpsState = {
-                    latitude:
-                        43.850000,
+        if (
+            !installed
+        ) {
 
-                    longitude:
-                        105.750000,
-
-                    accuracy:
-                        10
-                };
+            throw new Error(
+                "TruckDriverBot：TEST GPS 模拟层未在页面启动前安装"
+            );
+        }
 
 
-                const watchers =
-                    new Map();
-
-
-                let watcherId =
-                    1;
-
-
-                const buildPosition =
-                    () => {
-
-                        const state =
-                            window.__robotTestGpsState ||
-                            {};
-
-
-                        return {
-                            coords: {
-                                latitude:
-                                    Number(
-                                        state.latitude
-                                    ),
-
-                                longitude:
-                                    Number(
-                                        state.longitude
-                                    ),
-
-                                accuracy:
-                                    Number(
-                                        state.accuracy ||
-                                        10
-                                    ),
-
-                                altitude:
-                                    null,
-
-                                altitudeAccuracy:
-                                    null,
-
-                                heading:
-                                    null,
-
-                                speed:
-                                    null
-                            },
-
-                            timestamp:
-                                Date.now()
-                        };
-                    };
-
-
-                const geolocation =
-                    navigator.geolocation;
-
-
-                if (
-                    !geolocation
-                ) {
-
-                    throw new Error(
-                        "浏览器没有 geolocation 对象"
-                    );
-                }
-
-
-                Object.defineProperty(
-                    geolocation,
-                    "getCurrentPosition",
-                    {
-                        configurable:
-                            true,
-
-                        value:
-                            (
-                                success,
-                                error,
-                                options
-                            ) => {
-
-                                setTimeout(
-                                    () => {
-
-                                        success(
-                                            buildPosition()
-                                        );
-                                    },
-                                    30
-                                );
-                            }
-                    }
-                );
-
-
-                Object.defineProperty(
-                    geolocation,
-                    "watchPosition",
-                    {
-                        configurable:
-                            true,
-
-                        value:
-                            (
-                                success,
-                                error,
-                                options
-                            ) => {
-
-                                const id =
-                                    watcherId++;
-
-
-                                const timer =
-                                    setInterval(
-                                        () => {
-
-                                            success(
-                                                buildPosition()
-                                            );
-                                        },
-                                        250
-                                    );
-
-
-                                watchers.set(
-                                    id,
-                                    timer
-                                );
-
-
-                                setTimeout(
-                                    () => {
-
-                                        success(
-                                            buildPosition()
-                                        );
-                                    },
-                                    20
-                                );
-
-
-                                return id;
-                            }
-                    }
-                );
-
-
-                Object.defineProperty(
-                    geolocation,
-                    "clearWatch",
-                    {
-                        configurable:
-                            true,
-
-                        value:
-                            id => {
-
-                                const timer =
-                                    watchers.get(
-                                        id
-                                    );
-
-
-                                if (
-                                    timer
-                                ) {
-
-                                    clearInterval(
-                                        timer
-                                    );
-
-
-                                    watchers.delete(
-                                        id
-                                    );
-                                }
-                            }
-                    }
-                );
-
-
-                window.__robotDeterministicGpsInstalled =
-                    true;
-            }
-        );
+        return true;
     }
 
 
@@ -1934,6 +1744,101 @@ class TruckDriverBot {
             "dialog",
             captureDialog
         );
+
+
+        /*
+         * 最终点击前先直接探测一次页面 geolocation，
+         * 确认坐标与精度确实来自 TEST GPS 模拟层。
+         */
+        const gpsProbe =
+            await this.page.evaluate(
+                () =>
+                    new Promise(
+                        resolve => {
+
+                            navigator.geolocation.getCurrentPosition(
+                                position => {
+
+                                    resolve({
+                                        latitude:
+                                            position?.coords?.latitude,
+
+                                        longitude:
+                                            position?.coords?.longitude,
+
+                                        accuracy:
+                                            position?.coords?.accuracy,
+
+                                        installed:
+                                            window.__robotDeterministicGpsInstalled ===
+                                            true
+                                    });
+                                },
+
+                                error => {
+
+                                    resolve({
+                                        error:
+                                            error?.message ||
+                                            "geolocation error",
+
+                                        installed:
+                                            window.__robotDeterministicGpsInstalled ===
+                                            true
+                                    });
+                                },
+
+                                {
+                                    enableHighAccuracy:
+                                        true,
+
+                                    timeout:
+                                        2000,
+
+                                    maximumAge:
+                                        0
+                                }
+                            );
+                        }
+                    )
+            );
+
+
+        if (
+            gpsProbe?.installed !==
+                true ||
+            !Number.isFinite(
+                Number(
+                    gpsProbe?.latitude
+                )
+            ) ||
+            !Number.isFinite(
+                Number(
+                    gpsProbe?.longitude
+                )
+            ) ||
+            !Number.isFinite(
+                Number(
+                    gpsProbe?.accuracy
+                )
+            ) ||
+            Number(
+                gpsProbe?.accuracy
+            ) <=
+                0 ||
+            Number(
+                gpsProbe?.accuracy
+            ) >
+                100
+        ) {
+
+            throw new Error(
+                "TruckDriverBot：最终点击前TEST GPS探测失败：" +
+                JSON.stringify(
+                    gpsProbe
+                )
+            );
+        }
 
 
         try {
