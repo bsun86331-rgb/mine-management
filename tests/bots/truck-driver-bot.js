@@ -1610,20 +1610,91 @@ class TruckDriverBot {
         );
 
 
+        const dialogMessages =
+            [];
+
+
+        const captureDialog =
+            async dialog => {
+
+                dialogMessages.push(
+                    dialog.message()
+                );
+
+
+                await dialog.accept();
+            };
+
+
+        this.page.off(
+            "dialog",
+            dialogHandler
+        );
+
+
+        this.page.on(
+            "dialog",
+            captureDialog
+        );
+
+
         try {
 
             await tripButton.click();
 
 
-            await this.page.waitForTimeout(
-                900
+            /*
+             * completeTrip() 内部会重新调用浏览器实时定位。
+             * Playwright 的 click() 返回时，异步 getCurrentPosition()
+             * 可能仍未完成，所以不能只固定等待 900ms。
+             *
+             * 改为最多等待 15 秒，直到司机端真正写入新增趟次。
+             */
+            await this.page.waitForFunction(
+                expectedCount => {
+
+                    try {
+
+                        const rows =
+                            JSON.parse(
+                                localStorage.getItem(
+                                    "driverTripRecords"
+                                ) ||
+                                "[]"
+                            );
+
+
+                        return (
+                            Array.isArray(
+                                rows
+                            ) &&
+                            rows.length ===
+                                expectedCount
+                        );
+
+                    } catch (
+                        error
+                    ) {
+
+                        return false;
+                    }
+                },
+                beforeRecordCount +
+                    1,
+                {
+                    timeout:
+                        15000
+                }
+            )
+            .catch(
+                () => {}
             );
 
         } finally {
 
             this.page.off(
                 "dialog",
-                dialogHandler
+                captureDialog
             );
         }
 
@@ -1643,8 +1714,25 @@ class TruckDriverBot {
                 1
         ) {
 
+            const cycleAfterFailure =
+                await this.getTransportCycle();
+
+
             throw new Error(
-                "TruckDriverBot：正常运输完成后没有恰好新增1条趟次记录"
+                "TruckDriverBot：正常运输完成后没有恰好新增1条趟次记录" +
+                "；phase=" +
+                String(
+                    cycleAfterFailure?.phase ||
+                    "-"
+                ) +
+                (
+                    dialogMessages.length
+                        ? "；页面提示=" +
+                          dialogMessages.join(
+                              " | "
+                          )
+                        : ""
+                )
             );
         }
 
