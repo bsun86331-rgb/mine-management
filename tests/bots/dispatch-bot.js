@@ -305,6 +305,524 @@ class DispatchBot {
     }
 
 
+    async findLatestPendingTestTemporaryUnload() {
+
+        const rows =
+            await this.getPendingTemporaryUnloadRequests();
+
+
+        const testRows =
+            rows.filter(
+                item =>
+                    String(
+                        item?.requestId ||
+                        ""
+                    )
+                    .startsWith(
+                        "TEST-"
+                    )
+            );
+
+
+        if (
+            !testRows.length
+        ) {
+
+            throw new Error(
+                "DispatchBot：没有找到待审核 TEST 临时卸料申请"
+            );
+        }
+
+
+        const request =
+            testRows
+                .slice()
+                .sort(
+                    (
+                        a,
+                        b
+                    ) =>
+                        new Date(
+                            b.createdAt ||
+                            0
+                        )
+                        -
+                        new Date(
+                            a.createdAt ||
+                            0
+                        )
+                )[0];
+
+
+        await this.assertTestRequest(
+            request
+        );
+
+
+        return request;
+    }
+
+
+    async installTestOfficialTripGuard() {
+
+        await this.page.evaluate(
+            () => {
+
+                if (
+                    window.__dispatchBotTripGuardInstalled
+                ) {
+
+                    return;
+                }
+
+
+                const originalSetItem =
+                    localStorage.setItem.bind(
+                        localStorage
+                    );
+
+
+                localStorage.setItem =
+                    function (
+                        key,
+                        value
+                    ) {
+
+                        if (
+                            key ===
+                                "tripRecords"
+                        ) {
+
+                            try {
+
+                                const rows =
+                                    JSON.parse(
+                                        value ||
+                                        "[]"
+                                    );
+
+
+                                if (
+                                    Array.isArray(
+                                        rows
+                                    )
+                                ) {
+
+                                    rows.forEach(
+                                        item => {
+
+                                            const requestId =
+                                                String(
+                                                    item?.temporaryUnloadRequestId ||
+                                                    ""
+                                                );
+
+
+                                            if (
+                                                requestId.startsWith(
+                                                    "TEST-"
+                                                )
+                                            ) {
+
+                                                const testTripId =
+                                                    "TEST-TRIP-" +
+                                                    requestId
+                                                        .replace(
+                                                            /^TEST-/,
+                                                            ""
+                                                        );
+
+
+                                                item.tripId =
+                                                    testTripId;
+
+                                                item.recordId =
+                                                    testTripId;
+
+                                                item.id =
+                                                    item.id &&
+                                                    String(
+                                                        item.id
+                                                    )
+                                                    .startsWith(
+                                                        "TEST-"
+                                                    )
+                                                        ? item.id
+                                                        : testTripId;
+                                            }
+                                        }
+                                    );
+
+
+                                    value =
+                                        JSON.stringify(
+                                            rows
+                                        );
+                                }
+
+                            } catch (
+                                error
+                            ) {
+
+                                console.warn(
+                                    "[DispatchBot] TEST正式趟次ID保护失败",
+                                    error
+                                );
+                            }
+                        }
+
+
+                        return originalSetItem(
+                            key,
+                            value
+                        );
+                    };
+
+
+                window.__dispatchBotTripGuardInstalled =
+                    true;
+            }
+        );
+    }
+
+
+    async getTemporaryUnloadRequestById(
+        requestId
+    ) {
+
+        assertTestId(
+            requestId,
+            "临时卸料申请"
+        );
+
+
+        const rows =
+            await this.getTemporaryUnloadRequests();
+
+
+        return (
+            rows.find(
+                item =>
+                    String(
+                        item?.requestId ||
+                        ""
+                    ) ===
+                        String(
+                            requestId
+                        )
+            )
+            ||
+            null
+        );
+    }
+
+
+    async approveLatestTestTemporaryUnload() {
+
+        const request =
+            await this.findLatestPendingTestTemporaryUnload();
+
+
+        const requestId =
+            String(
+                request.requestId ||
+                ""
+            );
+
+
+        assertSafeWrite(
+            "approve",
+            requestId
+        );
+
+
+        const beforeTrips =
+            await this.readTripRecords();
+
+
+        const beforeCount =
+            beforeTrips.length;
+
+
+        await this.installTestOfficialTripGuard();
+
+
+        await this.openTemporaryUnloadReview();
+
+
+        const card =
+            this.page.locator(
+                ".temp-unload-review-card"
+            )
+            .filter({
+                hasText:
+                    requestId
+            });
+
+
+        await card.waitFor({
+            state:
+                "visible"
+        });
+
+
+        const approveButton =
+            card.locator(
+                ".temp-unload-approve"
+            );
+
+
+        /*
+         * 调度确认过程会出现：
+         * 1. confirm()
+         * 2. 成功后的 alert()
+         *
+         * 在点击前注册统一处理，全部接受。
+         */
+
+        const dialogHandler =
+            async dialog => {
+
+                await dialog.accept();
+            };
+
+
+        this.page.on(
+            "dialog",
+            dialogHandler
+        );
+
+
+        try {
+
+            await approveButton.click();
+
+
+            await this.page.waitForTimeout(
+                700
+            );
+
+        } finally {
+
+            this.page.off(
+                "dialog",
+                dialogHandler
+            );
+        }
+
+
+        const updatedRequest =
+            await this.getTemporaryUnloadRequestById(
+                requestId
+            );
+
+
+        if (
+            !updatedRequest
+        ) {
+
+            throw new Error(
+                "DispatchBot：审核后临时卸料申请丢失"
+            );
+        }
+
+
+        await this.assertTestRequest(
+            updatedRequest
+        );
+
+
+        if (
+            updatedRequest.status !==
+                "approved"
+        ) {
+
+            throw new Error(
+                "DispatchBot：TEST临时卸料申请未变为 approved"
+            );
+        }
+
+
+        if (
+            updatedRequest.dispatchConfirmation !==
+                "confirmed"
+        ) {
+
+            throw new Error(
+                "DispatchBot：dispatchConfirmation 未变为 confirmed"
+            );
+        }
+
+
+        if (
+            updatedRequest.officialCountEligible !==
+                true
+        ) {
+
+            throw new Error(
+                "DispatchBot：审核通过后 officialCountEligible 未变为 true"
+            );
+        }
+
+
+        const officialTrip =
+            await this.findOfficialTripByRequestId(
+                requestId
+            );
+
+
+        if (
+            !officialTrip
+        ) {
+
+            throw new Error(
+                "DispatchBot：审核通过后没有生成正式运输趟次"
+            );
+        }
+
+
+        const tripId =
+            String(
+                officialTrip.tripId ||
+                officialTrip.recordId ||
+                officialTrip.id ||
+                ""
+            );
+
+
+        assertTestId(
+            tripId,
+            "正式运输趟次"
+        );
+
+
+        assertTestId(
+            officialTrip.taskId ||
+            officialTrip.dispatchTaskId ||
+            "",
+            "正式趟次任务"
+        );
+
+
+        assertTestId(
+            officialTrip.driverId ||
+            officialTrip.personId ||
+            "",
+            "正式趟次司机"
+        );
+
+
+        assertTestId(
+            officialTrip.vehicleNumber ||
+            officialTrip.vehicleId ||
+            "",
+            "正式趟次车辆"
+        );
+
+
+        if (
+            String(
+                officialTrip.temporaryUnloadRequestId ||
+                ""
+            ) !==
+                requestId
+        ) {
+
+            throw new Error(
+                "DispatchBot：正式趟次没有正确关联 TEST 临时卸料申请"
+            );
+        }
+
+
+        if (
+            officialTrip.status !==
+                "completed"
+        ) {
+
+            throw new Error(
+                "DispatchBot：正式趟次状态不是 completed"
+            );
+        }
+
+
+        if (
+            officialTrip.officialCountEligible !==
+                true
+        ) {
+
+            throw new Error(
+                "DispatchBot：正式趟次未进入正式统计资格"
+            );
+        }
+
+
+        const afterTrips =
+            await this.readTripRecords();
+
+
+        if (
+            afterTrips.length !==
+                beforeCount +
+                1
+        ) {
+
+            throw new Error(
+                "DispatchBot：审核通过后正式趟次数量没有恰好增加1"
+            );
+        }
+
+
+        const stats =
+            await this.getTodayStats();
+
+
+        return {
+            requestId,
+            tripId,
+
+            taskId:
+                officialTrip.taskId ||
+                officialTrip.dispatchTaskId ||
+                "",
+
+            driverId:
+                officialTrip.driverId ||
+                officialTrip.personId ||
+                "",
+
+            vehicleId:
+                officialTrip.vehicleNumber ||
+                officialTrip.vehicleId ||
+                "",
+
+            materialType:
+                officialTrip.materialType ||
+                officialTrip.material ||
+                "",
+
+            requestStatus:
+                updatedRequest.status,
+
+            dispatchConfirmation:
+                updatedRequest.dispatchConfirmation,
+
+            officialCountEligible:
+                updatedRequest.officialCountEligible,
+
+            tripStatus:
+                officialTrip.status,
+
+            beforeTripCount:
+                beforeCount,
+
+            afterTripCount:
+                afterTrips.length,
+
+            stats
+        };
+    }
+
+
     async approveTemporaryUnload(
         requestId
     ) {
@@ -346,21 +864,35 @@ class DispatchBot {
             );
 
 
-        await approveButton.click();
-
-
-        this.page.once(
-            "dialog",
+        const dialogHandler =
             async dialog => {
 
                 await dialog.accept();
-            }
+            };
+
+
+        this.page.on(
+            "dialog",
+            dialogHandler
         );
 
 
-        await this.page.waitForTimeout(
-            500
-        );
+        try {
+
+            await approveButton.click();
+
+
+            await this.page.waitForTimeout(
+                500
+            );
+
+        } finally {
+
+            this.page.off(
+                "dialog",
+                dialogHandler
+            );
+        }
 
 
         return request;
