@@ -2,13 +2,14 @@
 
 /*
 =========================================================
-R0-4A RobotTestFixture
+R0-4B RobotTestFixture
 机器人专用 TEST 测试环境
 
-修复：
-- 不再先打开 driver-work.html 再 page.evaluate()
-- 改为 page.addInitScript()，在页面脚本执行前注入 TEST localStorage
-- 避免页面自动跳转导致 Execution context was destroyed
+本版修复：
+- 保留 page.addInitScript() 导航前注入
+- 新增 dispatchPublishedTasks TEST 主任务
+- driver-work.js 重新核验任务时可以找到 TEST-TASK-001
+- 清理时只删除 TEST-TASK-001，不碰其他任务
 
 最高规则：
 1. 只生成 TEST- 数据
@@ -252,6 +253,207 @@ async function initializeTruckDriverTestEnvironment(
                 localStorage.setItem(
                     "workerPosition",
                     "汽车司机"
+                );
+
+
+                /*
+                 * TEST 调度主任务
+                 *
+                 * driver-work.js 会读取 dispatchPublishedTasks，
+                 * 并用 driverAssignments 再次确认司机、车辆、挖机和班次绑定。
+                 */
+
+                const shiftDate =
+                    nowIso.slice(
+                        0,
+                        10
+                    );
+
+
+                const testAssignment = {
+
+                    driverId:
+                        TEST_DATA.driverId,
+
+                    personId:
+                        TEST_DATA.driverId,
+
+                    driverName:
+                        TEST_DATA.driverName,
+
+                    personName:
+                        TEST_DATA.driverName,
+
+                    shiftId:
+                        TEST_DATA.shiftId,
+
+                    shift:
+                        "白班",
+
+                    shiftDate,
+
+                    vehicleNumber:
+                        TEST_DATA.vehicleId,
+
+                    vehicleId:
+                        TEST_DATA.vehicleId,
+
+                    truckNumber:
+                        TEST_DATA.vehicleId,
+
+                    truckId:
+                        TEST_DATA.vehicleId,
+
+                    excavatorNumber:
+                        TEST_DATA.excavatorId,
+
+                    excavatorId:
+                        TEST_DATA.excavatorId,
+
+                    loadingPoint:
+                        "TEST-测试装载区",
+
+                    unloadingPoint:
+                        "TEST-测试排土场",
+
+                    loadingZoneId:
+                        TEST_DATA.loadingZoneId,
+
+                    unloadingZoneIds: [
+                        TEST_DATA.wasteZoneId
+                    ],
+
+                    testFixture:
+                        true
+                };
+
+
+                const testMasterTask = {
+
+                    taskId:
+                        TEST_DATA.taskId,
+
+                    dispatchTaskId:
+                        TEST_DATA.taskId,
+
+                    id:
+                        TEST_DATA.taskId,
+
+                    taskName:
+                        "TEST-机器人运输测试任务",
+
+                    status:
+                        "active",
+
+                    currentShiftId:
+                        TEST_DATA.shiftId,
+
+                    shiftId:
+                        TEST_DATA.shiftId,
+
+                    shift:
+                        "白班",
+
+                    shiftDate,
+
+                    area:
+                        "TEST-测试采区",
+
+                    workArea:
+                        "TEST-测试采区",
+
+                    remark:
+                        "TEST-机器人自动化测试",
+
+                    loadingPoint:
+                        "TEST-测试装载区",
+
+                    taskLoadingPoint:
+                        "TEST-测试装载区",
+
+                    unloadingPoint:
+                        "TEST-测试排土场",
+
+                    taskUnloadingPoint:
+                        "TEST-测试排土场",
+
+                    loadingZoneId:
+                        TEST_DATA.loadingZoneId,
+
+                    unloadingZoneIds: [
+                        TEST_DATA.wasteZoneId
+                    ],
+
+                    driverAssignments: [
+                        testAssignment
+                    ],
+
+                    publishedAt:
+                        nowIso,
+
+                    createdAt:
+                        nowIso,
+
+                    updatedAt:
+                        nowIso,
+
+                    testFixture:
+                        true
+                };
+
+
+                let publishedTasks = [];
+
+
+                try {
+
+                    const existingTasks =
+                        JSON.parse(
+                            localStorage.getItem(
+                                "dispatchPublishedTasks"
+                            ) ||
+                            "[]"
+                        );
+
+
+                    if (
+                        Array.isArray(
+                            existingTasks
+                        )
+                    ) {
+
+                        publishedTasks =
+                            existingTasks.filter(
+                                item =>
+                                    String(
+                                        item?.taskId ||
+                                        item?.dispatchTaskId ||
+                                        item?.id ||
+                                        ""
+                                    ) !==
+                                        TEST_DATA.taskId
+                            );
+                    }
+
+                } catch (
+                    error
+                ) {
+
+                    publishedTasks =
+                        [];
+                }
+
+
+                publishedTasks.push(
+                    testMasterTask
+                );
+
+
+                localStorage.setItem(
+                    "dispatchPublishedTasks",
+                    JSON.stringify(
+                        publishedTasks
+                    )
                 );
 
 
@@ -509,7 +711,7 @@ async function clearRobotTestEnvironment(
         async () => {
 
             await page.evaluate(
-                () => {
+                TEST_DATA => {
 
                     const keys = [
                         "driverProfile",
@@ -529,7 +731,62 @@ async function clearRobotTestEnvironment(
                                 key
                             )
                     );
-                }
+
+
+                    /*
+                     * dispatchPublishedTasks 可能还有其他任务。
+                     * 只删除 TEST-TASK-001，不删除整个数组。
+                     */
+
+                    try {
+
+                        const rows =
+                            JSON.parse(
+                                localStorage.getItem(
+                                    "dispatchPublishedTasks"
+                                ) ||
+                                "[]"
+                            );
+
+
+                        if (
+                            Array.isArray(
+                                rows
+                            )
+                        ) {
+
+                            const keep =
+                                rows.filter(
+                                    item =>
+                                        String(
+                                            item?.taskId ||
+                                            item?.dispatchTaskId ||
+                                            item?.id ||
+                                            ""
+                                        ) !==
+                                            TEST_DATA.taskId
+                                );
+
+
+                            localStorage.setItem(
+                                "dispatchPublishedTasks",
+                                JSON.stringify(
+                                    keep
+                                )
+                            );
+                        }
+
+                    } catch (
+                        error
+                    ) {
+
+                        console.warn(
+                            "[RobotTestFixture R0-4B] 清理 TEST 主任务失败",
+                            error
+                        );
+                    }
+                },
+                TEST_DATA
             );
         };
 
