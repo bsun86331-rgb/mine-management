@@ -46,7 +46,7 @@ R0-4 RobotControlServer
 - SSE 实时反馈
 
 当前仍未开放：
-- 正式业务提交
+- 非 TEST 正式业务提交
 - DispatchBot 自动审批
 - 非 TEST 数据操作
 =========================================================
@@ -916,6 +916,125 @@ async function runTruckDriverCheck() {
 }
 
 
+async function runTruckDriverTemporaryUnloadSubmitTest() {
+
+    const botName =
+        "TruckDriverBot";
+
+
+    const bot =
+        await getTruckDriverBot();
+
+
+    try {
+
+        updateBot(
+            botName,
+            "running",
+            "正在提交 TEST 临时卸料申请"
+        );
+
+
+        await bot.open();
+
+
+        const result =
+            await bot.submitTestTemporaryUnload();
+
+
+        robotMessage(
+            botName,
+            "TEST临时卸料提交成功：" +
+            result.requestId
+        );
+
+
+        robotMessage(
+            botName,
+            "安全验证通过：任务 " +
+            result.taskId +
+            "；司机 " +
+            result.driverId +
+            "；车辆 " +
+            result.vehicleId +
+            "；状态 " +
+            result.status +
+            "；未直接计入正式趟次。"
+        );
+
+
+        robotMessage(
+            botName,
+            "正式趟数提交前/后：" +
+            result.beforeTripCount +
+            " / " +
+            result.afterTripCount +
+            "；运输闭环已重置为 " +
+            result.cyclePhase
+        );
+
+
+        updateBot(
+            botName,
+            "pass",
+            "TEST临时卸料申请已进入待调度确认"
+        );
+
+
+        return {
+            ok:
+                true,
+
+            action:
+                "temporary-unload-submit-test",
+
+            result
+        };
+
+
+    } catch (
+        error
+    ) {
+
+        const message =
+            error?.message ||
+            String(
+                error
+            );
+
+
+        updateBot(
+            botName,
+            "fail",
+            message
+        );
+
+
+        robotMessage(
+            botName,
+            "TEST临时卸料提交失败：" +
+            message
+        );
+
+
+        try {
+
+            await captureFailure(
+                botName,
+                truckDriverPage,
+                "temporary-unload-submit-test"
+            );
+
+        } catch (
+            screenshotError
+        ) {}
+
+
+        throw error;
+    }
+}
+
+
 async function runTruckDriverTemporaryUnloadModalCheck() {
 
     const botName =
@@ -1176,6 +1295,16 @@ async function executeTruckDriverCommand(
 
 
     if (
+        /提交.*TEST.*临时.*卸料|TEST.*临时.*卸料.*提交|测试.*临时.*卸料.*提交/i.test(
+            text
+        )
+    ) {
+
+        return await runTruckDriverTemporaryUnloadSubmitTest();
+    }
+
+
+    if (
         /自动点击.*临时.*卸料|打开.*临时.*卸料.*弹窗|检查.*临时.*卸料.*弹窗|临时非卸载区.*弹窗/.test(
             text
         )
@@ -1218,7 +1347,7 @@ async function executeTruckDriverCommand(
 
     robotMessage(
         "TruckDriverBot",
-        "当前版本只允许：准备TEST司机环境、检查司机端、检查临时卸料按钮、检查临时卸料弹窗、清理TEST环境；不执行提交/审批等业务写操作。"
+        "当前版本允许：准备TEST司机环境、检查司机端、检查临时卸料按钮、检查临时卸料弹窗、提交TEST临时卸料、清理TEST环境。提交仅限 TEST- 数据。"
     );
 
 
@@ -1295,7 +1424,7 @@ async function executeCommand({
             /检查司机端|检查司机|司机端检查/i.test(
                 command
             ) ||
-            /自动点击.*临时.*卸料|打开.*临时.*卸料.*弹窗|检查.*临时.*卸料.*弹窗|临时非卸载区.*弹窗|临时.*卸料.*按钮|检查.*临时.*卸料/.test(
+            /提交.*TEST.*临时.*卸料|TEST.*临时.*卸料.*提交|测试.*临时.*卸料.*提交|自动点击.*临时.*卸料|打开.*临时.*卸料.*弹窗|检查.*临时.*卸料.*弹窗|临时非卸载区.*弹窗|临时.*卸料.*按钮|检查.*临时.*卸料/.test(
                 command
             ) ||
             /清理.*TEST.*环境|清空.*TEST.*环境/.test(
