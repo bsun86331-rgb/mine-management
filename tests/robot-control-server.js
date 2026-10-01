@@ -39,7 +39,7 @@ const {
 
 /*
 =========================================================
-R0-7 RobotControlServer
+R0-8 RobotControlServer
 机器人测试控制中心后台 + Playwright 执行器
 
 当前已接入：
@@ -1823,6 +1823,230 @@ async function runNormalTransportClosedLoopTest() {
 }
 
 
+async function runAllCoreRegressionTests() {
+
+    const botName =
+        "TestManager";
+
+
+    const results =
+        [];
+
+
+    const runCase =
+        async (
+            name,
+            runner
+        ) => {
+
+            robotMessage(
+                botName,
+                "开始回归：" +
+                name
+            );
+
+
+            try {
+
+                const result =
+                    await runner();
+
+
+                results.push({
+                    name,
+                    ok:
+                        true,
+
+                    result
+                });
+
+
+                robotMessage(
+                    botName,
+                    "回归通过：" +
+                    name
+                );
+
+
+                return true;
+
+
+            } catch (
+                error
+            ) {
+
+                const message =
+                    error?.message ||
+                    String(
+                        error
+                    );
+
+
+                results.push({
+                    name,
+                    ok:
+                        false,
+
+                    error:
+                        message
+                });
+
+
+                robotMessage(
+                    botName,
+                    "回归失败：" +
+                    name +
+                    "；" +
+                    message
+                );
+
+
+                return false;
+            }
+        };
+
+
+    updateBot(
+        botName,
+        "running",
+        "正在运行全部核心回归测试"
+    );
+
+
+    /*
+     * 两个用例之间都重新初始化 TEST 环境，
+     * 避免前一个用例的趟次 / 闭环状态污染后一个用例。
+     */
+    await runCase(
+        "正常装卸运输完整闭环",
+        async () =>
+            await runNormalTransportClosedLoopTest()
+    );
+
+
+    await runCase(
+        "临时非卸载区卸料完整闭环",
+        async () =>
+            await runTestManagerTemporaryUnloadFullCycle()
+    );
+
+
+    const passed =
+        results.filter(
+            item =>
+                item.ok
+        ).length;
+
+
+    const total =
+        results.length;
+
+
+    const failed =
+        total -
+        passed;
+
+
+    robotMessage(
+        botName,
+        "核心回归汇总：" +
+        passed +
+        "/" +
+        total +
+        " PASS" +
+        (
+            failed
+                ? "；" +
+                  failed +
+                  " FAIL"
+                : ""
+        )
+    );
+
+
+    results.forEach(
+        (
+            item,
+            index
+        ) => {
+
+            robotMessage(
+                botName,
+                (
+                    index +
+                    1
+                ) +
+                ". " +
+                item.name +
+                "：" +
+                (
+                    item.ok
+                        ? "PASS"
+                        : "FAIL - " +
+                          item.error
+                )
+            );
+        }
+    );
+
+
+    if (
+        failed
+    ) {
+
+        updateBot(
+            botName,
+            "fail",
+            "全部核心回归测试完成：" +
+            passed +
+            "/" +
+            total +
+            " PASS"
+        );
+
+
+        throw new Error(
+            "核心回归存在失败用例：" +
+            results
+                .filter(
+                    item =>
+                        !item.ok
+                )
+                .map(
+                    item =>
+                        item.name
+                )
+                .join(
+                    "、"
+                )
+        );
+    }
+
+
+    updateBot(
+        botName,
+        "pass",
+        "全部核心回归测试通过：" +
+        passed +
+        "/" +
+        total
+    );
+
+
+    return {
+        ok:
+            true,
+
+        action:
+            "all-core-regression-tests",
+
+        passed,
+        total,
+        results
+    };
+}
+
+
 /*
 =========================================================
 命令路由
@@ -1966,6 +2190,26 @@ async function executeCommand({
         requestedBot ===
             "TestManager" &&
         (
+            /运行.*全部.*核心.*回归.*测试/i.test(
+                command
+            ) ||
+            /全部.*核心.*回归/i.test(
+                command
+            ) ||
+            /核心.*回归.*全部/i.test(
+                command
+            )
+        )
+    ) {
+
+        return await runAllCoreRegressionTests();
+    }
+
+
+    if (
+        requestedBot ===
+            "TestManager" &&
+        (
             /测试.*正常.*装卸.*运输.*完整.*闭环/i.test(
                 command
             ) ||
@@ -2076,7 +2320,7 @@ async function executeCommand({
 
     robotMessage(
         "TestManager",
-        "当前已接入 TruckDriverBot + DispatchBot。TestManager 可用命令：“测试正常装卸运输完整闭环”“测试临时非卸载区卸料完整闭环”。"
+        "当前已接入 TruckDriverBot + DispatchBot。TestManager 可用命令：“运行全部核心回归测试”“测试正常装卸运输完整闭环”“测试临时非卸载区卸料完整闭环”。"
     );
 
 
@@ -2533,7 +2777,7 @@ server.listen(
         );
 
         console.log(
-            "🤖 机器人测试控制中心 R0-7 已启动"
+            "🤖 机器人测试控制中心 R0-8 已启动"
         );
 
         console.log(
