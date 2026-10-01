@@ -1,0 +1,1508 @@
+"use strict";
+
+const http =
+    require("http");
+
+const fs =
+    require("fs");
+
+const path =
+    require("path");
+
+const {
+    URL
+} = require("url");
+
+const {
+    chromium
+} = require("@playwright/test");
+
+const {
+    TruckDriverBot
+} = require(
+    "./bots/truck-driver-bot"
+);
+
+
+/*
+=========================================================
+R0-3 RobotControlServer
+机器人测试控制中心后台 + Playwright 执行器
+
+当前已接入：
+- TruckDriverBot：真实打开 GitHub Pages
+- TEST 身份检查
+- TEST 任务 / TEST 车辆检查
+- 临时卸料按钮状态检查
+- 失败截图
+- SSE 实时反馈
+
+当前仍未开放：
+- 正式业务提交
+- DispatchBot 自动审批
+- 非 TEST 数据操作
+=========================================================
+*/
+
+
+const PORT =
+    Number(
+        process.env.ROBOT_PORT ||
+        4310
+    );
+
+
+const BASE_URL =
+    process.env.ROBOT_BASE_URL ||
+    "https://bsun86331-rgb.github.io/mine-management/";
+
+
+const HEADLESS =
+    String(
+        process.env.ROBOT_HEADLESS ||
+        "true"
+    )
+    .toLowerCase() !==
+        "false";
+
+
+const ROOT =
+    path.resolve(
+        __dirname,
+        ".."
+    );
+
+
+const PANEL_FILE =
+    path.join(
+        ROOT,
+        "robot-test-center.html"
+    );
+
+
+const SCREENSHOT_DIR =
+    path.join(
+        ROOT,
+        "test-results",
+        "screenshots"
+    );
+
+
+const clients =
+    new Set();
+
+
+let browser =
+    null;
+
+
+let browserContext =
+    null;
+
+
+let truckDriverPage =
+    null;
+
+
+let truckDriverBot =
+    null;
+
+
+let robotStatus = {
+
+    TestManager: {
+        status:
+            "idle",
+
+        step:
+            "等待测试命令"
+    },
+
+    DispatchBot: {
+        status:
+            "idle",
+
+        step:
+            "待命 · 尚未接入真实执行器"
+    },
+
+    TruckDriverBot: {
+        status:
+            "idle",
+
+        step:
+            "待命"
+    }
+};
+
+
+/*
+=========================================================
+安全保护
+=========================================================
+*/
+
+
+function assertSafeCommand(
+    command
+) {
+
+    const text =
+        String(
+            command ||
+            ""
+        );
+
+
+    /*
+     * 命令中若显式出现常见业务ID，
+     * 必须以 TEST- 开头。
+     */
+
+    const matches =
+        text.match(
+            /\b(?:TASK|TRIP|DRIVER|VEHICLE|SHIFT|ZONE|REQ|REQUEST)-[A-Z0-9_-]+\b/gi
+        ) ||
+        [];
+
+
+    const unsafe =
+        matches.filter(
+            id =>
+                !String(
+                    id
+                )
+                .toUpperCase()
+                .startsWith(
+                    "TEST-"
+                )
+        );
+
+
+    if (
+        unsafe.length
+    ) {
+
+        throw new Error(
+            "安全拦截：机器人禁止操作非 TEST 数据：" +
+            unsafe.join(
+                ", "
+            )
+        );
+    }
+
+
+    return true;
+}
+
+
+/*
+=========================================================
+SSE 实时消息
+=========================================================
+*/
+
+
+function sendEvent(
+    event
+) {
+
+    const payload =
+        `data: ${JSON.stringify(event)}\n\n`;
+
+
+    clients.forEach(
+        response => {
+
+            try {
+
+                response.write(
+                    payload
+                );
+
+            } catch (
+                error
+            ) {
+
+                clients.delete(
+                    response
+                );
+            }
+        }
+    );
+}
+
+
+function updateBot(
+    bot,
+    status,
+    step
+) {
+
+    if (
+        !robotStatus[bot]
+    ) {
+
+        return;
+    }
+
+
+    robotStatus[
+        bot
+    ] = {
+        status,
+        step
+    };
+
+
+    sendEvent({
+        type:
+            "bot-status",
+
+        bot,
+        status,
+        step,
+
+        time:
+            new Date()
+                .toISOString()
+    });
+}
+
+
+function robotMessage(
+    bot,
+    message
+) {
+
+    sendEvent({
+        type:
+            "message",
+
+        bot,
+
+        message:
+            String(
+                message ||
+                ""
+            ),
+
+        time:
+            new Date()
+                .toISOString()
+    });
+}
+
+
+/*
+=========================================================
+Playwright 生命周期
+=========================================================
+*/
+
+
+async function ensureBrowser() {
+
+    if (
+        browser &&
+        browserContext
+    ) {
+
+        return;
+    }
+
+
+    robotMessage(
+        "TestManager",
+        "正在启动 Playwright Chromium……"
+    );
+
+
+    browser =
+        await chromium.launch({
+            headless:
+                HEADLESS
+        });
+
+
+    browserContext =
+        await browser.newContext({
+
+            baseURL:
+                BASE_URL,
+
+            viewport: {
+                width:
+                    390,
+
+                height:
+                    844
+            }
+        });
+
+
+    browserContext.on(
+        "page",
+        page => {
+
+            page.on(
+                "console",
+                message => {
+
+                    if (
+                        message.type() ===
+                            "error"
+                    ) {
+
+                        robotMessage(
+                            "TestManager",
+                            "浏览器控制台错误：" +
+                            message.text()
+                        );
+                    }
+                }
+            );
+        }
+    );
+
+
+    robotMessage(
+        "TestManager",
+        "Playwright Chromium 已启动。"
+    );
+}
+
+
+async function getTruckDriverBot() {
+
+    await ensureBrowser();
+
+
+    if (
+        truckDriverPage &&
+        !truckDriverPage.isClosed() &&
+        truckDriverBot
+    ) {
+
+        return truckDriverBot;
+    }
+
+
+    truckDriverPage =
+        await browserContext.newPage();
+
+
+    truckDriverPage.on(
+        "console",
+        message => {
+
+            if (
+                message.type() ===
+                    "error"
+            ) {
+
+                robotMessage(
+                    "TruckDriverBot",
+                    "司机端控制台错误：" +
+                    message.text()
+                );
+            }
+        }
+    );
+
+
+    truckDriverBot =
+        new TruckDriverBot(
+            truckDriverPage
+        );
+
+
+    return truckDriverBot;
+}
+
+
+async function captureFailure(
+    botName,
+    page,
+    label
+) {
+
+    if (
+        !page ||
+        page.isClosed()
+    ) {
+
+        return null;
+    }
+
+
+    fs.mkdirSync(
+        SCREENSHOT_DIR,
+        {
+            recursive:
+                true
+        }
+    );
+
+
+    const safeLabel =
+        String(
+            label ||
+            "failure"
+        )
+        .replace(
+            /[^a-zA-Z0-9_-]/g,
+            "-"
+        )
+        .replace(
+            /-+/g,
+            "-"
+        );
+
+
+    const filename =
+        `${Date.now()}-${botName}-${safeLabel}.png`;
+
+
+    const fullPath =
+        path.join(
+            SCREENSHOT_DIR,
+            filename
+        );
+
+
+    await page.screenshot({
+        path:
+            fullPath,
+
+        fullPage:
+            true
+    });
+
+
+    robotMessage(
+        botName,
+        "失败截图已保存：" +
+        path.relative(
+            ROOT,
+            fullPath
+        )
+    );
+
+
+    return fullPath;
+}
+
+
+/*
+=========================================================
+TruckDriverBot 真实动作
+=========================================================
+*/
+
+
+async function runTruckDriverCheck() {
+
+    const botName =
+        "TruckDriverBot";
+
+
+    const bot =
+        await getTruckDriverBot();
+
+
+    try {
+
+        updateBot(
+            botName,
+            "running",
+            "正在打开司机工作台"
+        );
+
+
+        robotMessage(
+            botName,
+            "开始真实访问 driver-work.html。"
+        );
+
+
+        await bot.open();
+
+
+        robotMessage(
+            botName,
+            "司机工作台已打开，开始检查 TEST 身份。"
+        );
+
+
+        updateBot(
+            botName,
+            "running",
+            "检查 TEST 司机身份"
+        );
+
+
+        const profile =
+            await bot.assertTestIdentity();
+
+
+        const driverId =
+            profile.driverId ||
+            profile.personId ||
+            profile.employeeId ||
+            profile.id ||
+            "";
+
+
+        robotMessage(
+            botName,
+            "TEST 司机身份通过：" +
+            driverId
+        );
+
+
+        updateBot(
+            botName,
+            "running",
+            "检查 TEST 生产任务和车辆"
+        );
+
+
+        const task =
+            await bot.assertTestTask();
+
+
+        const taskId =
+            task.taskId ||
+            task.dispatchTaskId ||
+            task.id ||
+            "";
+
+
+        const vehicleId =
+            task.vehicleNumber ||
+            task.vehicleId ||
+            task.truckNumber ||
+            task.truckId ||
+            "";
+
+
+        robotMessage(
+            botName,
+            "TEST 任务通过：" +
+            taskId +
+            "；车辆：" +
+            vehicleId
+        );
+
+
+        updateBot(
+            botName,
+            "running",
+            "检查临时非卸载区卸料按钮"
+        );
+
+
+        const buttonState =
+            await bot.getTemporaryUnloadButtonState();
+
+
+        robotMessage(
+            botName,
+            "临时卸料按钮状态：" +
+            (
+                buttonState.visible
+                    ? "可见"
+                    : "不可见"
+            ) +
+            " / " +
+            (
+                buttonState.enabled
+                    ? "可点击"
+                    : "不可点击"
+            ) +
+            " / 文本：" +
+            buttonState.text
+        );
+
+
+        updateBot(
+            botName,
+            "pass",
+            "司机端 TEST 安全上下文检查完成"
+        );
+
+
+        return {
+            ok:
+                true,
+
+            action:
+                "truck-driver-check",
+
+            driverId,
+            taskId,
+            vehicleId,
+
+            temporaryUnloadButton:
+                buttonState
+        };
+
+
+    } catch (
+        error
+    ) {
+
+        const message =
+            error?.message ||
+            String(
+                error
+            );
+
+
+        updateBot(
+            botName,
+            "fail",
+            message
+        );
+
+
+        robotMessage(
+            botName,
+            "检查失败：" +
+            message
+        );
+
+
+        try {
+
+            await captureFailure(
+                botName,
+                truckDriverPage,
+                "driver-check"
+            );
+
+        } catch (
+            screenshotError
+        ) {
+
+            robotMessage(
+                botName,
+                "失败截图保存失败：" +
+                (
+                    screenshotError?.message ||
+                    String(
+                        screenshotError
+                    )
+                )
+            );
+        }
+
+
+        throw error;
+    }
+}
+
+
+async function runTruckDriverTemporaryUnloadButtonCheck() {
+
+    const botName =
+        "TruckDriverBot";
+
+
+    const bot =
+        await getTruckDriverBot();
+
+
+    try {
+
+        updateBot(
+            botName,
+            "running",
+            "正在检查临时卸料按钮前置条件"
+        );
+
+
+        await bot.open();
+
+
+        /*
+         * assertTemporaryUnloadReady 内部会再次检查：
+         * TEST 司机
+         * TEST 任务
+         * TEST 车辆
+         * enroute_unload
+         * loadedAt
+         * departedLoadingAt
+         * 按钮可见/可用
+         */
+
+        const result =
+            await bot.assertTemporaryUnloadReady();
+
+
+        updateBot(
+            botName,
+            "pass",
+            "临时卸料按钮已满足可操作条件"
+        );
+
+
+        robotMessage(
+            botName,
+            "检查通过：运输状态为 " +
+            result.cycle.phase +
+            "，临时卸料按钮可点击。"
+        );
+
+
+        return {
+            ok:
+                true,
+
+            action:
+                "temporary-unload-button-check",
+
+            phase:
+                result.cycle.phase,
+
+            button:
+                result.button
+        };
+
+
+    } catch (
+        error
+    ) {
+
+        const message =
+            error?.message ||
+            String(
+                error
+            );
+
+
+        updateBot(
+            botName,
+            "waiting",
+            message
+        );
+
+
+        robotMessage(
+            botName,
+            "当前卡点：" +
+            message
+        );
+
+
+        try {
+
+            await captureFailure(
+                botName,
+                truckDriverPage,
+                "temporary-unload-button"
+            );
+
+        } catch (
+            screenshotError
+        ) {
+
+            robotMessage(
+                botName,
+                "卡点截图保存失败：" +
+                (
+                    screenshotError?.message ||
+                    String(
+                        screenshotError
+                    )
+                )
+            );
+        }
+
+
+        throw error;
+    }
+}
+
+
+/*
+=========================================================
+命令路由
+=========================================================
+*/
+
+
+async function executeTruckDriverCommand(
+    command
+) {
+
+    const text =
+        String(
+            command ||
+            ""
+        );
+
+
+    if (
+        /临时.*卸料.*按钮|检查.*临时.*卸料|临时非卸载区.*检查/.test(
+            text
+        )
+    ) {
+
+        return await runTruckDriverTemporaryUnloadButtonCheck();
+    }
+
+
+    if (
+        /检查司机端|检查司机|司机端检查|检查.*TruckDriverBot/i.test(
+            text
+        )
+    ) {
+
+        return await runTruckDriverCheck();
+    }
+
+
+    /*
+     * R0-3 暂不允许机器人自动提交业务数据。
+     */
+
+    updateBot(
+        "TruckDriverBot",
+        "waiting",
+        "当前命令尚未开放自动写操作"
+    );
+
+
+    robotMessage(
+        "TruckDriverBot",
+        "我已经接入真实 Playwright，但当前版本只允许安全检查，不执行提交/审批等业务写操作。"
+    );
+
+
+    return {
+        ok:
+            true,
+
+        target:
+            "TruckDriverBot",
+
+        status:
+            "waiting"
+    };
+}
+
+
+async function executeCommand({
+    target,
+    command
+}) {
+
+    assertSafeCommand(
+        command
+    );
+
+
+    const requestedBot =
+        robotStatus[
+            target
+        ]
+            ? target
+            : "TestManager";
+
+
+    updateBot(
+        requestedBot,
+        "running",
+        "正在解析命令"
+    );
+
+
+    robotMessage(
+        requestedBot,
+        `收到命令：${command}`
+    );
+
+
+    /*
+     * 直接发给汽车司机机器人。
+     */
+
+    if (
+        requestedBot ===
+            "TruckDriverBot"
+    ) {
+
+        return await executeTruckDriverCommand(
+            command
+        );
+    }
+
+
+    /*
+     * TestManager 暂时支持把司机检查类命令转给 TruckDriverBot。
+     */
+
+    if (
+        requestedBot ===
+            "TestManager" &&
+        (
+            /检查司机端|检查司机|司机端检查/i.test(
+                command
+            ) ||
+            /临时.*卸料.*按钮|检查.*临时.*卸料/.test(
+                command
+            )
+        )
+    ) {
+
+        robotMessage(
+            "TestManager",
+            "该步骤交给 TruckDriverBot 执行。"
+        );
+
+
+        updateBot(
+            "TestManager",
+            "idle",
+            "已将司机端检查交给 TruckDriverBot"
+        );
+
+
+        return await executeTruckDriverCommand(
+            command
+        );
+    }
+
+
+    /*
+     * DispatchBot 下一阶段接入。
+     */
+
+    if (
+        requestedBot ===
+            "DispatchBot"
+    ) {
+
+        updateBot(
+            "DispatchBot",
+            "waiting",
+            "尚未接入真实 Playwright 执行器"
+        );
+
+
+        robotMessage(
+            "DispatchBot",
+            "当前已保留调度机器人位置，下一阶段接入真实调度端。"
+        );
+
+
+        return {
+            ok:
+                true,
+
+            target:
+                "DispatchBot",
+
+            status:
+                "waiting"
+        };
+    }
+
+
+    updateBot(
+        "TestManager",
+        "waiting",
+        "命令已收到，当前场景尚未接入执行器"
+    );
+
+
+    robotMessage(
+        "TestManager",
+        "当前 R0-3 已接入 TruckDriverBot 的真实检查动作。请尝试命令：“检查司机端”或“检查临时卸料按钮”。"
+    );
+
+
+    return {
+        ok:
+            true,
+
+        target:
+            "TestManager",
+
+        status:
+            "waiting"
+    };
+}
+
+
+/*
+=========================================================
+HTTP 工具
+=========================================================
+*/
+
+
+function sendJson(
+    response,
+    statusCode,
+    data
+) {
+
+    response.writeHead(
+        statusCode,
+        {
+            "Content-Type":
+                "application/json; charset=utf-8",
+
+            "Cache-Control":
+                "no-store"
+        }
+    );
+
+
+    response.end(
+        JSON.stringify(
+            data
+        )
+    );
+}
+
+
+function readBody(
+    request
+) {
+
+    return new Promise(
+        (
+            resolve,
+            reject
+        ) => {
+
+            let body =
+                "";
+
+
+            request.on(
+                "data",
+                chunk => {
+
+                    body +=
+                        chunk;
+
+
+                    if (
+                        body.length >
+                            1024 *
+                            1024
+                    ) {
+
+                        reject(
+                            new Error(
+                                "请求内容过大"
+                            )
+                        );
+
+
+                        request.destroy();
+                    }
+                }
+            );
+
+
+            request.on(
+                "end",
+                () => {
+
+                    resolve(
+                        body
+                    );
+                }
+            );
+
+
+            request.on(
+                "error",
+                reject
+            );
+        }
+    );
+}
+
+
+/*
+=========================================================
+HTTP Server
+=========================================================
+*/
+
+
+const server =
+    http.createServer(
+        async (
+            request,
+            response
+        ) => {
+
+            const url =
+                new URL(
+                    request.url,
+                    `http://${request.headers.host}`
+                );
+
+
+            if (
+                request.method ===
+                    "GET" &&
+                (
+                    url.pathname ===
+                        "/" ||
+                    url.pathname ===
+                        "/robot-test-center.html"
+                )
+            ) {
+
+                if (
+                    !fs.existsSync(
+                        PANEL_FILE
+                    )
+                ) {
+
+                    response.writeHead(
+                        404,
+                        {
+                            "Content-Type":
+                                "text/plain; charset=utf-8"
+                        }
+                    );
+
+
+                    response.end(
+                        "没有找到 robot-test-center.html"
+                    );
+
+
+                    return;
+                }
+
+
+                response.writeHead(
+                    200,
+                    {
+                        "Content-Type":
+                            "text/html; charset=utf-8",
+
+                        "Cache-Control":
+                            "no-store"
+                    }
+                );
+
+
+                fs
+                    .createReadStream(
+                        PANEL_FILE
+                    )
+                    .pipe(
+                        response
+                    );
+
+
+                return;
+            }
+
+
+            if (
+                request.method ===
+                    "GET" &&
+                url.pathname ===
+                    "/api/status"
+            ) {
+
+                sendJson(
+                    response,
+                    200,
+                    {
+                        ok:
+                            true,
+
+                        robots:
+                            robotStatus,
+
+                        playwright: {
+                            connected:
+                                Boolean(
+                                    browser &&
+                                    browserContext
+                                ),
+
+                            baseURL:
+                                BASE_URL,
+
+                            headless:
+                                HEADLESS
+                        }
+                    }
+                );
+
+
+                return;
+            }
+
+
+            if (
+                request.method ===
+                    "GET" &&
+                url.pathname ===
+                    "/api/events"
+            ) {
+
+                response.writeHead(
+                    200,
+                    {
+                        "Content-Type":
+                            "text/event-stream",
+
+                        "Cache-Control":
+                            "no-cache",
+
+                        "Connection":
+                            "keep-alive"
+                    }
+                );
+
+
+                response.write(
+                    ": connected\n\n"
+                );
+
+
+                clients.add(
+                    response
+                );
+
+
+                request.on(
+                    "close",
+                    () => {
+
+                        clients.delete(
+                            response
+                        );
+                    }
+                );
+
+
+                return;
+            }
+
+
+            if (
+                request.method ===
+                    "POST" &&
+                url.pathname ===
+                    "/api/command"
+            ) {
+
+                try {
+
+                    const raw =
+                        await readBody(
+                            request
+                        );
+
+
+                    const data =
+                        JSON.parse(
+                            raw ||
+                            "{}"
+                        );
+
+
+                    const target =
+                        String(
+                            data.target ||
+                            "TestManager"
+                        );
+
+
+                    const command =
+                        String(
+                            data.command ||
+                            ""
+                        )
+                        .trim();
+
+
+                    if (
+                        !command
+                    ) {
+
+                        sendJson(
+                            response,
+                            400,
+                            {
+                                ok:
+                                    false,
+
+                                error:
+                                    "测试命令不能为空"
+                            }
+                        );
+
+
+                        return;
+                    }
+
+
+                    const result =
+                        await executeCommand({
+                            target,
+                            command
+                        });
+
+
+                    sendJson(
+                        response,
+                        200,
+                        result
+                    );
+
+
+                } catch (
+                    error
+                ) {
+
+                    const message =
+                        error?.message ||
+                        String(
+                            error
+                        );
+
+
+                    robotMessage(
+                        "TestSafetyGuard",
+                        message
+                    );
+
+
+                    sendJson(
+                        response,
+                        400,
+                        {
+                            ok:
+                                false,
+
+                            error:
+                                message
+                        }
+                    );
+                }
+
+
+                return;
+            }
+
+
+            sendJson(
+                response,
+                404,
+                {
+                    ok:
+                        false,
+
+                    error:
+                        "Not Found"
+                }
+            );
+        }
+    );
+
+
+async function shutdown() {
+
+    try {
+
+        if (
+            browserContext
+        ) {
+
+            await browserContext.close();
+        }
+
+    } catch (
+        error
+    ) {}
+
+
+    try {
+
+        if (
+            browser
+        ) {
+
+            await browser.close();
+        }
+
+    } catch (
+        error
+    ) {}
+
+
+    process.exit(
+        0
+    );
+}
+
+
+process.on(
+    "SIGINT",
+    shutdown
+);
+
+
+process.on(
+    "SIGTERM",
+    shutdown
+);
+
+
+server.listen(
+    PORT,
+    "127.0.0.1",
+    () => {
+
+        console.log(
+            ""
+        );
+
+        console.log(
+            "🤖 机器人测试控制中心 R0-3 已启动"
+        );
+
+        console.log(
+            `地址：http://127.0.0.1:${PORT}`
+        );
+
+        console.log(
+            "目标系统：" +
+            BASE_URL
+        );
+
+        console.log(
+            "安全模式：仅允许 TEST- 数据"
+        );
+
+        console.log(
+            "TruckDriverBot：已接入真实 Playwright"
+        );
+
+        console.log(
+            "DispatchBot：待下一阶段接入"
+        );
+
+        console.log(
+            ""
+        );
+    }
+);
