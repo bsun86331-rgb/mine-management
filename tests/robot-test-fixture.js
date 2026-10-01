@@ -2,7 +2,7 @@
 
 /*
 =========================================================
-R0-4B RobotTestFixture
+R0-4C RobotTestFixture
 机器人专用 TEST 测试环境
 
 本版修复：
@@ -458,6 +458,110 @@ async function initializeTruckDriverTestEnvironment(
 
 
                 /*
+                 * TEST 运输区域 + 设备检查 + 车辆运行状态
+                 * 供“正常装卸运输完整闭环”机器人测试使用。
+                 */
+
+                localStorage.setItem(
+                    "transportZones",
+                    JSON.stringify([
+                        {
+                            zoneId:
+                                TEST_DATA.loadingZoneId,
+                            name:
+                                "TEST-测试装载区",
+                            zoneType:
+                                "loading",
+                            latitude:
+                                43.850000,
+                            longitude:
+                                105.750000,
+                            radius:
+                                80,
+                            enabled:
+                                true,
+                            testFixture:
+                                true
+                        },
+                        {
+                            zoneId:
+                                TEST_DATA.wasteZoneId,
+                            name:
+                                "TEST-测试排土场",
+                            zoneType:
+                                "unloading",
+                            materialType:
+                                "渣",
+                            latitude:
+                                43.860000,
+                            longitude:
+                                105.760000,
+                            radius:
+                                80,
+                            enabled:
+                                true,
+                            testFixture:
+                                true
+                        }
+                    ])
+                );
+
+
+                localStorage.setItem(
+                    "equipmentUsageChecks",
+                    JSON.stringify([
+                        {
+                            checkId:
+                                "TEST-CHECK-001",
+                            mode:
+                                "shift",
+                            inspectionMode:
+                                "shift",
+                            shiftId:
+                                TEST_DATA.shiftId,
+                            equipmentId:
+                                TEST_DATA.vehicleId,
+                            equipmentNumber:
+                                TEST_DATA.vehicleId,
+                            personId:
+                                TEST_DATA.driverId,
+                            incomingPersonId:
+                                TEST_DATA.driverId,
+                            personName:
+                                TEST_DATA.driverName,
+                            incomingPersonName:
+                                TEST_DATA.driverName,
+                            locked:
+                                true,
+                            completedAt:
+                                nowIso,
+                            testFixture:
+                                true
+                        }
+                    ])
+                );
+
+
+                localStorage.setItem(
+                    "equipmentOperationalStatus",
+                    JSON.stringify([
+                        {
+                            equipmentId:
+                                TEST_DATA.vehicleId,
+                            status:
+                                "available",
+                            source:
+                                "robot-test-fixture",
+                            updatedAt:
+                                nowIso,
+                            testFixture:
+                                true
+                        }
+                    ])
+                );
+
+
+                /*
                  * TEST 当前生产任务
                  */
 
@@ -507,15 +611,11 @@ async function initializeTruckDriverTestEnvironment(
                             "TEST-测试装载区",
 
                         unloadingZoneIds: [
-                            TEST_DATA.coalZoneId,
-                            TEST_DATA.wasteZoneId,
-                            TEST_DATA.countZoneId
+                            TEST_DATA.wasteZoneId
                         ],
 
                         unloadingZoneNames: [
-                            "TEST-测试煤场",
-                            "TEST-测试排土场",
-                            "TEST-测试只记车数区"
+                            "TEST-测试排土场"
                         ],
 
                         driverId:
