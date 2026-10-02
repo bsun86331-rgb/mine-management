@@ -65,7 +65,7 @@ const {
 
 /*
 =========================================================
-R0-22 RobotControlServer
+R0-23 RobotControlServer
 机器人测试控制中心后台 + Playwright 执行器
 
 当前已接入：
@@ -3694,6 +3694,78 @@ async function runFastRegressionTests() {
 
 
     await runFastCase(
+        "维修验收归档释放",
+        async () => {
+
+            const page =
+                await browserContext.newPage();
+
+
+            try {
+
+                await installScenario(
+                    page,
+                    SCENARIOS.MAINTENANCE_WAITING_INSPECTION
+                );
+
+
+                const bot =
+                    new MaintenanceManagerBot(
+                        page
+                    );
+
+
+                await bot.open();
+
+
+                return await bot.inspectAndCompleteLatestTestRepair();
+
+            } finally {
+
+                await page.close()
+                    .catch(
+                        () => {}
+                    );
+            }
+        }
+    );
+
+
+    await runFastCase(
+        "GPS异常拦截",
+        async () => {
+
+            const page =
+                await browserContext.newPage();
+
+
+            try {
+
+                await initializeTruckDriverTestEnvironment(
+                    page
+                );
+
+
+                const bot =
+                    new TruckDriverBot(
+                        page
+                    );
+
+
+                return await bot.testGpsAbnormalBlocked();
+
+            } finally {
+
+                await page.close()
+                    .catch(
+                        () => {}
+                    );
+            }
+        }
+    );
+
+
+    await runFastCase(
         "临时卸料驳回不计趟次",
         async () => {
 
@@ -5470,7 +5542,7 @@ server.listen(
         );
 
         console.log(
-            "🤖 机器人测试控制中心 R0-22 已启动"
+            "🤖 机器人测试控制中心 R0-23 已启动"
         );
 
         console.log(
