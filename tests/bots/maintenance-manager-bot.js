@@ -575,7 +575,23 @@ class MaintenanceManagerBot {
 
         /*
          * 1. 维修管理接车。
+         *
+         * maintenance.html 默认打开“维修看板”，
+         * 等待进厂按钮虽然已经渲染，但所在 page-waiting 被隐藏。
+         * 先切换到“待进厂”页面，再等待按钮可见。
          */
+        await this.page
+            .locator(
+                'button[data-page="waiting"]'
+            )
+            .click();
+
+
+        await this.page.waitForTimeout(
+            150
+        );
+
+
         const receiveButton =
             this.page.locator(
                 `button[onclick*="receiveVehicle('${requestId}')"]`
