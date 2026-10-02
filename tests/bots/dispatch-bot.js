@@ -92,6 +92,429 @@ class DispatchBot {
     }
 
 
+    async getVehicleChangeRequests() {
+
+        const rows =
+            await this.readLocalStorage(
+                "driverVehicleChangeRequests"
+            );
+
+
+        return Array.isArray(
+            rows
+        )
+            ? rows
+            : [];
+    }
+
+
+    async findLatestPendingTestVehicleChange() {
+
+        const rows =
+            await this.getVehicleChangeRequests();
+
+
+        const pending =
+            rows
+                .filter(
+                    item =>
+                        item &&
+                        item.status ===
+                            "pending"
+                        &&
+                        String(
+                            item.requestId ||
+                            ""
+                        )
+                        .startsWith(
+                            "TEST-"
+                        )
+                )
+                .sort(
+                    (
+                        a,
+                        b
+                    ) =>
+                        new Date(
+                            b.requestedAt ||
+                            0
+                        )
+                        -
+                        new Date(
+                            a.requestedAt ||
+                            0
+                        )
+                );
+
+
+        if (
+            !pending.length
+        ) {
+
+            throw new Error(
+                "DispatchBot：没有找到待审批 TEST 换车申请"
+            );
+        }
+
+
+        const request =
+            pending[0];
+
+
+        assertTestId(
+            request.requestId ||
+            "",
+            "换车申请"
+        );
+
+
+        assertTestId(
+            request.taskId ||
+            "",
+            "换车申请任务"
+        );
+
+
+        assertTestId(
+            request.driverId ||
+            request.personId ||
+            "",
+            "换车申请司机"
+        );
+
+
+        assertTestId(
+            request.oldVehicleNumber ||
+            request.oldVehicleId ||
+            "",
+            "换车申请旧车辆"
+        );
+
+
+        return request;
+    }
+
+
+    async approveLatestTestVehicleChange(
+        newVehicle =
+            "TEST-T-002"
+    ) {
+
+        assertTestId(
+            newVehicle,
+            "替换车辆"
+        );
+
+
+        const request =
+            await this.findLatestPendingTestVehicleChange();
+
+
+        assertSafeWrite(
+            "approve",
+            request.requestId
+        );
+
+
+        const openButton =
+            this.page.locator(
+                "#openVehicleChangeButton"
+            );
+
+
+        await openButton.waitFor({
+            state:
+                "visible"
+        });
+
+
+        await openButton.click();
+
+
+        await this.page
+            .locator(
+                "#vehicleChangeModal"
+            )
+            .waitFor({
+                state:
+                    "visible"
+            });
+
+
+        const select =
+            this.page.locator(
+                `[data-change-vehicle="${request.requestId}"]`
+            );
+
+
+        await select.waitFor({
+            state:
+                "visible"
+        });
+
+
+        const options =
+            await select
+                .locator(
+                    "option"
+                )
+                .allTextContents();
+
+
+        if (
+            !options.some(
+                text =>
+                    String(
+                        text
+                    )
+                    .includes(
+                        newVehicle
+                    )
+            )
+        ) {
+
+            throw new Error(
+                "DispatchBot：替换车辆列表中没有 " +
+                newVehicle
+            );
+        }
+
+
+        await select.selectOption(
+            newVehicle
+        );
+
+
+        const dialogMessages =
+            [];
+
+
+        const dialogHandler =
+            async dialog => {
+
+                dialogMessages.push(
+                    dialog.message()
+                );
+
+
+                await dialog.accept();
+            };
+
+
+        this.page.on(
+            "dialog",
+            dialogHandler
+        );
+
+
+        try {
+
+            await this.page
+                .locator(
+                    `[data-change-approve="${request.requestId}"]`
+                )
+                .click();
+
+
+            await this.page.waitForTimeout(
+                700
+            );
+
+        } finally {
+
+            this.page.off(
+                "dialog",
+                dialogHandler
+            );
+        }
+
+
+        const rows =
+            await this.getVehicleChangeRequests();
+
+
+        const updated =
+            rows.find(
+                item =>
+                    String(
+                        item.requestId ||
+                        ""
+                    ) ===
+                        String(
+                            request.requestId
+                        )
+            );
+
+
+        if (
+            !updated
+        ) {
+
+            throw new Error(
+                "DispatchBot：审批后换车申请丢失"
+            );
+        }
+
+
+        if (
+            updated.status !==
+                "approved"
+        ) {
+
+            throw new Error(
+                "DispatchBot：换车申请未变为 approved"
+            );
+        }
+
+
+        if (
+            String(
+                updated.approvedVehicleNumber ||
+                updated.approvedVehicleId ||
+                ""
+            ) !==
+                newVehicle
+        ) {
+
+            throw new Error(
+                "DispatchBot：审批后的替换车辆不正确"
+            );
+        }
+
+
+        const currentTask =
+            await this.readLocalStorage(
+                "driverCurrentTask"
+            );
+
+
+        if (
+            String(
+                currentTask?.vehicleNumber ||
+                currentTask?.vehicleId ||
+                ""
+            ) !==
+                newVehicle
+        ) {
+
+            throw new Error(
+                "DispatchBot：司机当前任务没有切换到新车辆"
+            );
+        }
+
+
+        if (
+            currentTask?.vehicleClaimed !==
+                false
+        ) {
+
+            throw new Error(
+                "DispatchBot：换车后新车辆没有要求重新领取"
+            );
+        }
+
+
+        const tasks =
+            await this.readLocalStorage(
+                "dispatchPublishedTasks"
+            ) ||
+            [];
+
+
+        const task =
+            Array.isArray(
+                tasks
+            )
+                ? tasks.find(
+                    item =>
+                        String(
+                            item?.taskId ||
+                            ""
+                        ) ===
+                            String(
+                                request.taskId
+                            )
+                )
+                : null;
+
+
+        if (
+            !task
+        ) {
+
+            throw new Error(
+                "DispatchBot：换车审批后找不到 TEST 主任务"
+            );
+        }
+
+
+        const assignment =
+            Array.isArray(
+                task.driverAssignments
+            )
+                ? task.driverAssignments.find(
+                    item =>
+                        String(
+                            item?.driverId ||
+                            item?.personId ||
+                            ""
+                        ) ===
+                            String(
+                                request.driverId ||
+                                request.personId ||
+                                ""
+                            )
+                )
+                : null;
+
+
+        if (
+            !assignment ||
+            String(
+                assignment.vehicleNumber ||
+                assignment.vehicleId ||
+                ""
+            ) !==
+                newVehicle
+        ) {
+
+            throw new Error(
+                "DispatchBot：主任务司机绑定没有更新为新车辆"
+            );
+        }
+
+
+        return {
+            requestId:
+                request.requestId,
+
+            taskId:
+                request.taskId,
+
+            driverId:
+                request.driverId ||
+                request.personId,
+
+            oldVehicle:
+                request.oldVehicleNumber ||
+                request.oldVehicleId,
+
+            newVehicle,
+
+            status:
+                updated.status,
+
+            vehicleClaimed:
+                currentTask.vehicleClaimed,
+
+            taskStatus:
+                currentTask.status,
+
+            dialogMessages
+        };
+    }
+
+
     async getTemporaryUnloadRequests() {
 
         const rows =
