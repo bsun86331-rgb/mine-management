@@ -9,7 +9,7 @@ const {
 
 /*
 =========================================================
-R0-1 TestScenarioFactory
+R0-2 TestScenarioFactory
 TEST 场景工厂
 
 目标：
@@ -452,6 +452,10 @@ function buildScenarioPayload(
                 }
             ],
 
+            maintenanceCosts:
+                [],
+
+
             workshopBays: [
                 {
                     bayId:
@@ -708,6 +712,7 @@ async function installScenario(
                 "personnelRecords",
                 "maintenanceRequests",
                 "maintenanceWorkOrders",
+                "maintenanceCosts",
                 "workshopBays",
                 "equipmentOperationalStatus",
                 "temporaryUnloadRequests",
