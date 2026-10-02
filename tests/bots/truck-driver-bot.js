@@ -1182,6 +1182,374 @@ class TruckDriverBot {
     }
 
 
+    async submitTestVehicleChange() {
+
+        const {
+            profile,
+            task
+        } =
+            await this.assertSafeContext();
+
+
+        const driverId =
+            profile.driverId ||
+            profile.personId ||
+            "";
+
+
+        const taskId =
+            task.taskId ||
+            task.dispatchTaskId ||
+            "";
+
+
+        const oldVehicle =
+            task.vehicleNumber ||
+            task.vehicleId ||
+            "";
+
+
+        assertTestId(
+            driverId,
+            "司机"
+        );
+
+
+        assertTestId(
+            taskId,
+            "生产任务"
+        );
+
+
+        assertTestId(
+            oldVehicle,
+            "旧车辆"
+        );
+
+
+        /*
+         * 正式页面默认生成 CHANGE_*。
+         * 机器人测试只允许产生 TEST- 数据，
+         * 因此仅针对 TEST 任务把新换车申请ID改为 TEST-CHANGE-*。
+         */
+        await this.page.evaluate(
+            () => {
+
+                if (
+                    window.__robotTestVehicleChangeGuardInstalled
+                ) {
+
+                    return;
+                }
+
+
+                const originalSetItem =
+                    localStorage.setItem.bind(
+                        localStorage
+                    );
+
+
+                localStorage.setItem =
+                    function (
+                        key,
+                        value
+                    ) {
+
+                        if (
+                            key ===
+                                "driverVehicleChangeRequests"
+                        ) {
+
+                            try {
+
+                                const rows =
+                                    JSON.parse(
+                                        value ||
+                                        "[]"
+                                    );
+
+
+                                if (
+                                    Array.isArray(
+                                        rows
+                                    )
+                                ) {
+
+                                    rows.forEach(
+                                        item => {
+
+                                            const taskId =
+                                                String(
+                                                    item?.taskId ||
+                                                    ""
+                                                );
+
+
+                                            if (
+                                                taskId.startsWith(
+                                                    "TEST-"
+                                                ) &&
+                                                !String(
+                                                    item?.requestId ||
+                                                    ""
+                                                )
+                                                .startsWith(
+                                                    "TEST-"
+                                                )
+                                            ) {
+
+                                                item.requestId =
+                                                    "TEST-" +
+                                                    String(
+                                                        item.requestId ||
+                                                        (
+                                                            "CHANGE-" +
+                                                            Date.now()
+                                                        )
+                                                    )
+                                                    .replace(
+                                                        /^CHANGE[_-]?/,
+                                                        "CHANGE-"
+                                                    );
+                                            }
+                                        }
+                                    );
+
+
+                                    value =
+                                        JSON.stringify(
+                                            rows
+                                        );
+                                }
+
+                            } catch (
+                                error
+                            ) {
+
+                                console.warn(
+                                    "[TruckDriverBot] TEST换车申请ID保护失败",
+                                    error
+                                );
+                            }
+                        }
+
+
+                        return originalSetItem(
+                            key,
+                            value
+                        );
+                    };
+
+
+                window.__robotTestVehicleChangeGuardInstalled =
+                    true;
+            }
+        );
+
+
+        const before =
+            await this.readLocalStorage(
+                "driverVehicleChangeRequests"
+            ) ||
+            [];
+
+
+        const beforeCount =
+            Array.isArray(
+                before
+            )
+                ? before.length
+                : 0;
+
+
+        await this.page
+            .locator(
+                "#vehicleFaultButton"
+            )
+            .click();
+
+
+        await this.page
+            .locator(
+                "#vehicleChangeModal"
+            )
+            .waitFor({
+                state:
+                    "visible"
+            });
+
+
+        await this.page
+            .locator(
+                "#vehicleFaultReason"
+            )
+            .fill(
+                "TEST-轮胎故障，申请更换备用车辆"
+            );
+
+
+        const dialogMessages =
+            [];
+
+
+        const dialogHandler =
+            async dialog => {
+
+                dialogMessages.push(
+                    dialog.message()
+                );
+
+
+                await dialog.accept();
+            };
+
+
+        this.page.on(
+            "dialog",
+            dialogHandler
+        );
+
+
+        try {
+
+            await this.page
+                .locator(
+                    "#submitVehicleChangeButton"
+                )
+                .click();
+
+
+            await this.page.waitForTimeout(
+                500
+            );
+
+        } finally {
+
+            this.page.off(
+                "dialog",
+                dialogHandler
+            );
+        }
+
+
+        const after =
+            await this.readLocalStorage(
+                "driverVehicleChangeRequests"
+            );
+
+
+        if (
+            !Array.isArray(
+                after
+            ) ||
+            after.length !==
+                beforeCount +
+                1
+        ) {
+
+            throw new Error(
+                "TruckDriverBot：换车申请没有新增1条" +
+                (
+                    dialogMessages.length
+                        ? "；页面提示=" +
+                          dialogMessages.join(
+                              " | "
+                          )
+                        : ""
+                )
+            );
+        }
+
+
+        const request =
+            after[
+                after.length -
+                1
+            ];
+
+
+        const requestId =
+            String(
+                request?.requestId ||
+                ""
+            );
+
+
+        assertTestId(
+            requestId,
+            "换车申请"
+        );
+
+
+        assertTestId(
+            request?.taskId ||
+            "",
+            "换车申请任务"
+        );
+
+
+        assertTestId(
+            request?.driverId ||
+            request?.personId ||
+            "",
+            "换车申请司机"
+        );
+
+
+        assertTestId(
+            request?.oldVehicleNumber ||
+            request?.oldVehicleId ||
+            "",
+            "换车申请旧车辆"
+        );
+
+
+        if (
+            request.status !==
+                "pending"
+        ) {
+
+            throw new Error(
+                "TruckDriverBot：换车申请未进入 pending"
+            );
+        }
+
+
+        const currentTask =
+            await this.readLocalStorage(
+                "driverCurrentTask"
+            );
+
+
+        if (
+            currentTask?.status !==
+                "change_pending"
+        ) {
+
+            throw new Error(
+                "TruckDriverBot：提交换车申请后任务未进入 change_pending"
+            );
+        }
+
+
+        return {
+            requestId,
+            taskId,
+            driverId,
+            oldVehicle,
+
+            status:
+                request.status,
+
+            taskStatus:
+                currentTask.status,
+
+            reason:
+                request.reason
+        };
+    }
+
+
     async testGpsAbnormalBlocked() {
 
         const {
