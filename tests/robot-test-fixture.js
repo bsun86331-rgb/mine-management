@@ -2,7 +2,7 @@
 
 /*
 =========================================================
-R0-4D RobotTestFixture
+R0-4E RobotTestFixture
 机器人专用 TEST 测试环境
 
 本版修复：
@@ -31,6 +31,9 @@ const TEST_DATA = {
 
     vehicleId:
         "TEST-T-001",
+
+    replacementVehicleId:
+        "TEST-T-002",
 
     excavatorId:
         "TEST-W-001",
@@ -580,6 +583,17 @@ async function initializeTruckDriverTestEnvironment(
                         TEST_DATA.wasteZoneId
                     ],
 
+                    bindings: [
+                        {
+                            excavatorId:
+                                TEST_DATA.excavatorId,
+
+                            truckIds: [
+                                TEST_DATA.vehicleId
+                            ]
+                        }
+                    ],
+
                     driverAssignments: [
                         testAssignment
                     ],
@@ -731,6 +745,55 @@ async function initializeTruckDriverTestEnvironment(
                                 true,
                             completedAt:
                                 nowIso,
+                            testFixture:
+                                true
+                        }
+                    ])
+                );
+
+
+                localStorage.setItem(
+                    "equipmentRecords",
+                    JSON.stringify([
+                        {
+                            equipmentId:
+                                TEST_DATA.vehicleId,
+                            equipmentNumber:
+                                TEST_DATA.vehicleId,
+                            equipmentType:
+                                "矿卡",
+                            currentStatus:
+                                "作业中",
+                            status:
+                                "working",
+                            testFixture:
+                                true
+                        },
+                        {
+                            equipmentId:
+                                TEST_DATA.replacementVehicleId,
+                            equipmentNumber:
+                                TEST_DATA.replacementVehicleId,
+                            equipmentType:
+                                "矿卡",
+                            currentStatus:
+                                "可用",
+                            status:
+                                "available",
+                            testFixture:
+                                true
+                        },
+                        {
+                            equipmentId:
+                                TEST_DATA.excavatorId,
+                            equipmentNumber:
+                                TEST_DATA.excavatorId,
+                            equipmentType:
+                                "挖掘机",
+                            currentStatus:
+                                "作业中",
+                            status:
+                                "working",
                             testFixture:
                                 true
                         }
