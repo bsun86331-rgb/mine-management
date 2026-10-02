@@ -1543,6 +1543,255 @@ class DispatchBot {
     }
 
 
+    async rejectLatestTestTemporaryUnload() {
+
+        const request =
+            await this.findLatestPendingTestTemporaryUnload();
+
+
+        const requestId =
+            String(
+                request.requestId ||
+                ""
+            );
+
+
+        assertSafeWrite(
+            "reject",
+            requestId
+        );
+
+
+        const beforeTrips =
+            await this.readTripRecords();
+
+
+        const beforeCount =
+            beforeTrips.length;
+
+
+        await this.openTemporaryUnloadReview();
+
+
+        const card =
+            this.page.locator(
+                ".temp-unload-review-card"
+            )
+            .filter({
+                hasText:
+                    requestId
+            });
+
+
+        await card.waitFor({
+            state:
+                "visible"
+        });
+
+
+        const rejectButton =
+            card.locator(
+                ".temp-unload-reject"
+            );
+
+
+        const dialogs =
+            [];
+
+
+        const dialogHandler =
+            async dialog => {
+
+                dialogs.push(
+                    dialog.message()
+                );
+
+
+                await dialog.accept();
+            };
+
+
+        this.page.on(
+            "dialog",
+            dialogHandler
+        );
+
+
+        try {
+
+            await rejectButton.click();
+
+
+            await this.page.waitForTimeout(
+                700
+            );
+
+        } finally {
+
+            this.page.off(
+                "dialog",
+                dialogHandler
+            );
+        }
+
+
+        const updatedRequest =
+            await this.getTemporaryUnloadRequestById(
+                requestId
+            );
+
+
+        if (
+            !updatedRequest
+        ) {
+
+            throw new Error(
+                "DispatchBot：驳回后临时卸料申请丢失"
+            );
+        }
+
+
+        await this.assertTestRequest(
+            updatedRequest
+        );
+
+
+        if (
+            updatedRequest.status !==
+                "rejected"
+        ) {
+
+            throw new Error(
+                "DispatchBot：驳回后申请状态未变为 rejected"
+            );
+        }
+
+
+        if (
+            updatedRequest.dispatchConfirmation !==
+                "rejected"
+        ) {
+
+            throw new Error(
+                "DispatchBot：驳回后 dispatchConfirmation 未变为 rejected"
+            );
+        }
+
+
+        if (
+            updatedRequest.officialCountEligible !==
+                false
+        ) {
+
+            throw new Error(
+                "DispatchBot：驳回后 officialCountEligible 不是 false"
+            );
+        }
+
+
+        if (
+            !updatedRequest.reviewedAt
+        ) {
+
+            throw new Error(
+                "DispatchBot：驳回后缺少 reviewedAt"
+            );
+        }
+
+
+        const officialTrip =
+            await this.findOfficialTripByRequestId(
+                requestId
+            );
+
+
+        if (
+            officialTrip
+        ) {
+
+            throw new Error(
+                "DispatchBot：驳回临时卸料后错误生成了正式运输趟次"
+            );
+        }
+
+
+        const afterTrips =
+            await this.readTripRecords();
+
+
+        if (
+            afterTrips.length !==
+                beforeCount
+        ) {
+
+            throw new Error(
+                "DispatchBot：驳回后正式趟次数量发生变化"
+            );
+        }
+
+
+        const pendingRows =
+            await this.getPendingTemporaryUnloadRequests();
+
+
+        if (
+            pendingRows.some(
+                item =>
+                    String(
+                        item?.requestId ||
+                        ""
+                    ) ===
+                        requestId
+            )
+        ) {
+
+            throw new Error(
+                "DispatchBot：驳回后申请仍残留在待审核列表"
+            );
+        }
+
+
+        return {
+            requestId,
+
+            taskId:
+                updatedRequest.taskId ||
+                updatedRequest.dispatchTaskId ||
+                "",
+
+            driverId:
+                updatedRequest.driverId ||
+                updatedRequest.personId ||
+                "",
+
+            vehicleId:
+                updatedRequest.vehicleNumber ||
+                updatedRequest.vehicleId ||
+                "",
+
+            requestStatus:
+                updatedRequest.status,
+
+            dispatchConfirmation:
+                updatedRequest.dispatchConfirmation,
+
+            officialCountEligible:
+                updatedRequest.officialCountEligible,
+
+            reviewedAt:
+                updatedRequest.reviewedAt,
+
+            beforeTripCount:
+                beforeCount,
+
+            afterTripCount:
+                afterTrips.length,
+
+            dialogs
+        };
+    }
+
+
     async approveTemporaryUnload(
         requestId
     ) {
