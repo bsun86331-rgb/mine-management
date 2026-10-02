@@ -39,7 +39,7 @@ const {
 
 /*
 =========================================================
-R0-9 RobotControlServer
+R0-10 RobotControlServer
 机器人测试控制中心后台 + Playwright 执行器
 
 当前已接入：
@@ -1932,6 +1932,13 @@ async function runAllCoreRegressionTests() {
 
 
     await runCase(
+        "故障换车完整闭环",
+        async () =>
+            await runVehicleChangeClosedLoopTest()
+    );
+
+
+    await runCase(
         "临时非卸载区卸料完整闭环",
         async () =>
             await runTestManagerTemporaryUnloadFullCycle()
@@ -2193,6 +2200,177 @@ async function runGpsAbnormalBlockingTest() {
 }
 
 
+async function runVehicleChangeClosedLoopTest() {
+
+    const botName =
+        "TestManager";
+
+
+    try {
+
+        updateBot(
+            botName,
+            "running",
+            "正在执行故障换车完整闭环"
+        );
+
+
+        robotMessage(
+            botName,
+            "步骤 1/3：准备 TEST 司机、TEST-T-001 和备用车辆 TEST-T-002。"
+        );
+
+
+        await prepareTruckDriverTestEnvironment();
+
+
+        const truckBot =
+            await getTruckDriverBot();
+
+
+        await truckBot.open();
+
+
+        robotMessage(
+            botName,
+            "步骤 2/3：TruckDriverBot 提交 TEST 故障换车申请。"
+        );
+
+
+        const submitted =
+            await truckBot.submitTestVehicleChange();
+
+
+        robotMessage(
+            botName,
+            "换车申请已提交：" +
+            submitted.requestId +
+            "；" +
+            submitted.oldVehicle +
+            "；状态 " +
+            submitted.status
+        );
+
+
+        updateBot(
+            "DispatchBot",
+            "running",
+            "正在审批 TEST 换车申请"
+        );
+
+
+        const dispatchBotInstance =
+            await getDispatchBot();
+
+
+        await dispatchBotInstance.open();
+
+
+        robotMessage(
+            botName,
+            "步骤 3/3：DispatchBot 选择 TEST-T-002 并批准换车。"
+        );
+
+
+        const approved =
+            await dispatchBotInstance.approveLatestTestVehicleChange(
+                "TEST-T-002"
+            );
+
+
+        robotMessage(
+            botName,
+            "故障换车闭环通过：" +
+            approved.oldVehicle +
+            " → " +
+            approved.newVehicle +
+            "；申请状态 " +
+            approved.status +
+            "；新车辆需重新领取=" +
+            String(
+                approved.vehicleClaimed ===
+                false
+            )
+        );
+
+
+        updateBot(
+            "TruckDriverBot",
+            "pass",
+            "TEST换车申请已批准并切换新车辆"
+        );
+
+
+        updateBot(
+            "DispatchBot",
+            "pass",
+            "TEST故障换车审批通过"
+        );
+
+
+        updateBot(
+            botName,
+            "pass",
+            "故障换车完整闭环测试通过"
+        );
+
+
+        return {
+            ok:
+                true,
+
+            action:
+                "vehicle-change-full-cycle-test",
+
+            submitted,
+            approved
+        };
+
+
+    } catch (
+        error
+    ) {
+
+        const message =
+            error?.message ||
+            String(
+                error
+            );
+
+
+        updateBot(
+            "TruckDriverBot",
+            "fail",
+            message
+        );
+
+
+        updateBot(
+            "DispatchBot",
+            "fail",
+            message
+        );
+
+
+        updateBot(
+            botName,
+            "fail",
+            message
+        );
+
+
+        robotMessage(
+            botName,
+            "故障换车完整闭环失败：" +
+            message
+        );
+
+
+        throw error;
+    }
+}
+
+
 /*
 =========================================================
 命令路由
@@ -2376,6 +2554,26 @@ async function executeCommand({
         requestedBot ===
             "TestManager" &&
         (
+            /测试.*故障.*换车.*完整.*闭环/i.test(
+                command
+            ) ||
+            /故障.*换车.*闭环/i.test(
+                command
+            ) ||
+            /换车.*完整.*闭环/i.test(
+                command
+            )
+        )
+    ) {
+
+        return await runVehicleChangeClosedLoopTest();
+    }
+
+
+    if (
+        requestedBot ===
+            "TestManager" &&
+        (
             /测试.*正常.*装卸.*运输.*完整.*闭环/i.test(
                 command
             ) ||
@@ -2486,7 +2684,7 @@ async function executeCommand({
 
     robotMessage(
         "TestManager",
-        "当前已接入 TruckDriverBot + DispatchBot。TestManager 可用命令：“运行全部核心回归测试”“测试正常装卸运输完整闭环”“测试GPS异常场景”“测试临时非卸载区卸料完整闭环”。"
+        "当前已接入 TruckDriverBot + DispatchBot。TestManager 可用命令：“运行全部核心回归测试”“测试正常装卸运输完整闭环”“测试GPS异常场景”“测试故障换车完整闭环”“测试临时非卸载区卸料完整闭环”。"
     );
 
 
@@ -2943,7 +3141,7 @@ server.listen(
         );
 
         console.log(
-            "🤖 机器人测试控制中心 R0-9 已启动"
+            "🤖 机器人测试控制中心 R0-10 已启动"
         );
 
         console.log(
