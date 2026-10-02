@@ -57,7 +57,7 @@ const {
 
 /*
 =========================================================
-R0-20 RobotControlServer
+R0-21 RobotControlServer
 机器人测试控制中心后台 + Playwright 执行器
 
 当前已接入：
@@ -3306,6 +3306,192 @@ async function runMaintenanceWaitingPartsCycleTest() {
 }
 
 
+async function runTemporaryUnloadRejectionTest() {
+
+    const botName =
+        "TestManager";
+
+
+    try {
+
+        updateBot(
+            botName,
+            "running",
+            "正在执行临时卸料驳回闭环"
+        );
+
+
+        robotMessage(
+            botName,
+            "步骤 1/3：准备 TEST 司机环境。"
+        );
+
+
+        await prepareTruckDriverTestEnvironment();
+
+
+        robotMessage(
+            botName,
+            "步骤 2/3：TruckDriverBot 提交 TEST 临时非卸载区卸料申请。"
+        );
+
+
+        const submit =
+            await runTruckDriverTemporaryUnloadSubmitTest();
+
+
+        updateBot(
+            "DispatchBot",
+            "running",
+            "正在驳回 TEST 临时卸料申请"
+        );
+
+
+        robotMessage(
+            botName,
+            "步骤 3/3：DispatchBot 驳回申请，并验证不会生成正式趟次。"
+        );
+
+
+        const bot =
+            await getDispatchBot();
+
+
+        await bot.open();
+
+
+        const rejected =
+            await bot.rejectLatestTestTemporaryUnload();
+
+
+        if (
+            rejected.requestId !==
+                submit.result.requestId
+        ) {
+
+            throw new Error(
+                "临时卸料驳回闭环失败：调度处理的不是刚提交的 TEST 申请"
+            );
+        }
+
+
+        if (
+            rejected.requestStatus !==
+                "rejected" ||
+            rejected.dispatchConfirmation !==
+                "rejected" ||
+            rejected.officialCountEligible !==
+                false
+        ) {
+
+            throw new Error(
+                "临时卸料驳回闭环失败：驳回后的申请状态不正确"
+            );
+        }
+
+
+        if (
+            rejected.afterTripCount !==
+                rejected.beforeTripCount
+        ) {
+
+            throw new Error(
+                "临时卸料驳回闭环失败：驳回后正式趟次发生变化"
+            );
+        }
+
+
+        robotMessage(
+            botName,
+            "临时卸料驳回通过：" +
+            rejected.requestId +
+            "；status=" +
+            rejected.requestStatus +
+            "；正式趟次 " +
+            rejected.beforeTripCount +
+            " → " +
+            rejected.afterTripCount
+        );
+
+
+        updateBot(
+            "DispatchBot",
+            "pass",
+            "TEST临时卸料已正确驳回且未计入正式趟次"
+        );
+
+
+        updateBot(
+            botName,
+            "pass",
+            "临时卸料驳回闭环测试通过"
+        );
+
+
+        return {
+            ok:
+                true,
+
+            action:
+                "temporary-unload-rejection-test",
+
+            submit:
+                submit.result,
+
+            rejected
+        };
+
+
+    } catch (
+        error
+    ) {
+
+        const message =
+            error?.message ||
+            String(
+                error
+            );
+
+
+        updateBot(
+            "DispatchBot",
+            "fail",
+            message
+        );
+
+
+        updateBot(
+            botName,
+            "fail",
+            message
+        );
+
+
+        robotMessage(
+            botName,
+            "临时卸料驳回闭环失败：" +
+            message
+        );
+
+
+        try {
+
+            await captureFailure(
+                "DispatchBot",
+                dispatchPage,
+                "temporary-unload-rejection"
+            );
+
+        } catch (
+            screenshotError
+        ) {}
+
+
+        throw error;
+    }
+}
+
+
 async function runAllCoreRegressionTests() {
 
     const botName =
@@ -3474,6 +3660,13 @@ async function runAllCoreRegressionTests() {
         "临时非卸载区卸料完整闭环",
         async () =>
             await runTestManagerTemporaryUnloadFullCycle()
+    );
+
+
+    await runCase(
+        "临时卸料驳回闭环",
+        async () =>
+            await runTemporaryUnloadRejectionTest()
     );
 
 
@@ -4113,6 +4306,26 @@ async function executeCommand({
         requestedBot ===
             "TestManager" &&
         (
+            /测试.*临时卸料.*驳回/i.test(
+                command
+            ) ||
+            /临时卸料.*拒绝.*闭环/i.test(
+                command
+            ) ||
+            /驳回.*临时卸料/i.test(
+                command
+            )
+        )
+    ) {
+
+        return await runTemporaryUnloadRejectionTest();
+    }
+
+
+    if (
+        requestedBot ===
+            "TestManager" &&
+        (
             /测试.*等待配件.*闭环/i.test(
                 command
             ) ||
@@ -4425,7 +4638,7 @@ async function executeCommand({
 
     robotMessage(
         "TestManager",
-        "当前已接入 TruckDriverBot + DispatchBot + EquipmentCheckBot + MaintenanceManagerBot + MaintenanceWorkerBot。TestManager 可用命令：“运行全部核心回归测试”“测试正常装卸运输完整闭环”“测试GPS异常场景”“测试设备异常自动维修单”“测试维修单调度审批”“测试维修管理接车派工”“测试维修工接单开始维修”“测试维修工完成维修提交验收”“测试维修管理验收归档”“测试维修完成恢复生产”“测试维修验收返修”“测试临时非卸载区卸料完整闭环”“测试等待配件闭环”。旧“故障换车”入口已停用，不纳入核心回归。"
+        "当前已接入 TruckDriverBot + DispatchBot + EquipmentCheckBot + MaintenanceManagerBot + MaintenanceWorkerBot。TestManager 可用命令：“运行全部核心回归测试”“测试正常装卸运输完整闭环”“测试GPS异常场景”“测试设备异常自动维修单”“测试维修单调度审批”“测试维修管理接车派工”“测试维修工接单开始维修”“测试维修工完成维修提交验收”“测试维修管理验收归档”“测试维修完成恢复生产”“测试维修验收返修”“测试临时非卸载区卸料完整闭环”“测试临时卸料驳回”“测试等待配件闭环”。旧“故障换车”入口已停用，不纳入核心回归。"
     );
 
 
@@ -4882,7 +5095,7 @@ server.listen(
         );
 
         console.log(
-            "🤖 机器人测试控制中心 R0-20 已启动"
+            "🤖 机器人测试控制中心 R0-21 已启动"
         );
 
         console.log(
