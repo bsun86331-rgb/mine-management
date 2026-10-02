@@ -401,6 +401,23 @@ class MaintenanceWorkerBot {
             );
 
 
+        /*
+         * maintenance-worker.html 默认停留在“我的任务”页。
+         * working 工单虽然已经渲染，但按钮位于隐藏的 page-working。
+         * 先切换到“维修中”，再打开维修记录。
+         */
+        await this.page
+            .locator(
+                'button[data-page="working"]'
+            )
+            .click();
+
+
+        await this.page.waitForTimeout(
+            150
+        );
+
+
         const openButton =
             this.page.locator(
                 `button[onclick*="openRepairOrder('${orderId}')"]`
