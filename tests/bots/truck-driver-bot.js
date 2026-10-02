@@ -1906,6 +1906,367 @@ class TruckDriverBot {
     }
 
 
+    async openAsTestDriver() {
+
+        /*
+         * 维修链路最后一个页面会把 currentPersonId 切换成
+         * TEST 维修管理身份。恢复生产时不能重新初始化 fixture，
+         * 否则会把刚刚完成的维修结果清掉。
+         *
+         * 因此只在司机页加载前恢复 TEST 司机身份，
+         * 保留 completed 维修申请 / 工单 / 费用单等真实闭环结果。
+         */
+        await this.page.addInitScript(
+            () => {
+
+                try {
+
+                    const profile =
+                        JSON.parse(
+                            localStorage.getItem(
+                                "driverProfile"
+                            ) ||
+                            "null"
+                        );
+
+
+                    const driverId =
+                        String(
+                            profile?.driverId ||
+                            profile?.personId ||
+                            profile?.employeeId ||
+                            profile?.id ||
+                            ""
+                        );
+
+
+                    if (
+                        driverId.startsWith(
+                            "TEST-"
+                        )
+                    ) {
+
+                        localStorage.setItem(
+                            "currentPersonId",
+                            driverId
+                        );
+
+
+                        localStorage.setItem(
+                            "selectedPosition",
+                            "汽车司机"
+                        );
+                    }
+
+                } catch (
+                    error
+                ) {
+
+                    console.warn(
+                        "[TruckDriverBot] 恢复TEST司机身份失败",
+                        error
+                    );
+                }
+            }
+        );
+
+
+        return await this.open();
+    }
+
+
+    async testProductionRecoveryAfterMaintenance() {
+
+        const {
+            profile,
+            task
+        } =
+            await this.assertSafeContext();
+
+
+        const driverId =
+            profile.driverId ||
+            profile.personId ||
+            "";
+
+
+        const taskId =
+            task.taskId ||
+            task.dispatchTaskId ||
+            "";
+
+
+        const vehicleId =
+            task.vehicleNumber ||
+            task.vehicleId ||
+            "";
+
+
+        assertTestId(
+            driverId,
+            "司机"
+        );
+
+
+        assertTestId(
+            taskId,
+            "生产任务"
+        );
+
+
+        assertTestId(
+            vehicleId,
+            "汽车"
+        );
+
+
+        const operational =
+            await this.readLocalStorage(
+                "equipmentOperationalStatus"
+            );
+
+
+        const vehicleOperational =
+            Array.isArray(
+                operational
+            )
+                ? operational.find(
+                    item =>
+                        String(
+                            item?.equipmentId ||
+                            item?.equipmentNumber ||
+                            ""
+                        ) ===
+                            String(
+                                vehicleId
+                            )
+                )
+                : null;
+
+
+        if (
+            !vehicleOperational ||
+            vehicleOperational.status !==
+                "available"
+        ) {
+
+            throw new Error(
+                "TruckDriverBot：维修完成后车辆未恢复 available，实际=" +
+                String(
+                    vehicleOperational?.status ||
+                    "-"
+                )
+            );
+        }
+
+
+        const requests =
+            await this.readLocalStorage(
+                "maintenanceRequests"
+            ) ||
+            [];
+
+
+        const workOrders =
+            await this.readLocalStorage(
+                "maintenanceWorkOrders"
+            ) ||
+            [];
+
+
+        const activeRequestStatuses =
+            new Set([
+                "pending_dispatch",
+                "waiting_entry",
+                "waiting_assignment",
+                "assigned",
+                "working",
+                "waiting_inspection",
+                "inspection_passed"
+            ]);
+
+
+        const activeOrderStatuses =
+            new Set([
+                "assigned",
+                "working",
+                "waiting_inspection",
+                "inspection_passed"
+            ]);
+
+
+        const activeRequests =
+            Array.isArray(
+                requests
+            )
+                ? requests.filter(
+                    item => {
+
+                        const equipment =
+                            String(
+                                item?.equipmentId ||
+                                item?.equipmentNumber ||
+                                ""
+                            );
+
+
+                        return (
+                            equipment ===
+                                String(
+                                    vehicleId
+                                )
+                            &&
+                            activeRequestStatuses.has(
+                                String(
+                                    item?.status ||
+                                    ""
+                                )
+                            )
+                        );
+                    }
+                )
+                : [];
+
+
+        const activeOrders =
+            Array.isArray(
+                workOrders
+            )
+                ? workOrders.filter(
+                    item => {
+
+                        const equipment =
+                            String(
+                                item?.equipmentId ||
+                                item?.equipmentNumber ||
+                                ""
+                            );
+
+
+                        return (
+                            equipment ===
+                                String(
+                                    vehicleId
+                                )
+                            &&
+                            activeOrderStatuses.has(
+                                String(
+                                    item?.status ||
+                                    ""
+                                )
+                            )
+                        );
+                    }
+                )
+                : [];
+
+
+        if (
+            activeRequests.length
+        ) {
+
+            throw new Error(
+                "TruckDriverBot：维修完成后仍存在 active 维修申请：" +
+                activeRequests
+                    .map(
+                        item =>
+                            String(
+                                item.requestId ||
+                                item.maintenanceRequestId ||
+                                "-"
+                            ) +
+                            ":" +
+                            String(
+                                item.status ||
+                                "-"
+                            )
+                    )
+                    .join(
+                        ","
+                    )
+            );
+        }
+
+
+        if (
+            activeOrders.length
+        ) {
+
+            throw new Error(
+                "TruckDriverBot：维修完成后仍存在 active 维修工单：" +
+                activeOrders
+                    .map(
+                        item =>
+                            String(
+                                item.orderId ||
+                                "-"
+                            ) +
+                            ":" +
+                            String(
+                                item.status ||
+                                "-"
+                            )
+                    )
+                    .join(
+                        ","
+                    )
+            );
+        }
+
+
+        /*
+         * 不调用 prepareTruckDriverTestEnvironment()。
+         * 直接在第9条维修完成后的真实 TEST 数据上继续生产。
+         *
+         * testNormalTransportClosedLoop() 会：
+         * 1. 从 waiting_loading 重新建立运输闭环
+         * 2. 真正走装载区 → 驶离 → 卸载区
+         * 3. 验证“完成一趟”按钮可见、可点击
+         * 4. 新增1条正式 TEST 趟次
+         * 5. 本班趟数 +1
+         */
+        const transport =
+            await this.testNormalTransportClosedLoop();
+
+
+        return {
+            driverId,
+            taskId,
+            vehicleId,
+
+            equipmentStatus:
+                vehicleOperational.status,
+
+            activeMaintenanceRequests:
+                activeRequests.length,
+
+            activeMaintenanceOrders:
+                activeOrders.length,
+
+            tripId:
+                transport.tripId,
+
+            beforeTripCount:
+                transport.beforeUiCount,
+
+            afterTripCount:
+                transport.afterUiCount,
+
+            beforeRecordCount:
+                transport.beforeRecordCount,
+
+            afterRecordCount:
+                transport.afterRecordCount,
+
+            cyclePhase:
+                transport.cyclePhase,
+
+            transportValidation:
+                transport.transportValidation
+        };
+    }
+
+
     async testNormalTransportClosedLoop() {
 
         const {
