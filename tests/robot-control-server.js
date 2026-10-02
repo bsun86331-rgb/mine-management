@@ -39,7 +39,7 @@ const {
 
 /*
 =========================================================
-R0-10 RobotControlServer
+R0-11 RobotControlServer
 机器人测试控制中心后台 + Playwright 执行器
 
 当前已接入：
@@ -1932,13 +1932,6 @@ async function runAllCoreRegressionTests() {
 
 
     await runCase(
-        "故障换车完整闭环",
-        async () =>
-            await runVehicleChangeClosedLoopTest()
-    );
-
-
-    await runCase(
         "临时非卸载区卸料完整闭环",
         async () =>
             await runTestManagerTemporaryUnloadFullCycle()
@@ -2566,7 +2559,29 @@ async function executeCommand({
         )
     ) {
 
-        return await runVehicleChangeClosedLoopTest();
+        updateBot(
+            "TestManager",
+            "waiting",
+            "旧换车入口已停用，不纳入当前核心回归"
+        );
+
+
+        robotMessage(
+            "TestManager",
+            "driver-work.html 已明确停用旧“申请换车”界面。该历史用例不再执行，避免误测隐藏的废弃入口。下一步应测试当前“设备检查异常 → 自动生成维修单”流程。"
+        );
+
+
+        return {
+            ok:
+                true,
+
+            action:
+                "legacy-vehicle-change-disabled",
+
+            status:
+                "skipped"
+        };
     }
 
 
@@ -2684,7 +2699,7 @@ async function executeCommand({
 
     robotMessage(
         "TestManager",
-        "当前已接入 TruckDriverBot + DispatchBot。TestManager 可用命令：“运行全部核心回归测试”“测试正常装卸运输完整闭环”“测试GPS异常场景”“测试故障换车完整闭环”“测试临时非卸载区卸料完整闭环”。"
+        "当前已接入 TruckDriverBot + DispatchBot。TestManager 可用命令：“运行全部核心回归测试”“测试正常装卸运输完整闭环”“测试GPS异常场景”“测试临时非卸载区卸料完整闭环”。旧“故障换车”入口已停用，不纳入核心回归。"
     );
 
 
@@ -3141,7 +3156,7 @@ server.listen(
         );
 
         console.log(
-            "🤖 机器人测试控制中心 R0-10 已启动"
+            "🤖 机器人测试控制中心 R0-11 已启动"
         );
 
         console.log(
