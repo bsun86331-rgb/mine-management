@@ -3502,6 +3502,9 @@ async function runTemporaryUnloadRejectionTest() {
 
 async function runFastRegressionTests() {
 
+    await ensureBrowser();
+
+
     const botName =
         "TestManager";
 
