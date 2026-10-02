@@ -57,7 +57,7 @@ const {
 
 /*
 =========================================================
-R0-17 RobotControlServer
+R0-18 RobotControlServer
 机器人测试控制中心后台 + Playwright 执行器
 
 当前已接入：
@@ -2852,6 +2852,159 @@ async function runMaintenanceInspectionCompletionTest() {
 }
 
 
+async function runPostMaintenanceProductionRecoveryTest() {
+
+    const botName =
+        "TestManager";
+
+
+    try {
+
+        updateBot(
+            botName,
+            "running",
+            "正在执行维修完成后恢复生产验证"
+        );
+
+
+        robotMessage(
+            botName,
+            "步骤 1/2：先完成完整 TEST 维修验收归档，使车辆恢复 available。"
+        );
+
+
+        const maintenance =
+            await runMaintenanceInspectionCompletionTest();
+
+
+        updateBot(
+            botName,
+            "running",
+            "正在执行维修完成后恢复生产验证"
+        );
+
+
+        robotMessage(
+            botName,
+            "步骤 2/2：不清理维修历史，直接恢复 TEST 司机身份，并使用同一车辆重新完成1趟正常运输。"
+        );
+
+
+        const bot =
+            await getTruckDriverBot();
+
+
+        await bot.openAsTestDriver();
+
+
+        const result =
+            await bot.testProductionRecoveryAfterMaintenance();
+
+
+        robotMessage(
+            botName,
+            "恢复生产通过：设备 " +
+            result.vehicleId +
+            "=" +
+            result.equipmentStatus +
+            "；active维修申请/工单=" +
+            result.activeMaintenanceRequests +
+            "/" +
+            result.activeMaintenanceOrders
+        );
+
+
+        robotMessage(
+            botName,
+            "恢复运输通过：正式TEST趟次 " +
+            result.tripId +
+            "；本班趟数 " +
+            result.beforeTripCount +
+            " → " +
+            result.afterTripCount +
+            "；下一趟状态=" +
+            result.cyclePhase
+        );
+
+
+        updateBot(
+            "TruckDriverBot",
+            "pass",
+            "维修完成后车辆已恢复生产并完成1趟正式TEST运输"
+        );
+
+
+        updateBot(
+            botName,
+            "pass",
+            "维修完成后恢复生产验证通过"
+        );
+
+
+        return {
+            ok:
+                true,
+
+            action:
+                "post-maintenance-production-recovery-test",
+
+            maintenance:
+                maintenance.result,
+
+            result
+        };
+
+
+    } catch (
+        error
+    ) {
+
+        const message =
+            error?.message ||
+            String(
+                error
+            );
+
+
+        updateBot(
+            "TruckDriverBot",
+            "fail",
+            message
+        );
+
+
+        updateBot(
+            botName,
+            "fail",
+            message
+        );
+
+
+        robotMessage(
+            botName,
+            "维修完成后恢复生产验证失败：" +
+            message
+        );
+
+
+        try {
+
+            await captureFailure(
+                "TruckDriverBot",
+                truckDriverPage,
+                "post-maintenance-production-recovery"
+            );
+
+        } catch (
+            screenshotError
+        ) {}
+
+
+        throw error;
+    }
+}
+
+
 async function runAllCoreRegressionTests() {
 
     const botName =
@@ -2999,6 +3152,13 @@ async function runAllCoreRegressionTests() {
         "维修管理验收归档释放闭环",
         async () =>
             await runMaintenanceInspectionCompletionTest()
+    );
+
+
+    await runCase(
+        "维修完成后恢复生产闭环",
+        async () =>
+            await runPostMaintenanceProductionRecoveryTest()
     );
 
 
@@ -3618,6 +3778,26 @@ async function executeCommand({
         requestedBot ===
             "TestManager" &&
         (
+            /测试.*维修完成.*恢复生产/i.test(
+                command
+            ) ||
+            /维修完成.*恢复.*运输/i.test(
+                command
+            ) ||
+            /设备恢复.*生产.*闭环/i.test(
+                command
+            )
+        )
+    ) {
+
+        return await runPostMaintenanceProductionRecoveryTest();
+    }
+
+
+    if (
+        requestedBot ===
+            "TestManager" &&
+        (
             /测试.*维修管理.*验收.*归档/i.test(
                 command
             ) ||
@@ -3890,7 +4070,7 @@ async function executeCommand({
 
     robotMessage(
         "TestManager",
-        "当前已接入 TruckDriverBot + DispatchBot + EquipmentCheckBot + MaintenanceManagerBot + MaintenanceWorkerBot。TestManager 可用命令：“运行全部核心回归测试”“测试正常装卸运输完整闭环”“测试GPS异常场景”“测试设备异常自动维修单”“测试维修单调度审批”“测试维修管理接车派工”“测试维修工接单开始维修”“测试维修工完成维修提交验收”“测试维修管理验收归档”“测试临时非卸载区卸料完整闭环”。旧“故障换车”入口已停用，不纳入核心回归。"
+        "当前已接入 TruckDriverBot + DispatchBot + EquipmentCheckBot + MaintenanceManagerBot + MaintenanceWorkerBot。TestManager 可用命令：“运行全部核心回归测试”“测试正常装卸运输完整闭环”“测试GPS异常场景”“测试设备异常自动维修单”“测试维修单调度审批”“测试维修管理接车派工”“测试维修工接单开始维修”“测试维修工完成维修提交验收”“测试维修管理验收归档”“测试维修完成恢复生产”“测试临时非卸载区卸料完整闭环”。旧“故障换车”入口已停用，不纳入核心回归。"
     );
 
 
@@ -4347,7 +4527,7 @@ server.listen(
         );
 
         console.log(
-            "🤖 机器人测试控制中心 R0-17 已启动"
+            "🤖 机器人测试控制中心 R0-18 已启动"
         );
 
         console.log(
