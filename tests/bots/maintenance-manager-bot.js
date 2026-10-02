@@ -9,7 +9,7 @@ const {
 
 /*
 =========================================================
-R0-1 MaintenanceManagerBot
+R0-2 MaintenanceManagerBot
 维修管理测试机器人
 
 仅操作 TEST- 维修申请 / TEST- 工位 / TEST- 工单。
@@ -313,6 +313,50 @@ class MaintenanceManagerBot {
 
                                     if (
                                         key ===
+                                            "maintenanceCosts"
+                                    ) {
+
+                                        rows.forEach(
+                                            item => {
+
+                                                const orderId =
+                                                    String(
+                                                        item?.orderId ||
+                                                        ""
+                                                    );
+
+
+                                                const costId =
+                                                    String(
+                                                        item?.costId ||
+                                                        ""
+                                                    );
+
+
+                                                if (
+                                                    orderId.startsWith(
+                                                        "TEST-"
+                                                    ) &&
+                                                    costId &&
+                                                    !costId.startsWith(
+                                                        "TEST-"
+                                                    )
+                                                ) {
+
+                                                    item.costId =
+                                                        "TEST-COST-" +
+                                                        costId.replace(
+                                                            /^COST[_-]?/,
+                                                            ""
+                                                        );
+                                                }
+                                            }
+                                        );
+                                    }
+
+
+                                    if (
+                                        key ===
                                             "maintenanceRequests"
                                     ) {
 
@@ -541,6 +585,597 @@ class MaintenanceManagerBot {
 
 
         return request;
+    }
+
+
+    async inspectAndCompleteLatestTestRepair() {
+
+        const orders =
+            await this.readLocalStorage(
+                "maintenanceWorkOrders"
+            );
+
+
+        const candidates =
+            Array.isArray(
+                orders
+            )
+                ? orders
+                    .filter(
+                        item =>
+                            item &&
+                            item.status ===
+                                "waiting_inspection"
+                            &&
+                            String(
+                                item.orderId ||
+                                ""
+                            )
+                            .startsWith(
+                                "TEST-"
+                            )
+                            &&
+                            String(
+                                item.requestId ||
+                                ""
+                            )
+                            .startsWith(
+                                "TEST-"
+                            )
+                    )
+                    .sort(
+                        (
+                            a,
+                            b
+                        ) =>
+                            new Date(
+                                b.repairFinishedAt ||
+                                0
+                            )
+                            -
+                            new Date(
+                                a.repairFinishedAt ||
+                                0
+                            )
+                    )
+                : [];
+
+
+        if (
+            !candidates.length
+        ) {
+
+            throw new Error(
+                "MaintenanceManagerBot：没有找到 waiting_inspection 的 TEST 维修工单"
+            );
+        }
+
+
+        const order =
+            candidates[0];
+
+
+        const orderId =
+            String(
+                order.orderId
+            );
+
+
+        const requestId =
+            String(
+                order.requestId
+            );
+
+
+        const equipmentId =
+            String(
+                order.equipmentNumber ||
+                order.equipmentId ||
+                ""
+            );
+
+
+        const bayId =
+            String(
+                order.bayId ||
+                ""
+            );
+
+
+        assertTestId(
+            orderId,
+            "维修工单"
+        );
+
+
+        assertTestId(
+            requestId,
+            "维修申请"
+        );
+
+
+        assertTestId(
+            equipmentId,
+            "维修设备"
+        );
+
+
+        assertTestId(
+            bayId,
+            "维修工位"
+        );
+
+
+        const beforeCosts =
+            await this.readLocalStorage(
+                "maintenanceCosts"
+            ) ||
+            [];
+
+
+        const beforeCostCount =
+            Array.isArray(
+                beforeCosts
+            )
+                ? beforeCosts.length
+                : 0;
+
+
+        /*
+         * maintenance.html 默认停留在维修看板。
+         * 待验收按钮位于隐藏的 page-inspection，
+         * 必须先切换“待验收”。
+         */
+        await this.page
+            .locator(
+                'button[data-page="inspection"]'
+            )
+            .click();
+
+
+        await this.page.waitForTimeout(
+            150
+        );
+
+
+        const inspectionButton =
+            this.page.locator(
+                `button[onclick*="openInspection('${orderId}')"]`
+            )
+            .first();
+
+
+        await inspectionButton.waitFor({
+            state:
+                "visible"
+        });
+
+
+        await inspectionButton.click();
+
+
+        await this.page
+            .locator(
+                "#inspectionModal"
+            )
+            .waitFor({
+                state:
+                    "visible"
+            });
+
+
+        await this.page
+            .locator(
+                "#inspectionRemark"
+            )
+            .fill(
+                "TEST-维修结果验收合格，允许完成归档并释放设备"
+            );
+
+
+        const approveButton =
+            this.page.locator(
+                'button[onclick="approveInspection()"]'
+            );
+
+
+        await approveButton.waitFor({
+            state:
+                "visible"
+        });
+
+
+        await approveButton.click();
+
+
+        await this.page
+            .locator(
+                "#costModal"
+            )
+            .waitFor({
+                state:
+                    "visible"
+            });
+
+
+        let midOrders =
+            await this.readLocalStorage(
+                "maintenanceWorkOrders"
+            );
+
+
+        let midOrder =
+            Array.isArray(
+                midOrders
+            )
+                ? midOrders.find(
+                    item =>
+                        String(
+                            item.orderId ||
+                            ""
+                        ) ===
+                            orderId
+                )
+                : null;
+
+
+        if (
+            !midOrder ||
+            midOrder.status !==
+                "inspection_passed"
+        ) {
+
+            throw new Error(
+                "MaintenanceManagerBot：验收通过后工单未进入 inspection_passed"
+            );
+        }
+
+
+        if (
+            !midOrder.inspectedAt
+        ) {
+
+            throw new Error(
+                "MaintenanceManagerBot：验收通过后缺少 inspectedAt"
+            );
+        }
+
+
+        await this.page
+            .locator(
+                "#laborCost"
+            )
+            .fill(
+                "100"
+            );
+
+
+        await this.page
+            .locator(
+                "#partsCost"
+            )
+            .fill(
+                "50"
+            );
+
+
+        await this.page
+            .locator(
+                "#externalCost"
+            )
+            .fill(
+                "0"
+            );
+
+
+        await this.page
+            .locator(
+                "#otherCost"
+            )
+            .fill(
+                "0"
+            );
+
+
+        await this.page
+            .locator(
+                "#partsDescription"
+            )
+            .fill(
+                "TEST-轮胎维修材料与人工费用"
+            );
+
+
+        const dialogs =
+            [];
+
+
+        const dialogHandler =
+            async dialog => {
+
+                dialogs.push(
+                    dialog.message()
+                );
+
+
+                await dialog.accept();
+            };
+
+
+        this.page.on(
+            "dialog",
+            dialogHandler
+        );
+
+
+        try {
+
+            await this.page
+                .locator(
+                    'button[onclick="saveCostSheet()"]'
+                )
+                .click();
+
+
+            await this.page.waitForTimeout(
+                700
+            );
+
+        } finally {
+
+            this.page.off(
+                "dialog",
+                dialogHandler
+            );
+        }
+
+
+        const afterOrders =
+            await this.readLocalStorage(
+                "maintenanceWorkOrders"
+            );
+
+
+        const completedOrder =
+            Array.isArray(
+                afterOrders
+            )
+                ? afterOrders.find(
+                    item =>
+                        String(
+                            item.orderId ||
+                            ""
+                        ) ===
+                            orderId
+                )
+                : null;
+
+
+        if (
+            !completedOrder ||
+            completedOrder.status !==
+                "completed"
+        ) {
+
+            throw new Error(
+                "MaintenanceManagerBot：保存费用单后工单未进入 completed"
+            );
+        }
+
+
+        if (
+            !completedOrder.completedAt
+        ) {
+
+            throw new Error(
+                "MaintenanceManagerBot：完成维修后缺少 completedAt"
+            );
+        }
+
+
+        const requests =
+            await this.readLocalStorage(
+                "maintenanceRequests"
+            );
+
+
+        const completedRequest =
+            Array.isArray(
+                requests
+            )
+                ? requests.find(
+                    item =>
+                        String(
+                            item.requestId ||
+                            item.maintenanceRequestId ||
+                            ""
+                        ) ===
+                            requestId
+                )
+                : null;
+
+
+        if (
+            !completedRequest ||
+            completedRequest.status !==
+                "completed"
+        ) {
+
+            throw new Error(
+                "MaintenanceManagerBot：维修申请未同步进入 completed"
+            );
+        }
+
+
+        const bays =
+            await this.readLocalStorage(
+                "workshopBays"
+            );
+
+
+        const bay =
+            Array.isArray(
+                bays
+            )
+                ? bays.find(
+                    item =>
+                        String(
+                            item.bayId ||
+                            ""
+                        ) ===
+                            bayId
+                )
+                : null;
+
+
+        if (
+            !bay ||
+            bay.status !==
+                "free" ||
+            String(
+                bay.orderId ||
+                ""
+            )
+        ) {
+
+            throw new Error(
+                "MaintenanceManagerBot：验收归档后 TEST 工位没有正确释放"
+            );
+        }
+
+
+        const costs =
+            await this.readLocalStorage(
+                "maintenanceCosts"
+            );
+
+
+        if (
+            !Array.isArray(
+                costs
+            ) ||
+            costs.length !==
+                beforeCostCount +
+                1
+        ) {
+
+            throw new Error(
+                "MaintenanceManagerBot：完成归档后没有新增1张维修费用单"
+            );
+        }
+
+
+        const cost =
+            costs[
+                costs.length -
+                1
+            ];
+
+
+        assertTestId(
+            cost.costId ||
+            "",
+            "维修费用单"
+        );
+
+
+        assertTestId(
+            cost.orderId ||
+            "",
+            "维修费用单关联工单"
+        );
+
+
+        if (
+            String(
+                cost.orderId ||
+                ""
+            ) !==
+                orderId
+        ) {
+
+            throw new Error(
+                "MaintenanceManagerBot：维修费用单没有关联正确的 TEST 工单"
+            );
+        }
+
+
+        /*
+         * saveCostSheet() -> completeOrder() -> renderAll()
+         * 会触发 syncEquipmentOperationalStatusFromRepairFlows()。
+         * TEST fixture 的 previous/default 状态为 available，
+         * 因此完成归档后应恢复 available。
+         */
+        const operational =
+            await this.readLocalStorage(
+                "equipmentOperationalStatus"
+            );
+
+
+        const equipmentStatus =
+            Array.isArray(
+                operational
+            )
+                ? operational.find(
+                    item =>
+                        String(
+                            item.equipmentId ||
+                            ""
+                        ) ===
+                            equipmentId
+                )
+                : null;
+
+
+        if (
+            !equipmentStatus ||
+            equipmentStatus.status !==
+                "available"
+        ) {
+
+            throw new Error(
+                "MaintenanceManagerBot：维修完成后 TEST 设备没有恢复 available，实际=" +
+                String(
+                    equipmentStatus?.status ||
+                    "-"
+                )
+            );
+        }
+
+
+        return {
+            orderId,
+            requestId,
+            equipmentId,
+            bayId,
+
+            orderStatus:
+                completedOrder.status,
+
+            requestStatus:
+                completedRequest.status,
+
+            inspectionStatus:
+                midOrder.status,
+
+            bayStatus:
+                bay.status,
+
+            equipmentStatus:
+                equipmentStatus.status,
+
+            costId:
+                cost.costId,
+
+            totalCost:
+                cost.totalCost,
+
+            inspectedAt:
+                midOrder.inspectedAt,
+
+            completedAt:
+                completedOrder.completedAt
+        };
     }
 
 
