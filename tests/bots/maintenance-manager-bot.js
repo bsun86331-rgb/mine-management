@@ -652,7 +652,7 @@ class MaintenanceManagerBot {
         await assignButton.waitFor({
             state:
                 "visible"
-        );
+        });
 
 
         await assignButton.click();
