@@ -57,7 +57,7 @@ const {
 
 /*
 =========================================================
-R0-19 RobotControlServer
+R0-20 RobotControlServer
 机器人测试控制中心后台 + Playwright 执行器
 
 当前已接入：
@@ -3167,6 +3167,145 @@ async function runMaintenanceInspectionReworkTest() {
 }
 
 
+async function runMaintenanceWaitingPartsCycleTest() {
+
+    const botName =
+        "TestManager";
+
+
+    try {
+
+        updateBot(
+            botName,
+            "running",
+            "正在执行等待配件流程闭环"
+        );
+
+
+        robotMessage(
+            botName,
+            "步骤 1/2：先完成 TEST 维修工接单并开始维修，使工单进入 working。"
+        );
+
+
+        const started =
+            await runMaintenanceWorkerStartRepairTest();
+
+
+        updateBot(
+            botName,
+            "running",
+            "正在执行等待配件流程闭环"
+        );
+
+
+        robotMessage(
+            botName,
+            "步骤 2/2：MaintenanceWorkerBot 进入等待配件，模拟配件到货后继续维修，并完成维修提交验收。"
+        );
+
+
+        const bot =
+            await getMaintenanceWorkerBot();
+
+
+        await bot.open();
+
+
+        const result =
+            await bot.waitPartsResumeAndFinishLatestTestRepair();
+
+
+        robotMessage(
+            botName,
+            "等待配件流程通过：" +
+            result.orderId +
+            "；" +
+            result.waitingOrderStatus +
+            " → " +
+            result.resumedOrderStatus +
+            " → " +
+            result.finalOrderStatus
+        );
+
+
+        robotMessage(
+            botName,
+            "验证：等待说明=" +
+            result.waitingPartsNote +
+            "；维修申请=" +
+            result.waitingRequestStatus +
+            " → " +
+            result.resumedRequestStatus +
+            " → " +
+            result.finalRequestStatus
+        );
+
+
+        updateBot(
+            botName,
+            "pass",
+            "等待配件流程闭环测试通过"
+        );
+
+
+        return {
+            ok:
+                true,
+
+            action:
+                "maintenance-waiting-parts-cycle-test",
+
+            started:
+                started.result,
+
+            result
+        };
+
+
+    } catch (
+        error
+    ) {
+
+        const message =
+            error?.message ||
+            String(
+                error
+            );
+
+
+        updateBot(
+            botName,
+            "fail",
+            message
+        );
+
+
+        robotMessage(
+            botName,
+            "等待配件流程闭环失败：" +
+            message
+        );
+
+
+        try {
+
+            await captureFailure(
+                "MaintenanceWorkerBot",
+                maintenanceWorkerPage,
+                "maintenance-waiting-parts-cycle"
+            );
+
+        } catch (
+            screenshotError
+        ) {}
+
+
+        throw error;
+    }
+}
+
+
 async function runAllCoreRegressionTests() {
 
     const botName =
@@ -3335,6 +3474,13 @@ async function runAllCoreRegressionTests() {
         "临时非卸载区卸料完整闭环",
         async () =>
             await runTestManagerTemporaryUnloadFullCycle()
+    );
+
+
+    await runCase(
+        "等待配件流程闭环",
+        async () =>
+            await runMaintenanceWaitingPartsCycleTest()
     );
 
 
@@ -3967,6 +4113,26 @@ async function executeCommand({
         requestedBot ===
             "TestManager" &&
         (
+            /测试.*等待配件.*闭环/i.test(
+                command
+            ) ||
+            /等待配件.*继续维修/i.test(
+                command
+            ) ||
+            /配件已到.*继续维修/i.test(
+                command
+            )
+        )
+    ) {
+
+        return await runMaintenanceWaitingPartsCycleTest();
+    }
+
+
+    if (
+        requestedBot ===
+            "TestManager" &&
+        (
             /测试.*维修.*验收.*返修/i.test(
                 command
             ) ||
@@ -4259,7 +4425,7 @@ async function executeCommand({
 
     robotMessage(
         "TestManager",
-        "当前已接入 TruckDriverBot + DispatchBot + EquipmentCheckBot + MaintenanceManagerBot + MaintenanceWorkerBot。TestManager 可用命令：“运行全部核心回归测试”“测试正常装卸运输完整闭环”“测试GPS异常场景”“测试设备异常自动维修单”“测试维修单调度审批”“测试维修管理接车派工”“测试维修工接单开始维修”“测试维修工完成维修提交验收”“测试维修管理验收归档”“测试维修完成恢复生产”“测试维修验收返修”“测试临时非卸载区卸料完整闭环”。旧“故障换车”入口已停用，不纳入核心回归。"
+        "当前已接入 TruckDriverBot + DispatchBot + EquipmentCheckBot + MaintenanceManagerBot + MaintenanceWorkerBot。TestManager 可用命令：“运行全部核心回归测试”“测试正常装卸运输完整闭环”“测试GPS异常场景”“测试设备异常自动维修单”“测试维修单调度审批”“测试维修管理接车派工”“测试维修工接单开始维修”“测试维修工完成维修提交验收”“测试维修管理验收归档”“测试维修完成恢复生产”“测试维修验收返修”“测试临时非卸载区卸料完整闭环”“测试等待配件闭环”。旧“故障换车”入口已停用，不纳入核心回归。"
     );
 
 
@@ -4716,7 +4882,7 @@ server.listen(
         );
 
         console.log(
-            "🤖 机器人测试控制中心 R0-19 已启动"
+            "🤖 机器人测试控制中心 R0-20 已启动"
         );
 
         console.log(
