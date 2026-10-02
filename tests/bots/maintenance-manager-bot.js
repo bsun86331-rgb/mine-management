@@ -9,7 +9,7 @@ const {
 
 /*
 =========================================================
-R0-2 MaintenanceManagerBot
+R0-3 MaintenanceManagerBot
 维修管理测试机器人
 
 仅操作 TEST- 维修申请 / TEST- 工位 / TEST- 工单。
@@ -585,6 +585,328 @@ class MaintenanceManagerBot {
 
 
         return request;
+    }
+
+
+    async rejectLatestTestInspectionForRework() {
+
+        const orders =
+            await this.readLocalStorage(
+                "maintenanceWorkOrders"
+            );
+
+
+        const candidates =
+            Array.isArray(
+                orders
+            )
+                ? orders
+                    .filter(
+                        item =>
+                            item &&
+                            item.status ===
+                                "waiting_inspection"
+                            &&
+                            String(
+                                item.orderId ||
+                                ""
+                            )
+                            .startsWith(
+                                "TEST-"
+                            )
+                            &&
+                            String(
+                                item.requestId ||
+                                ""
+                            )
+                            .startsWith(
+                                "TEST-"
+                            )
+                    )
+                    .sort(
+                        (
+                            a,
+                            b
+                        ) =>
+                            new Date(
+                                b.repairFinishedAt ||
+                                0
+                            )
+                            -
+                            new Date(
+                                a.repairFinishedAt ||
+                                0
+                            )
+                    )
+                : [];
+
+
+        if (
+            !candidates.length
+        ) {
+
+            throw new Error(
+                "MaintenanceManagerBot：没有找到可退回返修的 waiting_inspection TEST 工单"
+            );
+        }
+
+
+        const order =
+            candidates[0];
+
+
+        const orderId =
+            String(
+                order.orderId
+            );
+
+
+        const requestId =
+            String(
+                order.requestId
+            );
+
+
+        assertTestId(
+            orderId,
+            "维修工单"
+        );
+
+
+        assertTestId(
+            requestId,
+            "维修申请"
+        );
+
+
+        await this.page
+            .locator(
+                'button[data-page="inspection"]'
+            )
+            .click();
+
+
+        await this.page.waitForTimeout(
+            150
+        );
+
+
+        const inspectionButton =
+            this.page.locator(
+                `button[onclick*="openInspection('${orderId}')"]`
+            )
+            .first();
+
+
+        await inspectionButton.waitFor({
+            state:
+                "visible"
+        });
+
+
+        await inspectionButton.click();
+
+
+        await this.page
+            .locator(
+                "#inspectionModal"
+            )
+            .waitFor({
+                state:
+                    "visible"
+            });
+
+
+        const reason =
+            "TEST-验收发现维修结果仍不满足要求，退回重新处理";
+
+
+        await this.page
+            .locator(
+                "#inspectionRemark"
+            )
+            .fill(
+                reason
+            );
+
+
+        const dialogs =
+            [];
+
+
+        const dialogHandler =
+            async dialog => {
+
+                dialogs.push(
+                    dialog.message()
+                );
+
+
+                await dialog.accept();
+            };
+
+
+        this.page.on(
+            "dialog",
+            dialogHandler
+        );
+
+
+        try {
+
+            await this.page
+                .locator(
+                    'button[onclick="rejectInspection()"]'
+                )
+                .click();
+
+
+            await this.page.waitForTimeout(
+                500
+            );
+
+        } finally {
+
+            this.page.off(
+                "dialog",
+                dialogHandler
+            );
+        }
+
+
+        const afterOrders =
+            await this.readLocalStorage(
+                "maintenanceWorkOrders"
+            );
+
+
+        const rejectedOrder =
+            Array.isArray(
+                afterOrders
+            )
+                ? afterOrders.find(
+                    item =>
+                        String(
+                            item.orderId ||
+                            ""
+                        ) ===
+                            orderId
+                )
+                : null;
+
+
+        if (
+            !rejectedOrder ||
+            rejectedOrder.status !==
+                "rework"
+        ) {
+
+            throw new Error(
+                "MaintenanceManagerBot：验收退回后工单未进入 rework" +
+                (
+                    dialogs.length
+                        ? "；页面提示=" +
+                          dialogs.join(
+                              " | "
+                          )
+                        : ""
+                )
+            );
+        }
+
+
+        if (
+            String(
+                rejectedOrder.reworkReason ||
+                ""
+            ) !==
+                reason
+        ) {
+
+            throw new Error(
+                "MaintenanceManagerBot：返修原因没有正确写入"
+            );
+        }
+
+
+        if (
+            !rejectedOrder.reworkAt
+        ) {
+
+            throw new Error(
+                "MaintenanceManagerBot：返修工单缺少 reworkAt"
+            );
+        }
+
+
+        const requests =
+            await this.readLocalStorage(
+                "maintenanceRequests"
+            );
+
+
+        const request =
+            Array.isArray(
+                requests
+            )
+                ? requests.find(
+                    item =>
+                        String(
+                            item.requestId ||
+                            item.maintenanceRequestId ||
+                            ""
+                        ) ===
+                            requestId
+                )
+                : null;
+
+
+        if (
+            !request
+        ) {
+
+            throw new Error(
+                "MaintenanceManagerBot：返修后找不到关联维修申请"
+            );
+        }
+
+
+        /*
+         * 当前 maintenance.html 的真实逻辑只把工单改为 rework，
+         * 维修申请仍保持 waiting_inspection。
+         * 不在测试中擅自改变业务实现，只记录真实状态。
+         */
+        if (
+            request.status !==
+                "waiting_inspection"
+        ) {
+
+            throw new Error(
+                "MaintenanceManagerBot：返修后维修申请状态与当前业务逻辑不一致，实际=" +
+                String(
+                    request.status ||
+                    "-"
+                )
+            );
+        }
+
+
+        return {
+            orderId,
+            requestId,
+
+            orderStatus:
+                rejectedOrder.status,
+
+            requestStatus:
+                request.status,
+
+            reworkReason:
+                rejectedOrder.reworkReason,
+
+            reworkAt:
+                rejectedOrder.reworkAt
+        };
     }
 
 
