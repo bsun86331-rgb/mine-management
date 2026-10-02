@@ -2,7 +2,7 @@
 
 /*
 =========================================================
-R0-4E RobotTestFixture
+R0-4F RobotTestFixture
 机器人专用 TEST 测试环境
 
 本版修复：
@@ -381,6 +381,181 @@ async function initializeTruckDriverTestEnvironment(
         }) => {
 
             try {
+
+                /*
+                 * R0-4F
+                 * 每次重新准备司机 TEST 环境前，先清理上一轮
+                 * TEST 维修链路残留。
+                 *
+                 * driver-work.js 会把存在 active maintenanceRequests /
+                 * maintenanceWorkOrders 的车辆视为“维修中”，并隐藏
+                 * #addTripButton。此前第6条维修回归跑完后，这些 TEST
+                 * 记录会残留，导致下一次单独跑“正常运输闭环”时，
+                 * GPS 已经到 at_unloading，但“完成一趟”按钮仍隐藏。
+                 *
+                 * 这里只删除 TEST- 数据和 TEST 车辆相关维修记录，
+                 * 不触碰任何正式数据。
+                 */
+                const pruneTestRows =
+                    (
+                        key,
+                        predicate
+                    ) => {
+
+                        try {
+
+                            const rows =
+                                JSON.parse(
+                                    localStorage.getItem(
+                                        key
+                                    ) ||
+                                    "[]"
+                                );
+
+
+                            if (
+                                !Array.isArray(
+                                    rows
+                                )
+                            ) {
+
+                                return;
+                            }
+
+
+                            localStorage.setItem(
+                                key,
+                                JSON.stringify(
+                                    rows.filter(
+                                        item =>
+                                            !predicate(
+                                                item
+                                            )
+                                    )
+                                )
+                            );
+
+                        } catch (
+                            error
+                        ) {
+
+                            console.warn(
+                                "[RobotTestFixture] 清理 " +
+                                key +
+                                " 失败",
+                                error
+                            );
+                        }
+                    };
+
+
+                const isTestVehicle =
+                    item => {
+
+                        const vehicle =
+                            String(
+                                item?.equipmentId ||
+                                item?.equipmentNumber ||
+                                item?.vehicleId ||
+                                item?.vehicleNumber ||
+                                ""
+                            );
+
+
+                        return (
+                            vehicle ===
+                                TEST_DATA.vehicleId
+                            ||
+                            vehicle ===
+                                TEST_DATA.replacementVehicleId
+                        );
+                    };
+
+
+                pruneTestRows(
+                    "maintenanceRequests",
+                    item => {
+
+                        const id =
+                            String(
+                                item?.requestId ||
+                                item?.maintenanceRequestId ||
+                                ""
+                            );
+
+
+                        return (
+                            id.startsWith(
+                                "TEST-"
+                            )
+                            ||
+                            isTestVehicle(
+                                item
+                            )
+                        );
+                    }
+                );
+
+
+                pruneTestRows(
+                    "maintenanceWorkOrders",
+                    item => {
+
+                        const id =
+                            String(
+                                item?.orderId ||
+                                ""
+                            );
+
+
+                        const requestId =
+                            String(
+                                item?.requestId ||
+                                ""
+                            );
+
+
+                        return (
+                            id.startsWith(
+                                "TEST-"
+                            )
+                            ||
+                            requestId.startsWith(
+                                "TEST-"
+                            )
+                            ||
+                            isTestVehicle(
+                                item
+                            )
+                        );
+                    }
+                );
+
+
+                pruneTestRows(
+                    "workshopBays",
+                    item => {
+
+                        return (
+                            String(
+                                item?.bayId ||
+                                ""
+                            )
+                            .startsWith(
+                                "TEST-"
+                            )
+                            ||
+                            String(
+                                item?.orderId ||
+                                ""
+                            )
+                            .startsWith(
+                                "TEST-"
+                            )
+                        );
+                    }
+                );
+
 
                 /*
                  * TEST 司机身份
