@@ -9,7 +9,7 @@ const {
 
 /*
 =========================================================
-R0-3 MaintenanceWorkerBot
+R0-4 MaintenanceWorkerBot
 维修员测试机器人
 
 仅操作 TEST- 维修工单。
@@ -720,6 +720,483 @@ class MaintenanceWorkerBot {
                 Boolean(
                     latestHistory.afterPhotoData
                 )
+        };
+    }
+
+
+    async waitPartsResumeAndFinishLatestTestRepair() {
+
+        const rows =
+            await this.readLocalStorage(
+                "maintenanceWorkOrders"
+            );
+
+
+        const candidates =
+            Array.isArray(
+                rows
+            )
+                ? rows
+                    .filter(
+                        item =>
+                            item &&
+                            item.status ===
+                                "working"
+                            &&
+                            String(
+                                item.orderId ||
+                                ""
+                            )
+                            .startsWith(
+                                "TEST-"
+                            )
+                            &&
+                            String(
+                                item.requestId ||
+                                ""
+                            )
+                            .startsWith(
+                                "TEST-"
+                            )
+                    )
+                    .sort(
+                        (
+                            a,
+                            b
+                        ) =>
+                            new Date(
+                                b.startedAt ||
+                                0
+                            )
+                            -
+                            new Date(
+                                a.startedAt ||
+                                0
+                            )
+                    )
+                : [];
+
+
+        if (
+            !candidates.length
+        ) {
+
+            throw new Error(
+                "MaintenanceWorkerBot：没有找到 working 的 TEST 工单用于等待配件测试"
+            );
+        }
+
+
+        const order =
+            candidates[0];
+
+
+        const orderId =
+            String(
+                order.orderId
+            );
+
+
+        const requestId =
+            String(
+                order.requestId ||
+                ""
+            );
+
+
+        assertTestId(
+            orderId,
+            "等待配件维修工单"
+        );
+
+
+        assertTestId(
+            requestId,
+            "等待配件维修申请"
+        );
+
+
+        /*
+         * 1. 打开“维修中”任务并切换到等待配件。
+         */
+        await this.page
+            .locator(
+                'button[data-page="working"]'
+            )
+            .click();
+
+
+        await this.page.waitForTimeout(
+            150
+        );
+
+
+        const openButton =
+            this.page.locator(
+                `button[onclick*="openRepairOrder('${orderId}')"]`
+            )
+            .first();
+
+
+        await openButton.waitFor({
+            state:
+                "visible"
+        });
+
+
+        await openButton.click();
+
+
+        await this.page
+            .locator(
+                "#repairOperationArea"
+            )
+            .waitFor({
+                state:
+                    "visible"
+            });
+
+
+        const note =
+            "TEST-等待轮胎维修配件到货";
+
+
+        const promptHandled =
+            new Promise(
+                (
+                    resolve,
+                    reject
+                ) => {
+
+                    this.page.once(
+                        "dialog",
+                        async dialog => {
+
+                            try {
+
+                                if (
+                                    dialog.type() !==
+                                        "prompt"
+                                ) {
+
+                                    throw new Error(
+                                        "MaintenanceWorkerBot：等待配件操作未出现 prompt"
+                                    );
+                                }
+
+
+                                await dialog.accept(
+                                    note
+                                );
+
+
+                                resolve();
+
+                            } catch (
+                                error
+                            ) {
+
+                                reject(
+                                    error
+                                );
+                            }
+                        }
+                    );
+                }
+            );
+
+
+        const waitPartsButton =
+            this.page.locator(
+                'button[onclick="setWaitingParts()"]'
+            );
+
+
+        await waitPartsButton.waitFor({
+            state:
+                "visible"
+        });
+
+
+        await waitPartsButton.click();
+
+
+        await promptHandled;
+
+
+        await this.page.waitForTimeout(
+            350
+        );
+
+
+        let afterOrders =
+            await this.readLocalStorage(
+                "maintenanceWorkOrders"
+            );
+
+
+        let waitingOrder =
+            Array.isArray(
+                afterOrders
+            )
+                ? afterOrders.find(
+                    item =>
+                        String(
+                            item.orderId ||
+                            ""
+                        ) ===
+                            orderId
+                )
+                : null;
+
+
+        if (
+            !waitingOrder ||
+            waitingOrder.status !==
+                "waiting_parts"
+        ) {
+
+            throw new Error(
+                "MaintenanceWorkerBot：点击等待配件后工单未进入 waiting_parts"
+            );
+        }
+
+
+        if (
+            String(
+                waitingOrder.waitingPartsNote ||
+                ""
+            ) !==
+                note
+        ) {
+
+            throw new Error(
+                "MaintenanceWorkerBot：等待配件说明没有正确写入"
+            );
+        }
+
+
+        if (
+            !waitingOrder.waitingPartsAt
+        ) {
+
+            throw new Error(
+                "MaintenanceWorkerBot：等待配件状态缺少 waitingPartsAt"
+            );
+        }
+
+
+        let requests =
+            await this.readLocalStorage(
+                "maintenanceRequests"
+            );
+
+
+        let waitingRequest =
+            Array.isArray(
+                requests
+            )
+                ? requests.find(
+                    item =>
+                        String(
+                            item.requestId ||
+                            item.maintenanceRequestId ||
+                            ""
+                        ) ===
+                            requestId
+                )
+                : null;
+
+
+        if (
+            !waitingRequest ||
+            waitingRequest.status !==
+                "waiting_parts"
+        ) {
+
+            throw new Error(
+                "MaintenanceWorkerBot：维修申请未同步进入 waiting_parts"
+            );
+        }
+
+
+        /*
+         * 2. 在“等待配件”页点击“配件已到 / 继续维修”。
+         */
+        await this.page
+            .locator(
+                'button[data-page="waiting"]'
+            )
+            .click();
+
+
+        await this.page.waitForTimeout(
+            150
+        );
+
+
+        const resumeButton =
+            this.page.locator(
+                `button[onclick*="resumeRepair('${orderId}')"]`
+            )
+            .first();
+
+
+        await resumeButton.waitFor({
+            state:
+                "visible"
+        });
+
+
+        await resumeButton.click();
+
+
+        await this.page.waitForTimeout(
+            350
+        );
+
+
+        afterOrders =
+            await this.readLocalStorage(
+                "maintenanceWorkOrders"
+            );
+
+
+        const resumedOrder =
+            Array.isArray(
+                afterOrders
+            )
+                ? afterOrders.find(
+                    item =>
+                        String(
+                            item.orderId ||
+                            ""
+                        ) ===
+                            orderId
+                )
+                : null;
+
+
+        if (
+            !resumedOrder ||
+            resumedOrder.status !==
+                "working"
+        ) {
+
+            throw new Error(
+                "MaintenanceWorkerBot：配件到货后工单未恢复 working"
+            );
+        }
+
+
+        if (
+            !resumedOrder.resumedAt
+        ) {
+
+            throw new Error(
+                "MaintenanceWorkerBot：恢复维修后缺少 resumedAt"
+            );
+        }
+
+
+        requests =
+            await this.readLocalStorage(
+                "maintenanceRequests"
+            );
+
+
+        const resumedRequest =
+            Array.isArray(
+                requests
+            )
+                ? requests.find(
+                    item =>
+                        String(
+                            item.requestId ||
+                            item.maintenanceRequestId ||
+                            ""
+                        ) ===
+                            requestId
+                )
+                : null;
+
+
+        if (
+            !resumedRequest ||
+            resumedRequest.status !==
+                "working"
+        ) {
+
+            throw new Error(
+                "MaintenanceWorkerBot：配件到货后维修申请未恢复 working"
+            );
+        }
+
+
+        /*
+         * 3. 继续真实完成维修并重新提交验收。
+         */
+        const finished =
+            await this.finishLatestWorkingTestRepair();
+
+
+        if (
+            finished.orderId !==
+                orderId
+        ) {
+
+            throw new Error(
+                "MaintenanceWorkerBot：等待配件后完成的不是原 TEST 工单"
+            );
+        }
+
+
+        if (
+            finished.orderStatus !==
+                "waiting_inspection" ||
+            finished.requestStatus !==
+                "waiting_inspection"
+        ) {
+
+            throw new Error(
+                "MaintenanceWorkerBot：等待配件恢复后未成功提交到 waiting_inspection"
+            );
+        }
+
+
+        return {
+            orderId,
+            requestId,
+
+            waitingPartsNote:
+                note,
+
+            waitingPartsAt:
+                waitingOrder.waitingPartsAt,
+
+            resumedAt:
+                resumedOrder.resumedAt,
+
+            waitingOrderStatus:
+                waitingOrder.status,
+
+            waitingRequestStatus:
+                waitingRequest.status,
+
+            resumedOrderStatus:
+                resumedOrder.status,
+
+            resumedRequestStatus:
+                resumedRequest.status,
+
+            finalOrderStatus:
+                finished.orderStatus,
+
+            finalRequestStatus:
+                finished.requestStatus,
+
+            hasAfterPhoto:
+                finished.hasAfterPhoto
         };
     }
 
