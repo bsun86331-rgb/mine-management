@@ -45,7 +45,7 @@ const {
 
 /*
 =========================================================
-R0-12 RobotControlServer
+R0-13 RobotControlServer
 机器人测试控制中心后台 + Playwright 执行器
 
 当前已接入：
@@ -2011,6 +2011,167 @@ async function runEquipmentAbnormalMaintenanceRequestTest() {
 }
 
 
+async function runMaintenanceDispatchApprovalTest() {
+
+    const botName =
+        "TestManager";
+
+
+    try {
+
+        updateBot(
+            botName,
+            "running",
+            "正在执行维修单调度审批闭环"
+        );
+
+
+        robotMessage(
+            botName,
+            "步骤 1/2：先通过设备异常检查生成一张 TEST 待调度维修单。"
+        );
+
+
+        const generated =
+            await runEquipmentAbnormalMaintenanceRequestTest();
+
+
+        updateBot(
+            botName,
+            "running",
+            "正在执行维修单调度审批闭环"
+        );
+
+
+        robotMessage(
+            botName,
+            "步骤 2/2：DispatchBot 打开调度端维修审批，批准 TEST 维修单进入修理厂。"
+        );
+
+
+        updateBot(
+            "DispatchBot",
+            "running",
+            "正在审批 TEST 维修单"
+        );
+
+
+        const bot =
+            await getDispatchBot();
+
+
+        await bot.open();
+
+
+        const approved =
+            await bot.approveLatestTestMaintenanceRequest();
+
+
+        robotMessage(
+            botName,
+            "维修单调度审批通过：" +
+            approved.requestId +
+            "；" +
+            generated.result.requestStatus +
+            " → " +
+            approved.status +
+            "；dispatchStatus=" +
+            approved.dispatchStatus
+        );
+
+
+        robotMessage(
+            botName,
+            "验证：设备 " +
+            approved.equipmentId +
+            "；维修类型=" +
+            approved.maintenanceType +
+            "；批准人=" +
+            String(
+                approved.dispatchApprovedBy ||
+                "-"
+            )
+        );
+
+
+        updateBot(
+            "DispatchBot",
+            "pass",
+            "TEST维修单已批准进入修理厂"
+        );
+
+
+        updateBot(
+            botName,
+            "pass",
+            "维修单调度审批闭环测试通过"
+        );
+
+
+        return {
+            ok:
+                true,
+
+            action:
+                "maintenance-dispatch-approval-test",
+
+            generated:
+                generated.result,
+
+            approved
+        };
+
+
+    } catch (
+        error
+    ) {
+
+        const message =
+            error?.message ||
+            String(
+                error
+            );
+
+
+        updateBot(
+            "DispatchBot",
+            "fail",
+            message
+        );
+
+
+        updateBot(
+            botName,
+            "fail",
+            message
+        );
+
+
+        robotMessage(
+            botName,
+            "维修单调度审批闭环失败：" +
+            message
+        );
+
+
+        try {
+
+            await captureFailure(
+                "DispatchBot",
+                dispatchPage,
+                "maintenance-dispatch-approval"
+            );
+
+        } catch (
+            screenshotError
+        ) {}
+
+
+        throw error;
+    }
+}
+
+
 async function runAllCoreRegressionTests() {
 
     const botName =
@@ -2123,6 +2284,13 @@ async function runAllCoreRegressionTests() {
         "设备异常检查自动维修单",
         async () =>
             await runEquipmentAbnormalMaintenanceRequestTest()
+    );
+
+
+    await runCase(
+        "维修单调度审批闭环",
+        async () =>
+            await runMaintenanceDispatchApprovalTest()
     );
 
 
@@ -2742,6 +2910,26 @@ async function executeCommand({
         requestedBot ===
             "TestManager" &&
         (
+            /测试.*维修单.*调度.*审批/i.test(
+                command
+            ) ||
+            /维修单.*调度.*闭环/i.test(
+                command
+            ) ||
+            /维修.*审批.*闭环/i.test(
+                command
+            )
+        )
+    ) {
+
+        return await runMaintenanceDispatchApprovalTest();
+    }
+
+
+    if (
+        requestedBot ===
+            "TestManager" &&
+        (
             /测试.*GPS.*异常/i.test(
                 command
             ) ||
@@ -2914,7 +3102,7 @@ async function executeCommand({
 
     robotMessage(
         "TestManager",
-        "当前已接入 TruckDriverBot + DispatchBot + EquipmentCheckBot。TestManager 可用命令：“运行全部核心回归测试”“测试正常装卸运输完整闭环”“测试GPS异常场景”“测试设备异常自动维修单”“测试临时非卸载区卸料完整闭环”。旧“故障换车”入口已停用，不纳入核心回归。"
+        "当前已接入 TruckDriverBot + DispatchBot + EquipmentCheckBot。TestManager 可用命令：“运行全部核心回归测试”“测试正常装卸运输完整闭环”“测试GPS异常场景”“测试设备异常自动维修单”“测试维修单调度审批”“测试临时非卸载区卸料完整闭环”。旧“故障换车”入口已停用，不纳入核心回归。"
     );
 
 
@@ -3371,7 +3559,7 @@ server.listen(
         );
 
         console.log(
-            "🤖 机器人测试控制中心 R0-12 已启动"
+            "🤖 机器人测试控制中心 R0-13 已启动"
         );
 
         console.log(
