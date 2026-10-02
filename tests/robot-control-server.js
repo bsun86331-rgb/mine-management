@@ -42,6 +42,12 @@ const {
 );
 
 const {
+    MaintenanceWorkerBot
+} = require(
+    "./bots/maintenance-worker-bot"
+);
+
+const {
     initializeTruckDriverTestEnvironment,
     clearRobotTestEnvironment
 } = require(
@@ -51,7 +57,7 @@ const {
 
 /*
 =========================================================
-R0-14 RobotControlServer
+R0-15 RobotControlServer
 机器人测试控制中心后台 + Playwright 执行器
 
 当前已接入：
@@ -155,6 +161,14 @@ let maintenanceManagerPage =
 
 
 let maintenanceManagerBot =
+    null;
+
+
+let maintenanceWorkerPage =
+    null;
+
+
+let maintenanceWorkerBot =
     null;
 
 
@@ -612,6 +626,54 @@ async function getMaintenanceManagerBot() {
 
 
     return maintenanceManagerBot;
+}
+
+
+async function getMaintenanceWorkerBot() {
+
+    await ensureBrowser();
+
+
+    if (
+        maintenanceWorkerPage &&
+        !maintenanceWorkerPage.isClosed() &&
+        maintenanceWorkerBot
+    ) {
+
+        return maintenanceWorkerBot;
+    }
+
+
+    maintenanceWorkerPage =
+        await browserContext.newPage();
+
+
+    maintenanceWorkerPage.on(
+        "console",
+        message => {
+
+            if (
+                message.type() ===
+                    "error"
+            ) {
+
+                robotMessage(
+                    "TestManager",
+                    "维修员工作端控制台错误：" +
+                    message.text()
+                );
+            }
+        }
+    );
+
+
+    maintenanceWorkerBot =
+        new MaintenanceWorkerBot(
+            maintenanceWorkerPage
+        );
+
+
+    return maintenanceWorkerBot;
 }
 
 
@@ -2373,6 +2435,145 @@ async function runMaintenanceReceiveAssignmentTest() {
 }
 
 
+async function runMaintenanceWorkerStartRepairTest() {
+
+    const botName =
+        "TestManager";
+
+
+    try {
+
+        updateBot(
+            botName,
+            "running",
+            "正在执行维修工接单与开始维修闭环"
+        );
+
+
+        robotMessage(
+            botName,
+            "步骤 1/2：先完成 TEST 维修管理接车派工，生成 assigned 状态 TEST 维修工单。"
+        );
+
+
+        const assigned =
+            await runMaintenanceReceiveAssignmentTest();
+
+
+        updateBot(
+            botName,
+            "running",
+            "正在执行维修工接单与开始维修闭环"
+        );
+
+
+        robotMessage(
+            botName,
+            "步骤 2/2：MaintenanceWorkerBot 以 TEST 维修员身份接车、上传维修前照片并开始维修。"
+        );
+
+
+        const bot =
+            await getMaintenanceWorkerBot();
+
+
+        await bot.open();
+
+
+        const result =
+            await bot.startLatestAssignedTestRepair();
+
+
+        robotMessage(
+            botName,
+            "维修工开工通过：" +
+            result.orderId +
+            "；工单状态=" +
+            result.orderStatus +
+            "；维修申请状态=" +
+            result.requestStatus
+        );
+
+
+        robotMessage(
+            botName,
+            "验证：设备 " +
+            result.equipmentId +
+            "；维修员=" +
+            result.workerName +
+            "；维修前照片=" +
+            (
+                result.hasBeforePhoto
+                    ? "已上传"
+                    : "缺失"
+            )
+        );
+
+
+        updateBot(
+            botName,
+            "pass",
+            "维修工已接单并开始维修，工单进入 working"
+        );
+
+
+        return {
+            ok:
+                true,
+
+            action:
+                "maintenance-worker-start-repair-test",
+
+            assigned:
+                assigned.result,
+
+            result
+        };
+
+
+    } catch (
+        error
+    ) {
+
+        const message =
+            error?.message ||
+            String(
+                error
+            );
+
+
+        updateBot(
+            botName,
+            "fail",
+            message
+        );
+
+
+        robotMessage(
+            botName,
+            "维修工接单与开始维修闭环失败：" +
+            message
+        );
+
+
+        try {
+
+            await captureFailure(
+                "MaintenanceWorkerBot",
+                maintenanceWorkerPage,
+                "maintenance-worker-start-repair"
+            );
+
+        } catch (
+            screenshotError
+        ) {}
+
+
+        throw error;
+    }
+}
+
+
 async function runAllCoreRegressionTests() {
 
     const botName =
@@ -2499,6 +2700,13 @@ async function runAllCoreRegressionTests() {
         "维修管理接车派工闭环",
         async () =>
             await runMaintenanceReceiveAssignmentTest()
+    );
+
+
+    await runCase(
+        "维修工接单开始维修闭环",
+        async () =>
+            await runMaintenanceWorkerStartRepairTest()
     );
 
 
@@ -3118,6 +3326,26 @@ async function executeCommand({
         requestedBot ===
             "TestManager" &&
         (
+            /测试.*维修工.*接单.*开始维修/i.test(
+                command
+            ) ||
+            /维修工.*开始维修.*闭环/i.test(
+                command
+            ) ||
+            /维修工.*接单.*开工/i.test(
+                command
+            )
+        )
+    ) {
+
+        return await runMaintenanceWorkerStartRepairTest();
+    }
+
+
+    if (
+        requestedBot ===
+            "TestManager" &&
+        (
             /测试.*维修管理.*接车.*派工/i.test(
                 command
             ) ||
@@ -3330,7 +3558,7 @@ async function executeCommand({
 
     robotMessage(
         "TestManager",
-        "当前已接入 TruckDriverBot + DispatchBot + EquipmentCheckBot + MaintenanceManagerBot。TestManager 可用命令：“运行全部核心回归测试”“测试正常装卸运输完整闭环”“测试GPS异常场景”“测试设备异常自动维修单”“测试维修单调度审批”“测试维修管理接车派工”“测试临时非卸载区卸料完整闭环”。旧“故障换车”入口已停用，不纳入核心回归。"
+        "当前已接入 TruckDriverBot + DispatchBot + EquipmentCheckBot + MaintenanceManagerBot + MaintenanceWorkerBot。TestManager 可用命令：“运行全部核心回归测试”“测试正常装卸运输完整闭环”“测试GPS异常场景”“测试设备异常自动维修单”“测试维修单调度审批”“测试维修管理接车派工”“测试维修工接单开始维修”“测试临时非卸载区卸料完整闭环”。旧“故障换车”入口已停用，不纳入核心回归。"
     );
 
 
@@ -3787,7 +4015,7 @@ server.listen(
         );
 
         console.log(
-            "🤖 机器人测试控制中心 R0-14 已启动"
+            "🤖 机器人测试控制中心 R0-15 已启动"
         );
 
         console.log(
