@@ -39,7 +39,7 @@ const {
 
 /*
 =========================================================
-R0-8 RobotControlServer
+R0-9 RobotControlServer
 机器人测试控制中心后台 + Playwright 执行器
 
 当前已接入：
@@ -1925,6 +1925,13 @@ async function runAllCoreRegressionTests() {
 
 
     await runCase(
+        "GPS异常场景拦截",
+        async () =>
+            await runGpsAbnormalBlockingTest()
+    );
+
+
+    await runCase(
         "临时非卸载区卸料完整闭环",
         async () =>
             await runTestManagerTemporaryUnloadFullCycle()
@@ -2044,6 +2051,145 @@ async function runAllCoreRegressionTests() {
         total,
         results
     };
+}
+
+
+async function runGpsAbnormalBlockingTest() {
+
+    const botName =
+        "TestManager";
+
+
+    try {
+
+        updateBot(
+            botName,
+            "running",
+            "正在执行GPS异常拦截测试"
+        );
+
+
+        robotMessage(
+            botName,
+            "准备 TEST 司机环境，并模拟 GPS 精度 = 150 米。"
+        );
+
+
+        await prepareTruckDriverTestEnvironment();
+
+
+        const bot =
+            await getTruckDriverBot();
+
+
+        await bot.open();
+
+
+        const result =
+            await bot.testGpsAbnormalBlocked();
+
+
+        robotMessage(
+            botName,
+            "GPS异常拦截通过：accuracy=" +
+            result.gpsAccuracy +
+            "m；phase=" +
+            result.phase +
+            "；趟数 " +
+            result.beforeTripCount +
+            " → " +
+            result.afterTripCount +
+            "；趟次记录 " +
+            result.beforeRecordCount +
+            " → " +
+            result.afterRecordCount
+        );
+
+
+        if (
+            result.gpsStatusBadge
+        ) {
+
+            robotMessage(
+                botName,
+                "司机端GPS状态：" +
+                result.gpsStatusBadge
+            );
+        }
+
+
+        updateBot(
+            "TruckDriverBot",
+            "pass",
+            "GPS异常已正确拦截，未产生正式趟次"
+        );
+
+
+        updateBot(
+            botName,
+            "pass",
+            "GPS异常场景测试通过"
+        );
+
+
+        return {
+            ok:
+                true,
+
+            action:
+                "gps-abnormal-blocking-test",
+
+            result
+        };
+
+
+    } catch (
+        error
+    ) {
+
+        const message =
+            error?.message ||
+            String(
+                error
+            );
+
+
+        updateBot(
+            "TruckDriverBot",
+            "fail",
+            message
+        );
+
+
+        updateBot(
+            botName,
+            "fail",
+            message
+        );
+
+
+        robotMessage(
+            botName,
+            "GPS异常场景测试失败：" +
+            message
+        );
+
+
+        try {
+
+            await captureFailure(
+                "TruckDriverBot",
+                truckDriverPage,
+                "gps-abnormal-blocking"
+            );
+
+        } catch (
+            screenshotError
+        ) {}
+
+
+        throw error;
+    }
 }
 
 
@@ -2210,6 +2356,26 @@ async function executeCommand({
         requestedBot ===
             "TestManager" &&
         (
+            /测试.*GPS.*异常/i.test(
+                command
+            ) ||
+            /GPS.*异常.*拦截/i.test(
+                command
+            ) ||
+            /GPS.*精度.*异常/i.test(
+                command
+            )
+        )
+    ) {
+
+        return await runGpsAbnormalBlockingTest();
+    }
+
+
+    if (
+        requestedBot ===
+            "TestManager" &&
+        (
             /测试.*正常.*装卸.*运输.*完整.*闭环/i.test(
                 command
             ) ||
@@ -2320,7 +2486,7 @@ async function executeCommand({
 
     robotMessage(
         "TestManager",
-        "当前已接入 TruckDriverBot + DispatchBot。TestManager 可用命令：“运行全部核心回归测试”“测试正常装卸运输完整闭环”“测试临时非卸载区卸料完整闭环”。"
+        "当前已接入 TruckDriverBot + DispatchBot。TestManager 可用命令：“运行全部核心回归测试”“测试正常装卸运输完整闭环”“测试GPS异常场景”“测试临时非卸载区卸料完整闭环”。"
     );
 
 
@@ -2777,7 +2943,7 @@ server.listen(
         );
 
         console.log(
-            "🤖 机器人测试控制中心 R0-8 已启动"
+            "🤖 机器人测试控制中心 R0-9 已启动"
         );
 
         console.log(
