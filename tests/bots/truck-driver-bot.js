@@ -1182,6 +1182,362 @@ class TruckDriverBot {
     }
 
 
+    async testGpsAbnormalBlocked() {
+
+        const {
+            profile,
+            task
+        } =
+            await this.assertSafeContext();
+
+
+        const driverId =
+            profile.driverId ||
+            profile.personId ||
+            "";
+
+
+        const taskId =
+            task.taskId ||
+            task.dispatchTaskId ||
+            "";
+
+
+        const vehicleId =
+            task.vehicleNumber ||
+            task.vehicleId ||
+            "";
+
+
+        assertTestId(
+            driverId,
+            "司机"
+        );
+
+
+        assertTestId(
+            taskId,
+            "生产任务"
+        );
+
+
+        assertTestId(
+            vehicleId,
+            "汽车"
+        );
+
+
+        await this.installDeterministicTestGeolocation();
+
+
+        const beforeTripCount =
+            await this.readCurrentTripCount();
+
+
+        const beforeRecords =
+            await this.readLocalStorage(
+                "driverTripRecords"
+            ) ||
+            [];
+
+
+        const beforeRecordCount =
+            Array.isArray(
+                beforeRecords
+            )
+                ? beforeRecords.length
+                : 0;
+
+
+        /*
+         * 从 waiting_loading 开始，
+         * 模拟车辆已经到了 TEST 装载区，
+         * 但 GPS 精度故意设置为 150m。
+         *
+         * 业务规则：
+         * accuracy > 100m 时不允许推进运输闭环。
+         */
+        await this.page.evaluate(
+            ({
+                taskId,
+                shiftId,
+                vehicleId,
+                driverId
+            }) => {
+
+                localStorage.setItem(
+                    "driverTransportCycleState",
+                    JSON.stringify({
+                        cycleKey:
+                            [
+                                taskId,
+                                shiftId,
+                                vehicleId,
+                                driverId
+                            ].join("|"),
+
+                        phase:
+                            "waiting_loading",
+
+                        taskId,
+                        shiftId,
+                        vehicleNumber:
+                            vehicleId,
+
+                        loadingCandidateAt:
+                            null,
+
+                        departureCandidateAt:
+                            null,
+
+                        loadedAt:
+                            null,
+
+                        loadingGps:
+                            null,
+
+                        departedLoadingAt:
+                            null,
+
+                        arrivedUnloadAt:
+                            null,
+
+                        unloadingZoneId:
+                            "",
+
+                        unloadingZoneName:
+                            "",
+
+                        materialType:
+                            "",
+
+                        unloadingGps:
+                            null,
+
+                        updatedAt:
+                            new Date().toISOString(),
+
+                        robotFixture:
+                            true
+                    })
+                );
+            },
+            {
+                taskId,
+                shiftId:
+                    task.shiftId ||
+                    "TEST-SHIFT-001",
+                vehicleId,
+                driverId
+            }
+        );
+
+
+        await this.setDeterministicTestGeolocation({
+            latitude:
+                43.850000,
+
+            longitude:
+                105.750000,
+
+            accuracy:
+                150
+        });
+
+
+        const gpsButton =
+            this.page.locator(
+                "#startGpsButton"
+            );
+
+
+        await gpsButton.click();
+
+
+        await this.page.waitForTimeout(
+            700
+        );
+
+
+        const probe =
+            await this.page.evaluate(
+                () =>
+                    new Promise(
+                        resolve => {
+
+                            navigator.geolocation.getCurrentPosition(
+                                position => {
+
+                                    resolve({
+                                        latitude:
+                                            position?.coords?.latitude,
+
+                                        longitude:
+                                            position?.coords?.longitude,
+
+                                        accuracy:
+                                            position?.coords?.accuracy
+                                    });
+                                },
+
+                                error => {
+
+                                    resolve({
+                                        error:
+                                            error?.message ||
+                                            "geolocation error"
+                                    });
+                                },
+
+                                {
+                                    enableHighAccuracy:
+                                        true,
+
+                                    timeout:
+                                        2000,
+
+                                    maximumAge:
+                                        0
+                                }
+                            );
+                        }
+                    )
+            );
+
+
+        if (
+            Number(
+                probe?.accuracy
+            ) !==
+                150
+        ) {
+
+            throw new Error(
+                "TruckDriverBot：GPS异常测试没有得到预期的150米精度，实际=" +
+                String(
+                    probe?.accuracy
+                )
+            );
+        }
+
+
+        const cycle =
+            await this.getTransportCycle();
+
+
+        if (
+            !cycle ||
+            cycle.phase !==
+                "waiting_loading"
+        ) {
+
+            throw new Error(
+                "TruckDriverBot：GPS精度150米时运输闭环仍然推进，phase=" +
+                String(
+                    cycle?.phase ||
+                    "-"
+                )
+            );
+        }
+
+
+        const afterTripCount =
+            await this.readCurrentTripCount();
+
+
+        const afterRecords =
+            await this.readLocalStorage(
+                "driverTripRecords"
+            ) ||
+            [];
+
+
+        const afterRecordCount =
+            Array.isArray(
+                afterRecords
+            )
+                ? afterRecords.length
+                : 0;
+
+
+        if (
+            afterTripCount !==
+                beforeTripCount
+        ) {
+
+            throw new Error(
+                "TruckDriverBot：GPS异常时本班趟数发生变化"
+            );
+        }
+
+
+        if (
+            afterRecordCount !==
+                beforeRecordCount
+        ) {
+
+            throw new Error(
+                "TruckDriverBot：GPS异常时错误新增了趟次记录"
+            );
+        }
+
+
+        const badgeText =
+            String(
+                await this.page
+                    .locator(
+                        "#gpsStatusBadge"
+                    )
+                    .textContent()
+                    .catch(
+                        () => ""
+                    ) ||
+                ""
+            )
+            .trim();
+
+
+        /*
+         * 恢复正常 TEST GPS，
+         * 避免影响后续回归用例。
+         */
+        await this.setDeterministicTestGeolocation({
+            latitude:
+                43.850000,
+
+            longitude:
+                105.750000,
+
+            accuracy:
+                10
+        });
+
+
+        return {
+            taskId,
+            driverId,
+            vehicleId,
+
+            gpsAccuracy:
+                Number(
+                    probe.accuracy
+                ),
+
+            phase:
+                cycle.phase,
+
+            beforeTripCount,
+            afterTripCount,
+
+            beforeRecordCount,
+            afterRecordCount,
+
+            gpsStatusBadge:
+                badgeText
+        };
+    }
+
+
     async testNormalTransportClosedLoop() {
 
         const {
