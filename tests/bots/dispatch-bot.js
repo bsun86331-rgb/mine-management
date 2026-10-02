@@ -515,6 +515,303 @@ class DispatchBot {
     }
 
 
+    async getMaintenanceRequests() {
+
+        const rows =
+            await this.readLocalStorage(
+                "maintenanceRequests"
+            );
+
+
+        return Array.isArray(
+            rows
+        )
+            ? rows
+            : [];
+    }
+
+
+    async findLatestPendingTestMaintenanceRequest() {
+
+        const rows =
+            await this.getMaintenanceRequests();
+
+
+        const pending =
+            rows
+                .filter(
+                    item =>
+                        item &&
+                        String(
+                            item.requestId ||
+                            item.maintenanceRequestId ||
+                            ""
+                        )
+                        .startsWith(
+                            "TEST-"
+                        )
+                        &&
+                        (
+                            item.status ===
+                                "pending_dispatch"
+                            ||
+                            item.dispatchStatus ===
+                                "pending"
+                        )
+                )
+                .sort(
+                    (
+                        a,
+                        b
+                    ) =>
+                        new Date(
+                            b.createdAt ||
+                            0
+                        )
+                        -
+                        new Date(
+                            a.createdAt ||
+                            0
+                        )
+                );
+
+
+        if (
+            !pending.length
+        ) {
+
+            throw new Error(
+                "DispatchBot：没有找到待调度审批的 TEST 维修单"
+            );
+        }
+
+
+        const request =
+            pending[0];
+
+
+        const requestId =
+            String(
+                request.requestId ||
+                request.maintenanceRequestId ||
+                ""
+            );
+
+
+        assertTestId(
+            requestId,
+            "维修单"
+        );
+
+
+        assertTestId(
+            request.taskId ||
+            "",
+            "维修单任务"
+        );
+
+
+        assertTestId(
+            request.equipmentId ||
+            request.equipmentNumber ||
+            "",
+            "维修单设备"
+        );
+
+
+        return request;
+    }
+
+
+    async approveLatestTestMaintenanceRequest() {
+
+        const request =
+            await this.findLatestPendingTestMaintenanceRequest();
+
+
+        const requestId =
+            String(
+                request.requestId ||
+                request.maintenanceRequestId ||
+                ""
+            );
+
+
+        assertSafeWrite(
+            "approve",
+            requestId
+        );
+
+
+        const openButton =
+            this.page.locator(
+                "#openMaintenanceReviewButton"
+            );
+
+
+        await openButton.waitFor({
+            state:
+                "visible"
+        });
+
+
+        await openButton.click();
+
+
+        await this.page
+            .locator(
+                "#maintenanceReviewModal"
+            )
+            .waitFor({
+                state:
+                    "visible"
+            });
+
+
+        const approveButton =
+            this.page.locator(
+                `#maintenanceReviewModal button.success-button[onclick*="${requestId}"]`
+            );
+
+
+        await approveButton.waitFor({
+            state:
+                "visible"
+        });
+
+
+        const dialogs =
+            [];
+
+
+        const dialogHandler =
+            async dialog => {
+
+                dialogs.push(
+                    dialog.message()
+                );
+
+
+                await dialog.accept();
+            };
+
+
+        this.page.on(
+            "dialog",
+            dialogHandler
+        );
+
+
+        try {
+
+            await approveButton.click();
+
+
+            await this.page.waitForTimeout(
+                600
+            );
+
+        } finally {
+
+            this.page.off(
+                "dialog",
+                dialogHandler
+            );
+        }
+
+
+        const rows =
+            await this.getMaintenanceRequests();
+
+
+        const updated =
+            rows.find(
+                item =>
+                    String(
+                        item.requestId ||
+                        item.maintenanceRequestId ||
+                        ""
+                    ) ===
+                        requestId
+            );
+
+
+        if (
+            !updated
+        ) {
+
+            throw new Error(
+                "DispatchBot：审批后 TEST 维修单丢失"
+            );
+        }
+
+
+        if (
+            updated.dispatchStatus !==
+                "approved"
+        ) {
+
+            throw new Error(
+                "DispatchBot：维修单 dispatchStatus 未变为 approved"
+            );
+        }
+
+
+        if (
+            updated.status !==
+                "waiting_entry"
+        ) {
+
+            throw new Error(
+                "DispatchBot：维修单没有进入 waiting_entry"
+            );
+        }
+
+
+        if (
+            !updated.dispatchApprovedAt
+        ) {
+
+            throw new Error(
+                "DispatchBot：维修单缺少 dispatchApprovedAt"
+            );
+        }
+
+
+        return {
+            requestId,
+
+            taskId:
+                updated.taskId,
+
+            equipmentId:
+                updated.equipmentId ||
+                updated.equipmentNumber,
+
+            maintenanceType:
+                updated.maintenanceType,
+
+            beforeStatus:
+                request.status,
+
+            status:
+                updated.status,
+
+            dispatchStatus:
+                updated.dispatchStatus,
+
+            dispatchApprovedBy:
+                updated.dispatchApprovedBy,
+
+            dispatchApprovedAt:
+                updated.dispatchApprovedAt,
+
+            dialogMessages:
+                dialogs
+        };
+    }
+
+
     async getTemporaryUnloadRequests() {
 
         const rows =
