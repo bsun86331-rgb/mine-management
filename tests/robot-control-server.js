@@ -55,9 +55,17 @@ const {
 );
 
 
+const {
+    SCENARIOS,
+    installScenario
+} = require(
+    "./test-scenario-factory"
+);
+
+
 /*
 =========================================================
-R0-21 RobotControlServer
+R0-22 RobotControlServer
 机器人测试控制中心后台 + Playwright 执行器
 
 当前已接入：
@@ -3492,6 +3500,350 @@ async function runTemporaryUnloadRejectionTest() {
 }
 
 
+async function runFastRegressionTests() {
+
+    const botName =
+        "TestManager";
+
+
+    const results =
+        [];
+
+
+    const runFastCase =
+        async (
+            name,
+            runner
+        ) => {
+
+            robotMessage(
+                botName,
+                "快速回归：" +
+                name
+            );
+
+
+            try {
+
+                const result =
+                    await runner();
+
+
+                results.push({
+                    name,
+                    ok:
+                        true,
+
+                    result
+                });
+
+
+                robotMessage(
+                    botName,
+                    "快速通过：" +
+                    name
+                );
+
+
+            } catch (
+                error
+            ) {
+
+                const message =
+                    error?.message ||
+                    String(
+                        error
+                    );
+
+
+                results.push({
+                    name,
+                    ok:
+                        false,
+
+                    error:
+                        message
+                });
+
+
+                robotMessage(
+                    botName,
+                    "快速失败：" +
+                    name +
+                    "；" +
+                    message
+                );
+            }
+        };
+
+
+    updateBot(
+        botName,
+        "running",
+        "正在运行快速状态回归"
+    );
+
+
+    await runFastCase(
+        "等待配件状态流转",
+        async () => {
+
+            const page =
+                await browserContext.newPage();
+
+
+            try {
+
+                await installScenario(
+                    page,
+                    SCENARIOS.MAINTENANCE_WORKING
+                );
+
+
+                const bot =
+                    new MaintenanceWorkerBot(
+                        page
+                    );
+
+
+                await bot.open();
+
+
+                return await bot.waitPartsResumeAndFinishLatestTestRepair();
+
+            } finally {
+
+                await page.close()
+                    .catch(
+                        () => {}
+                    );
+            }
+        }
+    );
+
+
+    await runFastCase(
+        "验收退回返修再提交",
+        async () => {
+
+            const managerPage =
+                await browserContext.newPage();
+
+
+            const workerPage =
+                await browserContext.newPage();
+
+
+            try {
+
+                await installScenario(
+                    managerPage,
+                    SCENARIOS.MAINTENANCE_WAITING_INSPECTION
+                );
+
+
+                const manager =
+                    new MaintenanceManagerBot(
+                        managerPage
+                    );
+
+
+                await manager.open();
+
+
+                const rejected =
+                    await manager.rejectLatestTestInspectionForRework();
+
+
+                const worker =
+                    new MaintenanceWorkerBot(
+                        workerPage
+                    );
+
+
+                await worker.open();
+
+
+                const resubmitted =
+                    await worker.reworkAndResubmitLatestTestRepair();
+
+
+                return {
+                    rejected,
+                    resubmitted
+                };
+
+            } finally {
+
+                await managerPage.close()
+                    .catch(
+                        () => {}
+                    );
+
+
+                await workerPage.close()
+                    .catch(
+                        () => {}
+                    );
+            }
+        }
+    );
+
+
+    await runFastCase(
+        "临时卸料驳回不计趟次",
+        async () => {
+
+            const page =
+                await browserContext.newPage();
+
+
+            try {
+
+                await installScenario(
+                    page,
+                    SCENARIOS.TEMPORARY_UNLOAD_PENDING
+                );
+
+
+                const bot =
+                    new DispatchBot(
+                        page
+                    );
+
+
+                await bot.open();
+
+
+                return await bot.rejectLatestTestTemporaryUnload();
+
+            } finally {
+
+                await page.close()
+                    .catch(
+                        () => {}
+                    );
+            }
+        }
+    );
+
+
+    const passed =
+        results.filter(
+            item =>
+                item.ok
+        ).length;
+
+
+    const total =
+        results.length;
+
+
+    const failed =
+        total -
+        passed;
+
+
+    robotMessage(
+        botName,
+        "快速回归汇总：" +
+        passed +
+        "/" +
+        total +
+        " PASS" +
+        (
+            failed
+                ? "；" +
+                  failed +
+                  " FAIL"
+                : ""
+        )
+    );
+
+
+    results.forEach(
+        (
+            item,
+            index
+        ) => {
+
+            robotMessage(
+                botName,
+                (
+                    index +
+                    1
+                ) +
+                ". " +
+                item.name +
+                "：" +
+                (
+                    item.ok
+                        ? "PASS"
+                        : "FAIL - " +
+                          item.error
+                )
+            );
+        }
+    );
+
+
+    if (
+        failed
+    ) {
+
+        updateBot(
+            botName,
+            "fail",
+            "快速回归完成：" +
+            passed +
+            "/" +
+            total +
+            " PASS"
+        );
+
+
+        throw new Error(
+            "快速回归存在失败用例：" +
+            results
+                .filter(
+                    item =>
+                        !item.ok
+                )
+                .map(
+                    item =>
+                        item.name
+                )
+                .join(
+                    "、"
+                )
+        );
+    }
+
+
+    updateBot(
+        botName,
+        "pass",
+        "快速回归全部通过：" +
+        passed +
+        "/" +
+        total
+    );
+
+
+    return {
+        ok:
+            true,
+
+        action:
+            "fast-regression-tests",
+
+        passed,
+        total,
+        results
+    };
+}
+
+
 async function runAllCoreRegressionTests() {
 
     const botName =
@@ -4240,6 +4592,26 @@ async function executeCommand({
         requestedBot,
         `收到命令：${command}`
     );
+
+
+    if (
+        requestedBot ===
+            "TestManager" &&
+        (
+            /运行.*快速.*回归/i.test(
+                command
+            ) ||
+            /快速.*状态.*测试/i.test(
+                command
+            ) ||
+            /快速.*测试/i.test(
+                command
+            )
+        )
+    ) {
+
+        return await runFastRegressionTests();
+    }
 
 
     if (
@@ -5095,7 +5467,7 @@ server.listen(
         );
 
         console.log(
-            "🤖 机器人测试控制中心 R0-21 已启动"
+            "🤖 机器人测试控制中心 R0-22 已启动"
         );
 
         console.log(
