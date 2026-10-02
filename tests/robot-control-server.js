@@ -30,6 +30,12 @@ const {
 );
 
 const {
+    EquipmentCheckBot
+} = require(
+    "./bots/equipment-check-bot"
+);
+
+const {
     initializeTruckDriverTestEnvironment,
     clearRobotTestEnvironment
 } = require(
@@ -39,7 +45,7 @@ const {
 
 /*
 =========================================================
-R0-11 RobotControlServer
+R0-12 RobotControlServer
 机器人测试控制中心后台 + Playwright 执行器
 
 当前已接入：
@@ -127,6 +133,14 @@ let dispatchPage =
 
 
 let dispatchBot =
+    null;
+
+
+let equipmentCheckPage =
+    null;
+
+
+let equipmentCheckBot =
     null;
 
 
@@ -488,6 +502,54 @@ async function getDispatchBot() {
 
 
     return dispatchBot;
+}
+
+
+async function getEquipmentCheckBot() {
+
+    await ensureBrowser();
+
+
+    if (
+        equipmentCheckPage &&
+        !equipmentCheckPage.isClosed() &&
+        equipmentCheckBot
+    ) {
+
+        return equipmentCheckBot;
+    }
+
+
+    equipmentCheckPage =
+        await browserContext.newPage();
+
+
+    equipmentCheckPage.on(
+        "console",
+        message => {
+
+            if (
+                message.type() ===
+                    "error"
+            ) {
+
+                robotMessage(
+                    "TestManager",
+                    "设备检查页控制台错误：" +
+                    message.text()
+                );
+            }
+        }
+    );
+
+
+    equipmentCheckBot =
+        new EquipmentCheckBot(
+            equipmentCheckPage
+        );
+
+
+    return equipmentCheckBot;
 }
 
 
@@ -1823,6 +1885,132 @@ async function runNormalTransportClosedLoopTest() {
 }
 
 
+async function runEquipmentAbnormalMaintenanceRequestTest() {
+
+    const botName =
+        "TestManager";
+
+
+    try {
+
+        updateBot(
+            botName,
+            "running",
+            "正在执行设备异常检查→自动维修单测试"
+        );
+
+
+        robotMessage(
+            botName,
+            "步骤 1/2：准备 TEST 司机、TEST 班次和 TEST 设备环境。"
+        );
+
+
+        await prepareTruckDriverTestEnvironment();
+
+
+        const bot =
+            await getEquipmentCheckBot();
+
+
+        robotMessage(
+            botName,
+            "步骤 2/2：EquipmentCheckBot 模拟班次设备检查发现异常，并提交锁定记录。"
+        );
+
+
+        await bot.open();
+
+
+        const result =
+            await bot.testAbnormalCheckCreatesMaintenanceRequest();
+
+
+        robotMessage(
+            botName,
+            "设备异常闭环通过：检查 " +
+            result.checkId +
+            " → 维修单 " +
+            result.requestId
+        );
+
+
+        robotMessage(
+            botName,
+            "验证：设备 " +
+            result.equipmentId +
+            "；检查结果=" +
+            result.result +
+            "；维修类型=" +
+            result.maintenanceType +
+            "；status=" +
+            result.requestStatus +
+            "；dispatchStatus=" +
+            result.dispatchStatus
+        );
+
+
+        updateBot(
+            botName,
+            "pass",
+            "设备异常检查已自动生成待调度维修单"
+        );
+
+
+        return {
+            ok:
+                true,
+
+            action:
+                "equipment-abnormal-maintenance-request-test",
+
+            result
+        };
+
+
+    } catch (
+        error
+    ) {
+
+        const message =
+            error?.message ||
+            String(
+                error
+            );
+
+
+        updateBot(
+            botName,
+            "fail",
+            message
+        );
+
+
+        robotMessage(
+            botName,
+            "设备异常检查→自动维修单测试失败：" +
+            message
+        );
+
+
+        try {
+
+            await captureFailure(
+                "EquipmentCheckBot",
+                equipmentCheckPage,
+                "equipment-abnormal-maintenance-request"
+            );
+
+        } catch (
+            screenshotError
+        ) {}
+
+
+        throw error;
+    }
+}
+
+
 async function runAllCoreRegressionTests() {
 
     const botName =
@@ -1928,6 +2116,13 @@ async function runAllCoreRegressionTests() {
         "GPS异常场景拦截",
         async () =>
             await runGpsAbnormalBlockingTest()
+    );
+
+
+    await runCase(
+        "设备异常检查自动维修单",
+        async () =>
+            await runEquipmentAbnormalMaintenanceRequestTest()
     );
 
 
@@ -2527,6 +2722,26 @@ async function executeCommand({
         requestedBot ===
             "TestManager" &&
         (
+            /测试.*设备.*异常.*维修/i.test(
+                command
+            ) ||
+            /设备.*检查.*异常.*维修单/i.test(
+                command
+            ) ||
+            /设备.*异常.*自动.*维修单/i.test(
+                command
+            )
+        )
+    ) {
+
+        return await runEquipmentAbnormalMaintenanceRequestTest();
+    }
+
+
+    if (
+        requestedBot ===
+            "TestManager" &&
+        (
             /测试.*GPS.*异常/i.test(
                 command
             ) ||
@@ -2699,7 +2914,7 @@ async function executeCommand({
 
     robotMessage(
         "TestManager",
-        "当前已接入 TruckDriverBot + DispatchBot。TestManager 可用命令：“运行全部核心回归测试”“测试正常装卸运输完整闭环”“测试GPS异常场景”“测试临时非卸载区卸料完整闭环”。旧“故障换车”入口已停用，不纳入核心回归。"
+        "当前已接入 TruckDriverBot + DispatchBot + EquipmentCheckBot。TestManager 可用命令：“运行全部核心回归测试”“测试正常装卸运输完整闭环”“测试GPS异常场景”“测试设备异常自动维修单”“测试临时非卸载区卸料完整闭环”。旧“故障换车”入口已停用，不纳入核心回归。"
     );
 
 
@@ -3156,7 +3371,7 @@ server.listen(
         );
 
         console.log(
-            "🤖 机器人测试控制中心 R0-11 已启动"
+            "🤖 机器人测试控制中心 R0-12 已启动"
         );
 
         console.log(
