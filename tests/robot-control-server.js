@@ -88,7 +88,7 @@ const {
 
 /*
 =========================================================
-R0-31 RobotControlServer
+R0-32 RobotControlServer
 机器人测试控制中心后台 + Playwright 执行器
 
 当前已接入：
@@ -5385,6 +5385,801 @@ async function runAllRoleEntryLinkageTest() {
 }
 
 
+async function runAGroupProductionClosedLoop() {
+
+    const botName =
+        "TestManager";
+
+
+    await ensureBrowser();
+
+
+    const suiteStartedAt =
+        Date.now();
+
+
+    const contexts =
+        [];
+
+
+    const driverResults =
+        [];
+
+
+    const syncedTrips =
+        [];
+
+
+    const excavatorResults =
+        [];
+
+
+    updateBot(
+        botName,
+        "running",
+        "正在运行A组生产联动闭环"
+    );
+
+
+    robotMessage(
+        botName,
+        "生产联动：车队长1 + 挖机2 + 汽车司机6 + TestManager；6名司机并行各完成1趟TEST运输。"
+    );
+
+
+    robotMessage(
+        botName,
+        "说明：当前系统仍是离线localStorage架构，本测试通过TEST同步总线把6个独立BrowserContext产生的趟次汇总到挖机端和调度端；不会写正式数据。"
+    );
+
+
+    try {
+
+        /*
+         * 阶段1：
+         * 6名汽车司机使用6个独立 BrowserContext，
+         * 真正执行 driver-work.html 的 GPS 装车→运输→卸载→完成一趟。
+         */
+        const driverJobs =
+            A_GROUP.excavators.flatMap(
+                (
+                    unit,
+                    unitIndex
+                ) =>
+                    unit.trucks.map(
+                        (
+                            truck,
+                            truckIndex
+                        ) => ({
+                            unit,
+                            unitIndex,
+                            truck,
+                            truckIndex
+                        })
+                    )
+            )
+            .map(
+                async (
+                    item,
+                    globalIndex
+                ) => {
+
+                    const {
+                        unit,
+                        unitIndex,
+                        truck,
+                        truckIndex
+                    } =
+                        item;
+
+
+                    const context =
+                        await browser.newContext({
+                            baseURL:
+                                BASE_URL,
+
+                            viewport: {
+                                width:
+                                    390,
+
+                                height:
+                                    844
+                            }
+                        });
+
+
+                    contexts.push(
+                        context
+                    );
+
+
+                    const page =
+                        await context.newPage();
+
+
+                    await installAGroupRobotContext(
+                        page,
+                        truck.driverId
+                    );
+
+
+                    const robotName =
+                        "TruckDriverBot-A" +
+                        String(
+                            unitIndex +
+                            1
+                        )
+                        .padStart(
+                            2,
+                            "0"
+                        ) +
+                        "-" +
+                        String(
+                            truckIndex +
+                            1
+                        );
+
+
+                    robotMessage(
+                        robotName,
+                        "开始1趟运输：司机=" +
+                        truck.driverId +
+                        "；车辆=" +
+                        truck.vehicleId +
+                        "；挖机=" +
+                        unit.excavatorId
+                    );
+
+
+                    const bot =
+                        new TruckDriverBot(
+                            page
+                        );
+
+
+                    bot.name =
+                        robotName;
+
+
+                    await bot.open();
+
+
+                    const result =
+                        await bot.testNormalTransportClosedLoop();
+
+
+                    const rows =
+                        await bot.readLocalStorage(
+                            "driverTripRecords"
+                        );
+
+
+                    const sourceRecord =
+                        Array.isArray(
+                            rows
+                        )
+                            ? rows[
+                                rows.length -
+                                1
+                            ]
+                            : null;
+
+
+                    if (
+                        !sourceRecord
+                    ) {
+
+                        throw new Error(
+                            robotName +
+                            "：完成运输后没有读取到趟次记录"
+                        );
+                    }
+
+
+                    const syncTripId =
+                        "TEST-A-TRIP-" +
+                        String(
+                            globalIndex +
+                            1
+                        )
+                        .padStart(
+                            3,
+                            "0"
+                        );
+
+
+                    const syncedRecord = {
+                        ...sourceRecord,
+
+                        tripId:
+                            syncTripId,
+
+                        id:
+                            syncTripId,
+
+                        recordId:
+                            syncTripId,
+
+                        driverId:
+                            truck.driverId,
+
+                        personId:
+                            truck.driverId,
+
+                        driverName:
+                            truck.driverName,
+
+                        vehicleId:
+                            truck.vehicleId,
+
+                        vehicleNumber:
+                            truck.vehicleId,
+
+                        truckId:
+                            truck.vehicleId,
+
+                        truckNumber:
+                            truck.vehicleId,
+
+                        taskId:
+                            unit.taskId,
+
+                        dispatchTaskId:
+                            unit.taskId,
+
+                        excavatorId:
+                            unit.excavatorId,
+
+                        excavatorNumber:
+                            unit.excavatorId,
+
+                        officialCountEligible:
+                            true,
+
+                        dispatchConfirmation:
+                            "confirmed",
+
+                        manualOverride:
+                            false,
+
+                        transportValidation:
+                            "gps_geofence_closed_loop",
+
+                        testFixture:
+                            true,
+
+                        testSyncBus:
+                            true
+                    };
+
+
+                    driverResults.push({
+                        robotName,
+
+                        driverId:
+                            truck.driverId,
+
+                        vehicleId:
+                            truck.vehicleId,
+
+                        excavatorId:
+                            unit.excavatorId,
+
+                        taskId:
+                            unit.taskId,
+
+                        localTripId:
+                            result.tripId,
+
+                        syncedTripId:
+                            syncTripId,
+
+                        result
+                    });
+
+
+                    syncedTrips.push(
+                        syncedRecord
+                    );
+
+
+                    robotMessage(
+                        robotName,
+                        "PASS：完成1趟；" +
+                        truck.vehicleId +
+                        " → " +
+                        unit.excavatorId
+                    );
+
+
+                    return result;
+                }
+            );
+
+
+        await Promise.all(
+            driverJobs
+        );
+
+
+        if (
+            driverResults.length !==
+                6 ||
+            syncedTrips.length !==
+                6
+        ) {
+
+            throw new Error(
+                "A组生产联动：司机趟次数量不正确，预期=6；实际=" +
+                syncedTrips.length
+            );
+        }
+
+
+        const uniqueDrivers =
+            new Set(
+                driverResults.map(
+                    item =>
+                        item.driverId
+                )
+            );
+
+
+        const uniqueVehicles =
+            new Set(
+                driverResults.map(
+                    item =>
+                        item.vehicleId
+                )
+            );
+
+
+        const uniqueTrips =
+            new Set(
+                syncedTrips.map(
+                    item =>
+                        item.tripId
+                )
+            );
+
+
+        if (
+            uniqueDrivers.size !==
+                6 ||
+            uniqueVehicles.size !==
+                6 ||
+            uniqueTrips.size !==
+                6
+        ) {
+
+            throw new Error(
+                "A组生产联动：司机、车辆或趟次存在重复绑定"
+            );
+        }
+
+
+        /*
+         * 阶段2：
+         * TEST同步总线把6条司机端真实产生的TEST趟次
+         * 投递给2个挖机独立上下文，各自验证应统计3趟。
+         */
+        for (
+            let unitIndex =
+                0;
+            unitIndex <
+                A_GROUP.excavators.length;
+            unitIndex++
+        ) {
+
+            const unit =
+                A_GROUP.excavators[
+                    unitIndex
+                ];
+
+
+            const context =
+                await browser.newContext({
+                    baseURL:
+                        BASE_URL,
+
+                    viewport: {
+                        width:
+                            390,
+
+                        height:
+                            844
+                    }
+                });
+
+
+            contexts.push(
+                context
+            );
+
+
+            const page =
+                await context.newPage();
+
+
+            await installAGroupRobotContext(
+                page,
+                unit.driverId
+            );
+
+
+            await page.addInitScript(
+                trips => {
+
+                    localStorage.setItem(
+                        "driverTripRecords",
+                        JSON.stringify(
+                            trips
+                        )
+                    );
+
+
+                    localStorage.setItem(
+                        "tripRecords",
+                        JSON.stringify(
+                            trips
+                        )
+                    );
+                },
+                syncedTrips
+            );
+
+
+            const robotName =
+                "ExcavatorBot-A" +
+                String(
+                    unitIndex +
+                    1
+                )
+                .padStart(
+                    2,
+                    "0"
+                );
+
+
+            const bot =
+                new ExcavatorBot(
+                    page,
+                    robotName
+                );
+
+
+            await bot.open();
+
+
+            await bot.assertAssignment({
+                driverId:
+                    unit.driverId,
+
+                excavatorId:
+                    unit.excavatorId,
+
+                taskId:
+                    unit.taskId,
+
+                truckIds:
+                    unit.trucks.map(
+                        item =>
+                            item.vehicleId
+                    )
+            });
+
+
+            const tripStats =
+                await bot.assertTripCount(
+                    3
+                );
+
+
+            excavatorResults.push({
+                excavatorId:
+                    unit.excavatorId,
+
+                totalTrips:
+                    tripStats.total
+            });
+
+
+            robotMessage(
+                robotName,
+                "PASS：挖机统计=3趟；3台跟随汽车各1趟。"
+            );
+        }
+
+
+        /*
+         * 阶段3：
+         * 车队长独立上下文接收同一批TEST同步总线数据，
+         * 使用正式 dispatch.html 统计逻辑验证总趟数=6。
+         */
+        const dispatchRole =
+            A_GROUP.supportRoles.find(
+                item =>
+                    item.position ===
+                        "车队长"
+            );
+
+
+        if (
+            !dispatchRole
+        ) {
+
+            throw new Error(
+                "A组生产联动：没有找到TEST车队长身份"
+            );
+        }
+
+
+        const dispatchContext =
+            await browser.newContext({
+                baseURL:
+                    BASE_URL,
+
+                viewport: {
+                    width:
+                        390,
+
+                    height:
+                        844
+                }
+            });
+
+
+        contexts.push(
+            dispatchContext
+        );
+
+
+        const dispatchPage =
+            await dispatchContext.newPage();
+
+
+        await installAGroupRobotContext(
+            dispatchPage,
+            dispatchRole.personId
+        );
+
+
+        await dispatchPage.addInitScript(
+            trips => {
+
+                localStorage.setItem(
+                    "driverTripRecords",
+                    JSON.stringify(
+                        trips
+                    )
+                );
+
+
+                localStorage.setItem(
+                    "tripRecords",
+                    JSON.stringify(
+                        trips
+                    )
+                );
+            },
+            syncedTrips
+        );
+
+
+        await dispatchPage.goto(
+            "dispatch.html",
+            {
+                waitUntil:
+                    "domcontentloaded"
+            }
+        );
+
+
+        await dispatchPage.waitForTimeout(
+            1000
+        );
+
+
+        const dispatchTotal =
+            Number(
+                (
+                    await dispatchPage
+                        .locator(
+                            "#dispatchTodayTotalTrips"
+                        )
+                        .textContent()
+                ) ||
+                "0"
+            ) || 0;
+
+
+        const dispatchWaste =
+            Number(
+                (
+                    await dispatchPage
+                        .locator(
+                            "#dispatchTodayWasteTrips"
+                        )
+                        .textContent()
+                ) ||
+                "0"
+            ) || 0;
+
+
+        if (
+            dispatchTotal !==
+                6
+        ) {
+
+            throw new Error(
+                "A组生产联动：调度总趟数不一致，预期=6；实际=" +
+                dispatchTotal
+            );
+        }
+
+
+        if (
+            dispatchWaste !==
+                6
+        ) {
+
+            throw new Error(
+                "A组生产联动：调度渣趟数不一致，预期=6；实际=" +
+                dispatchWaste
+            );
+        }
+
+
+        const excavatorTotal =
+            excavatorResults.reduce(
+                (
+                    total,
+                    item
+                ) =>
+                    total +
+                    item.totalTrips,
+                0
+            );
+
+
+        if (
+            excavatorTotal !==
+                6
+        ) {
+
+            throw new Error(
+                "A组生产联动：两台挖机汇总不一致，预期=6；实际=" +
+                excavatorTotal
+            );
+        }
+
+
+        const durationMs =
+            Date.now() -
+            suiteStartedAt;
+
+
+        robotMessage(
+            botName,
+            "A组生产联动汇总：6/6汽车司机 PASS；2/2挖机统计 PASS；车队长调度统计 PASS。"
+        );
+
+
+        robotMessage(
+            botName,
+            "趟次核对：TEST-A-EX-001=3；TEST-A-EX-002=3；挖机合计=6；调度总计=6。"
+        );
+
+
+        robotMessage(
+            botName,
+            "数据键核对：personId / vehicleId / excavatorId / taskId 全部一致。"
+        );
+
+
+        robotMessage(
+            botName,
+            "A组生产联动总耗时=" +
+            (
+                durationMs /
+                1000
+            )
+            .toFixed(
+                2
+            ) +
+            "s"
+        );
+
+
+        updateBot(
+            botName,
+            "pass",
+            "A组生产联动闭环全部通过"
+        );
+
+
+        return {
+            ok:
+                true,
+
+            action:
+                "a-group-production-closed-loop",
+
+            drivers:
+                driverResults,
+
+            excavators:
+                excavatorResults,
+
+            dispatch: {
+                totalTrips:
+                    dispatchTotal,
+
+                wasteTrips:
+                    dispatchWaste
+            },
+
+            durationMs
+        };
+
+
+    } catch (
+        error
+    ) {
+
+        const diagnosis =
+            buildFailureDiagnosis({
+                caseName:
+                    "A组生产联动闭环",
+
+                error,
+
+                suiteLabel:
+                    "多机器人生产联动"
+            });
+
+
+        const diagnosticPath =
+            saveFailureDiagnostic(
+                diagnosis
+            );
+
+
+        reportFailureDiagnosis(
+            botName,
+            diagnosis,
+            diagnosticPath
+        );
+
+
+        updateBot(
+            botName,
+            "fail",
+            error?.message ||
+            String(
+                error
+            )
+        );
+
+
+        throw error;
+
+
+    } finally {
+
+        await Promise.all(
+            contexts.map(
+                context =>
+                    context.close()
+                        .catch(
+                            () => {}
+                        )
+            )
+        );
+    }
+}
+
+
 async function runStabilityRegression(
     rounds =
         3
@@ -6924,6 +7719,26 @@ async function executeCommand({
         requestedBot ===
             "TestManager" &&
         (
+            /运行.*A组.*生产.*联动.*闭环/i.test(
+                command
+            ) ||
+            /A组.*生产.*闭环/i.test(
+                command
+            ) ||
+            /测试.*A组.*6.*汽车.*各.*1趟/i.test(
+                command
+            )
+        )
+    ) {
+
+        return await runAGroupProductionClosedLoop();
+    }
+
+
+    if (
+        requestedBot ===
+            "TestManager" &&
+        (
             /运行.*全岗位.*入口.*联动/i.test(
                 command
             ) ||
@@ -7917,7 +8732,7 @@ server.listen(
         );
 
         console.log(
-            "🤖 机器人测试控制中心 R0-31 已启动"
+            "🤖 机器人测试控制中心 R0-32 已启动"
         );
 
         console.log(
