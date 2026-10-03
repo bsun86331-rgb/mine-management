@@ -4191,6 +4191,298 @@ async function runMaintenanceWarehousePartsLinkageTest() {
 }
 
 
+async function runMaintenanceWarehouseFullClosedLoopTest() {
+
+    const botName =
+        "TestManager";
+
+
+    try {
+
+        updateBot(
+            botName,
+            "running",
+            "正在执行维修 + 配件出库 + 验收归档完整闭环"
+        );
+
+
+        robotMessage(
+            botName,
+            "步骤 1/3：先运行维修管理 + 维修员 + 库房管理三岗位配件联动，使原工单恢复 working。"
+        );
+
+
+        const linkage =
+            await runMaintenanceWarehousePartsLinkageTest();
+
+
+        const orderId =
+            String(
+                linkage.orderId
+            );
+
+
+        robotMessage(
+            botName,
+            "步骤 2/3：维修员继续完成原 TEST 工单并提交维修管理验收。"
+        );
+
+
+        const workerBot =
+            await getMaintenanceWorkerBot();
+
+
+        await workerBot.open();
+
+
+        const finished =
+            await workerBot.finishLatestWorkingTestRepair();
+
+
+        if (
+            String(
+                finished.orderId
+            ) !==
+                orderId
+        ) {
+
+            throw new Error(
+                "维修库房完整闭环：维修员完成的不是原三岗位联动工单"
+            );
+        }
+
+
+        if (
+            finished.orderStatus !==
+                "waiting_inspection" ||
+            finished.requestStatus !==
+                "waiting_inspection"
+        ) {
+
+            throw new Error(
+                "维修库房完整闭环：维修完成后没有进入 waiting_inspection"
+            );
+        }
+
+
+        robotMessage(
+            botName,
+            "维修员提交验收通过：" +
+            finished.orderId +
+            "；工单=" +
+            finished.orderStatus +
+            "；申请=" +
+            finished.requestStatus
+        );
+
+
+        robotMessage(
+            botName,
+            "步骤 3/3：维修管理验收通过、保存费用单、释放工位并恢复设备 available。"
+        );
+
+
+        const managerBot =
+            await getMaintenanceManagerBot();
+
+
+        await managerBot.open();
+
+
+        const completed =
+            await managerBot.inspectAndCompleteLatestTestRepair();
+
+
+        if (
+            String(
+                completed.orderId
+            ) !==
+                orderId
+        ) {
+
+            throw new Error(
+                "维修库房完整闭环：维修管理验收的不是原三岗位联动工单"
+            );
+        }
+
+
+        if (
+            completed.orderStatus !==
+                "completed" ||
+            completed.requestStatus !==
+                "completed" ||
+            completed.bayStatus !==
+                "free" ||
+            completed.equipmentStatus !==
+                "available"
+        ) {
+
+            throw new Error(
+                "维修库房完整闭环：最终归档状态不完整"
+            );
+        }
+
+
+        const warehouse =
+            await getWarehouseBot();
+
+
+        const materialRequests =
+            await warehouse.readLocalStorage(
+                "materialRequests"
+            );
+
+
+        const materialRequest =
+            Array.isArray(
+                materialRequests
+            )
+                ? materialRequests.find(
+                    item =>
+                        String(
+                            item.requestId ||
+                            ""
+                        ) ===
+                            String(
+                                linkage.warehouseRequestId ||
+                                ""
+                            )
+                )
+                : null;
+
+
+        if (
+            !materialRequest ||
+            materialRequest.status !==
+                "issued"
+        ) {
+
+            throw new Error(
+                "维修库房完整闭环：归档后原配件领用单没有保持 issued"
+            );
+        }
+
+
+        const materials =
+            await warehouse.readLocalStorage(
+                "warehouseMaterials"
+            );
+
+
+        const material =
+            Array.isArray(
+                materials
+            )
+                ? materials.find(
+                    item =>
+                        String(
+                            item.materialId ||
+                            ""
+                        ) ===
+                            "TEST-MATERIAL-001"
+                )
+                : null;
+
+
+        if (
+            !material ||
+            Number(
+                material.availableQty ||
+                0
+            ) !==
+                4
+        ) {
+
+            throw new Error(
+                "维修库房完整闭环：最终 TEST 配件库存不是 4"
+            );
+        }
+
+
+        updateBot(
+            botName,
+            "pass",
+            "维修 + 库房配件 + 验收归档完整闭环通过"
+        );
+
+
+        robotMessage(
+            botName,
+            "完整闭环汇总：派工 → 开工 → waiting_parts → 库房出库 5→4 → 恢复维修 → 提交验收 → 验收归档 → 工位 free → 设备 available。"
+        );
+
+
+        return {
+            ok:
+                true,
+
+            action:
+                "maintenance-warehouse-full-closed-loop",
+
+            orderId,
+
+            materialRequestId:
+                materialRequest.requestId,
+
+            materialRequestStatus:
+                materialRequest.status,
+
+            finalStock:
+                Number(
+                    material.availableQty ||
+                    0
+                ),
+
+            orderStatus:
+                completed.orderStatus,
+
+            requestStatus:
+                completed.requestStatus,
+
+            bayStatus:
+                completed.bayStatus,
+
+            equipmentStatus:
+                completed.equipmentStatus,
+
+            costId:
+                completed.costId,
+
+            totalCost:
+                completed.totalCost
+        };
+
+
+    } catch (
+        error
+    ) {
+
+        const message =
+            error?.message ||
+            String(
+                error
+            );
+
+
+        updateBot(
+            botName,
+            "fail",
+            message
+        );
+
+
+        robotMessage(
+            botName,
+            "维修 + 库房配件 + 验收归档完整闭环失败：" +
+            message
+        );
+
+
+        throw error;
+    }
+}
+
+
 async function runTemporaryUnloadRejectionTest() {
 
     const botName =
@@ -9197,6 +9489,26 @@ async function executeCommand({
     ) {
 
         return await runTemporaryUnloadRejectionTest();
+    }
+
+
+    if (
+        requestedBot ===
+            "TestManager" &&
+        (
+            /运行.*维修.*库房.*完整.*闭环/i.test(
+                command
+            ) ||
+            /测试.*维修.*配件.*验收.*归档/i.test(
+                command
+            ) ||
+            /维修.*库房.*验收.*完整/i.test(
+                command
+            )
+        )
+    ) {
+
+        return await runMaintenanceWarehouseFullClosedLoopTest();
     }
 
 
