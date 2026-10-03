@@ -65,7 +65,7 @@ const {
 
 /*
 =========================================================
-R0-27 RobotControlServer
+R0-28 RobotControlServer
 机器人测试控制中心后台 + Playwright 执行器
 
 当前已接入：
@@ -4456,6 +4456,280 @@ async function runFastRegressionTests(
 }
 
 
+async function runStabilityRegression(
+    rounds =
+        3
+) {
+
+    const botName =
+        "TestManager";
+
+
+    const safeRounds =
+        Math.max(
+            2,
+            Math.min(
+                Number(
+                    rounds
+                ) ||
+                3,
+                5
+            )
+        );
+
+
+    const suiteStartedAt =
+        Date.now();
+
+
+    const results =
+        [];
+
+
+    updateBot(
+        botName,
+        "running",
+        "正在运行稳定性回归"
+    );
+
+
+    robotMessage(
+        botName,
+        "稳定性回归将连续执行快速回归 " +
+        safeRounds +
+        " 轮，用于发现偶发失败和状态残留。"
+    );
+
+
+    for (
+        let index =
+            1;
+        index <=
+            safeRounds;
+        index++
+    ) {
+
+        const roundStartedAt =
+            Date.now();
+
+
+        robotMessage(
+            botName,
+            "稳定性回归第 " +
+            index +
+            "/" +
+            safeRounds +
+            " 轮开始。"
+        );
+
+
+        try {
+
+            const result =
+                await runFastRegressionTests();
+
+
+            const durationMs =
+                Date.now() -
+                roundStartedAt;
+
+
+            results.push({
+                round:
+                    index,
+
+                ok:
+                    true,
+
+                durationMs,
+
+                result
+            });
+
+
+            robotMessage(
+                botName,
+                "稳定性回归第 " +
+                index +
+                " 轮通过；耗时=" +
+                (
+                    durationMs /
+                    1000
+                )
+                .toFixed(
+                    2
+                ) +
+                "s"
+            );
+
+
+        } catch (
+            error
+        ) {
+
+            const message =
+                error?.message ||
+                String(
+                    error
+                );
+
+
+            const durationMs =
+                Date.now() -
+                roundStartedAt;
+
+
+            results.push({
+                round:
+                    index,
+
+                ok:
+                    false,
+
+                durationMs,
+
+                error:
+                    message
+            });
+
+
+            robotMessage(
+                botName,
+                "稳定性回归第 " +
+                index +
+                " 轮失败；" +
+                message
+            );
+        }
+    }
+
+
+    const passed =
+        results.filter(
+            item =>
+                item.ok
+        ).length;
+
+
+    const failed =
+        results.length -
+        passed;
+
+
+    const totalDurationMs =
+        Date.now() -
+        suiteStartedAt;
+
+
+    const averageDurationMs =
+        results.length
+            ? Math.round(
+                results.reduce(
+                    (
+                        sum,
+                        item
+                    ) =>
+                        sum +
+                        Number(
+                            item.durationMs ||
+                            0
+                        ),
+                    0
+                ) /
+                results.length
+            )
+            : 0;
+
+
+    robotMessage(
+        botName,
+        "稳定性回归汇总：" +
+        passed +
+        "/" +
+        results.length +
+        " 轮通过；平均每轮=" +
+        (
+            averageDurationMs /
+            1000
+        )
+        .toFixed(
+            2
+        ) +
+        "s；总耗时=" +
+        (
+            totalDurationMs /
+            1000
+        )
+        .toFixed(
+            2
+        ) +
+        "s"
+    );
+
+
+    if (
+        failed
+    ) {
+
+        updateBot(
+            botName,
+            "fail",
+            "稳定性回归发现 " +
+            failed +
+            " 轮失败"
+        );
+
+
+        throw new Error(
+            "稳定性回归未完全稳定：失败轮次 " +
+            results
+                .filter(
+                    item =>
+                        !item.ok
+                )
+                .map(
+                    item =>
+                        item.round
+                )
+                .join(
+                    "、"
+                )
+        );
+    }
+
+
+    updateBot(
+        botName,
+        "pass",
+        "稳定性回归全部通过：" +
+        passed +
+        "/" +
+        results.length
+    );
+
+
+    return {
+        ok:
+            true,
+
+        action:
+            "stability-regression",
+
+        rounds:
+            safeRounds,
+
+        passed,
+
+        averageDurationMs,
+
+        durationMs:
+            totalDurationMs,
+
+        results
+    };
+}
+
+
 async function runReleaseGoldenRegression() {
 
     const botName =
@@ -5721,6 +5995,28 @@ async function executeCommand({
         requestedBot ===
             "TestManager" &&
         (
+            /运行.*稳定性.*回归/i.test(
+                command
+            ) ||
+            /稳定性.*测试/i.test(
+                command
+            ) ||
+            /连续.*快速.*回归/i.test(
+                command
+            )
+        )
+    ) {
+
+        return await runStabilityRegression(
+            3
+        );
+    }
+
+
+    if (
+        requestedBot ===
+            "TestManager" &&
+        (
             /运行.*发布前.*黄金.*回归/i.test(
                 command
             ) ||
@@ -6652,7 +6948,7 @@ server.listen(
         );
 
         console.log(
-            "🤖 机器人测试控制中心 R0-27 已启动"
+            "🤖 机器人测试控制中心 R0-28 已启动"
         );
 
         console.log(
