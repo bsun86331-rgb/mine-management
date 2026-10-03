@@ -2154,6 +2154,374 @@ class DispatchBot {
     }
 
 
+    async seedAuxiliaryCompletionFeedbackFromResults(
+        results
+    ) {
+
+        const safeResults =
+            Array.isArray(
+                results
+            )
+                ? results
+                : [];
+
+
+        await this.page.evaluate(
+            rows => {
+
+                const now =
+                    new Date()
+                        .toISOString();
+
+
+                const auxiliary =
+                    rows
+                        .filter(
+                            item =>
+                                item &&
+                                item.position !==
+                                    "加油车司机"
+                        )
+                        .map(
+                            item => ({
+                                workRecordId:
+                                    item.workRecordId ||
+                                    (
+                                        "TEST-AUX-RESULT-" +
+                                        String(
+                                            item.taskId ||
+                                            ""
+                                        )
+                                    ),
+
+                                taskId:
+                                    item.taskId,
+
+                                personId:
+                                    item.personId,
+
+                                personName:
+                                    item.personName ||
+                                    item.position,
+
+                                position:
+                                    item.position,
+
+                                vehicleId:
+                                    item.vehicleId,
+
+                                vehicleNumber:
+                                    item.vehicleId,
+
+                                vehicleType:
+                                    String(
+                                        item.position ||
+                                        ""
+                                    )
+                                    .replace(
+                                        "司机",
+                                        ""
+                                    ),
+
+                                work:
+                                    item.work ||
+                                    "TEST-辅助车辆已完成作业",
+
+                                status:
+                                    "completed",
+
+                                completedAt:
+                                    item.completedAt ||
+                                    now,
+
+                                testFixture:
+                                    true
+                            })
+                        );
+
+
+                const fuel =
+                    rows
+                        .filter(
+                            item =>
+                                item &&
+                                item.position ===
+                                    "加油车司机"
+                        )
+                        .map(
+                            item => ({
+                                fuelId:
+                                    item.fuelId ||
+                                    (
+                                        "TEST-FUEL-RESULT-" +
+                                        String(
+                                            item.taskId ||
+                                            ""
+                                        )
+                                    ),
+
+                                requestId:
+                                    item.taskId,
+
+                                taskId:
+                                    item.taskId,
+
+                                personId:
+                                    item.personId,
+
+                                personName:
+                                    item.position,
+
+                                driverName:
+                                    item.position,
+
+                                vehicleId:
+                                    item.vehicleId,
+
+                                vehicleNumber:
+                                    item.vehicleId,
+
+                                amount:
+                                    Number(
+                                        item.amount ||
+                                        0
+                                    ),
+
+                                quantity:
+                                    Number(
+                                        item.amount ||
+                                        0
+                                    ),
+
+                                completedAt:
+                                    now,
+
+                                createdAt:
+                                    now,
+
+                                confirmationStatus:
+                                    item.confirmationStatus ||
+                                    "confirmed",
+
+                                testFixture:
+                                    true
+                            })
+                        );
+
+
+                localStorage.setItem(
+                    "auxiliaryWorkRecords",
+                    JSON.stringify(
+                        auxiliary
+                    )
+                );
+
+
+                localStorage.setItem(
+                    "fuelRecords",
+                    JSON.stringify(
+                        fuel
+                    )
+                );
+            },
+            safeResults
+        );
+
+
+        await this.page.reload({
+            waitUntil:
+                "domcontentloaded"
+        });
+
+
+        await this.page.waitForTimeout(
+            400
+        );
+
+
+        return true;
+    }
+
+
+    async verifyAuxiliaryCompletionFeedbackFromResults(
+        results
+    ) {
+
+        const safeResults =
+            Array.isArray(
+                results
+            )
+                ? results
+                : [];
+
+
+        const countText =
+            String(
+                await this.page
+                    .locator(
+                        "#auxiliaryCompletionCount"
+                    )
+                    .textContent()
+            )
+            .trim();
+
+
+        const numericCount =
+            Number(
+                countText.replace(
+                    /[^0-9]/g,
+                    ""
+                )
+            );
+
+
+        const listText =
+            String(
+                await this.page
+                    .locator(
+                        "#auxiliaryCompletionList"
+                    )
+                    .innerText()
+            );
+
+
+        const missing = [];
+
+
+        safeResults.forEach(
+            item => {
+
+                const vehicleId =
+                    String(
+                        item.vehicleId ||
+                        ""
+                    );
+
+
+                const taskId =
+                    String(
+                        item.taskId ||
+                        ""
+                    );
+
+
+                if (
+                    vehicleId &&
+                    !listText.includes(
+                        vehicleId
+                    )
+                ) {
+
+                    missing.push(
+                        "车辆 " +
+                        vehicleId
+                    );
+                }
+
+
+                if (
+                    taskId &&
+                    !listText.includes(
+                        taskId
+                    )
+                ) {
+
+                    missing.push(
+                        "任务 " +
+                        taskId
+                    );
+                }
+            }
+        );
+
+
+        const fuelResult =
+            safeResults.find(
+                item =>
+                    item.position ===
+                        "加油车司机"
+            );
+
+
+        if (
+            fuelResult
+        ) {
+
+            const expectedFuelText =
+                "完成加油 " +
+                Number(
+                    fuelResult.amount ||
+                    0
+                )
+                .toFixed(
+                    1
+                ) +
+                " L";
+
+
+            if (
+                !listText.includes(
+                    expectedFuelText
+                )
+            ) {
+
+                missing.push(
+                    expectedFuelText
+                );
+            }
+        }
+
+
+        if (
+            missing.length
+        ) {
+
+            throw new Error(
+                "DispatchBot：实际辅助车辆结果回传缺少：" +
+                missing.join(
+                    "、"
+                )
+            );
+        }
+
+
+        if (
+            numericCount <
+                safeResults.length
+        ) {
+
+            throw new Error(
+                "DispatchBot：完成回传数量不足，预期至少=" +
+                safeResults.length +
+                "；实际=" +
+                numericCount
+            );
+        }
+
+
+        return {
+            count:
+                numericCount,
+
+            expectedCount:
+                safeResults.length,
+
+            listText,
+
+            allVehiclesVisible:
+                true,
+
+            allTasksVisible:
+                true,
+
+            hasFuel:
+                Boolean(
+                    fuelResult
+                )
+        };
+    }
+
+
     async verifyAuxiliaryCompletionFeedbackView() {
 
         const countText =
