@@ -422,6 +422,17 @@ const COVERAGE_MODULES = [
     },
     {
         key:
+            "management-admin",
+
+        label:
+            "中层 / 管理员",
+
+        cases: [
+            "中层工作台与管理员资料中心批量回归"
+        ]
+    },
+    {
+        key:
             "transport",
 
         label:
@@ -8376,6 +8387,826 @@ async function runAGroupMultiRobotLinkageTest() {
 }
 
 
+async function runManagementAdminBatchRegressionTest() {
+
+    const botName =
+        "TestManager";
+
+
+    const managementCases = [
+        {
+            position:
+                "测量员",
+
+            expected: [
+                "report-center",
+                "material-request",
+                "survey",
+                "production",
+                "attendance"
+            ]
+        },
+        {
+            position:
+                "安全员",
+
+            expected: [
+                "report-center",
+                "material-request",
+                "safety",
+                "attendance"
+            ]
+        },
+        {
+            position:
+                "统计",
+
+            expected: [
+                "report-center",
+                "material-request",
+                "production",
+                "attendance",
+                "ranking",
+                "maintenance-cost",
+                "fuel-report"
+            ]
+        },
+        {
+            position:
+                "会计",
+
+            expected: [
+                "report-center",
+                "material-request",
+                "payroll",
+                "finance",
+                "maintenance-cost",
+                "fuel-report"
+            ]
+        },
+        {
+            position:
+                "后勤",
+
+            expected: [
+                "report-center",
+                "warehouse",
+                "material-request",
+                "attendance"
+            ]
+        }
+    ];
+
+
+    const contexts =
+        [];
+
+
+    try {
+
+        await ensureBrowser();
+
+
+        updateBot(
+            botName,
+            "running",
+            "正在执行人员 + 中层管理 + 管理员批量回归"
+        );
+
+
+        robotMessage(
+            botName,
+            "批量步骤 1/3：验证5类中层岗位正式工作台权限、真实入口和待办读取。"
+        );
+
+
+        for (
+            let index = 0;
+            index < managementCases.length;
+            index += 1
+        ) {
+
+            const item =
+                managementCases[
+                    index
+                ];
+
+
+            const personId =
+                "TEST-MGMT-" +
+                String(
+                    index +
+                    1
+                )
+                .padStart(
+                    2,
+                    "0"
+                );
+
+
+            const context =
+                await browser.newContext({
+                    baseURL:
+                        BASE_URL,
+
+                    viewport: {
+                        width:
+                            1280,
+
+                        height:
+                            900
+                    }
+                });
+
+
+            contexts.push(
+                context
+            );
+
+
+            const page =
+                await context.newPage();
+
+
+            await page.addInitScript(
+                ({
+                    personId,
+                    position
+                }) => {
+
+                    localStorage.setItem(
+                        "personnelRecords",
+                        JSON.stringify([
+                            {
+                                personId,
+                                employeeNo:
+                                    personId,
+
+                                name:
+                                    "TEST-" +
+                                    position,
+
+                                position,
+
+                                team:
+                                    "后勤办公组",
+
+                                status:
+                                    "active",
+
+                                approvalStatus:
+                                    "approved",
+
+                                personnelStatus:
+                                    "在职可用",
+
+                                enabled:
+                                    true,
+
+                                testFixture:
+                                    true
+                            }
+                        ])
+                    );
+
+
+                    localStorage.setItem(
+                        "currentPersonId",
+                        personId
+                    );
+
+
+                    localStorage.setItem(
+                        "selectedPosition",
+                        position
+                    );
+
+
+                    localStorage.setItem(
+                        "materialRequests",
+                        JSON.stringify([])
+                    );
+
+
+                    localStorage.setItem(
+                        "attendanceRecords",
+                        JSON.stringify([])
+                    );
+
+
+                    localStorage.setItem(
+                        "teamTransferRequests",
+                        JSON.stringify([])
+                    );
+
+
+                    localStorage.setItem(
+                        "maintenanceRequests",
+                        JSON.stringify([])
+                    );
+                },
+                {
+                    personId,
+                    position:
+                        item.position
+                }
+            );
+
+
+            await page.goto(
+                "management.html",
+                {
+                    waitUntil:
+                        "domcontentloaded"
+                }
+            );
+
+
+            await page.waitForTimeout(
+                200
+            );
+
+
+            const snapshot =
+                await page.evaluate(
+                    () => {
+
+                        const visibleModules =
+                            [
+                                ...document.querySelectorAll(
+                                    "[data-module]"
+                                )
+                            ]
+                            .filter(
+                                element =>
+                                    !element.classList.contains(
+                                        "hidden"
+                                    )
+                            )
+                            .map(
+                                element =>
+                                    element.dataset.module
+                            )
+                            .sort();
+
+
+                        const visibleButtons =
+                            [
+                                ...document.querySelectorAll(
+                                    "[data-module]:not(.hidden) button"
+                                )
+                            ]
+                            .map(
+                                button =>
+                                    button.getAttribute(
+                                        "onclick"
+                                    ) ||
+                                    ""
+                            );
+
+
+                        return {
+                            path:
+                                location.pathname
+                                    .split(
+                                        "/"
+                                    )
+                                    .pop(),
+
+                            visibleModules,
+
+                            placeholderButtons:
+                                visibleButtons.filter(
+                                    text =>
+                                        /planned\s*\(/i.test(
+                                            text
+                                        )
+                                ),
+
+                            todoCount:
+                                Number(
+                                    document.getElementById(
+                                        "todoCount"
+                                    )?.textContent ||
+                                    0
+                                )
+                        };
+                    }
+                );
+
+
+            const expected =
+                [
+                    ...item.expected
+                ]
+                .sort();
+
+
+            if (
+                snapshot.path !==
+                    "management.html" ||
+                JSON.stringify(
+                    snapshot.visibleModules
+                ) !==
+                    JSON.stringify(
+                        expected
+                    )
+            ) {
+
+                throw new Error(
+                    "中层工作台批量回归：" +
+                    item.position +
+                    " 模块权限不一致，预期=" +
+                    expected.join(
+                        ","
+                    ) +
+                    "；实际=" +
+                    snapshot.visibleModules.join(
+                        ","
+                    )
+                );
+            }
+
+
+            if (
+                snapshot.placeholderButtons.length
+            ) {
+
+                throw new Error(
+                    "中层工作台批量回归：" +
+                    item.position +
+                    " 仍存在 planned 占位按钮"
+                );
+            }
+
+
+            if (
+                snapshot.todoCount <
+                    1
+            ) {
+
+                throw new Error(
+                    "中层工作台批量回归：" +
+                    item.position +
+                    " 没有生成岗位待办"
+                );
+            }
+
+
+            await context.close();
+        }
+
+
+        robotMessage(
+            botName,
+            "批量步骤 2/3：验证管理员基础资料中心必须经过管理员二次验证。"
+        );
+
+
+        const unauthorizedContext =
+            await browser.newContext({
+                baseURL:
+                    BASE_URL
+            });
+
+
+        contexts.push(
+            unauthorizedContext
+        );
+
+
+        const unauthorizedPage =
+            await unauthorizedContext.newPage();
+
+
+        unauthorizedPage.on(
+            "dialog",
+            async dialog =>
+                await dialog.dismiss()
+        );
+
+
+        await unauthorizedPage.goto(
+            "admin-master.html",
+            {
+                waitUntil:
+                    "domcontentloaded"
+            }
+        );
+
+
+        await unauthorizedPage.waitForURL(
+            url =>
+                url.pathname.endsWith(
+                    "/index.html"
+                ),
+            {
+                timeout:
+                    10000
+            }
+        );
+
+
+        await unauthorizedContext.close();
+
+
+        robotMessage(
+            botName,
+            "批量步骤 3/3：验证管理员新增/停用/恢复人员时岗位和状态字段保持统一。"
+        );
+
+
+        const adminId =
+            "TEST-ADMIN-MASTER-001";
+
+
+        const personId =
+            "TEST-ADMIN-MASTER-PERSON-001";
+
+
+        const adminContext =
+            await browser.newContext({
+                baseURL:
+                    BASE_URL,
+
+                viewport: {
+                    width:
+                        1280,
+
+                    height:
+                        900
+                }
+            });
+
+
+        contexts.push(
+            adminContext
+        );
+
+
+        const adminPage =
+            await adminContext.newPage();
+
+
+        await adminPage.addInitScript(
+            ({
+                adminId
+            }) => {
+
+                localStorage.setItem(
+                    "personnelRecords",
+                    JSON.stringify([
+                        {
+                            personId:
+                                adminId,
+
+                            employeeNo:
+                                adminId,
+
+                            name:
+                                "TEST-管理员",
+
+                            position:
+                                "管理员",
+
+                            team:
+                                "后勤办公组",
+
+                            status:
+                                "active",
+
+                            approvalStatus:
+                                "approved",
+
+                            personnelStatus:
+                                "在职可用",
+
+                            enabled:
+                                true,
+
+                            testFixture:
+                                true
+                        }
+                    ])
+                );
+
+
+                localStorage.setItem(
+                    "adminPersonId",
+                    adminId
+                );
+
+
+                sessionStorage.setItem(
+                    "managementSession",
+                    JSON.stringify({
+                        verified:
+                            true,
+
+                        personId:
+                            adminId,
+
+                        position:
+                            "管理员",
+
+                        verifiedAt:
+                            Date.now(),
+
+                        expiresAt:
+                            Date.now() +
+                            60 *
+                            60 *
+                            1000,
+
+                        testFixture:
+                            true
+                    })
+                );
+            },
+            {
+                adminId
+            }
+        );
+
+
+        await adminPage.goto(
+            "admin-master.html",
+            {
+                waitUntil:
+                    "domcontentloaded"
+            }
+        );
+
+
+        await adminPage.waitForTimeout(
+            250
+        );
+
+
+        await adminPage.evaluate(
+            ({
+                personId
+            }) => {
+
+                uid =
+                    () =>
+                        personId;
+
+
+                openPersonnelModal();
+
+
+                document.getElementById(
+                    "personnelName"
+                ).value =
+                    "TEST-中层人员";
+
+
+                document.getElementById(
+                    "personnelPhone"
+                ).value =
+                    "13900000888";
+
+
+                document.getElementById(
+                    "personnelPosition"
+                ).value =
+                    "测量员";
+
+
+                document.getElementById(
+                    "personnelTeam"
+                ).value =
+                    "后勤办公组";
+
+
+                document.getElementById(
+                    "personnelStatus"
+                ).value =
+                    "pending";
+
+
+                savePersonnel();
+            },
+            {
+                personId
+            }
+        );
+
+
+        let record =
+            await adminPage.evaluate(
+                personId => {
+
+                    const rows =
+                        JSON.parse(
+                            localStorage.getItem(
+                                "personnelRecords"
+                            ) ||
+                            "[]"
+                        );
+
+
+                    return rows.find(
+                        item =>
+                            item.personId ===
+                                personId
+                    ) ||
+                    null;
+                },
+                personId
+            );
+
+
+        if (
+            !record ||
+            record.position !==
+                "测量员" ||
+            record.status !==
+                "pending" ||
+            record.approvalStatus !==
+                "pending" ||
+            record.personnelStatus !==
+                "待审核"
+        ) {
+
+            throw new Error(
+                "管理员资料中心批量回归：新增待审核人员字段不一致"
+            );
+        }
+
+
+        await adminPage.evaluate(
+            personId =>
+                togglePersonnelDisabled(
+                    personId
+                ),
+            personId
+        );
+
+
+        record =
+            await adminPage.evaluate(
+                personId =>
+                    JSON.parse(
+                        localStorage.getItem(
+                            "personnelRecords"
+                        ) ||
+                        "[]"
+                    )
+                    .find(
+                        item =>
+                            item.personId ===
+                                personId
+                    ) ||
+                    null,
+                personId
+            );
+
+
+        if (
+            record.status !==
+                "disabled" ||
+            record.personnelStatus !==
+                "停用" ||
+            record.enabled !==
+                false
+        ) {
+
+            throw new Error(
+                "管理员资料中心批量回归：停用人员状态字段不一致"
+            );
+        }
+
+
+        await adminPage.evaluate(
+            personId =>
+                togglePersonnelDisabled(
+                    personId
+                ),
+            personId
+        );
+
+
+        record =
+            await adminPage.evaluate(
+                personId =>
+                    JSON.parse(
+                        localStorage.getItem(
+                            "personnelRecords"
+                        ) ||
+                        "[]"
+                    )
+                    .find(
+                        item =>
+                            item.personId ===
+                                personId
+                    ) ||
+                    null,
+                personId
+            );
+
+
+        if (
+            record.status !==
+                "active" ||
+            record.approvalStatus !==
+                "approved" ||
+            record.personnelStatus !==
+                "在职可用" ||
+            record.enabled !==
+                true
+        ) {
+
+            throw new Error(
+                "管理员资料中心批量回归：恢复人员状态字段不一致"
+            );
+        }
+
+
+        await adminContext.close();
+
+
+        updateBot(
+            botName,
+            "pass",
+            "人员 + 中层管理 + 管理员批量回归通过"
+        );
+
+
+        robotMessage(
+            botName,
+            "批量回归通过：5类中层岗位工作台权限/真实入口正常；管理员基础资料中心禁止未验证访问；人员岗位与 pending/disabled/active 状态字段保持一致。"
+        );
+
+
+        return {
+            ok:
+                true,
+
+            action:
+                "management-admin-batch-regression",
+
+            managementPositions:
+                managementCases.length,
+
+            adminAccessGuard:
+                true,
+
+            personnelStateConsistency:
+                true
+        };
+
+
+    } catch (
+        error
+    ) {
+
+        const message =
+            error?.message ||
+            String(
+                error
+            );
+
+
+        updateBot(
+            botName,
+            "fail",
+            message
+        );
+
+
+        robotMessage(
+            botName,
+            "人员 + 中层管理 + 管理员批量回归失败：" +
+            message
+        );
+
+
+        throw error;
+
+
+    } finally {
+
+        for (
+            const context
+            of contexts
+        ) {
+
+            if (
+                context
+            ) {
+
+                await context.close()
+                    .catch(
+                        () => {}
+                    );
+            }
+        }
+    }
+}
+
+
 async function runPersonnelRejectResubmitApprovalTest() {
 
     const botName =
@@ -12531,6 +13362,13 @@ async function runAllCoreRegressionTests() {
 
 
     await runCase(
+        "中层工作台与管理员资料中心批量回归",
+        async () =>
+            await runManagementAdminBatchRegressionTest()
+    );
+
+
+    await runCase(
         "正常装卸运输完整闭环",
         async () =>
             await runNormalTransportClosedLoopTest()
@@ -15518,6 +16356,26 @@ async function executeCommand({
     ) {
 
         return await runCurrentTestReport();
+    }
+
+
+    if (
+        requestedBot ===
+            "TestManager" &&
+        (
+            /运行.*人员.*中层.*管理员.*批量.*回归/i.test(
+                command
+            ) ||
+            /测试.*中层工作台.*管理员资料/i.test(
+                command
+            ) ||
+            /运行.*第一批.*正式系统.*回归/i.test(
+                command
+            )
+        )
+    ) {
+
+        return await runManagementAdminBatchRegressionTest();
     }
 
 
