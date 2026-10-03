@@ -65,7 +65,7 @@ const {
 
 /*
 =========================================================
-R0-26 RobotControlServer
+R0-27 RobotControlServer
 机器人测试控制中心后台 + Playwright 执行器
 
 当前已接入：
@@ -4456,6 +4456,379 @@ async function runFastRegressionTests(
 }
 
 
+async function runReleaseGoldenRegression() {
+
+    const botName =
+        "TestManager";
+
+
+    const results =
+        [];
+
+
+    const suiteStartedAt =
+        Date.now();
+
+
+    const runGoldenCase =
+        async (
+            name,
+            runner
+        ) => {
+
+            const caseStartedAt =
+                Date.now();
+
+
+            robotMessage(
+                botName,
+                "发布前黄金回归：" +
+                name
+            );
+
+
+            try {
+
+                const result =
+                    await runner();
+
+
+                const durationMs =
+                    Date.now() -
+                    caseStartedAt;
+
+
+                results.push({
+                    name,
+                    ok:
+                        true,
+
+                    durationMs,
+                    result
+                });
+
+
+                robotMessage(
+                    botName,
+                    "黄金回归通过：" +
+                    name +
+                    "；耗时=" +
+                    (
+                        durationMs /
+                        1000
+                    )
+                    .toFixed(
+                        2
+                    ) +
+                    "s"
+                );
+
+
+            } catch (
+                error
+            ) {
+
+                const message =
+                    error?.message ||
+                    String(
+                        error
+                    );
+
+
+                const durationMs =
+                    Date.now() -
+                    caseStartedAt;
+
+
+                const diagnosis =
+                    buildFailureDiagnosis({
+                        caseName:
+                            name,
+
+                        error,
+
+                        suiteLabel:
+                            "发布前黄金回归"
+                    });
+
+
+                const diagnosticPath =
+                    saveFailureDiagnostic(
+                        diagnosis
+                    );
+
+
+                reportFailureDiagnosis(
+                    botName,
+                    diagnosis,
+                    diagnosticPath
+                );
+
+
+                results.push({
+                    name,
+                    ok:
+                        false,
+
+                    durationMs,
+
+                    error:
+                        message,
+
+                    diagnosis,
+
+                    diagnosticPath
+                });
+
+
+                robotMessage(
+                    botName,
+                    "黄金回归失败：" +
+                    name +
+                    "；" +
+                    message
+                );
+            }
+        };
+
+
+    updateBot(
+        botName,
+        "running",
+        "正在运行发布前黄金回归"
+    );
+
+
+    /*
+     * 黄金回归目标：
+     * - 快速覆盖高频状态分支
+     * - 再跑少量真正跨模块的 E2E
+     * - 避免完整13条全部重复执行
+     */
+
+
+    await runGoldenCase(
+        "全部快速回归",
+        async () =>
+            await runFastRegressionTests()
+    );
+
+
+    await runGoldenCase(
+        "正常装卸运输完整闭环",
+        async () =>
+            await runNormalTransportClosedLoopTest()
+    );
+
+
+    await runGoldenCase(
+        "设备异常维修归档后恢复生产",
+        async () =>
+            await runPostMaintenanceProductionRecoveryTest()
+    );
+
+
+    await runGoldenCase(
+        "临时非卸载区卸料批准计入正式趟次",
+        async () =>
+            await runTestManagerTemporaryUnloadFullCycle()
+    );
+
+
+    const passed =
+        results.filter(
+            item =>
+                item.ok
+        ).length;
+
+
+    const total =
+        results.length;
+
+
+    const failed =
+        total -
+        passed;
+
+
+    const suiteDurationMs =
+        Date.now() -
+        suiteStartedAt;
+
+
+    const slowest =
+        [
+            ...results
+        ]
+        .sort(
+            (
+                a,
+                b
+            ) =>
+                Number(
+                    b.durationMs ||
+                    0
+                ) -
+                Number(
+                    a.durationMs ||
+                    0
+                )
+        )
+        .slice(
+            0,
+            4
+        );
+
+
+    robotMessage(
+        botName,
+        "发布前黄金回归汇总：" +
+        passed +
+        "/" +
+        total +
+        " PASS" +
+        (
+            failed
+                ? "；" +
+                  failed +
+                  " FAIL"
+                : ""
+        )
+    );
+
+
+    robotMessage(
+        botName,
+        "发布前黄金回归总耗时=" +
+        (
+            suiteDurationMs /
+            1000
+        )
+        .toFixed(
+            2
+        ) +
+        "s"
+    );
+
+
+    if (
+        slowest.length
+    ) {
+
+        robotMessage(
+            botName,
+            "黄金回归最慢用例：" +
+            slowest
+                .map(
+                    item =>
+                        item.name +
+                        "=" +
+                        (
+                            Number(
+                                item.durationMs ||
+                                0
+                            ) /
+                            1000
+                        )
+                        .toFixed(
+                            2
+                        ) +
+                        "s"
+                )
+                .join(
+                    "；"
+                )
+        );
+    }
+
+
+    results.forEach(
+        (
+            item,
+            index
+        ) => {
+
+            robotMessage(
+                botName,
+                (
+                    index +
+                    1
+                ) +
+                ". " +
+                item.name +
+                "：" +
+                (
+                    item.ok
+                        ? "PASS"
+                        : "FAIL - " +
+                          item.error
+                )
+            );
+        }
+    );
+
+
+    if (
+        failed
+    ) {
+
+        updateBot(
+            botName,
+            "fail",
+            "发布前黄金回归完成：" +
+            passed +
+            "/" +
+            total +
+            " PASS"
+        );
+
+
+        throw new Error(
+            "发布前黄金回归存在失败用例：" +
+            results
+                .filter(
+                    item =>
+                        !item.ok
+                )
+                .map(
+                    item =>
+                        item.name
+                )
+                .join(
+                    "、"
+                )
+        );
+    }
+
+
+    updateBot(
+        botName,
+        "pass",
+        "发布前黄金回归全部通过：" +
+        passed +
+        "/" +
+        total
+    );
+
+
+    return {
+        ok:
+            true,
+
+        action:
+            "release-golden-regression",
+
+        passed,
+        total,
+
+        durationMs:
+            suiteDurationMs,
+
+        results
+    };
+}
+
+
 async function runAllCoreRegressionTests() {
 
     const botName =
@@ -5342,6 +5715,26 @@ async function executeCommand({
         requestedBot,
         `收到命令：${command}`
     );
+
+
+    if (
+        requestedBot ===
+            "TestManager" &&
+        (
+            /运行.*发布前.*黄金.*回归/i.test(
+                command
+            ) ||
+            /发布前.*黄金.*测试/i.test(
+                command
+            ) ||
+            /黄金.*回归/i.test(
+                command
+            )
+        )
+    ) {
+
+        return await runReleaseGoldenRegression();
+    }
 
 
     if (
@@ -6259,7 +6652,7 @@ server.listen(
         );
 
         console.log(
-            "🤖 机器人测试控制中心 R0-26 已启动"
+            "🤖 机器人测试控制中心 R0-27 已启动"
         );
 
         console.log(
