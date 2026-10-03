@@ -409,6 +409,17 @@ function updateReadinessSuite(
 const COVERAGE_MODULES = [
     {
         key:
+            "personnel-entry",
+
+        label:
+            "人员 / 岗位入口",
+
+        cases: [
+            "全岗位入口联动"
+        ]
+    },
+    {
+        key:
             "transport",
 
         label:
@@ -11020,6 +11031,13 @@ async function runAllCoreRegressionTests() {
      * 两个用例之间都重新初始化 TEST 环境，
      * 避免前一个用例的趟次 / 闭环状态污染后一个用例。
      */
+    await runCase(
+        "全岗位入口联动",
+        async () =>
+            await runAllRoleEntryLinkageTest()
+    );
+
+
     await runCase(
         "正常装卸运输完整闭环",
         async () =>
