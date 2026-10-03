@@ -181,6 +181,14 @@ const READINESS_FILE =
     );
 
 
+const REPORT_DIR =
+    path.join(
+        ROOT,
+        "test-results",
+        "reports"
+    );
+
+
 const clients =
     new Set();
 
@@ -11446,6 +11454,39 @@ function naturalLanguageIntentCatalog() {
         },
         {
             action:
+                "current-test-report",
+
+            label:
+                "当前测试报告",
+
+            runner:
+                async () =>
+                    await runCurrentTestReport(),
+
+            requiredGroups: [
+                [
+                    "测试报告",
+                    "测试情况",
+                    "发布状态",
+                    "发布就绪"
+                ]
+            ],
+
+            bonusTerms: [
+                "当前",
+                "现在",
+                "汇总",
+                "给我看",
+                "生成"
+            ],
+
+            examples: [
+                "给我看看现在测试情况",
+                "生成一份当前测试报告"
+            ]
+        },
+        {
+            action:
                 "natural-language-parser-regression",
 
             label:
@@ -12704,6 +12745,350 @@ async function executePendingNaturalLanguageConfirmation(
 }
 
 
+function buildCurrentTestReport() {
+
+    const core =
+        readinessState.core;
+
+
+    const golden =
+        readinessState.golden;
+
+
+    const overallStatus =
+        core?.status ===
+            "pass"
+        &&
+        golden?.status ===
+            "pass"
+            ? "ready"
+            : (
+                core?.status ===
+                    "fail"
+                ||
+                golden?.status ===
+                    "fail"
+                    ? "blocked"
+                    : "pending"
+            );
+
+
+    return {
+        generatedAt:
+            new Date()
+                .toISOString(),
+
+        overallStatus,
+
+        overallLabel:
+            overallStatus ===
+                "ready"
+                ? "可发布"
+                : overallStatus ===
+                    "blocked"
+                    ? "暂不可发布"
+                    : "待验证",
+
+        readiness: {
+            core:
+                core ||
+                null,
+
+            golden:
+                golden ||
+                null,
+
+            updatedAt:
+                readinessState.updatedAt ||
+                null
+        },
+
+        robots:
+            Object.fromEntries(
+                Object.entries(
+                    robotStatus
+                )
+                .map(
+                    ([
+                        name,
+                        row
+                    ]) => [
+                        name,
+                        {
+                            status:
+                                row.status,
+
+                            step:
+                                row.step
+                        }
+                    ]
+                )
+            ),
+
+        naturalLanguage: {
+            pendingConfirmation:
+                pendingNaturalLanguageConfirmation
+                    ? {
+                        action:
+                            pendingNaturalLanguageConfirmation.action,
+
+                        label:
+                            pendingNaturalLanguageConfirmation.label,
+
+                        expiresAt:
+                            pendingNaturalLanguageConfirmation.expiresAt
+                    }
+                    : null
+        },
+
+        safety: {
+            testDataOnly:
+                true,
+
+            rule:
+                "仅允许操作 TEST- 开头的数据"
+        }
+    };
+}
+
+
+function saveCurrentTestReport(
+    report
+) {
+
+    fs.mkdirSync(
+        REPORT_DIR,
+        {
+            recursive:
+                true
+        }
+    );
+
+
+    const stamp =
+        new Date()
+            .toISOString()
+            .replace(
+                /[:.]/g,
+                "-"
+            );
+
+
+    const jsonPath =
+        path.join(
+            REPORT_DIR,
+            stamp +
+            "-current-test-report.json"
+        );
+
+
+    const mdPath =
+        path.join(
+            REPORT_DIR,
+            stamp +
+            "-current-test-report.md"
+        );
+
+
+    fs.writeFileSync(
+        jsonPath,
+        JSON.stringify(
+            report,
+            null,
+            2
+        ),
+        "utf8"
+    );
+
+
+    const core =
+        report.readiness.core;
+
+
+    const golden =
+        report.readiness.golden;
+
+
+    const robotLines =
+        Object.entries(
+            report.robots
+        )
+        .map(
+            ([
+                name,
+                row
+            ]) =>
+                "- " +
+                name +
+                "：**" +
+                String(
+                    row.status ||
+                    "unknown"
+                )
+                .toUpperCase() +
+                "** — " +
+                String(
+                    row.step ||
+                    ""
+                )
+        )
+        .join(
+            "\n"
+        );
+
+
+    const markdown = [
+        "# mine-management 当前测试报告",
+        "",
+        "- 生成时间：" +
+            report.generatedAt,
+        "- 综合判断：**" +
+            report.overallLabel +
+            "**",
+        "",
+        "## 发布就绪",
+        "",
+        "- 核心回归：" +
+            (
+                core
+                    ? String(
+                        core.status
+                    )
+                    .toUpperCase() +
+                      "（" +
+                      Number(
+                          core.passed ||
+                          0
+                      ) +
+                      "/" +
+                      Number(
+                          core.total ||
+                          0
+                      ) +
+                      " PASS）"
+                    : "未运行"
+            ),
+        "- 黄金回归：" +
+            (
+                golden
+                    ? String(
+                        golden.status
+                    )
+                    .toUpperCase() +
+                      "（" +
+                      Number(
+                          golden.passed ||
+                          0
+                      ) +
+                      "/" +
+                      Number(
+                          golden.total ||
+                          0
+                      ) +
+                      " PASS）"
+                    : "未运行"
+            ),
+        "",
+        "## 当前机器人状态",
+        "",
+        robotLines,
+        "",
+        "## 安全规则",
+        "",
+        "- 仅允许操作 TEST- 开头的数据。",
+        ""
+    ]
+    .join(
+        "\n"
+    );
+
+
+    fs.writeFileSync(
+        mdPath,
+        markdown,
+        "utf8"
+    );
+
+
+    return {
+        jsonPath:
+            path.relative(
+                ROOT,
+                jsonPath
+            ),
+
+        markdownPath:
+            path.relative(
+                ROOT,
+                mdPath
+            )
+    };
+}
+
+
+async function runCurrentTestReport() {
+
+    const botName =
+        "TestManager";
+
+
+    const report =
+        buildCurrentTestReport();
+
+
+    const files =
+        saveCurrentTestReport(
+            report
+        );
+
+
+    updateBot(
+        botName,
+        "pass",
+        "当前测试报告已生成"
+    );
+
+
+    robotMessage(
+        botName,
+        "当前测试报告：综合判断=" +
+        report.overallLabel +
+        "；核心回归=" +
+        (
+            report.readiness.core?.status ||
+            "未运行"
+        ) +
+        "；黄金回归=" +
+        (
+            report.readiness.golden?.status ||
+            "未运行"
+        )
+    );
+
+
+    robotMessage(
+        botName,
+        "测试报告文件：" +
+        files.markdownPath +
+        "；JSON=" +
+        files.jsonPath
+    );
+
+
+    return {
+        ok:
+            true,
+
+        action:
+            "current-test-report",
+
+        report,
+
+        files
+    };
+}
+
+
 async function executeCommand({
     target,
     command
@@ -12753,6 +13138,29 @@ async function executeCommand({
         requestedBot,
         `收到命令：${command}`
     );
+
+
+    if (
+        requestedBot ===
+            "TestManager" &&
+        (
+            /输出.*当前.*测试报告/i.test(
+                command
+            ) ||
+            /输出.*测试报告/i.test(
+                command
+            ) ||
+            /生成.*测试报告/i.test(
+                command
+            ) ||
+            /查看.*当前.*测试.*情况/i.test(
+                command
+            )
+        )
+    ) {
+
+        return await runCurrentTestReport();
+    }
 
 
     if (
