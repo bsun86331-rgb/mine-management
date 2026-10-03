@@ -233,6 +233,15 @@ let warehouseBot =
     null;
 
 
+/*
+ * 自然语言模糊命令的待确认意图。
+ * 只保存已经映射到现有 TEST 执行器的 action，
+ * 不保存或执行任意代码。
+ */
+let pendingNaturalLanguageConfirmation =
+    null;
+
+
 let robotStatus = {
 
     TestManager: {
@@ -10461,50 +10470,114 @@ async function executeNaturalLanguageIntent(
             "ambiguous"
     ) {
 
-        const labels =
+        const guessed =
+            parsed.candidates[
+                0
+            ];
+
+
+        const guessedIntent =
+            naturalLanguageIntentCatalog()
+                .find(
+                    item =>
+                        item.action ===
+                            guessed?.action
+                );
+
+
+        const alternatives =
             parsed.candidates
+                .slice(
+                    1
+                )
                 .map(
                     item =>
                         "“" +
                         item.label +
                         "”"
-                )
-                .join(
-                    " / "
                 );
 
 
-        updateBot(
-            "TestManager",
-            "waiting",
-            "自然语言命令存在歧义，需要更明确"
-        );
+        if (
+            guessed &&
+            guessedIntent
+        ) {
+
+            pendingNaturalLanguageConfirmation = {
+                action:
+                    guessed.action,
+
+                label:
+                    guessed.label,
+
+                originalCommand:
+                    String(
+                        command ||
+                        ""
+                    ),
+
+                createdAt:
+                    Date.now(),
+
+                expiresAt:
+                    Date.now() +
+                    5 *
+                    60 *
+                    1000
+            };
 
 
-        robotMessage(
-            "TestManager",
-            "这句话可能是 " +
-            labels +
-            "。为防止误执行，请补充“完整闭环 / 三岗位联动 / 报表回写”等关键词。"
-        );
-
-
-        return {
-            ok:
-                true,
-
-            target:
+            updateBot(
                 "TestManager",
-
-            status:
                 "waiting",
+                "已猜测意图，等待用户确认"
+            );
 
-            action:
-                "natural-language-ambiguous",
 
-            candidates:
-                parsed.candidates
-        };
+            robotMessage(
+                "TestManager",
+                "我猜你想执行“" +
+                guessed.label +
+                "”。" +
+                (
+                    alternatives.length
+                        ? "其他可能：" +
+                          alternatives.join(
+                              " / "
+                          ) +
+                          "。"
+                        : ""
+                ) +
+                " 如果猜对了，请回复“确认”；如果不对，请直接说你真正想跑的场景。"
+            );
+
+
+            return {
+                ok:
+                    true,
+
+                target:
+                    "TestManager",
+
+                status:
+                    "waiting",
+
+                action:
+                    "natural-language-awaiting-confirmation",
+
+                guessedAction:
+                    guessed.action,
+
+                guessedLabel:
+                    guessed.label,
+
+                alternatives:
+                    parsed.candidates
+                        .slice(
+                            1
+                        )
+            };
+        }
     }
 
 
@@ -10560,6 +10633,179 @@ async function executeNaturalLanguageIntent(
 }
 
 
+function isNaturalLanguageConfirmation(
+    command
+) {
+
+    const text =
+        normalizeNaturalLanguageCommand(
+            command
+        );
+
+
+    return /^(确认|确定|执行|开始|开始吧|就这个|对|对的|是|是的|可以|可以执行|没错|没问题|继续)$/
+        .test(
+            text
+        );
+}
+
+
+function isNaturalLanguageCancellation(
+    command
+) {
+
+    const text =
+        normalizeNaturalLanguageCommand(
+            command
+        );
+
+
+    return /^(取消|不对|不是|不要|先不执行|别执行|换一个|重新说)$/
+        .test(
+            text
+        );
+}
+
+
+function clearExpiredNaturalLanguageConfirmation() {
+
+    if (
+        pendingNaturalLanguageConfirmation &&
+        Number(
+            pendingNaturalLanguageConfirmation.expiresAt ||
+            0
+        ) <=
+            Date.now()
+    ) {
+
+        pendingNaturalLanguageConfirmation =
+            null;
+    }
+}
+
+
+async function executePendingNaturalLanguageConfirmation(
+    command
+) {
+
+    clearExpiredNaturalLanguageConfirmation();
+
+
+    if (
+        !pendingNaturalLanguageConfirmation
+    ) {
+
+        return null;
+    }
+
+
+    if (
+        isNaturalLanguageCancellation(
+            command
+        )
+    ) {
+
+        const cancelled =
+            pendingNaturalLanguageConfirmation;
+
+
+        pendingNaturalLanguageConfirmation =
+            null;
+
+
+        updateBot(
+            "TestManager",
+            "waiting",
+            "已取消上一次猜测"
+        );
+
+
+        robotMessage(
+            "TestManager",
+            "已取消“" +
+            cancelled.label +
+            "”。请重新描述你想测试的流程。"
+        );
+
+
+        return {
+            ok:
+                true,
+
+            target:
+                "TestManager",
+
+            status:
+                "waiting",
+
+            action:
+                "natural-language-confirmation-cancelled",
+
+            cancelledAction:
+                cancelled.action
+        };
+    }
+
+
+    if (
+        !isNaturalLanguageConfirmation(
+            command
+        )
+    ) {
+
+        return null;
+    }
+
+
+    const pending =
+        pendingNaturalLanguageConfirmation;
+
+
+    pendingNaturalLanguageConfirmation =
+        null;
+
+
+    const intent =
+        naturalLanguageIntentCatalog()
+            .find(
+                item =>
+                    item.action ===
+                        pending.action
+            );
+
+
+    if (
+        !intent
+    ) {
+
+        throw new Error(
+            "自然语言确认失败：待确认场景已经不存在"
+        );
+    }
+
+
+    robotMessage(
+        "TestManager",
+        "已确认，开始执行：“" +
+        pending.label +
+        "”（" +
+        pending.action +
+        "）"
+    );
+
+
+    updateBot(
+        "TestManager",
+        "running",
+        "用户已确认：" +
+        pending.label
+    );
+
+
+    return await intent.runner();
+}
+
+
 async function executeCommand({
     target,
     command
@@ -10576,6 +10822,26 @@ async function executeCommand({
         ]
             ? target
             : "TestManager";
+
+
+    if (
+        requestedBot ===
+            "TestManager"
+    ) {
+
+        const confirmationResult =
+            await executePendingNaturalLanguageConfirmation(
+                command
+            );
+
+
+        if (
+            confirmationResult
+        ) {
+
+            return confirmationResult;
+        }
+    }
 
 
     updateBot(
