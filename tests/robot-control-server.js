@@ -11283,7 +11283,11 @@ function naturalLanguageIntentCatalog() {
                 "全链路",
                 "全部收到",
                 "全部显示",
-                "从头到尾"
+                "从头到尾",
+                "整套",
+                "跑一遍",
+                "综合报表",
+                "从完成到调度"
             ],
 
             examples: [
@@ -11362,6 +11366,13 @@ function naturalLanguageIntentCatalog() {
                 "从岗位到调度"
             ],
 
+            negativeTerms: [
+                "报表",
+                "综合报表",
+                "整套",
+                "全链路"
+            ],
+
             examples: [
                 "把6种辅助车辆跑完以后看看调度端能不能全部收到",
                 "跑一下A组辅助车辆到调度端完成回传的完整闭环"
@@ -11398,6 +11409,14 @@ function naturalLanguageIntentCatalog() {
                 "回传",
                 "完成",
                 "记录"
+            ],
+
+            negativeTerms: [
+                "报表",
+                "综合报表",
+                "整套",
+                "全链路",
+                "从头到尾"
             ],
 
             examples: [
@@ -11875,6 +11894,34 @@ function scoreNaturalLanguageIntent(
             score -=
                 3;
         }
+    }
+
+
+    /*
+     * 明确说到“辅助车辆 + 调度 + 报表”时，
+     * 优先识别为全链路，而不是只验证调度端视图。
+     */
+    if (
+        intent.action ===
+            "a-group-auxiliary-dispatch-report-closed-loop"
+        &&
+        (
+            normalized.includes(
+                "综合报表"
+            )
+            ||
+            normalized.includes(
+                "报表"
+            )
+        )
+        &&
+        normalized.includes(
+            "调度"
+        )
+    ) {
+
+        score +=
+            4;
     }
 
 
