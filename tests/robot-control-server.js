@@ -440,7 +440,8 @@ const COVERAGE_MODULES = [
 
         cases: [
             "正常装卸运输完整闭环",
-            "维修完成后恢复生产闭环"
+            "维修完成后恢复生产闭环",
+            "第二批生产系统权限与状态批量回归"
         ]
     },
     {
@@ -462,7 +463,8 @@ const COVERAGE_MODULES = [
             "设备检查",
 
         cases: [
-            "设备异常检查自动维修单"
+            "设备异常检查自动维修单",
+            "第二批生产系统权限与状态批量回归"
         ]
     },
     {
@@ -510,13 +512,25 @@ const COVERAGE_MODULES = [
     },
     {
         key:
+            "excavator",
+
+        label:
+            "挖机端",
+
+        cases: [
+            "第二批生产系统权限与状态批量回归"
+        ]
+    },
+    {
+        key:
             "auxiliary",
 
         label:
             "辅助车辆",
 
         cases: [
-            "A组辅助车辆调度报表完整闭环"
+            "A组辅助车辆调度报表完整闭环",
+            "第二批生产系统权限与状态批量回归"
         ]
     },
     {
@@ -8387,6 +8401,946 @@ async function runAGroupMultiRobotLinkageTest() {
 }
 
 
+async function runProductionSystemBatchRegressionTest() {
+
+    const botName =
+        "TestManager";
+
+
+    const contexts =
+        [];
+
+
+    const createContext =
+        async (
+            seed
+        ) => {
+
+            const context =
+                await browser.newContext({
+                    baseURL:
+                        BASE_URL,
+
+                    viewport: {
+                        width:
+                            1280,
+
+                        height:
+                            900
+                    }
+                });
+
+
+            contexts.push(
+                context
+            );
+
+
+            const page =
+                await context.newPage();
+
+
+            await page.addInitScript(
+                seed
+            );
+
+
+            return {
+                context,
+                page
+            };
+        };
+
+
+    try {
+
+        await ensureBrowser();
+
+
+        updateBot(
+            botName,
+            "running",
+            "正在执行第二批生产系统权限与状态批量回归"
+        );
+
+
+        robotMessage(
+            botName,
+            "批量步骤 1/5：司机端验证 active 可进入、leave 不允许继续生产。"
+        );
+
+
+        {
+            const {
+                context,
+                page
+            } =
+                await createContext(
+                    () => {
+
+                        const personId =
+                            "TEST-PROD-DRIVER-ACTIVE";
+
+
+                        localStorage.setItem(
+                            "personnelRecords",
+                            JSON.stringify([
+                                {
+                                    personId,
+                                    employeeNo:
+                                        personId,
+
+                                    name:
+                                        "TEST-生产司机",
+
+                                    position:
+                                        "汽车司机",
+
+                                    team:
+                                        "生产A组",
+
+                                    status:
+                                        "active",
+
+                                    approvalStatus:
+                                        "approved",
+
+                                    personnelStatus:
+                                        "在职可用",
+
+                                    enabled:
+                                        true,
+
+                                    testFixture:
+                                        true
+                                }
+                            ])
+                        );
+
+
+                        localStorage.setItem(
+                            "currentPersonId",
+                            personId
+                        );
+
+
+                        localStorage.setItem(
+                            "selectedPosition",
+                            "汽车司机"
+                        );
+                    }
+                );
+
+
+            await page.goto(
+                "driver-work.html",
+                {
+                    waitUntil:
+                        "domcontentloaded"
+                }
+            );
+
+
+            await page.waitForTimeout(
+                300
+            );
+
+
+            const snapshot =
+                await page.evaluate(
+                    () => {
+
+                        let profile =
+                            null;
+
+
+                        try {
+
+                            profile =
+                                JSON.parse(
+                                    localStorage.getItem(
+                                        "driverProfile"
+                                    ) ||
+                                    "null"
+                                );
+
+                        } catch (
+                            error
+                        ) {}
+
+
+                        return {
+                            page:
+                                location.pathname
+                                    .split(
+                                        "/"
+                                    )
+                                    .pop(),
+
+                            profile
+                        };
+                    }
+                );
+
+
+            if (
+                snapshot.page !==
+                    "driver-work.html" ||
+                !String(
+                    snapshot.profile?.personId ||
+                    ""
+                )
+                .startsWith(
+                    "TEST-"
+                )
+            ) {
+
+                throw new Error(
+                    "第二批生产回归：在职汽车司机未能进入司机工作台"
+                );
+            }
+
+
+            await context.close();
+        }
+
+
+        {
+            const {
+                context,
+                page
+            } =
+                await createContext(
+                    () => {
+
+                        const personId =
+                            "TEST-PROD-DRIVER-LEAVE";
+
+
+                        localStorage.setItem(
+                            "personnelRecords",
+                            JSON.stringify([
+                                {
+                                    personId,
+                                    name:
+                                        "TEST-请假司机",
+
+                                    position:
+                                        "汽车司机",
+
+                                    team:
+                                        "生产A组",
+
+                                    status:
+                                        "leave",
+
+                                    approvalStatus:
+                                        "approved",
+
+                                    personnelStatus:
+                                        "请假",
+
+                                    enabled:
+                                        true,
+
+                                    testFixture:
+                                        true
+                                }
+                            ])
+                        );
+
+
+                        localStorage.setItem(
+                            "currentPersonId",
+                            personId
+                        );
+
+
+                        localStorage.setItem(
+                            "selectedPosition",
+                            "汽车司机"
+                        );
+                    }
+                );
+
+
+            await page.goto(
+                "driver-work.html",
+                {
+                    waitUntil:
+                        "domcontentloaded"
+                }
+            );
+
+
+            await page.waitForTimeout(
+                300
+            );
+
+
+            const currentPage =
+                new URL(
+                    page.url()
+                )
+                .pathname
+                .split(
+                    "/"
+                )
+                .pop();
+
+
+            if (
+                currentPage ===
+                    "driver-work.html"
+            ) {
+
+                throw new Error(
+                    "第二批生产回归：请假汽车司机仍可进入生产工作台"
+                );
+            }
+
+
+            await context.close();
+        }
+
+
+        robotMessage(
+            botName,
+            "批量步骤 2/5：挖机端验证请假/停用状态不能成为当前作业人员。"
+        );
+
+
+        {
+            const {
+                context,
+                page
+            } =
+                await createContext(
+                    () => {
+
+                        const personId =
+                            "TEST-PROD-EXC-LEAVE";
+
+
+                        localStorage.setItem(
+                            "personnelRecords",
+                            JSON.stringify([
+                                {
+                                    personId,
+                                    name:
+                                        "TEST-请假挖机司机",
+
+                                    position:
+                                        "挖机司机",
+
+                                    team:
+                                        "生产A组",
+
+                                    status:
+                                        "leave",
+
+                                    approvalStatus:
+                                        "approved",
+
+                                    personnelStatus:
+                                        "请假",
+
+                                    enabled:
+                                        true,
+
+                                    testFixture:
+                                        true
+                                }
+                            ])
+                        );
+
+
+                        localStorage.setItem(
+                            "currentPersonId",
+                            personId
+                        );
+
+
+                        localStorage.setItem(
+                            "selectedPosition",
+                            "挖机司机"
+                        );
+                    }
+                );
+
+
+            await page.goto(
+                "excavator.html",
+                {
+                    waitUntil:
+                        "domcontentloaded"
+                }
+            );
+
+
+            const eligible =
+                await page.evaluate(
+                    () =>
+                        Boolean(
+                            getCurrentPerson()
+                        )
+                );
+
+
+            if (
+                eligible
+            ) {
+
+                throw new Error(
+                    "第二批生产回归：请假挖机司机仍被识别为可生产人员"
+                );
+            }
+
+
+            await context.close();
+        }
+
+
+        robotMessage(
+            botName,
+            "批量步骤 3/5：辅助车辆验证岗位别名、生产资格与TEST入口隔离。"
+        );
+
+
+        {
+            const {
+                context,
+                page
+            } =
+                await createContext(
+                    () => {
+
+                        const personId =
+                            "TEST-PROD-AUX-ACTIVE";
+
+
+                        localStorage.setItem(
+                            "personnelRecords",
+                            JSON.stringify([
+                                {
+                                    personId,
+                                    name:
+                                        "TEST-装载机司机",
+
+                                    position:
+                                        "装载机司机",
+
+                                    team:
+                                        "生产A组",
+
+                                    status:
+                                        "active",
+
+                                    approvalStatus:
+                                        "approved",
+
+                                    personnelStatus:
+                                        "在职可用",
+
+                                    enabled:
+                                        true,
+
+                                    testFixture:
+                                        true
+                                }
+                            ])
+                        );
+
+
+                        localStorage.setItem(
+                            "currentPersonId",
+                            personId
+                        );
+
+
+                        localStorage.setItem(
+                            "selectedPosition",
+                            "装载机司机"
+                        );
+                    }
+                );
+
+
+            await page.goto(
+                "auxiliary.html",
+                {
+                    waitUntil:
+                        "domcontentloaded"
+                }
+            );
+
+
+            const snapshot =
+                await page.evaluate(
+                    () => ({
+                        personId:
+                            getPersonId(
+                                getCurrentPerson()
+                            ),
+
+                        eligible:
+                            isProductionEligiblePerson(
+                                getCurrentPerson()
+                            ),
+
+                        auxiliary:
+                            isAuxiliaryPosition(
+                                getCurrentPerson()?.position
+                            )
+                    })
+                );
+
+
+            if (
+                !String(
+                    snapshot.personId ||
+                    ""
+                )
+                .startsWith(
+                    "TEST-"
+                ) ||
+                !snapshot.eligible ||
+                !snapshot.auxiliary
+            ) {
+
+                throw new Error(
+                    "第二批生产回归：辅助车辆在职人员/装载机旧岗位别名识别失败"
+                );
+            }
+
+
+            await context.close();
+        }
+
+
+        {
+            const {
+                context,
+                page
+            } =
+                await createContext(
+                    () => {
+
+                        const personId =
+                            "TEST-PROD-AUX-DISABLED";
+
+
+                        localStorage.setItem(
+                            "personnelRecords",
+                            JSON.stringify([
+                                {
+                                    personId,
+                                    name:
+                                        "TEST-停用辅助司机",
+
+                                    position:
+                                        "铲车司机",
+
+                                    team:
+                                        "生产A组",
+
+                                    status:
+                                        "disabled",
+
+                                    approvalStatus:
+                                        "approved",
+
+                                    personnelStatus:
+                                        "停用",
+
+                                    enabled:
+                                        false,
+
+                                    testFixture:
+                                        true
+                                }
+                            ])
+                        );
+
+
+                        localStorage.setItem(
+                            "currentPersonId",
+                            personId
+                        );
+                    }
+                );
+
+
+            await page.goto(
+                "auxiliary.html",
+                {
+                    waitUntil:
+                        "domcontentloaded"
+                }
+            );
+
+
+            const eligible =
+                await page.evaluate(
+                    () =>
+                        Boolean(
+                            getCurrentPerson()
+                        )
+                );
+
+
+            if (
+                eligible
+            ) {
+
+                throw new Error(
+                    "第二批生产回归：停用辅助车辆司机仍被识别为生产人员"
+                );
+            }
+
+
+            await context.close();
+        }
+
+
+        robotMessage(
+            botName,
+            "批量步骤 4/5：设备检查验证 pending/leave/disabled 人员不能提交检查。"
+        );
+
+
+        {
+            const {
+                context,
+                page
+            } =
+                await createContext(
+                    () => {
+
+                        const personId =
+                            "TEST-PROD-CHECK-PENDING";
+
+
+                        localStorage.setItem(
+                            "personnelRecords",
+                            JSON.stringify([
+                                {
+                                    personId,
+                                    name:
+                                        "TEST-待审核人员",
+
+                                    position:
+                                        "汽车司机",
+
+                                    status:
+                                        "pending",
+
+                                    approvalStatus:
+                                        "pending",
+
+                                    personnelStatus:
+                                        "待审核",
+
+                                    enabled:
+                                        true,
+
+                                    testFixture:
+                                        true
+                                }
+                            ])
+                        );
+
+
+                        localStorage.setItem(
+                            "currentPersonId",
+                            personId
+                        );
+                    }
+                );
+
+
+            await page.goto(
+                "equipment-check.html",
+                {
+                    waitUntil:
+                        "domcontentloaded"
+                }
+            );
+
+
+            const resolved =
+                await page.evaluate(
+                    () =>
+                        Boolean(
+                            resolvePerson()
+                        )
+                );
+
+
+            if (
+                resolved
+            ) {
+
+                throw new Error(
+                    "第二批生产回归：待审核人员仍可被设备检查识别为使用人"
+                );
+            }
+
+
+            await context.close();
+        }
+
+
+        robotMessage(
+            botName,
+            "批量步骤 5/5：调度端验证请假/待审核/停用人员不会进入可生产人员池。"
+        );
+
+
+        {
+            const {
+                context,
+                page
+            } =
+                await createContext(
+                    () => {
+
+                        localStorage.setItem(
+                            "personnelRecords",
+                            JSON.stringify([
+                                {
+                                    personId:
+                                        "TEST-DISPATCH-ACTIVE",
+
+                                    name:
+                                        "TEST-在职司机",
+
+                                    position:
+                                        "汽车司机",
+
+                                    team:
+                                        "生产A组",
+
+                                    status:
+                                        "active",
+
+                                    approvalStatus:
+                                        "approved",
+
+                                    personnelStatus:
+                                        "在职可用",
+
+                                    enabled:
+                                        true,
+
+                                    testFixture:
+                                        true
+                                },
+                                {
+                                    personId:
+                                        "TEST-DISPATCH-LEAVE",
+
+                                    name:
+                                        "TEST-请假司机",
+
+                                    position:
+                                        "汽车司机",
+
+                                    team:
+                                        "生产A组",
+
+                                    status:
+                                        "leave",
+
+                                    approvalStatus:
+                                        "approved",
+
+                                    personnelStatus:
+                                        "请假",
+
+                                    enabled:
+                                        true,
+
+                                    testFixture:
+                                        true
+                                },
+                                {
+                                    personId:
+                                        "TEST-DISPATCH-PENDING",
+
+                                    name:
+                                        "TEST-待审核司机",
+
+                                    position:
+                                        "汽车司机",
+
+                                    team:
+                                        "生产A组",
+
+                                    status:
+                                        "pending",
+
+                                    approvalStatus:
+                                        "pending",
+
+                                    personnelStatus:
+                                        "待审核",
+
+                                    enabled:
+                                        true,
+
+                                    testFixture:
+                                        true
+                                }
+                            ])
+                        );
+                    }
+                );
+
+
+            await page.goto(
+                "dispatch.html",
+                {
+                    waitUntil:
+                        "domcontentloaded"
+                }
+            );
+
+
+            await page.waitForTimeout(
+                250
+            );
+
+
+            const available =
+                await page.evaluate(
+                    () => {
+
+                        if (
+                            typeof approvedPersonnel !==
+                                "function"
+                        ) {
+
+                            throw new Error(
+                                "dispatch approvedPersonnel 未暴露"
+                            );
+                        }
+
+
+                        return approvedPersonnel()
+                            .map(
+                                item =>
+                                    String(
+                                        item.personId ||
+                                        item.employeeId ||
+                                        ""
+                                    )
+                            );
+                    }
+                );
+
+
+            if (
+                !available.includes(
+                    "TEST-DISPATCH-ACTIVE"
+                ) ||
+                available.includes(
+                    "TEST-DISPATCH-LEAVE"
+                ) ||
+                available.includes(
+                    "TEST-DISPATCH-PENDING"
+                )
+            ) {
+
+                throw new Error(
+                    "第二批生产回归：调度可生产人员池没有正确过滤请假/待审核人员；实际=" +
+                    available.join(
+                        ","
+                    )
+                );
+            }
+
+
+            await context.close();
+        }
+
+
+        updateBot(
+            botName,
+            "pass",
+            "第二批生产系统权限与状态批量回归通过"
+        );
+
+
+        robotMessage(
+            botName,
+            "第二批集中回归通过：司机/挖机/辅助车辆/设备检查/调度均按 active/working 放行，pending/leave/disabled/resigned 不进入生产链。"
+        );
+
+
+        return {
+            ok:
+                true,
+
+            action:
+                "production-system-batch-regression"
+        };
+
+
+    } catch (
+        error
+    ) {
+
+        const message =
+            error?.message ||
+            String(
+                error
+            );
+
+
+        updateBot(
+            botName,
+            "fail",
+            message
+        );
+
+
+        robotMessage(
+            botName,
+            "第二批生产系统权限与状态批量回归失败：" +
+            message
+        );
+
+
+        throw error;
+
+
+    } finally {
+
+        for (
+            const context
+            of contexts
+        ) {
+
+            if (
+                context &&
+                !context.pages()
+                    .every(
+                        page =>
+                            page.isClosed()
+                    )
+            ) {
+
+                await context.close()
+                    .catch(
+                        () => {}
+                    );
+            }
+        }
+    }
+}
+
+
 async function runManagementAdminBatchRegressionTest() {
 
     const botName =
@@ -13365,6 +14319,13 @@ async function runAllCoreRegressionTests() {
         "中层工作台与管理员资料中心批量回归",
         async () =>
             await runManagementAdminBatchRegressionTest()
+    );
+
+
+    await runCase(
+        "第二批生产系统权限与状态批量回归",
+        async () =>
+            await runProductionSystemBatchRegressionTest()
     );
 
 
