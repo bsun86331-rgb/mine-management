@@ -65,7 +65,7 @@ const {
 
 /*
 =========================================================
-R0-24 RobotControlServer
+R0-25 RobotControlServer
 机器人测试控制中心后台 + Playwright 执行器
 
 当前已接入：
@@ -125,6 +125,14 @@ const SCREENSHOT_DIR =
         ROOT,
         "test-results",
         "screenshots"
+    );
+
+
+const DIAGNOSTIC_DIR =
+    path.join(
+        ROOT,
+        "test-results",
+        "diagnostics"
     );
 
 
@@ -363,6 +371,305 @@ function robotMessage(
             new Date()
                 .toISOString()
     });
+}
+
+
+
+function inferFailureModule(
+    caseName,
+    suiteLabel =
+        ""
+) {
+
+    const text =
+        [
+            suiteLabel,
+            caseName
+        ]
+        .join(
+            " "
+        );
+
+
+    if (
+        /维修|返修|配件|验收/i.test(
+            text
+        )
+    ) {
+
+        return "维修";
+    }
+
+
+    if (
+        /运输|GPS|趟次|装载|卸载/i.test(
+            text
+        )
+    ) {
+
+        return "运输";
+    }
+
+
+    if (
+        /调度|审批|临时卸料/i.test(
+            text
+        )
+    ) {
+
+        return "调度";
+    }
+
+
+    return "通用";
+}
+
+
+function buildFailureDiagnosis({
+    caseName,
+    error,
+    suiteLabel =
+        ""
+}) {
+
+    const message =
+        String(
+            error?.message ||
+            error ||
+            "未知错误"
+        );
+
+
+    const moduleName =
+        inferFailureModule(
+            caseName,
+            suiteLabel
+        );
+
+
+    let category =
+        "待进一步定位";
+
+
+    if (
+        /安全拦截|非 TEST|禁止操作/i.test(
+            message
+        )
+    ) {
+
+        category =
+            "安全保护触发";
+
+    } else if (
+        /browserContext|newPage|TestScenarioFactory|测试环境初始化|Cannot read properties of null/i.test(
+            message
+        )
+    ) {
+
+        category =
+            "疑似测试框架 / 测试环境问题";
+
+    } else if (
+        /locator|Timeout|hidden|not visible|不可见|找不到.*按钮/i.test(
+            message
+        )
+    ) {
+
+        category =
+            "疑似测试导航 / 页面可见性问题";
+
+    } else if (
+        /未进入|未恢复|未同步|状态不是|错误生成|错误新增|趟次数量|未变为|没有生成/i.test(
+            message
+        )
+    ) {
+
+        category =
+            "疑似业务状态 / 业务规则问题";
+    }
+
+
+    let expected =
+        "由当前用例断言决定";
+
+
+    let actual =
+        "错误信息未提供明确实际值";
+
+
+    const expectedPatterns = [
+        /未进入\s*([a-z_]+)/i,
+        /未恢复\s*([a-z_]+)/i,
+        /未变为\s*([a-z_]+)/i,
+        /状态不是\s*([a-z_]+)/i,
+        /应(?:为|进入|恢复)\s*([a-z_]+)/i
+    ];
+
+
+    for (
+        const pattern
+        of expectedPatterns
+    ) {
+
+        const match =
+            message.match(
+                pattern
+            );
+
+
+        if (
+            match?.[1]
+        ) {
+
+            expected =
+                match[
+                    1
+                ];
+
+            break;
+        }
+    }
+
+
+    const actualPatterns = [
+        /实际\s*[=:：]\s*([^；,，\s]+)/i,
+        /phase\s*[=:：]\s*([^；,，\s]+)/i,
+        /status\s*[=:：]\s*([^；,，\s]+)/i
+    ];
+
+
+    for (
+        const pattern
+        of actualPatterns
+    ) {
+
+        const match =
+            message.match(
+                pattern
+            );
+
+
+        if (
+            match?.[1]
+        ) {
+
+            actual =
+                match[
+                    1
+                ];
+
+            break;
+        }
+    }
+
+
+    return {
+        module:
+            moduleName,
+
+        step:
+            caseName,
+
+        category,
+        expected,
+        actual,
+        message,
+
+        time:
+            new Date()
+                .toISOString()
+    };
+}
+
+
+function saveFailureDiagnostic(
+    diagnosis
+) {
+
+    fs.mkdirSync(
+        DIAGNOSTIC_DIR,
+        {
+            recursive:
+                true
+        }
+    );
+
+
+    const safeName =
+        String(
+            diagnosis.step ||
+            "failure"
+        )
+        .replace(
+            /[^a-zA-Z0-9\u4e00-\u9fa5_-]/g,
+            "-"
+        )
+        .replace(
+            /-+/g,
+            "-"
+        );
+
+
+    const filename =
+        `${Date.now()}-${safeName}.json`;
+
+
+    const fullPath =
+        path.join(
+            DIAGNOSTIC_DIR,
+            filename
+        );
+
+
+    fs.writeFileSync(
+        fullPath,
+        JSON.stringify(
+            diagnosis,
+            null,
+            2
+        ),
+        "utf8"
+    );
+
+
+    return path.relative(
+        ROOT,
+        fullPath
+    );
+}
+
+
+function reportFailureDiagnosis(
+    botName,
+    diagnosis,
+    diagnosticPath
+) {
+
+    robotMessage(
+        botName,
+        "【失败自动定位】模块=" +
+        diagnosis.module +
+        "；步骤=" +
+        diagnosis.step
+    );
+
+
+    robotMessage(
+        botName,
+        "【失败自动定位】分类=" +
+        diagnosis.category +
+        "；预期=" +
+        diagnosis.expected +
+        "；实际=" +
+        diagnosis.actual
+    );
+
+
+    robotMessage(
+        botName,
+        "【失败自动定位】诊断文件=" +
+        diagnosticPath
+    );
 }
 
 
@@ -3601,13 +3908,41 @@ async function runFastRegressionTests(
                     );
 
 
+                const diagnosis =
+                    buildFailureDiagnosis({
+                        caseName:
+                            name,
+
+                        error,
+
+                        suiteLabel
+                    });
+
+
+                const diagnosticPath =
+                    saveFailureDiagnostic(
+                        diagnosis
+                    );
+
+
+                reportFailureDiagnosis(
+                    botName,
+                    diagnosis,
+                    diagnosticPath
+                );
+
+
                 results.push({
                     name,
                     ok:
                         false,
 
                     error:
-                        message
+                        message,
+
+                    diagnosis,
+
+                    diagnosticPath
                 });
 
 
@@ -4069,13 +4404,42 @@ async function runAllCoreRegressionTests() {
                     );
 
 
+                const diagnosis =
+                    buildFailureDiagnosis({
+                        caseName:
+                            name,
+
+                        error,
+
+                        suiteLabel:
+                            "核心回归"
+                    });
+
+
+                const diagnosticPath =
+                    saveFailureDiagnostic(
+                        diagnosis
+                    );
+
+
+                reportFailureDiagnosis(
+                    botName,
+                    diagnosis,
+                    diagnosticPath
+                );
+
+
                 results.push({
                     name,
                     ok:
                         false,
 
                     error:
-                        message
+                        message,
+
+                    diagnosis,
+
+                    diagnosticPath
                 });
 
 
@@ -5675,7 +6039,7 @@ server.listen(
         );
 
         console.log(
-            "🤖 机器人测试控制中心 R0-24 已启动"
+            "🤖 机器人测试控制中心 R0-25 已启动"
         );
 
         console.log(
