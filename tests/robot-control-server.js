@@ -47,6 +47,13 @@ const {
     "./bots/maintenance-worker-bot"
 );
 
+
+const {
+    ExcavatorBot
+} = require(
+    "./bots/excavator-bot"
+);
+
 const {
     initializeTruckDriverTestEnvironment,
     clearRobotTestEnvironment
@@ -63,9 +70,18 @@ const {
 );
 
 
+const {
+    A_GROUP,
+    buildAGroupPayload,
+    installAGroupRobotContext
+} = require(
+    "./a-group-multi-robot-fixture"
+);
+
+
 /*
 =========================================================
-R0-28 RobotControlServer
+R0-29 RobotControlServer
 机器人测试控制中心后台 + Playwright 执行器
 
 当前已接入：
@@ -4456,6 +4472,592 @@ async function runFastRegressionTests(
 }
 
 
+async function runAGroupMultiRobotLinkageTest() {
+
+    const botName =
+        "TestManager";
+
+
+    await ensureBrowser();
+
+
+    const suiteStartedAt =
+        Date.now();
+
+
+    const payload =
+        buildAGroupPayload();
+
+
+    const contexts =
+        [];
+
+
+    const results = {
+        excavators:
+            [],
+
+        drivers:
+            []
+    };
+
+
+    updateBot(
+        botName,
+        "running",
+        "正在运行A组多机器人联动测试"
+    );
+
+
+    robotMessage(
+        botName,
+        "A组测试编组：2台挖机 + 6台汽车；每台挖机绑定3名汽车司机。"
+    );
+
+
+    try {
+
+        const unitJobs =
+            A_GROUP.excavators.map(
+                async (
+                    unit,
+                    unitIndex
+                ) => {
+
+                    /*
+                     * 每个机器人使用独立 BrowserContext，
+                     * 模拟不同手机 / 不同岗位登录。
+                     * localStorage 互不覆盖。
+                     */
+
+                    const excavatorContext =
+                        await browser.newContext({
+                            baseURL:
+                                BASE_URL,
+
+                            viewport: {
+                                width:
+                                    390,
+
+                                height:
+                                    844
+                            }
+                        });
+
+
+                    contexts.push(
+                        excavatorContext
+                    );
+
+
+                    const excavatorPage =
+                        await excavatorContext.newPage();
+
+
+                    await installAGroupRobotContext(
+                        excavatorPage,
+                        unit.driverId
+                    );
+
+
+                    const excavatorName =
+                        "ExcavatorBot-A" +
+                        String(
+                            unitIndex +
+                            1
+                        )
+                        .padStart(
+                            2,
+                            "0"
+                        );
+
+
+                    robotMessage(
+                        excavatorName,
+                        "启动：司机=" +
+                        unit.driverId +
+                        "；挖机=" +
+                        unit.excavatorId
+                    );
+
+
+                    const excavatorBot =
+                        new ExcavatorBot(
+                            excavatorPage,
+                            excavatorName
+                        );
+
+
+                    await excavatorBot.open();
+
+
+                    const excavatorResult =
+                        await excavatorBot.assertAssignment({
+                            driverId:
+                                unit.driverId,
+
+                            excavatorId:
+                                unit.excavatorId,
+
+                            taskId:
+                                unit.taskId,
+
+                            truckIds:
+                                unit.trucks.map(
+                                    item =>
+                                        item.vehicleId
+                                )
+                        });
+
+
+                    results.excavators.push(
+                        excavatorResult
+                    );
+
+
+                    robotMessage(
+                        excavatorName,
+                        "PASS：已识别3台跟随汽车 " +
+                        excavatorResult.truckIds.join(
+                            "、"
+                        )
+                    );
+
+
+                    const driverJobs =
+                        unit.trucks.map(
+                            async (
+                                truck,
+                                truckIndex
+                            ) => {
+
+                                const driverContext =
+                                    await browser.newContext({
+                                        baseURL:
+                                            BASE_URL,
+
+                                        viewport: {
+                                            width:
+                                                390,
+
+                                            height:
+                                                844
+                                        }
+                                    });
+
+
+                                contexts.push(
+                                    driverContext
+                                );
+
+
+                                const driverPage =
+                                    await driverContext.newPage();
+
+
+                                await installAGroupRobotContext(
+                                    driverPage,
+                                    truck.driverId
+                                );
+
+
+                                const driverName =
+                                    "TruckDriverBot-A" +
+                                    String(
+                                        unitIndex +
+                                        1
+                                    )
+                                    .padStart(
+                                        2,
+                                        "0"
+                                    ) +
+                                    "-" +
+                                    String(
+                                        truckIndex +
+                                        1
+                                    );
+
+
+                                robotMessage(
+                                    driverName,
+                                    "启动：司机=" +
+                                    truck.driverId +
+                                    "；车辆=" +
+                                    truck.vehicleId +
+                                    "；跟随挖机=" +
+                                    unit.excavatorId
+                                );
+
+
+                                const driverBot =
+                                    new TruckDriverBot(
+                                        driverPage
+                                    );
+
+
+                                driverBot.name =
+                                    driverName;
+
+
+                                await driverBot.open();
+
+
+                                const profile =
+                                    await driverBot.assertTestIdentity();
+
+
+                                const task =
+                                    await driverBot.assertTestTask();
+
+
+                                const actualDriverId =
+                                    String(
+                                        profile.driverId ||
+                                        profile.personId ||
+                                        ""
+                                    );
+
+
+                                const actualTaskId =
+                                    String(
+                                        task.taskId ||
+                                        task.dispatchTaskId ||
+                                        ""
+                                    );
+
+
+                                const actualVehicleId =
+                                    String(
+                                        task.vehicleId ||
+                                        task.vehicleNumber ||
+                                        ""
+                                    );
+
+
+                                const actualExcavatorId =
+                                    String(
+                                        task.excavatorId ||
+                                        task.excavatorNumber ||
+                                        ""
+                                    );
+
+
+                                if (
+                                    actualDriverId !==
+                                        truck.driverId
+                                ) {
+
+                                    throw new Error(
+                                        driverName +
+                                        "：personId不一致，预期=" +
+                                        truck.driverId +
+                                        "；实际=" +
+                                        actualDriverId
+                                    );
+                                }
+
+
+                                if (
+                                    actualTaskId !==
+                                        unit.taskId
+                                ) {
+
+                                    throw new Error(
+                                        driverName +
+                                        "：taskId不一致，预期=" +
+                                        unit.taskId +
+                                        "；实际=" +
+                                        actualTaskId
+                                    );
+                                }
+
+
+                                if (
+                                    actualVehicleId !==
+                                        truck.vehicleId
+                                ) {
+
+                                    throw new Error(
+                                        driverName +
+                                        "：车辆绑定不一致，预期=" +
+                                        truck.vehicleId +
+                                        "；实际=" +
+                                        actualVehicleId
+                                    );
+                                }
+
+
+                                if (
+                                    actualExcavatorId !==
+                                        unit.excavatorId
+                                ) {
+
+                                    throw new Error(
+                                        driverName +
+                                        "：挖机绑定不一致，预期=" +
+                                        unit.excavatorId +
+                                        "；实际=" +
+                                        actualExcavatorId
+                                    );
+                                }
+
+
+                                const result = {
+                                    driverId:
+                                        actualDriverId,
+
+                                    taskId:
+                                        actualTaskId,
+
+                                    vehicleId:
+                                        actualVehicleId,
+
+                                    excavatorId:
+                                        actualExcavatorId
+                                };
+
+
+                                results.drivers.push(
+                                    result
+                                );
+
+
+                                robotMessage(
+                                    driverName,
+                                    "PASS：司机 / 车辆 / 挖机 / 任务绑定一致。"
+                                );
+
+
+                                return result;
+                            }
+                        );
+
+
+                    await Promise.all(
+                        driverJobs
+                    );
+
+
+                    return excavatorResult;
+                }
+            );
+
+
+        await Promise.all(
+            unitJobs
+        );
+
+
+        /*
+         * TestManager 最终交叉核对：
+         * 2台挖机，每台3台汽车，6名司机无重复绑定。
+         */
+
+        if (
+            results.excavators.length !==
+                2
+        ) {
+
+            throw new Error(
+                "A组联动：挖机机器人数量不正确，预期=2；实际=" +
+                results.excavators.length
+            );
+        }
+
+
+        if (
+            results.drivers.length !==
+                6
+        ) {
+
+            throw new Error(
+                "A组联动：汽车司机机器人数量不正确，预期=6；实际=" +
+                results.drivers.length
+            );
+        }
+
+
+        const uniqueDrivers =
+            new Set(
+                results.drivers.map(
+                    item =>
+                        item.driverId
+                )
+            );
+
+
+        const uniqueVehicles =
+            new Set(
+                results.drivers.map(
+                    item =>
+                        item.vehicleId
+                )
+            );
+
+
+        if (
+            uniqueDrivers.size !==
+                6
+        ) {
+
+            throw new Error(
+                "A组联动：存在重复汽车司机绑定"
+            );
+        }
+
+
+        if (
+            uniqueVehicles.size !==
+                6
+        ) {
+
+            throw new Error(
+                "A组联动：存在重复汽车绑定"
+            );
+        }
+
+
+        for (
+            const unit
+            of A_GROUP.excavators
+        ) {
+
+            const linkedDrivers =
+                results.drivers.filter(
+                    item =>
+                        item.excavatorId ===
+                            unit.excavatorId
+                );
+
+
+            if (
+                linkedDrivers.length !==
+                    3
+            ) {
+
+                throw new Error(
+                    "A组联动：" +
+                    unit.excavatorId +
+                    " 跟随司机数量不正确，预期=3；实际=" +
+                    linkedDrivers.length
+                );
+            }
+        }
+
+
+        const durationMs =
+            Date.now() -
+            suiteStartedAt;
+
+
+        robotMessage(
+            botName,
+            "A组多机器人联动汇总：2/2挖机机器人 PASS；6/6汽车司机机器人 PASS。"
+        );
+
+
+        robotMessage(
+            botName,
+            "编组验证通过：TEST-A-EX-001 ← 3车；TEST-A-EX-002 ← 3车。"
+        );
+
+
+        robotMessage(
+            botName,
+            "A组联动总耗时=" +
+            (
+                durationMs /
+                1000
+            )
+            .toFixed(
+                2
+            ) +
+            "s"
+        );
+
+
+        updateBot(
+            botName,
+            "pass",
+            "A组2套挖机+6名汽车司机多机器人联动通过"
+        );
+
+
+        return {
+            ok:
+                true,
+
+            action:
+                "a-group-multi-robot-linkage",
+
+            team:
+                payload.team,
+
+            summary:
+                payload.summary,
+
+            durationMs,
+            results
+        };
+
+
+    } catch (
+        error
+    ) {
+
+        const diagnosis =
+            buildFailureDiagnosis({
+                caseName:
+                    "A组2套挖机6车多机器人联动",
+
+                error,
+
+                suiteLabel:
+                    "多机器人联动"
+            });
+
+
+        const diagnosticPath =
+            saveFailureDiagnostic(
+                diagnosis
+            );
+
+
+        reportFailureDiagnosis(
+            botName,
+            diagnosis,
+            diagnosticPath
+        );
+
+
+        updateBot(
+            botName,
+            "fail",
+            error?.message ||
+            String(
+                error
+            )
+        );
+
+
+        throw error;
+
+
+    } finally {
+
+        await Promise.all(
+            contexts.map(
+                context =>
+                    context.close()
+                        .catch(
+                            () => {}
+                        )
+            )
+        );
+    }
+}
+
+
 async function runStabilityRegression(
     rounds =
         3
@@ -5995,6 +6597,26 @@ async function executeCommand({
         requestedBot ===
             "TestManager" &&
         (
+            /运行.*A组.*多机器人.*联动/i.test(
+                command
+            ) ||
+            /测试.*A组.*2套挖机.*6.*汽车/i.test(
+                command
+            ) ||
+            /A组.*2台挖机.*每台.*3.*汽车/i.test(
+                command
+            )
+        )
+    ) {
+
+        return await runAGroupMultiRobotLinkageTest();
+    }
+
+
+    if (
+        requestedBot ===
+            "TestManager" &&
+        (
             /运行.*稳定性.*回归/i.test(
                 command
             ) ||
@@ -6948,7 +7570,7 @@ server.listen(
         );
 
         console.log(
-            "🤖 机器人测试控制中心 R0-28 已启动"
+            "🤖 机器人测试控制中心 R0-29 已启动"
         );
 
         console.log(
