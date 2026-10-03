@@ -38,10 +38,11 @@ main{max-width:1300px;margin:16px auto;padding:0 12px 28px}
 select,textarea,button{font:inherit}select,textarea{width:100%;border:1px solid #cbd5e1;border-radius:9px;padding:9px 10px}
 textarea{min-height:72px;resize:vertical}.send{border:0;border-radius:9px;background:#2563eb;color:white;font-weight:900;padding:0 16px;cursor:pointer}.send:disabled{opacity:.5;cursor:not-allowed}
 .quick{display:flex;gap:7px;flex-wrap:wrap;margin-top:8px}.quick button{border:1px solid #cbd5e1;background:#f8fafc;border-radius:8px;padding:7px 10px;font-size:12px;font-weight:700;cursor:pointer}
+.readiness{margin-bottom:12px;padding:12px}.readiness-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.ready-card{border:1px solid #dbe3ef;border-radius:10px;padding:11px;background:#fbfdff}.ready-label{font-size:12px;color:#64748b}.ready-value{font-size:18px;font-weight:900;margin-top:4px}.ready-sub{font-size:11px;color:#64748b;margin-top:5px;line-height:1.5}.ready-pass{color:#166534}.ready-fail{color:#b91c1c}.ready-unknown{color:#64748b}
 .timeline{margin-top:12px}.tl{padding:12px 16px;max-height:240px;overflow:auto}
 .tli{display:grid;grid-template-columns:70px 130px 1fr;gap:10px;padding:7px 0;border-bottom:1px dashed #e2e8f0;font-size:12px}
 .tlt{color:#94a3b8}.tlb{font-weight:800}.tld{color:#475569}
-@media(max-width:900px){.grid{grid-template-columns:1fr}.commandrow{grid-template-columns:1fr}.send{min-height:44px}.messages{max-height:50vh}}
+@media(max-width:900px){.grid{grid-template-columns:1fr}.commandrow{grid-template-columns:1fr}.send{min-height:44px}.messages{max-height:50vh}.readiness-grid{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -60,6 +61,33 @@ textarea{min-height:72px;resize:vertical}.send{border:0;border-radius:9px;backgr
   </div>
 
   <div id="connection" class="connection bad">🔴 正在连接机器人后台……</div>
+
+  <section class="panel readiness">
+    <div class="title" style="padding:0 0 10px;border:0">
+      <h2>🚦 发布就绪状态</h2>
+      <span id="readinessUpdated">尚无回归结果</span>
+    </div>
+
+    <div class="readiness-grid">
+      <div class="ready-card">
+        <div class="ready-label">核心回归</div>
+        <div id="coreReadyValue" class="ready-value ready-unknown">未运行</div>
+        <div id="coreReadySub" class="ready-sub">运行“全部核心回归”后更新</div>
+      </div>
+
+      <div class="ready-card">
+        <div class="ready-label">发布前黄金回归</div>
+        <div id="goldenReadyValue" class="ready-value ready-unknown">未运行</div>
+        <div id="goldenReadySub" class="ready-sub">运行“发布前黄金回归”后更新</div>
+      </div>
+
+      <div class="ready-card">
+        <div class="ready-label">综合判断</div>
+        <div id="overallReadyValue" class="ready-value ready-unknown">待验证</div>
+        <div id="overallReadySub" class="ready-sub">核心 + 黄金都通过后显示“可发布”</div>
+      </div>
+    </div>
+  </section>
 
   <div class="grid">
     <section class="panel">
@@ -94,6 +122,8 @@ textarea{min-height:72px;resize:vertical}.send{border:0;border-radius:9px;backgr
         <div class="quick">
           <button data-cmd="开始测试临时非卸载区卸料完整闭环">▶ 临时卸料闭环</button>
           <button data-cmd="检查当前机器人卡在哪一步">📍 当前卡点</button>
+          <button data-cmd="运行发布前黄金回归">🏆 黄金回归</button>
+          <button data-cmd="运行全部核心回归测试">✅ 核心回归</button>
           <button data-cmd="输出当前测试报告">📄 测试报告</button>
           <button data-cmd="全部机器人恢复待命">↺ 全部待命</button>
         </div>
@@ -120,6 +150,71 @@ const messageRows = [];
 const timelineRows = [];
 let connected = false;
 let eventSource = null;
+
+let readinessState = {
+  core:null,
+  golden:null,
+  updatedAt:null
+};
+
+function renderReadiness(data){
+  readinessState=data||{core:null,golden:null,updatedAt:null};
+
+  const setSuite=(key,valueEl,subEl)=>{
+    const row=readinessState[key];
+    const value=document.getElementById(valueEl);
+    const sub=document.getElementById(subEl);
+
+    value.classList.remove("ready-pass","ready-fail","ready-unknown");
+
+    if(!row){
+      value.textContent="未运行";
+      value.classList.add("ready-unknown");
+      sub.textContent=key==="core" ? "运行“全部核心回归”后更新" : "运行“发布前黄金回归”后更新";
+      return;
+    }
+
+    const pass=row.status==="pass";
+    value.textContent=pass ? "PASS" : "FAIL";
+    value.classList.add(pass ? "ready-pass" : "ready-fail");
+
+    const duration=Number(row.durationMs||0);
+    const base=String(Number(row.passed||0))+"/"+String(Number(row.total||0))+" PASS · "+(duration/1000).toFixed(1)+"s";
+    const failed=Array.isArray(row.failedCases)&&row.failedCases.length
+      ? " · 失败："+row.failedCases.join("、")
+      : "";
+    sub.textContent=base+failed;
+  };
+
+  setSuite("core","coreReadyValue","coreReadySub");
+  setSuite("golden","goldenReadyValue","goldenReadySub");
+
+  const overall=document.getElementById("overallReadyValue");
+  const overallSub=document.getElementById("overallReadySub");
+  overall.classList.remove("ready-pass","ready-fail","ready-unknown");
+
+  const core=readinessState.core;
+  const golden=readinessState.golden;
+
+  if(core?.status==="pass" && golden?.status==="pass"){
+    overall.textContent="可发布";
+    overall.classList.add("ready-pass");
+    overallSub.textContent="核心回归和黄金回归均已通过";
+  }else if(core?.status==="fail" || golden?.status==="fail"){
+    overall.textContent="暂不可发布";
+    overall.classList.add("ready-fail");
+    overallSub.textContent="存在失败回归，请先处理 FAIL";
+  }else{
+    overall.textContent="待验证";
+    overall.classList.add("ready-unknown");
+    overallSub.textContent="核心 + 黄金都通过后显示“可发布”";
+  }
+
+  const updated=document.getElementById("readinessUpdated");
+  updated.textContent=readinessState.updatedAt
+    ? "最近更新 "+new Date(readinessState.updatedAt).toLocaleString("zh-CN")
+    : "尚无回归结果";
+}
 
 function time(){
   return new Date().toLocaleTimeString("zh-CN",{hour:"2-digit",minute:"2-digit",second:"2-digit"});
@@ -224,6 +319,8 @@ async function loadStatus(){
       setBot(name,row.status||"idle",row.step||"");
     });
 
+    renderReadiness(data.readiness||{});
+
     setConnection(true,"机器人后台已连接 · http://127.0.0.1:4310");
     return true;
   }catch(error){
@@ -271,6 +368,10 @@ function connectEvents(){
     if(data.type==="message"){
       addMessage(data.bot||"TestManager",data.message||"");
       addTimeline(data.bot||"TestManager",data.message||"");
+    }
+
+    if(data.type==="readiness"){
+      renderReadiness(data.readiness||{});
     }
   };
 }
