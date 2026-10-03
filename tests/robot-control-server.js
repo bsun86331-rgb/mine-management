@@ -4912,6 +4912,140 @@ async function runMaintenanceWarehouseReportCenterTest() {
 }
 
 
+async function runAGroupAuxiliaryDispatchFeedbackClosedLoopTest() {
+
+    const botName =
+        "TestManager";
+
+
+    try {
+
+        updateBot(
+            botName,
+            "running",
+            "正在执行A组辅助车辆到调度端完成回传闭环"
+        );
+
+
+        robotMessage(
+            botName,
+            "步骤 1/2：先运行A组6岗位辅助车辆真实TEST联动。"
+        );
+
+
+        const auxiliary =
+            await runAGroupAuxiliaryLinkageTest();
+
+
+        if (
+            !auxiliary ||
+            !Array.isArray(
+                auxiliary.results
+            ) ||
+            auxiliary.results.length !==
+                6
+        ) {
+
+            throw new Error(
+                "A组辅助车辆到调度端闭环：岗位侧结果不是6条"
+            );
+        }
+
+
+        robotMessage(
+            botName,
+            "步骤 2/2：把刚才6个真实TEST岗位结果回传到调度端并逐条核对。"
+        );
+
+
+        const bot =
+            await getDispatchBot();
+
+
+        await bot.open();
+
+
+        await bot.seedAuxiliaryCompletionFeedbackFromResults(
+            auxiliary.results
+        );
+
+
+        const feedback =
+            await bot.verifyAuxiliaryCompletionFeedbackFromResults(
+                auxiliary.results
+            );
+
+
+        if (
+            !feedback.allVehiclesVisible ||
+            !feedback.allTasksVisible ||
+            !feedback.hasFuel
+        ) {
+
+            throw new Error(
+                "A组辅助车辆到调度端闭环：完成回传校验不完整"
+            );
+        }
+
+
+        updateBot(
+            botName,
+            "pass",
+            "A组辅助车辆 → 调度端完成回传闭环通过"
+        );
+
+
+        robotMessage(
+            botName,
+            "完整回传通过：6个岗位全部完成，调度端显示 " +
+            feedback.count +
+            " 条；6个车辆号和6个任务号均已显示；加油完成记录已显示。"
+        );
+
+
+        return {
+            ok:
+                true,
+
+            action:
+                "a-group-auxiliary-dispatch-feedback-closed-loop",
+
+            auxiliary,
+
+            feedback
+        };
+
+
+    } catch (
+        error
+    ) {
+
+        const message =
+            error?.message ||
+            String(
+                error
+            );
+
+
+        updateBot(
+            botName,
+            "fail",
+            message
+        );
+
+
+        robotMessage(
+            botName,
+            "A组辅助车辆 → 调度端完成回传闭环失败：" +
+            message
+        );
+
+
+        throw error;
+    }
+}
+
+
 async function runDispatchAuxiliaryCompletionFeedbackTest() {
 
     const botName =
@@ -9952,6 +10086,45 @@ function naturalLanguageIntentCatalog() {
         },
         {
             action:
+                "a-group-auxiliary-dispatch-feedback-closed-loop",
+
+            label:
+                "A组辅助车辆到调度端完成回传闭环",
+
+            runner:
+                async () =>
+                    await runAGroupAuxiliaryDispatchFeedbackClosedLoopTest(),
+
+            requiredGroups: [
+                [
+                    "辅助车辆",
+                    "6种",
+                    "六种",
+                    "a组"
+                ],
+                [
+                    "调度端",
+                    "调度",
+                    "完成回传",
+                    "回传"
+                ]
+            ],
+
+            bonusTerms: [
+                "完整",
+                "闭环",
+                "全部",
+                "都显示",
+                "从岗位到调度"
+            ],
+
+            examples: [
+                "把6种辅助车辆跑完以后看看调度端能不能全部收到",
+                "跑一下A组辅助车辆到调度端完成回传的完整闭环"
+            ]
+        },
+        {
+            action:
                 "dispatch-auxiliary-completion-feedback",
 
             label:
@@ -11322,6 +11495,26 @@ async function executeCommand({
     ) {
 
         return await runTemporaryUnloadRejectionTest();
+    }
+
+
+    if (
+        requestedBot ===
+            "TestManager" &&
+        (
+            /运行.*A组.*辅助车辆.*调度.*回传.*闭环/i.test(
+                command
+            ) ||
+            /测试.*A组.*辅助车辆.*调度端.*完成回传/i.test(
+                command
+            ) ||
+            /辅助车辆.*6.*岗位.*回传.*调度/i.test(
+                command
+            )
+        )
+    ) {
+
+        return await runAGroupAuxiliaryDispatchFeedbackClosedLoopTest();
     }
 
 
