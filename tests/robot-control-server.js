@@ -11112,6 +11112,27 @@ async function runAllCoreRegressionTests() {
 
 
     await runCase(
+        "维修库房三岗位联动",
+        async () =>
+            await runMaintenanceWarehousePartsLinkageTest()
+    );
+
+
+    await runCase(
+        "维修库房完整闭环",
+        async () =>
+            await runMaintenanceWarehouseFullClosedLoopTest()
+    );
+
+
+    await runCase(
+        "维修库房报表回写",
+        async () =>
+            await runMaintenanceWarehouseReportCenterTest()
+    );
+
+
+    await runCase(
         "调度端辅助车辆完成回传",
         async () =>
             await runDispatchAuxiliaryCompletionFeedbackTest()
