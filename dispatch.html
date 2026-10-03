@@ -3622,6 +3622,31 @@
     </section>
 
 
+    <!-- =====================================================
+         V2.13.8 辅助车辆完成回传
+    ====================================================== -->
+    <section class="dispatch-section">
+
+        <div class="dispatch-section-title">
+            <div>
+                <h2>✅ 辅助车辆完成回传</h2>
+                <p>统一读取辅助车辆作业记录与加油完成记录，供调度查看已完成任务。</p>
+            </div>
+
+            <span id="auxiliaryCompletionCount" class="count-badge">
+                0 条
+            </span>
+        </div>
+
+        <div id="auxiliaryCompletionList">
+            <div class="empty-placeholder">
+                暂无辅助车辆完成记录
+            </div>
+        </div>
+
+    </section>
+
+
     <button
         type="button"
         class="back-home-button"
@@ -5872,6 +5897,319 @@ refreshMaintenanceReviewTodo();
 setInterval(
     refreshMaintenanceReviewTodo,
     5000
+);
+
+
+
+/* =========================================================
+   V2.13.8
+   辅助车辆完成回传统一视图
+
+   数据来源：
+   - auxiliaryWorkRecords
+   - fuelRecords
+========================================================= */
+
+function dispatchReadArraySafe(
+    key
+) {
+
+    try {
+
+        const value =
+            JSON.parse(
+                localStorage.getItem(
+                    key
+                )
+            );
+
+
+        return Array.isArray(
+            value
+        )
+            ? value
+            : [];
+
+    } catch (
+        error
+    ) {
+
+        return [];
+    }
+}
+
+
+function dispatchAuxiliaryCompletionRecords() {
+
+    const auxiliary =
+        dispatchReadArraySafe(
+            "auxiliaryWorkRecords"
+        )
+        .filter(
+            item =>
+                item &&
+                (
+                    item.status ===
+                        "completed"
+                    ||
+                    item.completedAt
+                )
+        )
+        .map(
+            item => ({
+                type:
+                    "辅助车辆",
+
+                recordId:
+                    item.workRecordId ||
+                    item.recordId ||
+                    item.id ||
+                    "",
+
+                taskId:
+                    item.taskId ||
+                    item.dispatchTaskId ||
+                    "",
+
+                person:
+                    item.personName ||
+                    item.driverName ||
+                    item.position ||
+                    "-",
+
+                position:
+                    item.position ||
+                    item.vehicleType ||
+                    "辅助车辆",
+
+                vehicle:
+                    item.vehicleNumber ||
+                    item.vehicleId ||
+                    "-",
+
+                work:
+                    item.work ||
+                    item.workContent ||
+                    item.remark ||
+                    "-",
+
+                completedAt:
+                    item.completedAt ||
+                    item.updatedAt ||
+                    item.createdAt ||
+                    ""
+            })
+        );
+
+
+    const fuel =
+        dispatchReadArraySafe(
+            "fuelRecords"
+        )
+        .filter(
+            item =>
+                item &&
+                (
+                    item.completedAt ||
+                    item.createdAt
+                )
+        )
+        .map(
+            item => ({
+                type:
+                    "加油",
+
+                recordId:
+                    item.fuelId ||
+                    item.recordId ||
+                    item.id ||
+                    "",
+
+                taskId:
+                    item.requestId ||
+                    item.taskId ||
+                    "",
+
+                person:
+                    item.driverName ||
+                    item.personName ||
+                    "加油车司机",
+
+                position:
+                    "加油车司机",
+
+                vehicle:
+                    item.vehicleNumber ||
+                    item.vehicleId ||
+                    "-",
+
+                work:
+                    "完成加油 " +
+                    Number(
+                        item.amount ||
+                        item.quantity ||
+                        0
+                    )
+                    .toFixed(
+                        1
+                    ) +
+                    " L",
+
+                completedAt:
+                    item.completedAt ||
+                    item.createdAt ||
+                    ""
+            })
+        );
+
+
+    return [
+        ...auxiliary,
+        ...fuel
+    ]
+    .sort(
+        (
+            a,
+            b
+        ) =>
+            new Date(
+                b.completedAt ||
+                0
+            )
+            -
+            new Date(
+                a.completedAt ||
+                0
+            )
+    )
+    .slice(
+        0,
+        20
+    );
+}
+
+
+function renderAuxiliaryCompletionFeedback() {
+
+    const box =
+        document.getElementById(
+            "auxiliaryCompletionList"
+        );
+
+
+    const badge =
+        document.getElementById(
+            "auxiliaryCompletionCount"
+        );
+
+
+    if (
+        !box ||
+        !badge
+    ) {
+
+        return;
+    }
+
+
+    const records =
+        dispatchAuxiliaryCompletionRecords();
+
+
+    badge.textContent =
+        String(
+            records.length
+        ) +
+        " 条";
+
+
+    if (
+        !records.length
+    ) {
+
+        box.innerHTML = `
+            <div class="empty-placeholder">
+                暂无辅助车辆完成记录
+            </div>
+        `;
+
+
+        return;
+    }
+
+
+    box.innerHTML =
+        records
+            .map(
+                item => `
+                    <div
+                        class="record-card"
+                        style="margin-bottom:10px;"
+                    >
+                        <div class="record-top">
+                            <strong>
+                                ${escapeMaintenanceHtml(item.position)}
+                                ·
+                                ${escapeMaintenanceHtml(item.vehicle)}
+                            </strong>
+
+                            <span class="count-badge">
+                                ${escapeMaintenanceHtml(item.type)}
+                            </span>
+                        </div>
+
+                        <div
+                            class="record-info"
+                            style="margin-top:8px;"
+                        >
+                            任务：
+                            ${escapeMaintenanceHtml(item.taskId || "-")}
+                            <br>
+
+                            作业：
+                            ${escapeMaintenanceHtml(item.work || "-")}
+                            <br>
+
+                            完成人：
+                            ${escapeMaintenanceHtml(item.person || "-")}
+                            <br>
+
+                            完成时间：
+                            ${formatMaintenanceDateTime(item.completedAt)}
+                        </div>
+                    </div>
+                `
+            )
+            .join(
+                ""
+            );
+}
+
+
+renderAuxiliaryCompletionFeedback();
+
+
+setInterval(
+    renderAuxiliaryCompletionFeedback,
+    5000
+);
+
+
+window.addEventListener(
+    "storage",
+    event => {
+
+        if (
+            event.key ===
+                "auxiliaryWorkRecords"
+            ||
+            event.key ===
+                "fuelRecords"
+        ) {
+
+            renderAuxiliaryCompletionFeedback();
+        }
+    }
 );
 
 
