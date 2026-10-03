@@ -1,7 +1,7 @@
 /*
 ====================================================
 矿山管理系统
-司机端 V2.11.0L
+司机端 V2.12.0
 ====================================================
 功能：
 1. 审核通过司机才可进入
@@ -307,6 +307,21 @@ document.addEventListener("DOMContentLoaded", function () {
 
             ||
 
+            person.status ===
+                "pending"
+
+            ||
+
+            person.status ===
+                "leave"
+
+            ||
+
+            person.approvalStatus ===
+                "pending"
+
+            ||
+
             person.personnelStatus ===
                 "停用"
 
@@ -314,6 +329,16 @@ document.addEventListener("DOMContentLoaded", function () {
 
             person.personnelStatus ===
                 "离职"
+
+            ||
+
+            person.personnelStatus ===
+                "待审核"
+
+            ||
+
+            person.personnelStatus ===
+                "请假"
 
         ) {
 
@@ -338,11 +363,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
             ||
 
-            person.status ===
-                "leave"
-
-            ||
-
             person.approvalStatus ===
                 "approved"
 
@@ -355,11 +375,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
             person.personnelStatus ===
                 "作业中"
-
-            ||
-
-            person.personnelStatus ===
-                "请假"
 
         );
     }
