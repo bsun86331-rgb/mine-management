@@ -4020,7 +4020,7 @@ async function runMaintenanceWarehousePartsLinkageTest() {
         await resumeButton.waitFor({
             state:
                 "visible"
-        );
+        });
 
 
         await resumeButton.click();
