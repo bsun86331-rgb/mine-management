@@ -242,6 +242,51 @@ let pendingNaturalLanguageConfirmation =
     null;
 
 
+/*
+ * 发布就绪状态：
+ * 记录最近一次核心回归和黄金回归结果，供测试中心看板读取。
+ */
+let readinessState = {
+    core: null,
+    golden: null,
+    updatedAt: null
+};
+
+
+function updateReadinessSuite(
+    suite,
+    payload
+) {
+
+    readinessState[
+        suite
+    ] = {
+        ...payload,
+
+        updatedAt:
+            new Date()
+                .toISOString()
+    };
+
+
+    readinessState.updatedAt =
+        new Date()
+            .toISOString();
+
+
+    sendEvent({
+        type:
+            "readiness",
+
+        readiness:
+            readinessState,
+
+        time:
+            readinessState.updatedAt
+    });
+}
+
+
 let robotStatus = {
 
     TestManager: {
@@ -10121,6 +10166,32 @@ async function runReleaseGoldenRegression() {
         failed
     ) {
 
+        updateReadinessSuite(
+            "golden",
+            {
+                status:
+                    "fail",
+
+                passed,
+                total,
+
+                durationMs:
+                    suiteDurationMs,
+
+                failedCases:
+                    results
+                        .filter(
+                            item =>
+                                !item.ok
+                        )
+                        .map(
+                            item =>
+                                item.name
+                        )
+            }
+        );
+
+
         updateBot(
             botName,
             "fail",
@@ -10148,6 +10219,24 @@ async function runReleaseGoldenRegression() {
                 )
         );
     }
+
+
+    updateReadinessSuite(
+        "golden",
+        {
+            status:
+                "pass",
+
+            passed,
+            total,
+
+            durationMs:
+                suiteDurationMs,
+
+            failedCases:
+                []
+        }
+    );
 
 
     updateBot(
@@ -10581,6 +10670,32 @@ async function runAllCoreRegressionTests() {
         failed
     ) {
 
+        updateReadinessSuite(
+            "core",
+            {
+                status:
+                    "fail",
+
+                passed,
+                total,
+
+                durationMs:
+                    suiteDurationMs,
+
+                failedCases:
+                    results
+                        .filter(
+                            item =>
+                                !item.ok
+                        )
+                        .map(
+                            item =>
+                                item.name
+                        )
+            }
+        );
+
+
         updateBot(
             botName,
             "fail",
@@ -10608,6 +10723,24 @@ async function runAllCoreRegressionTests() {
                 )
         );
     }
+
+
+    updateReadinessSuite(
+        "core",
+        {
+            status:
+                "pass",
+
+            passed,
+            total,
+
+            durationMs:
+                suiteDurationMs,
+
+            failedCases:
+                []
+        }
+    );
 
 
     updateBot(
@@ -13504,7 +13637,34 @@ const server =
 
                             headless:
                                 HEADLESS
-                        }
+                        },
+
+                        readiness:
+                            readinessState
+                    }
+                );
+
+
+                return;
+            }
+
+
+            if (
+                request.method ===
+                    "GET" &&
+                url.pathname ===
+                    "/api/readiness"
+            ) {
+
+                sendJson(
+                    response,
+                    200,
+                    {
+                        ok:
+                            true,
+
+                        readiness:
+                            readinessState
                     }
                 );
 
