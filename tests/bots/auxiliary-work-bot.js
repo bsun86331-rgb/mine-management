@@ -465,7 +465,7 @@ class AuxiliaryWorkBot {
         await startButton.waitFor({
             state:
                 "visible"
-        );
+        });
 
 
         await startButton.click();
