@@ -11454,6 +11454,44 @@ function naturalLanguageIntentCatalog() {
         },
         {
             action:
+                "one-click-release-check",
+
+            label:
+                "一键发布前检查",
+
+            runner:
+                async () =>
+                    await runOneClickReleaseCheck(),
+
+            requiredGroups: [
+                [
+                    "发布",
+                    "上线"
+                ],
+                [
+                    "检查",
+                    "验证",
+                    "测试"
+                ]
+            ],
+
+            bonusTerms: [
+                "一键",
+                "全部",
+                "完整",
+                "核心",
+                "黄金",
+                "报告",
+                "能不能发布"
+            ],
+
+            examples: [
+                "一键把发布前所有检查都跑完",
+                "帮我检查现在能不能发布"
+            ]
+        },
+        {
+            action:
                 "current-test-report",
 
             label:
@@ -12745,6 +12783,139 @@ async function executePendingNaturalLanguageConfirmation(
 }
 
 
+async function runOneClickReleaseCheck() {
+
+    const botName =
+        "TestManager";
+
+
+    const startedAt =
+        Date.now();
+
+
+    try {
+
+        updateBot(
+            botName,
+            "running",
+            "正在执行一键发布前检查"
+        );
+
+
+        robotMessage(
+            botName,
+            "步骤 1/3：运行全部核心回归。"
+        );
+
+
+        const core =
+            await runAllCoreRegressionTests();
+
+
+        robotMessage(
+            botName,
+            "步骤 2/3：运行发布前黄金回归。"
+        );
+
+
+        const golden =
+            await runReleaseGoldenRegression();
+
+
+        robotMessage(
+            botName,
+            "步骤 3/3：生成当前测试报告。"
+        );
+
+
+        const report =
+            await runCurrentTestReport();
+
+
+        const durationMs =
+            Date.now() -
+            startedAt;
+
+
+        updateBot(
+            botName,
+            "pass",
+            "一键发布前检查全部通过"
+        );
+
+
+        robotMessage(
+            botName,
+            "一键发布前检查完成：核心=" +
+            core.passed +
+            "/" +
+            core.total +
+            " PASS；黄金=" +
+            golden.passed +
+            "/" +
+            golden.total +
+            " PASS；综合判断=" +
+            report.report.overallLabel +
+            "；总耗时=" +
+            (
+                durationMs /
+                1000
+            )
+            .toFixed(
+                1
+            ) +
+            "s"
+        );
+
+
+        return {
+            ok:
+                true,
+
+            action:
+                "one-click-release-check",
+
+            core,
+
+            golden,
+
+            report,
+
+            durationMs
+        };
+
+
+    } catch (
+        error
+    ) {
+
+        const message =
+            error?.message ||
+            String(
+                error
+            );
+
+
+        updateBot(
+            botName,
+            "fail",
+            "一键发布前检查失败：" +
+            message
+        );
+
+
+        robotMessage(
+            botName,
+            "一键发布前检查中止：" +
+            message
+        );
+
+
+        throw error;
+    }
+}
+
+
 function buildCurrentTestReport() {
 
     const core =
@@ -13241,6 +13412,29 @@ async function executeCommand({
         requestedBot,
         `收到命令：${command}`
     );
+
+
+    if (
+        requestedBot ===
+            "TestManager" &&
+        (
+            /运行.*一键.*发布.*检查/i.test(
+                command
+            ) ||
+            /一键.*发布前.*检查/i.test(
+                command
+            ) ||
+            /发布前.*全部.*检查/i.test(
+                command
+            ) ||
+            /核心.*黄金.*报告.*一起/i.test(
+                command
+            )
+        )
+    ) {
+
+        return await runOneClickReleaseCheck();
+    }
 
 
     if (
