@@ -4912,6 +4912,448 @@ async function runMaintenanceWarehouseReportCenterTest() {
 }
 
 
+async function runAGroupAuxiliaryDispatchReportClosedLoopTest() {
+
+    const botName =
+        "TestManager";
+
+
+    let reportPage =
+        null;
+
+
+    try {
+
+        updateBot(
+            botName,
+            "running",
+            "正在执行A组辅助车辆 → 调度端 → 综合报表完整闭环"
+        );
+
+
+        robotMessage(
+            botName,
+            "步骤 1/2：先完成A组6岗位辅助车辆，并验证调度端全部收到完成回传。"
+        );
+
+
+        const closedLoop =
+            await runAGroupAuxiliaryDispatchFeedbackClosedLoopTest();
+
+
+        const results =
+            closedLoop?.auxiliary?.results;
+
+
+        if (
+            !Array.isArray(
+                results
+            ) ||
+            results.length !==
+                6
+        ) {
+
+            throw new Error(
+                "辅助车辆调度报表完整闭环：上游实际结果不是6条"
+            );
+        }
+
+
+        robotMessage(
+            botName,
+            "步骤 2/2：打开综合报表中心，核对刚才6个实际TEST结果是否全部进入辅助车辆完成统计。"
+        );
+
+
+        reportPage =
+            await browserContext.newPage();
+
+
+        await reportPage.addInitScript(
+            () => {
+
+                const readArray =
+                    key => {
+
+                        try {
+
+                            const data =
+                                JSON.parse(
+                                    localStorage.getItem(
+                                        key
+                                    )
+                                );
+
+
+                            return Array.isArray(
+                                data
+                            )
+                                ? data
+                                : [];
+
+                        } catch (
+                            error
+                        ) {
+
+                            return [];
+                        }
+                    };
+
+
+                const adminId =
+                    "TEST-AUX-FULL-REPORT-ADMIN-001";
+
+
+                const rows =
+                    readArray(
+                        "personnelRecords"
+                    )
+                    .filter(
+                        item =>
+                            String(
+                                item.personId ||
+                                item.employeeId ||
+                                ""
+                            ) !==
+                                adminId
+                    );
+
+
+                rows.push({
+                    personId:
+                        adminId,
+
+                    employeeId:
+                        adminId,
+
+                    employeeNo:
+                        adminId,
+
+                    name:
+                        "TEST-辅助车辆全链路管理员",
+
+                    position:
+                        "管理员",
+
+                    department:
+                        "TEST-管理部",
+
+                    approvalStatus:
+                        "approved",
+
+                    status:
+                        "active",
+
+                    personnelStatus:
+                        "在职可用",
+
+                    testFixture:
+                        true
+                });
+
+
+                localStorage.setItem(
+                    "personnelRecords",
+                    JSON.stringify(
+                        rows
+                    )
+                );
+
+
+                localStorage.setItem(
+                    "adminPersonId",
+                    adminId
+                );
+
+
+                localStorage.setItem(
+                    "currentPersonId",
+                    adminId
+                );
+
+
+                localStorage.setItem(
+                    "selectedPosition",
+                    "管理员"
+                );
+
+
+                localStorage.setItem(
+                    "rolePersonIds",
+                    JSON.stringify({
+                        管理员:
+                            adminId
+                    })
+                );
+            }
+        );
+
+
+        await reportPage.goto(
+            "report-center.html?section=production",
+            {
+                waitUntil:
+                    "domcontentloaded"
+            }
+        );
+
+
+        await reportPage.waitForTimeout(
+            500
+        );
+
+
+        const monthCount =
+            Number(
+                await reportPage
+                    .locator(
+                        "#auxiliaryReportMonthCount"
+                    )
+                    .textContent()
+            );
+
+
+        const fuelCount =
+            Number(
+                await reportPage
+                    .locator(
+                        "#auxiliaryReportFuelCount"
+                    )
+                    .textContent()
+            );
+
+
+        const fuelAmountText =
+            String(
+                await reportPage
+                    .locator(
+                        "#auxiliaryReportFuelAmount"
+                    )
+                    .textContent()
+            )
+            .trim();
+
+
+        const tableText =
+            String(
+                await reportPage
+                    .locator(
+                        "#auxiliaryReportTableBody"
+                    )
+                    .innerText()
+            );
+
+
+        if (
+            monthCount <
+                6
+        ) {
+
+            throw new Error(
+                "辅助车辆调度报表完整闭环：报表本月完成数量不足，预期至少6；实际=" +
+                monthCount
+            );
+        }
+
+
+        if (
+            fuelCount <
+                1
+        ) {
+
+            throw new Error(
+                "辅助车辆调度报表完整闭环：报表没有加油完成记录"
+            );
+        }
+
+
+        const fuelResult =
+            results.find(
+                item =>
+                    item.position ===
+                        "加油车司机"
+            );
+
+
+        if (
+            !fuelResult
+        ) {
+
+            throw new Error(
+                "辅助车辆调度报表完整闭环：上游结果缺少加油车"
+            );
+        }
+
+
+        const expectedFuelAmount =
+            Number(
+                fuelResult.amount ||
+                0
+            )
+            .toFixed(
+                1
+            ) +
+            " L";
+
+
+        if (
+            fuelAmountText !==
+                expectedFuelAmount
+        ) {
+
+            throw new Error(
+                "辅助车辆调度报表完整闭环：报表加油量不一致，预期=" +
+                expectedFuelAmount +
+                "；实际=" +
+                fuelAmountText
+            );
+        }
+
+
+        const missing = [];
+
+
+        results.forEach(
+            item => {
+
+                const vehicleId =
+                    String(
+                        item.vehicleId ||
+                        ""
+                    );
+
+
+                const taskId =
+                    String(
+                        item.taskId ||
+                        ""
+                    );
+
+
+                if (
+                    vehicleId &&
+                    !tableText.includes(
+                        vehicleId
+                    )
+                ) {
+
+                    missing.push(
+                        "车辆 " +
+                        vehicleId
+                    );
+                }
+
+
+                if (
+                    taskId &&
+                    !tableText.includes(
+                        taskId
+                    )
+                ) {
+
+                    missing.push(
+                        "任务 " +
+                        taskId
+                    );
+                }
+            }
+        );
+
+
+        if (
+            missing.length
+        ) {
+
+            throw new Error(
+                "辅助车辆调度报表完整闭环：报表明细缺少 " +
+                missing.join(
+                    "、"
+                )
+            );
+        }
+
+
+        updateBot(
+            botName,
+            "pass",
+            "A组辅助车辆 → 调度端 → 综合报表完整闭环通过"
+        );
+
+
+        robotMessage(
+            botName,
+            "全链路通过：6个辅助车辆岗位完成 → 调度端全部收到 → 综合报表全部显示；本月完成=" +
+            monthCount +
+            "；加油完成=" +
+            fuelCount +
+            "；加油量=" +
+            fuelAmountText +
+            "。"
+        );
+
+
+        return {
+            ok:
+                true,
+
+            action:
+                "a-group-auxiliary-dispatch-report-closed-loop",
+
+            monthCount,
+
+            fuelCount,
+
+            fuelAmount:
+                fuelAmountText,
+
+            results
+        };
+
+
+    } catch (
+        error
+    ) {
+
+        const message =
+            error?.message ||
+            String(
+                error
+            );
+
+
+        updateBot(
+            botName,
+            "fail",
+            message
+        );
+
+
+        robotMessage(
+            botName,
+            "A组辅助车辆 → 调度端 → 综合报表完整闭环失败：" +
+            message
+        );
+
+
+        throw error;
+
+
+    } finally {
+
+        if (
+            reportPage &&
+            !reportPage.isClosed()
+        ) {
+
+            await reportPage.close()
+                .catch(
+                    () => {}
+                );
+        }
+    }
+}
+
+
 async function runAuxiliaryReportCenterVerificationTest() {
 
     const botName =
@@ -10453,6 +10895,47 @@ function naturalLanguageIntentCatalog() {
         },
         {
             action:
+                "a-group-auxiliary-dispatch-report-closed-loop",
+
+            label:
+                "A组辅助车辆调度报表完整闭环",
+
+            runner:
+                async () =>
+                    await runAGroupAuxiliaryDispatchReportClosedLoopTest(),
+
+            requiredGroups: [
+                [
+                    "辅助车辆",
+                    "6种",
+                    "六种",
+                    "a组"
+                ],
+                [
+                    "报表",
+                    "综合报表",
+                    "统计"
+                ]
+            ],
+
+            bonusTerms: [
+                "调度端",
+                "调度",
+                "完整",
+                "闭环",
+                "全链路",
+                "全部收到",
+                "全部显示",
+                "从头到尾"
+            ],
+
+            examples: [
+                "把6种辅助车辆从完成到调度回传再到综合报表整套跑一遍",
+                "检查A组辅助车辆完成以后调度端和报表是不是都能全部收到"
+            ]
+        },
+        {
+            action:
                 "auxiliary-report-center-verification",
 
             label:
@@ -11899,6 +12382,26 @@ async function executeCommand({
     ) {
 
         return await runTemporaryUnloadRejectionTest();
+    }
+
+
+    if (
+        requestedBot ===
+            "TestManager" &&
+        (
+            /运行.*A组.*辅助车辆.*调度.*报表.*完整.*闭环/i.test(
+                command
+            ) ||
+            /辅助车辆.*调度端.*综合报表.*完整.*闭环/i.test(
+                command
+            ) ||
+            /6.*辅助车辆.*调度.*报表.*全链路/i.test(
+                command
+            )
+        )
+    ) {
+
+        return await runAGroupAuxiliaryDispatchReportClosedLoopTest();
     }
 
 
