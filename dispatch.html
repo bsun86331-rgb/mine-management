@@ -15580,7 +15580,34 @@ setInterval(
                 "挖机司机",
 
             "挖机操作手":
-                "挖机司机"
+                "挖机司机",
+
+            "装载机司机":
+                "铲车司机",
+
+            "维修人员":
+                "维修员",
+
+            "库房管理员":
+                "库房管理",
+
+            "调度员":
+                "车队长",
+
+            "测量人员":
+                "测量员",
+
+            "统计员":
+                "统计",
+
+            "财务":
+                "会计",
+
+            "会计员":
+                "会计",
+
+            "后勤人员":
+                "后勤"
         };
 
 
@@ -15691,10 +15718,20 @@ setInterval(
                         "disabled" ||
                     person.status ===
                         "resigned" ||
+                    person.status ===
+                        "pending" ||
+                    person.status ===
+                        "leave" ||
+                    person.approvalStatus ===
+                        "pending" ||
                     person.personnelStatus ===
                         "停用" ||
                     person.personnelStatus ===
-                        "离职"
+                        "离职" ||
+                    person.personnelStatus ===
+                        "待审核" ||
+                    person.personnelStatus ===
+                        "请假"
                 ) {
 
                     return false;
@@ -19790,8 +19827,13 @@ setInterval(
             person.approvalStatus === "rejected" ||
             person.status === "disabled" ||
             person.status === "resigned" ||
+            person.status === "pending" ||
+            person.status === "leave" ||
+            person.approvalStatus === "pending" ||
             person.personnelStatus === "停用" ||
-            person.personnelStatus === "离职"
+            person.personnelStatus === "离职" ||
+            person.personnelStatus === "待审核" ||
+            person.personnelStatus === "请假"
         ) {
             return false;
         }
@@ -19801,10 +19843,8 @@ setInterval(
             person.status === "approved" ||
             person.status === "active" ||
             person.status === "working" ||
-            person.status === "leave" ||
             person.personnelStatus === "在职可用" ||
-            person.personnelStatus === "作业中" ||
-            person.personnelStatus === "请假"
+            person.personnelStatus === "作业中"
         );
     }
 
