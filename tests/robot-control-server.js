@@ -9617,6 +9617,949 @@ async function executeTruckDriverCommand(
 }
 
 
+/*
+=========================================================
+TestManager 自然语言命令解析器
+- 只把大白话映射到“已经存在”的 TEST 场景
+- 不生成代码，不执行未知命令
+- 固定命令 / 原正则路由仍然优先
+=========================================================
+*/
+
+
+function normalizeNaturalLanguageCommand(
+    command
+) {
+
+    return String(
+        command ||
+        ""
+    )
+    .trim()
+    .toLowerCase()
+    .replace(
+        /[，。！？；：、,.!?;:（）()\[\]{}"'“”‘’]/g,
+        " "
+    )
+    .replace(
+        /\s+/g,
+        " "
+    );
+}
+
+
+function naturalLanguageIntentCatalog() {
+
+    return [
+        {
+            action:
+                "maintenance-warehouse-report-center",
+
+            label:
+                "维修库房报表回写",
+
+            runner:
+                async () =>
+                    await runMaintenanceWarehouseReportCenterTest(),
+
+            requiredGroups: [
+                [
+                    "维修",
+                    "修理"
+                ],
+                [
+                    "报表",
+                    "统计",
+                    "汇总"
+                ]
+            ],
+
+            bonusTerms: [
+                "库房",
+                "配件",
+                "领料",
+                "出库",
+                "回写",
+                "更新",
+                "有没有更新",
+                "费用"
+            ],
+
+            examples: [
+                "看看维修和库房结束后报表有没有更新",
+                "把维修配件流程跑完再检查综合报表"
+            ]
+        },
+        {
+            action:
+                "maintenance-warehouse-full-closed-loop",
+
+            label:
+                "维修库房完整闭环",
+
+            runner:
+                async () =>
+                    await runMaintenanceWarehouseFullClosedLoopTest(),
+
+            requiredGroups: [
+                [
+                    "维修",
+                    "修理"
+                ],
+                [
+                    "库房",
+                    "配件",
+                    "领料",
+                    "出库"
+                ]
+            ],
+
+            bonusTerms: [
+                "完整",
+                "整套",
+                "全流程",
+                "闭环",
+                "验收",
+                "归档",
+                "从头到尾",
+                "全部跑"
+            ],
+
+            examples: [
+                "把维修领配件库房出库到最后验收整套跑一遍",
+                "测试维修到库房再到验收的完整流程"
+            ]
+        },
+        {
+            action:
+                "maintenance-warehouse-parts-linkage",
+
+            label:
+                "维修库房三岗位联动",
+
+            runner:
+                async () =>
+                    await runMaintenanceWarehousePartsLinkageTest(),
+
+            requiredGroups: [
+                [
+                    "维修",
+                    "修理"
+                ],
+                [
+                    "库房",
+                    "配件",
+                    "领料",
+                    "出库"
+                ]
+            ],
+
+            bonusTerms: [
+                "三岗位",
+                "联动",
+                "等待配件",
+                "配件已到",
+                "恢复维修"
+            ],
+
+            negativeTerms: [
+                "验收",
+                "归档",
+                "报表",
+                "完整",
+                "整套"
+            ],
+
+            examples: [
+                "测一下维修员等配件和库房出库的联动",
+                "跑维修管理维修员库房三岗位联动"
+            ]
+        },
+        {
+            action:
+                "a-group-auxiliary-linkage",
+
+            label:
+                "A组辅助车辆联动",
+
+            runner:
+                async () =>
+                    await runAGroupAuxiliaryLinkageTest(),
+
+            requiredGroups: [
+                [
+                    "辅助车辆",
+                    "铲车",
+                    "洒水车",
+                    "平路机",
+                    "推土机",
+                    "大巴",
+                    "加油车"
+                ]
+            ],
+
+            bonusTerms: [
+                "a组",
+                "6种",
+                "六种",
+                "全部",
+                "都跑",
+                "联动",
+                "一起跑"
+            ],
+
+            examples: [
+                "把6种辅助车辆都跑一下",
+                "测一下铲车洒水车平路机推土机大巴和加油车"
+            ]
+        },
+        {
+            action:
+                "a-group-production-closed-loop",
+
+            label:
+                "A组生产联动闭环",
+
+            runner:
+                async () =>
+                    await runAGroupProductionClosedLoop(),
+
+            requiredGroups: [
+                [
+                    "a组",
+                    "生产组"
+                ],
+                [
+                    "生产",
+                    "运输",
+                    "挖机",
+                    "汽车"
+                ]
+            ],
+
+            bonusTerms: [
+                "闭环",
+                "完整",
+                "2台挖机",
+                "两台挖机",
+                "6台汽车",
+                "六台汽车",
+                "各跑一趟"
+            ],
+
+            examples: [
+                "把A组生产运输完整跑一遍",
+                "测两台挖机和六台汽车的生产闭环"
+            ]
+        },
+        {
+            action:
+                "gps-abnormal-blocking-test",
+
+            label:
+                "GPS异常拦截",
+
+            runner:
+                async () =>
+                    await runGpsAbnormalBlockingTest(),
+
+            requiredGroups: [
+                [
+                    "gps",
+                    "定位"
+                ]
+            ],
+
+            bonusTerms: [
+                "不准",
+                "异常",
+                "精度",
+                "150米",
+                "拦截",
+                "不能计数"
+            ],
+
+            examples: [
+                "测一下司机GPS不准的时候会不会被拦住",
+                "看看定位精度异常会不会产生正式趟次"
+            ]
+        },
+        {
+            action:
+                "temporary-unload-full-cycle",
+
+            label:
+                "临时卸料完整闭环",
+
+            runner:
+                async () =>
+                    await runTestManagerTemporaryUnloadFullCycle(),
+
+            requiredGroups: [
+                [
+                    "临时卸料",
+                    "非卸载区",
+                    "临时倒料"
+                ]
+            ],
+
+            bonusTerms: [
+                "完整",
+                "闭环",
+                "审批",
+                "通过",
+                "正式趟次"
+            ],
+
+            negativeTerms: [
+                "驳回",
+                "拒绝",
+                "不通过"
+            ],
+
+            examples: [
+                "把临时卸料申请审批到正式趟次整套跑一下"
+            ]
+        },
+        {
+            action:
+                "temporary-unload-rejection-test",
+
+            label:
+                "临时卸料驳回",
+
+            runner:
+                async () =>
+                    await runTemporaryUnloadRejectionTest(),
+
+            requiredGroups: [
+                [
+                    "临时卸料",
+                    "非卸载区",
+                    "临时倒料"
+                ],
+                [
+                    "驳回",
+                    "拒绝",
+                    "不通过"
+                ]
+            ],
+
+            bonusTerms: [
+                "不计趟次",
+                "不能计数",
+                "正式趟次"
+            ],
+
+            examples: [
+                "测一下临时卸料被驳回后会不会还算趟次"
+            ]
+        },
+        {
+            action:
+                "maintenance-inspection-rework-test",
+
+            label:
+                "维修验收返修",
+
+            runner:
+                async () =>
+                    await runMaintenanceInspectionReworkTest(),
+
+            requiredGroups: [
+                [
+                    "维修",
+                    "修理"
+                ],
+                [
+                    "返修",
+                    "验收不通过",
+                    "验收失败",
+                    "退回"
+                ]
+            ],
+
+            bonusTerms: [
+                "重新提交",
+                "再次验收",
+                "返工"
+            ],
+
+            examples: [
+                "测一下维修验收不通过退回返修再提交"
+            ]
+        },
+        {
+            action:
+                "maintenance-waiting-parts-cycle-test",
+
+            label:
+                "等待配件流程",
+
+            runner:
+                async () =>
+                    await runMaintenanceWaitingPartsCycleTest(),
+
+            requiredGroups: [
+                [
+                    "等待配件",
+                    "等配件",
+                    "配件已到",
+                    "缺配件"
+                ]
+            ],
+
+            bonusTerms: [
+                "继续维修",
+                "恢复维修",
+                "维修员"
+            ],
+
+            examples: [
+                "测一下维修员等配件，配件到了以后继续修"
+            ]
+        },
+        {
+            action:
+                "maintenance-fast-regression",
+
+            label:
+                "维修快速回归",
+
+            runner:
+                async () =>
+                    await runFastRegressionTests(
+                        "maintenance"
+                    ),
+
+            requiredGroups: [
+                [
+                    "维修",
+                    "修理"
+                ],
+                [
+                    "快速回归",
+                    "快速测",
+                    "快速测试"
+                ]
+            ],
+
+            bonusTerms: [
+                "全部",
+                "一遍"
+            ],
+
+            examples: [
+                "把维修模块快速测一遍"
+            ]
+        },
+        {
+            action:
+                "transport-fast-regression",
+
+            label:
+                "运输快速回归",
+
+            runner:
+                async () =>
+                    await runFastRegressionTests(
+                        "transport"
+                    ),
+
+            requiredGroups: [
+                [
+                    "运输",
+                    "司机",
+                    "趟次"
+                ],
+                [
+                    "快速回归",
+                    "快速测",
+                    "快速测试"
+                ]
+            ],
+
+            examples: [
+                "把运输模块快速测一下"
+            ]
+        },
+        {
+            action:
+                "dispatch-fast-regression",
+
+            label:
+                "调度快速回归",
+
+            runner:
+                async () =>
+                    await runFastRegressionTests(
+                        "dispatch"
+                    ),
+
+            requiredGroups: [
+                [
+                    "调度"
+                ],
+                [
+                    "快速回归",
+                    "快速测",
+                    "快速测试"
+                ]
+            ],
+
+            examples: [
+                "快速检查一下调度模块"
+            ]
+        },
+        {
+            action:
+                "all-core-regression-tests",
+
+            label:
+                "全部核心回归",
+
+            runner:
+                async () =>
+                    await runAllCoreRegressionTests(),
+
+            requiredGroups: [
+                [
+                    "核心回归",
+                    "全部核心",
+                    "所有核心",
+                    "核心功能"
+                ]
+            ],
+
+            bonusTerms: [
+                "全部",
+                "所有",
+                "整套",
+                "跑一遍"
+            ],
+
+            examples: [
+                "把所有核心功能回归一遍"
+            ]
+        },
+        {
+            action:
+                "fast-regression-all",
+
+            label:
+                "快速回归",
+
+            runner:
+                async () =>
+                    await runFastRegressionTests(),
+
+            requiredGroups: [
+                [
+                    "快速回归",
+                    "快速测试",
+                    "快速测一遍"
+                ]
+            ],
+
+            negativeTerms: [
+                "维修",
+                "运输",
+                "调度"
+            ],
+
+            examples: [
+                "先快速回归一遍"
+            ]
+        }
+    ];
+}
+
+
+function scoreNaturalLanguageIntent(
+    normalized,
+    intent
+) {
+
+    let score =
+        0;
+
+
+    for (
+        const group
+        of intent.requiredGroups ||
+        []
+    ) {
+
+        const matched =
+            group.some(
+                term =>
+                    normalized.includes(
+                        term
+                    )
+            );
+
+
+        if (
+            !matched
+        ) {
+
+            return 0;
+        }
+
+
+        score +=
+            4;
+    }
+
+
+    for (
+        const term
+        of intent.bonusTerms ||
+        []
+    ) {
+
+        if (
+            normalized.includes(
+                term
+            )
+        ) {
+
+            score +=
+                1;
+        }
+    }
+
+
+    for (
+        const term
+        of intent.negativeTerms ||
+        []
+    ) {
+
+        if (
+            normalized.includes(
+                term
+            )
+        ) {
+
+            score -=
+                3;
+        }
+    }
+
+
+    return Math.max(
+        0,
+        score
+    );
+}
+
+
+function parseNaturalLanguageCommand(
+    command
+) {
+
+    const normalized =
+        normalizeNaturalLanguageCommand(
+            command
+        );
+
+
+    const ranked =
+        naturalLanguageIntentCatalog()
+            .map(
+                intent => ({
+                    ...intent,
+
+                    score:
+                        scoreNaturalLanguageIntent(
+                            normalized,
+                            intent
+                        )
+                })
+            )
+            .filter(
+                item =>
+                    item.score >
+                    0
+            )
+            .sort(
+                (
+                    a,
+                    b
+                ) =>
+                    b.score -
+                    a.score
+            );
+
+
+    if (
+        !ranked.length
+    ) {
+
+        return {
+            matched:
+                false,
+
+            reason:
+                "no_match",
+
+            normalized,
+
+            candidates:
+                []
+        };
+    }
+
+
+    const best =
+        ranked[
+            0
+        ];
+
+
+    const second =
+        ranked[
+            1
+        ];
+
+
+    /*
+     * 相同得分视为歧义，不自动执行。
+     * 避免“维修 + 库房”之类大白话被误判成完整闭环或三岗位联动。
+     */
+    if (
+        second &&
+        second.score ===
+            best.score
+    ) {
+
+        return {
+            matched:
+                false,
+
+            reason:
+                "ambiguous",
+
+            normalized,
+
+            candidates:
+                ranked
+                    .slice(
+                        0,
+                        3
+                    )
+                    .map(
+                        item => ({
+                            action:
+                                item.action,
+
+                            label:
+                                item.label,
+
+                            score:
+                                item.score,
+
+                            example:
+                                item.examples?.[
+                                    0
+                                ] ||
+                                ""
+                        })
+                    )
+        };
+    }
+
+
+    return {
+        matched:
+            true,
+
+        reason:
+            "matched",
+
+        normalized,
+
+        action:
+            best.action,
+
+        label:
+            best.label,
+
+        score:
+            best.score,
+
+        runner:
+            best.runner,
+
+        example:
+            best.examples?.[
+                0
+            ] ||
+            "",
+
+        candidates:
+            ranked
+                .slice(
+                    0,
+                    3
+                )
+                .map(
+                    item => ({
+                        action:
+                            item.action,
+
+                        label:
+                            item.label,
+
+                        score:
+                            item.score
+                    })
+                )
+    };
+}
+
+
+async function executeNaturalLanguageIntent(
+    command
+) {
+
+    const parsed =
+        parseNaturalLanguageCommand(
+            command
+        );
+
+
+    if (
+        parsed.matched
+    ) {
+
+        robotMessage(
+            "TestManager",
+            "自然语言解析：" +
+            parsed.label +
+            "（" +
+            parsed.action +
+            "）"
+        );
+
+
+        updateBot(
+            "TestManager",
+            "running",
+            "自然语言已识别：" +
+            parsed.label
+        );
+
+
+        return await parsed.runner();
+    }
+
+
+    if (
+        parsed.reason ===
+            "ambiguous"
+    ) {
+
+        const labels =
+            parsed.candidates
+                .map(
+                    item =>
+                        "“" +
+                        item.label +
+                        "”"
+                )
+                .join(
+                    " / "
+                );
+
+
+        updateBot(
+            "TestManager",
+            "waiting",
+            "自然语言命令存在歧义，需要更明确"
+        );
+
+
+        robotMessage(
+            "TestManager",
+            "这句话可能是 " +
+            labels +
+            "。为防止误执行，请补充“完整闭环 / 三岗位联动 / 报表回写”等关键词。"
+        );
+
+
+        return {
+            ok:
+                true,
+
+            target:
+                "TestManager",
+
+            status:
+                "waiting",
+
+            action:
+                "natural-language-ambiguous",
+
+            candidates:
+                parsed.candidates
+        };
+    }
+
+
+    updateBot(
+        "TestManager",
+        "waiting",
+        "没有识别到可安全执行的 TEST 场景"
+    );
+
+
+    const examples =
+        naturalLanguageIntentCatalog()
+            .slice(
+                0,
+                6
+            )
+            .map(
+                item =>
+                    item.examples?.[
+                        0
+                    ]
+            )
+            .filter(
+                Boolean
+            );
+
+
+    robotMessage(
+        "TestManager",
+        "我没能确定你想运行哪个已接入 TEST 场景，因此没有执行。你可以直接说例如：“" +
+        examples.join(
+            "”“"
+        ) +
+        "”。"
+    );
+
+
+    return {
+        ok:
+            true,
+
+        target:
+            "TestManager",
+
+        status:
+            "waiting",
+
+        action:
+            "natural-language-no-match",
+
+        examples
+    };
+}
+
+
 async function executeCommand({
     target,
     command
@@ -10277,6 +11220,21 @@ async function executeCommand({
     ) {
 
         return await executeDispatchCommand(
+            command
+        );
+    }
+
+
+    /*
+     * 固定命令 / 原正则路由没有命中后，
+     * 才进入自然语言解析层。
+     */
+    if (
+        requestedBot ===
+            "TestManager"
+    ) {
+
+        return await executeNaturalLanguageIntent(
             command
         );
     }
