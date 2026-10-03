@@ -9677,6 +9677,13 @@ async function runReleaseGoldenRegression() {
     );
 
 
+    await runGoldenCase(
+        "A组辅助车辆调度报表完整闭环",
+        async () =>
+            await runAGroupAuxiliaryDispatchReportClosedLoopTest()
+    );
+
+
     const passed =
         results.filter(
             item =>
@@ -10120,6 +10127,13 @@ async function runAllCoreRegressionTests() {
         "调度端辅助车辆完成回传",
         async () =>
             await runDispatchAuxiliaryCompletionFeedbackTest()
+    );
+
+
+    await runCase(
+        "A组辅助车辆调度报表完整闭环",
+        async () =>
+            await runAGroupAuxiliaryDispatchReportClosedLoopTest()
     );
 
 
