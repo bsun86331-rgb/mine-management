@@ -54,6 +54,13 @@ const {
     "./bots/excavator-bot"
 );
 
+
+const {
+    RoleEntryBot
+} = require(
+    "./bots/role-entry-bot"
+);
+
 const {
     initializeTruckDriverTestEnvironment,
     clearRobotTestEnvironment
@@ -81,7 +88,7 @@ const {
 
 /*
 =========================================================
-R0-30 RobotControlServer
+R0-31 RobotControlServer
 机器人测试控制中心后台 + Playwright 执行器
 
 当前已接入：
@@ -5096,6 +5103,288 @@ async function runAGroupMultiRobotLinkageTest() {
 }
 
 
+async function runAllRoleEntryLinkageTest() {
+
+    const botName =
+        "TestManager";
+
+
+    await ensureBrowser();
+
+
+    const suiteStartedAt =
+        Date.now();
+
+
+    const contexts =
+        [];
+
+
+    const results =
+        [];
+
+
+    updateBot(
+        botName,
+        "running",
+        "正在运行全岗位入口联动测试"
+    );
+
+
+    robotMessage(
+        botName,
+        "启动17个其他岗位机器人：验证TEST身份、岗位、审核状态和正式页面入口。"
+    );
+
+
+    try {
+
+        const jobs =
+            A_GROUP.supportRoles.map(
+                async (
+                    role,
+                    index
+                ) => {
+
+                    const context =
+                        await browser.newContext({
+                            baseURL:
+                                BASE_URL,
+
+                            viewport: {
+                                width:
+                                    390,
+
+                                height:
+                                    844
+                            }
+                        });
+
+
+                    contexts.push(
+                        context
+                    );
+
+
+                    const page =
+                        await context.newPage();
+
+
+                    await installAGroupRobotContext(
+                        page,
+                        role.personId
+                    );
+
+
+                    const robotName =
+                        "RoleEntryBot-" +
+                        String(
+                            index +
+                            1
+                        )
+                        .padStart(
+                            2,
+                            "0"
+                        ) +
+                        "-" +
+                        role.position;
+
+
+                    robotMessage(
+                        robotName,
+                        "启动：" +
+                        role.personId +
+                        " / " +
+                        role.position
+                    );
+
+
+                    const bot =
+                        new RoleEntryBot(
+                            page,
+                            {
+                                personId:
+                                    role.personId,
+
+                                position:
+                                    role.position
+                            },
+                            robotName
+                        );
+
+
+                    const result =
+                        await bot.verify();
+
+
+                    results.push(
+                        result
+                    );
+
+
+                    robotMessage(
+                        robotName,
+                        "PASS：" +
+                        result.position +
+                        " → " +
+                        result.page
+                    );
+
+
+                    return result;
+                }
+            );
+
+
+        await Promise.all(
+            jobs
+        );
+
+
+        if (
+            results.length !==
+                A_GROUP.supportRoles.length
+        ) {
+
+            throw new Error(
+                "全岗位入口联动：通过数量不正确，预期=" +
+                A_GROUP.supportRoles.length +
+                "；实际=" +
+                results.length
+            );
+        }
+
+
+        const uniquePersonIds =
+            new Set(
+                results.map(
+                    item =>
+                        item.personId
+                )
+            );
+
+
+        if (
+            uniquePersonIds.size !==
+                A_GROUP.supportRoles.length
+        ) {
+
+            throw new Error(
+                "全岗位入口联动：存在重复TEST人员身份"
+            );
+        }
+
+
+        const durationMs =
+            Date.now() -
+            suiteStartedAt;
+
+
+        robotMessage(
+            botName,
+            "全岗位入口联动汇总：17/17 其他岗位机器人 PASS。"
+        );
+
+
+        robotMessage(
+            botName,
+            "入口覆盖：辅助车辆6、车队长1、维修2、中层及库房6、总经理1、管理员1。"
+        );
+
+
+        robotMessage(
+            botName,
+            "全岗位入口联动总耗时=" +
+            (
+                durationMs /
+                1000
+            )
+            .toFixed(
+                2
+            ) +
+            "s"
+        );
+
+
+        updateBot(
+            botName,
+            "pass",
+            "17个其他岗位机器人入口联动全部通过"
+        );
+
+
+        return {
+            ok:
+                true,
+
+            action:
+                "all-role-entry-linkage",
+
+            total:
+                results.length,
+
+            durationMs,
+            results
+        };
+
+
+    } catch (
+        error
+    ) {
+
+        const diagnosis =
+            buildFailureDiagnosis({
+                caseName:
+                    "全岗位入口联动",
+
+                error,
+
+                suiteLabel:
+                    "多机器人联动"
+            });
+
+
+        const diagnosticPath =
+            saveFailureDiagnostic(
+                diagnosis
+            );
+
+
+        reportFailureDiagnosis(
+            botName,
+            diagnosis,
+            diagnosticPath
+        );
+
+
+        updateBot(
+            botName,
+            "fail",
+            error?.message ||
+            String(
+                error
+            )
+        );
+
+
+        throw error;
+
+
+    } finally {
+
+        await Promise.all(
+            contexts.map(
+                context =>
+                    context.close()
+                        .catch(
+                            () => {}
+                        )
+            )
+        );
+    }
+}
+
+
 async function runStabilityRegression(
     rounds =
         3
@@ -6635,6 +6924,26 @@ async function executeCommand({
         requestedBot ===
             "TestManager" &&
         (
+            /运行.*全岗位.*入口.*联动/i.test(
+                command
+            ) ||
+            /测试.*所有岗位.*入口/i.test(
+                command
+            ) ||
+            /全岗位.*机器人.*测试/i.test(
+                command
+            )
+        )
+    ) {
+
+        return await runAllRoleEntryLinkageTest();
+    }
+
+
+    if (
+        requestedBot ===
+            "TestManager" &&
+        (
             /运行.*A组.*多机器人.*联动/i.test(
                 command
             ) ||
@@ -7608,7 +7917,7 @@ server.listen(
         );
 
         console.log(
-            "🤖 机器人测试控制中心 R0-30 已启动"
+            "🤖 机器人测试控制中心 R0-31 已启动"
         );
 
         console.log(
