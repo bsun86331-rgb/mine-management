@@ -451,6 +451,23 @@ class AuxiliaryWorkBot {
         await this.installTestIdFactory();
 
 
+        /*
+         * fuel.html 默认停留在“今日库存”页，
+         * 待加油按钮位于隐藏的 page-fueling。
+         * 先切换到“加油任务”，再等待“开始加油”按钮可见。
+         */
+        await this.page
+            .locator(
+                'button[data-page="fueling"]'
+            )
+            .click();
+
+
+        await this.page.waitForTimeout(
+            120
+        );
+
+
         const startButton =
             this.page
                 .locator(
