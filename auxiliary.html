@@ -1523,7 +1523,7 @@
 
 <footer>
 
-    矿山管理系统 · 辅助车辆司机端 V2.10.0M
+    矿山管理系统 · 辅助车辆司机端 V2.12.0
 
 </footer>
 
@@ -1593,6 +1593,21 @@ function initialize() {
 
     currentPerson =
         getCurrentPerson();
+
+
+    const demoButton =
+        document.querySelector(
+            'button[onclick="addDemoTask()"]'
+        );
+
+
+    if (
+        demoButton &&
+        !isRobotTestMode()
+    ) {
+
+        demoButton.remove();
+    }
 
 
     renderPerson();
@@ -1733,6 +1748,145 @@ function getPersonId(
 }
 
 
+function normalizeAuxiliaryPosition(
+    position
+) {
+
+    const map = {
+        "装载机司机":
+            "铲车司机",
+
+        "装载机操作手":
+            "铲车司机",
+
+        "大巴":
+            "大巴司机"
+    };
+
+
+    return (
+        map[
+            position
+        ] ||
+        position ||
+        ""
+    );
+}
+
+
+function isProductionEligiblePerson(
+    person
+) {
+
+    if (
+        !person ||
+        person.enabled === false
+    ) {
+
+        return false;
+    }
+
+
+    if (
+        [
+            "rejected",
+            "pending",
+            "disabled",
+            "resigned",
+            "leave"
+        ]
+        .includes(
+            String(
+                person.status ||
+                ""
+            )
+        )
+    ) {
+
+        return false;
+    }
+
+
+    if (
+        [
+            "rejected",
+            "pending"
+        ]
+        .includes(
+            String(
+                person.approvalStatus ||
+                ""
+            )
+        )
+    ) {
+
+        return false;
+    }
+
+
+    if (
+        [
+            "待审核",
+            "停用",
+            "离职",
+            "请假"
+        ]
+        .includes(
+            String(
+                person.personnelStatus ||
+                ""
+            )
+        )
+    ) {
+
+        return false;
+    }
+
+
+    return (
+        person.approvalStatus ===
+            "approved" ||
+        person.status ===
+            "approved" ||
+        person.status ===
+            "active" ||
+        person.status ===
+            "working" ||
+        person.personnelStatus ===
+            "在职可用" ||
+        person.personnelStatus ===
+            "作业中"
+    );
+}
+
+
+function isRobotTestMode() {
+
+    const id =
+        getPersonId(
+            currentPerson
+        );
+
+
+    return (
+        String(
+            id ||
+            ""
+        )
+        .toUpperCase()
+        .startsWith(
+            "TEST-"
+        ) ||
+        new URLSearchParams(
+            location.search
+        )
+        .get(
+            "test"
+        ) ===
+            "1"
+    );
+}
+
 
 function getCurrentPerson() {
 
@@ -1756,7 +1910,19 @@ function getCurrentPerson() {
                     getPersonId(
                         item
                     ) ===
-                    currentPersonId
+                        currentPersonId
+
+                    &&
+
+                    isAuxiliaryPosition(
+                        item.position
+                    )
+
+                    &&
+
+                    isProductionEligiblePerson(
+                        item
+                    )
             );
 
 
@@ -1778,6 +1944,12 @@ function getCurrentPerson() {
             item =>
                 isAuxiliaryPosition(
                     item.position
+                )
+
+                &&
+
+                isProductionEligiblePerson(
+                    item
                 )
         );
 
@@ -1804,8 +1976,6 @@ function isAuxiliaryPosition(
 
         "铲车司机",
 
-        "装载机司机",
-
         "推土机司机",
 
         "平路机司机",
@@ -1817,7 +1987,9 @@ function isAuxiliaryPosition(
         "其他辅助车辆司机"
 
     ].includes(
-        position
+        normalizeAuxiliaryPosition(
+            position
+        )
     );
 }
 
@@ -2024,9 +2196,11 @@ function getTasks() {
 
 
     const demo =
-        readArray(
-            STORAGE.DEMO_TASKS
-        );
+        isRobotTestMode()
+            ? readArray(
+                STORAGE.DEMO_TASKS
+              )
+            : [];
 
 
     return [
@@ -2189,9 +2363,15 @@ function renderCurrentTask() {
 
                 当前车辆暂无生产任务。
 
-                <br>
+                ${
 
-                可以点击“测试任务”查看辅助车辆端工作流程。
+                    isRobotTestMode()
+
+                        ? "<br>测试模式下可生成 TEST 任务验证流程。"
+
+                        : ""
+
+                }
 
             </div>
         `;
@@ -2418,6 +2598,25 @@ function getActiveWorkRecord() {
 
 
 function startCurrentWork() {
+
+    currentPerson =
+        getCurrentPerson();
+
+
+    if (
+        !currentPerson ||
+        !isProductionEligiblePerson(
+            currentPerson
+        )
+    ) {
+
+        alert(
+            "当前人员未审核、已请假、已停用或已离职，不能开始生产作业。"
+        );
+
+        return;
+    }
+
 
     if (
         !currentTask
@@ -2687,6 +2886,18 @@ function completeDemoTaskIfNeeded(
 ========================================================= */
 
 function addDemoTask() {
+
+    if (
+        !isRobotTestMode()
+    ) {
+
+        alert(
+            "正式生产模式禁止生成测试任务。"
+        );
+
+        return;
+    }
+
 
     const vehicleNumber =
         document
