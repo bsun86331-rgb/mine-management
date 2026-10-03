@@ -2034,6 +2034,224 @@ class DispatchBot {
                 true
         });
     }
+
+
+    async seedAuxiliaryCompletionFeedbackTestData() {
+
+        await this.page.evaluate(
+            () => {
+
+                const now =
+                    new Date()
+                        .toISOString();
+
+
+                localStorage.setItem(
+                    "auxiliaryWorkRecords",
+                    JSON.stringify([
+                        {
+                            workRecordId:
+                                "TEST-AUX-COMPLETE-001",
+
+                            taskId:
+                                "TEST-AUX-TASK-001",
+
+                            personId:
+                                "TEST-AUX-PERSON-001",
+
+                            personName:
+                                "TEST-洒水车司机",
+
+                            position:
+                                "洒水车司机",
+
+                            vehicleId:
+                                "TEST-AUX-WATER-001",
+
+                            vehicleNumber:
+                                "TEST-AUX-WATER-001",
+
+                            vehicleType:
+                                "洒水车",
+
+                            work:
+                                "TEST-运输道路洒水降尘",
+
+                            status:
+                                "completed",
+
+                            completedAt:
+                                now,
+
+                            testFixture:
+                                true
+                        }
+                    ])
+                );
+
+
+                localStorage.setItem(
+                    "fuelRecords",
+                    JSON.stringify([
+                        {
+                            fuelId:
+                                "TEST-FUEL-COMPLETE-001",
+
+                            requestId:
+                                "TEST-FUEL-REQ-001",
+
+                            taskId:
+                                "TEST-FUEL-TASK-001",
+
+                            personId:
+                                "TEST-FUEL-PERSON-001",
+
+                            personName:
+                                "TEST-加油车司机",
+
+                            driverName:
+                                "TEST-加油车司机",
+
+                            vehicleId:
+                                "TEST-FUEL-VEHICLE-001",
+
+                            vehicleNumber:
+                                "TEST-FUEL-VEHICLE-001",
+
+                            amount:
+                                500,
+
+                            quantity:
+                                500,
+
+                            completedAt:
+                                now,
+
+                            createdAt:
+                                now,
+
+                            testFixture:
+                                true
+                        }
+                    ])
+                );
+            }
+        );
+
+
+        await this.page.reload({
+            waitUntil:
+                "domcontentloaded"
+        });
+
+
+        await this.page.waitForTimeout(
+            400
+        );
+
+
+        return true;
+    }
+
+
+    async verifyAuxiliaryCompletionFeedbackView() {
+
+        const countText =
+            String(
+                await this.page
+                    .locator(
+                        "#auxiliaryCompletionCount"
+                    )
+                    .textContent()
+            )
+            .trim();
+
+
+        const listText =
+            String(
+                await this.page
+                    .locator(
+                        "#auxiliaryCompletionList"
+                    )
+                    .innerText()
+            );
+
+
+        const requiredTexts = [
+            "洒水车司机",
+            "TEST-AUX-WATER-001",
+            "TEST-AUX-TASK-001",
+            "TEST-运输道路洒水降尘",
+            "加油车司机",
+            "TEST-FUEL-VEHICLE-001",
+            "TEST-FUEL-REQ-001",
+            "完成加油 500.0 L"
+        ];
+
+
+        const missing =
+            requiredTexts.filter(
+                text =>
+                    !listText.includes(
+                        text
+                    )
+            );
+
+
+        if (
+            missing.length
+        ) {
+
+            throw new Error(
+                "DispatchBot：辅助车辆完成回传缺少内容：" +
+                missing.join(
+                    "、"
+                )
+            );
+        }
+
+
+        const numericCount =
+            Number(
+                countText.replace(
+                    /[^0-9]/g,
+                    ""
+                )
+            );
+
+
+        if (
+            numericCount <
+                2
+        ) {
+
+            throw new Error(
+                "DispatchBot：辅助车辆完成回传数量不足，实际=" +
+                countText
+            );
+        }
+
+
+        return {
+            count:
+                numericCount,
+
+            countText,
+
+            hasAuxiliary:
+                listText.includes(
+                    "TEST-AUX-WATER-001"
+                ),
+
+            hasFuel:
+                listText.includes(
+                    "TEST-FUEL-VEHICLE-001"
+                ),
+
+            listText
+        };
+    }
+
 }
 
 
