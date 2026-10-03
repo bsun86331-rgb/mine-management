@@ -4483,6 +4483,426 @@ async function runMaintenanceWarehouseFullClosedLoopTest() {
 }
 
 
+async function runMaintenanceWarehouseReportCenterTest() {
+
+    const botName =
+        "TestManager";
+
+
+    let reportPage =
+        null;
+
+
+    try {
+
+        updateBot(
+            botName,
+            "running",
+            "正在验证维修库房完整闭环回写综合报表中心"
+        );
+
+
+        robotMessage(
+            botName,
+            "步骤 1/2：先运行维修 + 库房配件 + 验收归档完整闭环。"
+        );
+
+
+        const closedLoop =
+            await runMaintenanceWarehouseFullClosedLoopTest();
+
+
+        updateBot(
+            botName,
+            "running",
+            "正在打开综合报表中心读取闭环结果"
+        );
+
+
+        robotMessage(
+            botName,
+            "步骤 2/2：以 TEST 管理员身份打开 report-center.html，核对维修费用与物资待处理统计。"
+        );
+
+
+        reportPage =
+            await browserContext.newPage();
+
+
+        await reportPage.addInitScript(
+            () => {
+
+                const readArray =
+                    key => {
+
+                        try {
+
+                            const data =
+                                JSON.parse(
+                                    localStorage.getItem(
+                                        key
+                                    )
+                                );
+
+
+                            return Array.isArray(
+                                data
+                            )
+                                ? data
+                                : [];
+
+                        } catch (
+                            error
+                        ) {
+
+                            return [];
+                        }
+                    };
+
+
+                const adminId =
+                    "TEST-REPORT-ADMIN-001";
+
+
+                const rows =
+                    readArray(
+                        "personnelRecords"
+                    )
+                    .filter(
+                        item =>
+                            String(
+                                item.personId ||
+                                item.employeeId ||
+                                ""
+                            ) !==
+                                adminId
+                    );
+
+
+                rows.push({
+                    personId:
+                        adminId,
+
+                    employeeId:
+                        adminId,
+
+                    employeeNo:
+                        "TEST-REPORT-ADMIN-001",
+
+                    name:
+                        "TEST-报表管理员",
+
+                    position:
+                        "管理员",
+
+                    department:
+                        "TEST-管理部",
+
+                    approvalStatus:
+                        "approved",
+
+                    status:
+                        "active",
+
+                    personnelStatus:
+                        "在职可用",
+
+                    testFixture:
+                        true
+                });
+
+
+                localStorage.setItem(
+                    "personnelRecords",
+                    JSON.stringify(
+                        rows
+                    )
+                );
+
+
+                localStorage.setItem(
+                    "adminPersonId",
+                    adminId
+                );
+
+
+                localStorage.setItem(
+                    "currentPersonId",
+                    adminId
+                );
+
+
+                localStorage.setItem(
+                    "selectedPosition",
+                    "管理员"
+                );
+
+
+                localStorage.setItem(
+                    "rolePersonIds",
+                    JSON.stringify({
+                        管理员:
+                            adminId
+                    })
+                );
+            }
+        );
+
+
+        await reportPage.goto(
+            "report-center.html?section=maintenance",
+            {
+                waitUntil:
+                    "domcontentloaded"
+            }
+        );
+
+
+        await reportPage.waitForTimeout(
+            350
+        );
+
+
+        const expected =
+            await reportPage.evaluate(
+                () => {
+
+                    const readArray =
+                        key => {
+
+                            try {
+
+                                const data =
+                                    JSON.parse(
+                                        localStorage.getItem(
+                                            key
+                                        )
+                                    );
+
+
+                                return Array.isArray(
+                                    data
+                                )
+                                    ? data
+                                    : [];
+
+                            } catch (
+                                error
+                            ) {
+
+                                return [];
+                            }
+                        };
+
+
+                    const costs =
+                        readArray(
+                            "maintenanceCosts"
+                        );
+
+
+                    const totalMaintenance =
+                        costs.reduce(
+                            (
+                                sum,
+                                item
+                            ) =>
+                                sum +
+                                Number(
+                                    item.totalCost ||
+                                    0
+                                ),
+                            0
+                        );
+
+
+                    const pendingMaterials =
+                        readArray(
+                            "materialRequests"
+                        )
+                        .filter(
+                            item =>
+                                !item.status ||
+                                item.status ===
+                                    "pending"
+                        )
+                        .length;
+
+
+                    return {
+                        totalMaintenance,
+                        pendingMaterials,
+                        costCount:
+                            costs.length
+                    };
+                }
+            );
+
+
+        const displayedMaintenance =
+            Number(
+                await reportPage
+                    .locator(
+                        "#summaryMaintenance"
+                    )
+                    .textContent()
+            );
+
+
+        const displayedMaterial =
+            Number(
+                await reportPage
+                    .locator(
+                        "#summaryMaterial"
+                    )
+                    .textContent()
+            );
+
+
+        if (
+            displayedMaintenance !==
+                Math.round(
+                    expected.totalMaintenance
+                )
+        ) {
+
+            throw new Error(
+                "报表回写验证：维修费用概览不一致，预期=" +
+                expected.totalMaintenance +
+                "；页面=" +
+                displayedMaintenance
+            );
+        }
+
+
+        if (
+            displayedMaterial !==
+                expected.pendingMaterials
+        ) {
+
+            throw new Error(
+                "报表回写验证：物资待处理数量不一致，预期=" +
+                expected.pendingMaterials +
+                "；页面=" +
+                displayedMaterial
+            );
+        }
+
+
+        await reportPage
+            .locator(
+                'button[data-report="maintenance"]'
+            )
+            .click();
+
+
+        await reportPage.waitForTimeout(
+            150
+        );
+
+
+        const maintenanceRows =
+            await reportPage
+                .locator(
+                    "#maintenanceTableBody tr"
+                )
+                .count();
+
+
+        if (
+            expected.costCount > 0 &&
+            maintenanceRows < 1
+        ) {
+
+            throw new Error(
+                "报表回写验证：已有维修费用数据，但维修费用表没有生成记录"
+            );
+        }
+
+
+        updateBot(
+            botName,
+            "pass",
+            "维修库房闭环已正确回写综合报表中心"
+        );
+
+
+        robotMessage(
+            botName,
+            "报表回写通过：维修费用=" +
+            displayedMaintenance +
+            "；物资待处理=" +
+            displayedMaterial +
+            "；维修费用记录=" +
+            expected.costCount +
+            "条。"
+        );
+
+
+        return {
+            ok:
+                true,
+
+            action:
+                "maintenance-warehouse-report-center",
+
+            closedLoop,
+
+            maintenanceSummary:
+                displayedMaintenance,
+
+            materialPending:
+                displayedMaterial,
+
+            maintenanceCostCount:
+                expected.costCount
+        };
+
+
+    } catch (
+        error
+    ) {
+
+        const message =
+            error?.message ||
+            String(
+                error
+            );
+
+
+        updateBot(
+            botName,
+            "fail",
+            message
+        );
+
+
+        robotMessage(
+            botName,
+            "维修库房闭环回写综合报表中心失败：" +
+            message
+        );
+
+
+        throw error;
+
+
+    } finally {
+
+        if (
+            reportPage &&
+            !reportPage.isClosed()
+        ) {
+
+            await reportPage.close()
+                .catch(
+                    () => {}
+                );
+        }
+    }
+}
+
+
 async function runTemporaryUnloadRejectionTest() {
 
     const botName =
@@ -9489,6 +9909,26 @@ async function executeCommand({
     ) {
 
         return await runTemporaryUnloadRejectionTest();
+    }
+
+
+    if (
+        requestedBot ===
+            "TestManager" &&
+        (
+            /运行.*维修.*库房.*报表.*回写/i.test(
+                command
+            ) ||
+            /测试.*维修.*库房.*报表/i.test(
+                command
+            ) ||
+            /维修库房.*综合报表.*验证/i.test(
+                command
+            )
+        )
+    ) {
+
+        return await runMaintenanceWarehouseReportCenterTest();
     }
 
 
