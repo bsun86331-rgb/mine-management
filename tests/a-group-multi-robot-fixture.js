@@ -2,7 +2,7 @@
 
 /*
 =========================================================
-A组多机器人联动 TEST Fixture
+A组多机器人联动 TEST Fixture R0-2
 - 2 台 TEST 挖机
 - 每台挖机 3 台 TEST 汽车
 - 2 名 TEST 挖机司机
@@ -113,6 +113,230 @@ const A_GROUP = {
                         "TEST-A组汽车司机06"
                 }
             ]
+        }
+    ],
+
+    supportRoles: [
+        {
+            personId:
+                "TEST-A-AUX-LOADER-001",
+
+            name:
+                "TEST-A组铲车司机01",
+
+            position:
+                "铲车司机",
+
+            team:
+                "生产A组"
+        },
+        {
+            personId:
+                "TEST-A-AUX-FUEL-001",
+
+            name:
+                "TEST-A组加油车司机01",
+
+            position:
+                "加油车司机",
+
+            team:
+                "生产A组"
+        },
+        {
+            personId:
+                "TEST-A-AUX-BUS-001",
+
+            name:
+                "TEST-A组大巴司机01",
+
+            position:
+                "大巴司机",
+
+            team:
+                "生产A组"
+        },
+        {
+            personId:
+                "TEST-A-AUX-GRADER-001",
+
+            name:
+                "TEST-A组平路机司机01",
+
+            position:
+                "平路机司机",
+
+            team:
+                "生产A组"
+        },
+        {
+            personId:
+                "TEST-A-AUX-WATER-001",
+
+            name:
+                "TEST-A组洒水车司机01",
+
+            position:
+                "洒水车司机",
+
+            team:
+                "生产A组"
+        },
+        {
+            personId:
+                "TEST-A-AUX-DOZER-001",
+
+            name:
+                "TEST-A组推土机司机01",
+
+            position:
+                "推土机司机",
+
+            team:
+                "生产A组"
+        },
+        {
+            personId:
+                "TEST-A-DISPATCH-001",
+
+            name:
+                "TEST-A组车队长01",
+
+            position:
+                "车队长",
+
+            team:
+                ""
+        },
+        {
+            personId:
+                "TEST-A-MAINT-MGR-001",
+
+            name:
+                "TEST-A组维修管理01",
+
+            position:
+                "维修管理",
+
+            team:
+                "修理组"
+        },
+        {
+            personId:
+                "TEST-A-MAINT-WORKER-001",
+
+            name:
+                "TEST-A组维修员01",
+
+            position:
+                "维修员",
+
+            team:
+                "修理组"
+        },
+        {
+            personId:
+                "TEST-A-SURVEY-001",
+
+            name:
+                "TEST-A组测量员01",
+
+            position:
+                "测量员",
+
+            team:
+                "后勤办公组"
+        },
+        {
+            personId:
+                "TEST-A-SAFETY-001",
+
+            name:
+                "TEST-A组安全员01",
+
+            position:
+                "安全员",
+
+            team:
+                "后勤办公组"
+        },
+        {
+            personId:
+                "TEST-A-STATS-001",
+
+            name:
+                "TEST-A组统计01",
+
+            position:
+                "统计",
+
+            team:
+                "后勤办公组"
+        },
+        {
+            personId:
+                "TEST-A-ACCOUNTING-001",
+
+            name:
+                "TEST-A组会计01",
+
+            position:
+                "会计",
+
+            team:
+                "后勤办公组"
+        },
+        {
+            personId:
+                "TEST-A-LOGISTICS-001",
+
+            name:
+                "TEST-A组后勤01",
+
+            position:
+                "后勤",
+
+            team:
+                "后勤办公组"
+        },
+        {
+            personId:
+                "TEST-A-WAREHOUSE-001",
+
+            name:
+                "TEST-A组库房管理01",
+
+            position:
+                "库房管理",
+
+            team:
+                "后勤办公组"
+        },
+        {
+            personId:
+                "TEST-A-GM-001",
+
+            name:
+                "TEST-A组总经理01",
+
+            position:
+                "总经理",
+
+            team:
+                "后勤办公组"
+        },
+        {
+            personId:
+                "TEST-A-ADMIN-001",
+
+            name:
+                "TEST-A组管理员01",
+
+            position:
+                "管理员",
+
+            team:
+                "后勤办公组"
         }
     ]
 };
@@ -500,6 +724,61 @@ function buildAGroupPayload() {
     );
 
 
+    A_GROUP.supportRoles.forEach(
+        (
+            role,
+            index
+        ) => {
+
+            assertTestId(
+                role.personId,
+                role.position
+            );
+
+
+            personnel.push({
+                personId:
+                    role.personId,
+
+                employeeId:
+                    role.personId,
+
+                employeeNo:
+                    "TEST-A-ROLE-" +
+                    String(
+                        index +
+                        1
+                    )
+                    .padStart(
+                        2,
+                        "0"
+                    ),
+
+                name:
+                    role.name,
+
+                position:
+                    role.position,
+
+                team:
+                    role.team,
+
+                status:
+                    "approved",
+
+                approvalStatus:
+                    "approved",
+
+                personnelStatus:
+                    "在职可用",
+
+                testFixture:
+                    true
+            });
+        }
+    );
+
+
     return {
         team:
             A_GROUP.team,
@@ -537,7 +816,23 @@ function buildAGroupPayload() {
                         total +
                         unit.trucks.length,
                     0
-                )
+                ),
+
+            otherRoles:
+                A_GROUP.supportRoles.length,
+
+            totalRobotIdentities:
+                A_GROUP.excavators.length +
+                A_GROUP.excavators.reduce(
+                    (
+                        total,
+                        unit
+                    ) =>
+                        total +
+                        unit.trucks.length,
+                    0
+                ) +
+                A_GROUP.supportRoles.length
         }
     };
 }
@@ -603,6 +898,37 @@ function findIdentity(
                     "汽车司机"
             };
         }
+    }
+
+
+    const supportRole =
+        A_GROUP.supportRoles.find(
+            item =>
+                item.personId ===
+                    identityId
+        );
+
+
+    if (
+        supportRole
+    ) {
+
+        return {
+            type:
+                "support",
+
+            personId:
+                supportRole.personId,
+
+            personName:
+                supportRole.name,
+
+            position:
+                supportRole.position,
+
+            team:
+                supportRole.team
+        };
     }
 
 
