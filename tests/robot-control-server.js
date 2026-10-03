@@ -4912,6 +4912,130 @@ async function runMaintenanceWarehouseReportCenterTest() {
 }
 
 
+async function runDispatchAuxiliaryCompletionFeedbackTest() {
+
+    const botName =
+        "TestManager";
+
+
+    try {
+
+        updateBot(
+            botName,
+            "running",
+            "正在验证调度端辅助车辆完成回传"
+        );
+
+
+        const bot =
+            await getDispatchBot();
+
+
+        await bot.open();
+
+
+        robotMessage(
+            botName,
+            "步骤 1/2：写入 TEST 辅助车辆完成记录和 TEST 加油完成记录。"
+        );
+
+
+        await bot.seedAuxiliaryCompletionFeedbackTestData();
+
+
+        robotMessage(
+            botName,
+            "步骤 2/2：检查调度端“辅助车辆完成回传”视图。"
+        );
+
+
+        const result =
+            await bot.verifyAuxiliaryCompletionFeedbackView();
+
+
+        if (
+            !result.hasAuxiliary ||
+            !result.hasFuel
+        ) {
+
+            throw new Error(
+                "调度完成回传验证：辅助车辆或加油车记录未同时显示"
+            );
+        }
+
+
+        updateBot(
+            botName,
+            "pass",
+            "调度端辅助车辆完成回传验证通过"
+        );
+
+
+        robotMessage(
+            botName,
+            "完成回传验证通过：共 " +
+            result.count +
+            " 条；辅助车辆=" +
+            result.hasAuxiliary +
+            "；加油车=" +
+            result.hasFuel
+        );
+
+
+        return {
+            ok:
+                true,
+
+            action:
+                "dispatch-auxiliary-completion-feedback",
+
+            result
+        };
+
+
+    } catch (
+        error
+    ) {
+
+        const message =
+            error?.message ||
+            String(
+                error
+            );
+
+
+        updateBot(
+            botName,
+            "fail",
+            message
+        );
+
+
+        robotMessage(
+            botName,
+            "调度端辅助车辆完成回传验证失败：" +
+            message
+        );
+
+
+        try {
+
+            await captureFailure(
+                "DispatchBot",
+                dispatchPage,
+                "dispatch-auxiliary-completion-feedback"
+            );
+
+        } catch (
+            screenshotError
+        ) {}
+
+
+        throw error;
+    }
+}
+
+
 async function runTemporaryUnloadRejectionTest() {
 
     const botName =
@@ -9786,6 +9910,44 @@ function naturalLanguageIntentCatalog() {
         },
         {
             action:
+                "dispatch-auxiliary-completion-feedback",
+
+            label:
+                "调度端辅助车辆完成回传验证",
+
+            runner:
+                async () =>
+                    await runDispatchAuxiliaryCompletionFeedbackTest(),
+
+            requiredGroups: [
+                [
+                    "调度端",
+                    "调度"
+                ],
+                [
+                    "辅助车辆",
+                    "加油车",
+                    "完成回传",
+                    "完成记录"
+                ]
+            ],
+
+            bonusTerms: [
+                "能不能看到",
+                "有没有看到",
+                "显示",
+                "回传",
+                "完成",
+                "记录"
+            ],
+
+            examples: [
+                "看看调度端能不能看到辅助车辆和加油车完成记录",
+                "验证一下辅助车辆完成回传有没有显示到调度端"
+            ]
+        },
+        {
+            action:
                 "a-group-auxiliary-linkage",
 
             label:
@@ -11118,6 +11280,26 @@ async function executeCommand({
     ) {
 
         return await runTemporaryUnloadRejectionTest();
+    }
+
+
+    if (
+        requestedBot ===
+            "TestManager" &&
+        (
+            /运行.*辅助车辆.*完成回传.*验证/i.test(
+                command
+            ) ||
+            /测试.*调度端.*辅助车辆.*完成记录/i.test(
+                command
+            ) ||
+            /验证.*辅助车辆.*加油车.*完成回传/i.test(
+                command
+            )
+        )
+    ) {
+
+        return await runDispatchAuxiliaryCompletionFeedbackTest();
     }
 
 
