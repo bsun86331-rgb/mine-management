@@ -415,7 +415,8 @@ const COVERAGE_MODULES = [
             "人员 / 岗位入口",
 
         cases: [
-            "全岗位入口联动"
+            "全岗位入口联动",
+            "人员登记审核岗位进入闭环"
         ]
     },
     {
@@ -8374,6 +8375,647 @@ async function runAGroupMultiRobotLinkageTest() {
 }
 
 
+async function runPersonnelRegistrationApprovalRoleEntryTest() {
+
+    const botName =
+        "TestManager";
+
+
+    const applicantId =
+        "TEST-PERSON-REG-001";
+
+
+    const adminId =
+        "TEST-ADMIN-REG-001";
+
+
+    const position =
+        "测量员";
+
+
+    let context =
+        null;
+
+
+    try {
+
+        await ensureBrowser();
+
+
+        context =
+            await browser.newContext({
+                baseURL:
+                    BASE_URL,
+
+                viewport: {
+                    width:
+                        390,
+
+                    height:
+                        844
+                }
+            });
+
+
+        const page =
+            await context.newPage();
+
+
+        /*
+         * person-register.html 首次登记默认使用 crypto.randomUUID()。
+         * 测试环境把该 UUID 固定成 TEST- 前缀，确保全程只操作 TEST 数据。
+         */
+        await page.addInitScript(
+            testPersonId => {
+
+                try {
+
+                    Object.defineProperty(
+                        Crypto.prototype,
+                        "randomUUID",
+                        {
+                            configurable:
+                                true,
+
+                            value:
+                                () =>
+                                    testPersonId
+                        }
+                    );
+
+                } catch (
+                    error
+                ) {
+
+                    try {
+
+                        window.crypto.randomUUID =
+                            () =>
+                                testPersonId;
+
+                    } catch (
+                        innerError
+                    ) {}
+                }
+            },
+            applicantId
+        );
+
+
+        updateBot(
+            botName,
+            "running",
+            "正在执行人员登记 → 待审核 → 管理员审核 → 岗位进入闭环"
+        );
+
+
+        robotMessage(
+            botName,
+            "步骤 1/4：新 TEST 人员首次打开统一入职登记页并提交资料。"
+        );
+
+
+        await page.goto(
+            "person-register.html?position=" +
+            encodeURIComponent(
+                position
+            ),
+            {
+                waitUntil:
+                    "domcontentloaded"
+            }
+        );
+
+
+        await page.locator(
+            "#name"
+        ).fill(
+            "TEST-人员登记01"
+        );
+
+
+        await page.locator(
+            "#phone"
+        ).fill(
+            "13900000001"
+        );
+
+
+        await page.locator(
+            "#team"
+        ).selectOption(
+            "后勤办公组"
+        );
+
+
+        await page.locator(
+            "#idCardNumber"
+        ).fill(
+            "TEST-IDCARD-001"
+        );
+
+
+        await page.locator(
+            "#emergencyContact"
+        ).fill(
+            "TEST-紧急联系人"
+        );
+
+
+        await page.locator(
+            "#emergencyPhone"
+        ).fill(
+            "13800000001"
+        );
+
+
+        await Promise.all([
+            page.waitForURL(
+                url =>
+                    url.pathname.endsWith(
+                        "/person-waiting.html"
+                    ),
+                {
+                    timeout:
+                        15000
+                }
+            ),
+
+            page.locator(
+                "#submitButton"
+            ).click()
+        ]);
+
+
+        const pendingRecords =
+            await page.evaluate(
+                () => {
+
+                    try {
+
+                        return JSON.parse(
+                            localStorage.getItem(
+                                "personnelRecords"
+                            ) ||
+                            "[]"
+                        );
+
+                    } catch (
+                        error
+                    ) {
+
+                        return [];
+                    }
+                }
+            );
+
+
+        const pendingPerson =
+            pendingRecords.find(
+                item =>
+                    String(
+                        item?.personId ||
+                        ""
+                    ) ===
+                        applicantId
+            );
+
+
+        if (
+            !pendingPerson
+        ) {
+
+            throw new Error(
+                "人员登记闭环：提交后未找到 TEST 申请人"
+            );
+        }
+
+
+        if (
+            pendingPerson.status !==
+                "pending" ||
+            pendingPerson.approvalStatus !==
+                "pending" ||
+            pendingPerson.personnelStatus !==
+                "待审核"
+        ) {
+
+            throw new Error(
+                "人员登记闭环：提交后没有进入待审核状态"
+            );
+        }
+
+
+        robotMessage(
+            botName,
+            "步骤 2/4：待审核状态验证通过，申请人=" +
+            applicantId +
+            "。"
+        );
+
+
+        /*
+         * 准备 TEST 管理员身份。
+         * currentPersonId 仍然保留申请人，管理员使用独立 adminPersonId。
+         */
+        await page.evaluate(
+            ({
+                adminId,
+                applicantId
+            }) => {
+
+                let records = [];
+
+
+                try {
+
+                    records =
+                        JSON.parse(
+                            localStorage.getItem(
+                                "personnelRecords"
+                            ) ||
+                            "[]"
+                        );
+
+                } catch (
+                    error
+                ) {
+
+                    records =
+                        [];
+                }
+
+
+                records =
+                    records.filter(
+                        item =>
+                            String(
+                                item?.personId ||
+                                ""
+                            ) !==
+                                adminId
+                    );
+
+
+                records.push({
+                    personId:
+                        adminId,
+
+                    employeeNo:
+                        "TEST-ADMIN-001",
+
+                    name:
+                        "TEST-管理员",
+
+                    position:
+                        "管理员",
+
+                    team:
+                        "后勤办公组",
+
+                    status:
+                        "approved",
+
+                    approvalStatus:
+                        "approved",
+
+                    personnelStatus:
+                        "在职可用",
+
+                    testFixture:
+                        true
+                });
+
+
+                localStorage.setItem(
+                    "personnelRecords",
+                    JSON.stringify(
+                        records
+                    )
+                );
+
+
+                localStorage.setItem(
+                    "currentPersonId",
+                    applicantId
+                );
+
+
+                localStorage.setItem(
+                    "adminPersonId",
+                    adminId
+                );
+
+
+                sessionStorage.setItem(
+                    "managementSession",
+                    JSON.stringify({
+                        verified:
+                            true,
+
+                        personId:
+                            adminId,
+
+                        position:
+                            "管理员",
+
+                        verifiedAt:
+                            Date.now(),
+
+                        expiresAt:
+                            Date.now() +
+                            60 *
+                            60 *
+                            1000,
+
+                        testFixture:
+                            true
+                    })
+                );
+            },
+            {
+                adminId,
+                applicantId
+            }
+        );
+
+
+        robotMessage(
+            botName,
+            "步骤 3/4：TEST 管理员打开正式审核中心并审核通过申请。"
+        );
+
+
+        await page.goto(
+            "admin-review.html",
+            {
+                waitUntil:
+                    "domcontentloaded"
+            }
+        );
+
+
+        await page.waitForTimeout(
+            500
+        );
+
+
+        const adminPath =
+            new URL(
+                page.url()
+            )
+            .pathname;
+
+
+        if (
+            !adminPath.endsWith(
+                "/admin-review.html"
+            )
+        ) {
+
+            throw new Error(
+                "人员登记闭环：TEST 管理员未能进入审核中心"
+            );
+        }
+
+
+        await page.evaluate(
+            personId => {
+
+                window.confirm =
+                    () =>
+                        true;
+
+
+                openDetail(
+                    personId
+                );
+
+
+                approveCurrentPerson();
+            },
+            applicantId
+        );
+
+
+        const approvedRecords =
+            await page.evaluate(
+                () => {
+
+                    try {
+
+                        return JSON.parse(
+                            localStorage.getItem(
+                                "personnelRecords"
+                            ) ||
+                            "[]"
+                        );
+
+                    } catch (
+                        error
+                    ) {
+
+                        return [];
+                    }
+                }
+            );
+
+
+        const approvedPerson =
+            approvedRecords.find(
+                item =>
+                    String(
+                        item?.personId ||
+                        ""
+                    ) ===
+                        applicantId
+            );
+
+
+        if (
+            !approvedPerson ||
+            approvedPerson.status !==
+                "approved" ||
+            approvedPerson.approvalStatus !==
+                "approved" ||
+            approvedPerson.personnelStatus !==
+                "在职可用"
+        ) {
+
+            throw new Error(
+                "人员登记闭环：管理员审核后申请人没有进入 approved / 在职可用"
+            );
+        }
+
+
+        if (
+            !String(
+                approvedPerson.employeeNo ||
+                ""
+            )
+            .startsWith(
+                "YG"
+            )
+        ) {
+
+            throw new Error(
+                "人员登记闭环：审核通过后未生成员工编号"
+            );
+        }
+
+
+        robotMessage(
+            botName,
+            "管理员审核通过：人员=" +
+            applicantId +
+            "；员工编号=" +
+            approvedPerson.employeeNo
+        );
+
+
+        robotMessage(
+            botName,
+            "步骤 4/4：返回正式首页，再次选择“" +
+            position +
+            "”，验证进入正确岗位页面。"
+        );
+
+
+        await page.goto(
+            "index.html",
+            {
+                waitUntil:
+                    "domcontentloaded"
+            }
+        );
+
+
+        await page.evaluate(
+            targetPosition => {
+
+                selectPosition(
+                    targetPosition
+                );
+            },
+            position
+        );
+
+
+        await page.waitForURL(
+            url =>
+                url.pathname.endsWith(
+                    "/management.html"
+                ),
+            {
+                timeout:
+                    15000
+            }
+        );
+
+
+        const finalPath =
+            new URL(
+                page.url()
+            )
+            .pathname
+            .split(
+                "/"
+            )
+            .pop();
+
+
+        if (
+            finalPath !==
+                "management.html"
+        ) {
+
+            throw new Error(
+                "人员登记闭环：审核后岗位入口跳转错误，实际=" +
+                finalPath
+            );
+        }
+
+
+        updateBot(
+            botName,
+            "pass",
+            "人员登记 → 待审核 → 管理员审核 → 岗位进入完整闭环通过"
+        );
+
+
+        robotMessage(
+            botName,
+            "人员管理完整闭环通过：" +
+            applicantId +
+            " → pending → approved → " +
+            position +
+            " → management.html"
+        );
+
+
+        return {
+            ok:
+                true,
+
+            action:
+                "personnel-registration-approval-role-entry",
+
+            personId:
+                applicantId,
+
+            employeeNo:
+                approvedPerson.employeeNo,
+
+            position,
+
+            finalPage:
+                finalPath
+        };
+
+
+    } catch (
+        error
+    ) {
+
+        const message =
+            error?.message ||
+            String(
+                error
+            );
+
+
+        updateBot(
+            botName,
+            "fail",
+            message
+        );
+
+
+        robotMessage(
+            botName,
+            "人员登记审核岗位进入闭环失败：" +
+            message
+        );
+
+
+        throw error;
+
+
+    } finally {
+
+        if (
+            context
+        ) {
+
+            await context.close()
+                .catch(
+                    () => {}
+                );
+        }
+    }
+}
+
+
 async function runAllRoleEntryLinkageTest() {
 
     const botName =
@@ -11035,6 +11677,13 @@ async function runAllCoreRegressionTests() {
         "全岗位入口联动",
         async () =>
             await runAllRoleEntryLinkageTest()
+    );
+
+
+    await runCase(
+        "人员登记审核岗位进入闭环",
+        async () =>
+            await runPersonnelRegistrationApprovalRoleEntryTest()
     );
 
 
@@ -14026,6 +14675,26 @@ async function executeCommand({
     ) {
 
         return await runCurrentTestReport();
+    }
+
+
+    if (
+        requestedBot ===
+            "TestManager" &&
+        (
+            /运行.*人员.*登记.*审核.*闭环/i.test(
+                command
+            ) ||
+            /测试.*人员.*待审核.*管理员.*通过/i.test(
+                command
+            ) ||
+            /人员登记.*审核后.*岗位/i.test(
+                command
+            )
+        )
+    ) {
+
+        return await runPersonnelRegistrationApprovalRoleEntryTest();
     }
 
 
