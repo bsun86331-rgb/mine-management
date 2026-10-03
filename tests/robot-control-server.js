@@ -4912,6 +4912,373 @@ async function runMaintenanceWarehouseReportCenterTest() {
 }
 
 
+async function runAuxiliaryReportCenterVerificationTest() {
+
+    const botName =
+        "TestManager";
+
+
+    let reportPage =
+        null;
+
+
+    try {
+
+        updateBot(
+            botName,
+            "running",
+            "正在验证辅助车辆完成记录进入综合报表中心"
+        );
+
+
+        robotMessage(
+            botName,
+            "步骤 1/2：准备 TEST 辅助车辆完成记录和 TEST 加油完成记录。"
+        );
+
+
+        const bot =
+            await getDispatchBot();
+
+
+        await bot.open();
+
+
+        await bot.seedAuxiliaryCompletionFeedbackTestData();
+
+
+        robotMessage(
+            botName,
+            "步骤 2/2：打开综合报表中心生产报表，核对辅助车辆完成统计。"
+        );
+
+
+        reportPage =
+            await browserContext.newPage();
+
+
+        await reportPage.addInitScript(
+            () => {
+
+                const readArray =
+                    key => {
+
+                        try {
+
+                            const data =
+                                JSON.parse(
+                                    localStorage.getItem(
+                                        key
+                                    )
+                                );
+
+
+                            return Array.isArray(
+                                data
+                            )
+                                ? data
+                                : [];
+
+                        } catch (
+                            error
+                        ) {
+
+                            return [];
+                        }
+                    };
+
+
+                const adminId =
+                    "TEST-AUX-REPORT-ADMIN-001";
+
+
+                const rows =
+                    readArray(
+                        "personnelRecords"
+                    )
+                    .filter(
+                        item =>
+                            String(
+                                item.personId ||
+                                item.employeeId ||
+                                ""
+                            ) !==
+                                adminId
+                    );
+
+
+                rows.push({
+                    personId:
+                        adminId,
+
+                    employeeId:
+                        adminId,
+
+                    employeeNo:
+                        adminId,
+
+                    name:
+                        "TEST-辅助车辆报表管理员",
+
+                    position:
+                        "管理员",
+
+                    department:
+                        "TEST-管理部",
+
+                    approvalStatus:
+                        "approved",
+
+                    status:
+                        "active",
+
+                    personnelStatus:
+                        "在职可用",
+
+                    testFixture:
+                        true
+                });
+
+
+                localStorage.setItem(
+                    "personnelRecords",
+                    JSON.stringify(
+                        rows
+                    )
+                );
+
+
+                localStorage.setItem(
+                    "adminPersonId",
+                    adminId
+                );
+
+
+                localStorage.setItem(
+                    "currentPersonId",
+                    adminId
+                );
+
+
+                localStorage.setItem(
+                    "selectedPosition",
+                    "管理员"
+                );
+
+
+                localStorage.setItem(
+                    "rolePersonIds",
+                    JSON.stringify({
+                        管理员:
+                            adminId
+                    })
+                );
+            }
+        );
+
+
+        await reportPage.goto(
+            "report-center.html?section=production",
+            {
+                waitUntil:
+                    "domcontentloaded"
+            }
+        );
+
+
+        await reportPage.waitForTimeout(
+            500
+        );
+
+
+        const monthCount =
+            Number(
+                await reportPage
+                    .locator(
+                        "#auxiliaryReportMonthCount"
+                    )
+                    .textContent()
+            );
+
+
+        const fuelCount =
+            Number(
+                await reportPage
+                    .locator(
+                        "#auxiliaryReportFuelCount"
+                    )
+                    .textContent()
+            );
+
+
+        const fuelAmountText =
+            String(
+                await reportPage
+                    .locator(
+                        "#auxiliaryReportFuelAmount"
+                    )
+                    .textContent()
+            )
+            .trim();
+
+
+        const tableText =
+            String(
+                await reportPage
+                    .locator(
+                        "#auxiliaryReportTableBody"
+                    )
+                    .innerText()
+            );
+
+
+        if (
+            monthCount <
+                2
+        ) {
+
+            throw new Error(
+                "辅助车辆报表验证：本月完成数量不足，实际=" +
+                monthCount
+            );
+        }
+
+
+        if (
+            fuelCount <
+                1
+        ) {
+
+            throw new Error(
+                "辅助车辆报表验证：本月加油完成数量不足，实际=" +
+                fuelCount
+            );
+        }
+
+
+        if (
+            fuelAmountText !==
+                "500.0 L"
+        ) {
+
+            throw new Error(
+                "辅助车辆报表验证：本月加油量不正确，实际=" +
+                fuelAmountText
+            );
+        }
+
+
+        const requiredTexts = [
+            "TEST-AUX-WATER-001",
+            "TEST-AUX-TASK-001",
+            "TEST-运输道路洒水降尘",
+            "TEST-FUEL-VEHICLE-001",
+            "TEST-FUEL-REQ-001",
+            "完成加油 500.0 L"
+        ];
+
+
+        const missing =
+            requiredTexts.filter(
+                text =>
+                    !tableText.includes(
+                        text
+                    )
+            );
+
+
+        if (
+            missing.length
+        ) {
+
+            throw new Error(
+                "辅助车辆报表验证：明细缺少 " +
+                missing.join(
+                    "、"
+                )
+            );
+        }
+
+
+        updateBot(
+            botName,
+            "pass",
+            "辅助车辆完成统计已正确进入综合报表中心"
+        );
+
+
+        robotMessage(
+            botName,
+            "报表验证通过：本月完成=" +
+            monthCount +
+            "；加油完成=" +
+            fuelCount +
+            "；加油量=" +
+            fuelAmountText +
+            "；辅助车辆和加油明细均已显示。"
+        );
+
+
+        return {
+            ok:
+                true,
+
+            action:
+                "auxiliary-report-center-verification",
+
+            monthCount,
+
+            fuelCount,
+
+            fuelAmount:
+                fuelAmountText
+        };
+
+
+    } catch (
+        error
+    ) {
+
+        const message =
+            error?.message ||
+            String(
+                error
+            );
+
+
+        updateBot(
+            botName,
+            "fail",
+            message
+        );
+
+
+        robotMessage(
+            botName,
+            "辅助车辆完成统计进入综合报表中心验证失败：" +
+            message
+        );
+
+
+        throw error;
+
+
+    } finally {
+
+        if (
+            reportPage &&
+            !reportPage.isClosed()
+        ) {
+
+            await reportPage.close()
+                .catch(
+                    () => {}
+                );
+        }
+    }
+}
+
+
 async function runAGroupAuxiliaryDispatchFeedbackClosedLoopTest() {
 
     const botName =
@@ -10086,6 +10453,43 @@ function naturalLanguageIntentCatalog() {
         },
         {
             action:
+                "auxiliary-report-center-verification",
+
+            label:
+                "辅助车辆综合报表验证",
+
+            runner:
+                async () =>
+                    await runAuxiliaryReportCenterVerificationTest(),
+
+            requiredGroups: [
+                [
+                    "辅助车辆",
+                    "加油车"
+                ],
+                [
+                    "报表",
+                    "综合报表",
+                    "统计"
+                ]
+            ],
+
+            bonusTerms: [
+                "看看",
+                "有没有",
+                "显示",
+                "进入",
+                "加油量",
+                "完成统计"
+            ],
+
+            examples: [
+                "看看辅助车辆和加油车完成记录有没有进综合报表",
+                "验证一下辅助车辆完成统计和加油量显示对不对"
+            ]
+        },
+        {
+            action:
                 "a-group-auxiliary-dispatch-feedback-closed-loop",
 
             label:
@@ -11495,6 +11899,26 @@ async function executeCommand({
     ) {
 
         return await runTemporaryUnloadRejectionTest();
+    }
+
+
+    if (
+        requestedBot ===
+            "TestManager" &&
+        (
+            /运行.*辅助车辆.*报表.*验证/i.test(
+                command
+            ) ||
+            /测试.*辅助车辆.*综合报表/i.test(
+                command
+            ) ||
+            /验证.*辅助车辆.*加油.*报表/i.test(
+                command
+            )
+        )
+    ) {
+
+        return await runAuxiliaryReportCenterVerificationTest();
     }
 
 
