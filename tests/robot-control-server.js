@@ -884,6 +884,100 @@ Playwright 生命周期
 */
 
 
+async function resetRobotRuntimeContext() {
+
+    /*
+     * 强隔离：
+     * 关闭整个 Playwright BrowserContext / Browser，
+     * 并清空所有机器人页面与实例引用。
+     *
+     * 仅清 localStorage 不足以处理多页面缓存、页面内存状态、
+     * 已打开的维修/调度/司机页面等跨用例残留。
+     */
+    try {
+
+        if (
+            browserContext
+        ) {
+
+            await browserContext.close();
+        }
+
+    } catch (
+        error
+    ) {}
+
+
+    try {
+
+        if (
+            browser
+        ) {
+
+            await browser.close();
+        }
+
+    } catch (
+        error
+    ) {}
+
+
+    browser =
+        null;
+
+    browserContext =
+        null;
+
+
+    truckDriverPage =
+        null;
+
+    truckDriverBot =
+        null;
+
+
+    dispatchPage =
+        null;
+
+    dispatchBot =
+        null;
+
+
+    equipmentCheckPage =
+        null;
+
+    equipmentCheckBot =
+        null;
+
+
+    maintenanceManagerPage =
+        null;
+
+    maintenanceManagerBot =
+        null;
+
+
+    maintenanceWorkerPage =
+        null;
+
+    maintenanceWorkerBot =
+        null;
+
+
+    warehousePage =
+        null;
+
+    warehouseBot =
+        null;
+
+
+    robotMessage(
+        "TestManager",
+        "已重置完整 Playwright TEST 运行环境。"
+    );
+}
+
+
 async function ensureBrowser() {
 
     if (
@@ -9975,11 +10069,11 @@ async function runReleaseGoldenRegression() {
             try {
 
                 /*
-                 * 黄金回归中的每个用例都先清理上一用例留下的 TEST 状态。
-                 * 这样“一键发布检查”先跑完核心回归后，再进入黄金回归时，
-                 * 不会因为维修单 / 运输趟次 / 临时卸料等历史 TEST 数据互相污染。
+                 * 黄金回归每个用例使用全新的 Playwright 运行环境。
+                 * 关闭上一用例所有页面 / Context / Browser，
+                 * 避免司机端、调度端、维修端页面内存状态和 localStorage 互相污染。
                  */
-                await clearTruckDriverTestEnvironment();
+                await resetRobotRuntimeContext();
 
 
                 const result =
@@ -10090,6 +10184,9 @@ async function runReleaseGoldenRegression() {
         "running",
         "正在运行发布前黄金回归"
     );
+
+
+    await resetRobotRuntimeContext();
 
 
     /*
