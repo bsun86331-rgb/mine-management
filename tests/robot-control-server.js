@@ -13026,6 +13026,109 @@ function saveCurrentTestReport(
 }
 
 
+function findLatestReportFile(
+    extension
+) {
+
+    try {
+
+        if (
+            !fs.existsSync(
+                REPORT_DIR
+            )
+        ) {
+
+            return null;
+        }
+
+
+        const suffix =
+            String(
+                extension ||
+                ""
+            )
+            .toLowerCase();
+
+
+        const files =
+            fs.readdirSync(
+                REPORT_DIR
+            )
+            .filter(
+                name =>
+                    name
+                        .toLowerCase()
+                        .endsWith(
+                            suffix
+                        )
+            )
+            .sort()
+            .reverse();
+
+
+        if (
+            !files.length
+        ) {
+
+            return null;
+        }
+
+
+        return path.join(
+            REPORT_DIR,
+            files[
+                0
+            ]
+        );
+
+
+    } catch (
+        error
+    ) {
+
+        return null;
+    }
+}
+
+
+function latestReportSummary() {
+
+    const markdownPath =
+        findLatestReportFile(
+            ".md"
+        );
+
+
+    const jsonPath =
+        findLatestReportFile(
+            ".json"
+        );
+
+
+    return {
+        exists:
+            Boolean(
+                markdownPath ||
+                jsonPath
+            ),
+
+        markdown:
+            markdownPath
+                ? path.basename(
+                    markdownPath
+                )
+                : null,
+
+        json:
+            jsonPath
+                ? path.basename(
+                    jsonPath
+                )
+                : null
+    };
+}
+
+
 async function runCurrentTestReport() {
 
     const botName =
@@ -14145,7 +14248,10 @@ const server =
                         },
 
                         readiness:
-                            readinessState
+                            readinessState,
+
+                        latestReport:
+                            latestReportSummary()
                     }
                 );
 
@@ -14172,6 +14278,114 @@ const server =
                             readinessState
                     }
                 );
+
+
+                return;
+            }
+
+
+            if (
+                request.method ===
+                    "GET" &&
+                url.pathname ===
+                    "/api/report/latest"
+            ) {
+
+                sendJson(
+                    response,
+                    200,
+                    {
+                        ok:
+                            true,
+
+                        latestReport:
+                            latestReportSummary()
+                    }
+                );
+
+
+                return;
+            }
+
+
+            if (
+                request.method ===
+                    "GET" &&
+                (
+                    url.pathname ===
+                        "/api/report/latest.md"
+                    ||
+                    url.pathname ===
+                        "/api/report/latest.json"
+                )
+            ) {
+
+                const isMarkdown =
+                    url.pathname.endsWith(
+                        ".md"
+                    );
+
+
+                const reportPath =
+                    findLatestReportFile(
+                        isMarkdown
+                            ? ".md"
+                            : ".json"
+                    );
+
+
+                if (
+                    !reportPath ||
+                    !fs.existsSync(
+                        reportPath
+                    )
+                ) {
+
+                    sendJson(
+                        response,
+                        404,
+                        {
+                            ok:
+                                false,
+
+                            error:
+                                "尚未生成测试报告"
+                        }
+                    );
+
+
+                    return;
+                }
+
+
+                response.writeHead(
+                    200,
+                    {
+                        "Content-Type":
+                            isMarkdown
+                                ? "text/markdown; charset=utf-8"
+                                : "application/json; charset=utf-8",
+
+                        "Content-Disposition":
+                            "attachment; filename=\"" +
+                            path.basename(
+                                reportPath
+                            ) +
+                            "\"" ,
+
+                        "Cache-Control":
+                            "no-store"
+                    }
+                );
+
+
+                fs
+                    .createReadStream(
+                        reportPath
+                    )
+                    .pipe(
+                        response
+                    );
 
 
                 return;
