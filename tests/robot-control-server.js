@@ -88,7 +88,7 @@ const {
 
 /*
 =========================================================
-R0-32 RobotControlServer
+R0-33 RobotControlServer
 机器人测试控制中心后台 + Playwright 执行器
 
 当前已接入：
@@ -5541,6 +5541,15 @@ async function runAGroupProductionClosedLoop() {
                         robotName;
 
 
+                    /*
+                     * 双保险：
+                     * 生产联动闭环必须在 driver-work.html 启动前
+                     * 由 TruckDriverBot 自己向 BrowserContext 注入 TEST GPS。
+                     * 不再只依赖 Fixture 的 page.addInitScript。
+                     */
+                    await bot.installTestGpsBeforeOpen();
+
+
                     await bot.open();
 
 
@@ -8732,7 +8741,7 @@ server.listen(
         );
 
         console.log(
-            "🤖 机器人测试控制中心 R0-32 已启动"
+            "🤖 机器人测试控制中心 R0-33 已启动"
         );
 
         console.log(
