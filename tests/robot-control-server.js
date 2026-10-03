@@ -61,6 +61,13 @@ const {
     "./bots/role-entry-bot"
 );
 
+
+const {
+    AuxiliaryWorkBot
+} = require(
+    "./bots/auxiliary-work-bot"
+);
+
 const {
     initializeTruckDriverTestEnvironment,
     clearRobotTestEnvironment
@@ -88,7 +95,7 @@ const {
 
 /*
 =========================================================
-R0-33 RobotControlServer
+R0-34 RobotControlServer
 机器人测试控制中心后台 + Playwright 执行器
 
 当前已接入：
@@ -6189,6 +6196,671 @@ async function runAGroupProductionClosedLoop() {
 }
 
 
+async function runAGroupAuxiliaryLinkageTest() {
+
+    const botName =
+        "TestManager";
+
+
+    await ensureBrowser();
+
+
+    const suiteStartedAt =
+        Date.now();
+
+
+    const contexts =
+        [];
+
+
+    const plans = [
+        {
+            personId:
+                "TEST-A-AUX-LOADER-001",
+
+            position:
+                "铲车司机",
+
+            vehicleType:
+                "铲车",
+
+            vehicleId:
+                "TEST-A-AUX-LOADER-V01",
+
+            taskId:
+                "TEST-A-AUX-TASK-LOADER-001",
+
+            work:
+                "TEST-A组作业面辅助装载与清理"
+        },
+        {
+            personId:
+                "TEST-A-AUX-WATER-001",
+
+            position:
+                "洒水车司机",
+
+            vehicleType:
+                "洒水车",
+
+            vehicleId:
+                "TEST-A-AUX-WATER-V01",
+
+            taskId:
+                "TEST-A-AUX-TASK-WATER-001",
+
+            work:
+                "TEST-A组运输道路洒水降尘"
+        },
+        {
+            personId:
+                "TEST-A-AUX-GRADER-001",
+
+            position:
+                "平路机司机",
+
+            vehicleType:
+                "平路机",
+
+            vehicleId:
+                "TEST-A-AUX-GRADER-V01",
+
+            taskId:
+                "TEST-A-AUX-TASK-GRADER-001",
+
+            work:
+                "TEST-A组运输道路平整维护"
+        },
+        {
+            personId:
+                "TEST-A-AUX-DOZER-001",
+
+            position:
+                "推土机司机",
+
+            vehicleType:
+                "推土机",
+
+            vehicleId:
+                "TEST-A-AUX-DOZER-V01",
+
+            taskId:
+                "TEST-A-AUX-TASK-DOZER-001",
+
+            work:
+                "TEST-A组排土场推平作业"
+        },
+        {
+            personId:
+                "TEST-A-AUX-BUS-001",
+
+            position:
+                "大巴司机",
+
+            vehicleType:
+                "大巴",
+
+            vehicleId:
+                "TEST-A-AUX-BUS-V01",
+
+            taskId:
+                "TEST-A-AUX-TASK-BUS-001",
+
+            work:
+                "TEST-A组人员通勤运输"
+        },
+        {
+            personId:
+                "TEST-A-AUX-FUEL-001",
+
+            position:
+                "加油车司机",
+
+            vehicleType:
+                "加油车",
+
+            /*
+             * fuel.html 的业务对象是“待加油车辆”，
+             * 因此这里 vehicleId 表示本次被服务的TEST车辆。
+             */
+            vehicleId:
+                "TEST-A-T-001",
+
+            taskId:
+                "TEST-A-FUEL-REQ-001",
+
+            work:
+                "TEST-A组生产车辆加油"
+        }
+    ];
+
+
+    const results =
+        [];
+
+
+    updateBot(
+        botName,
+        "running",
+        "正在运行A组辅助车辆联动"
+    );
+
+
+    robotMessage(
+        botName,
+        "辅助车辆联动：铲车、洒水车、平路机、推土机、大巴、加油车各1个TEST机器人并行执行。"
+    );
+
+
+    try {
+
+        const jobs =
+            plans.map(
+                async (
+                    plan,
+                    index
+                ) => {
+
+                    const context =
+                        await browser.newContext({
+                            baseURL:
+                                BASE_URL,
+
+                            viewport: {
+                                width:
+                                    390,
+
+                                height:
+                                    844
+                            }
+                        });
+
+
+                    contexts.push(
+                        context
+                    );
+
+
+                    const page =
+                        await context.newPage();
+
+
+                    await installAGroupRobotContext(
+                        page,
+                        plan.personId
+                    );
+
+
+                    /*
+                     * 在页面业务脚本启动前写入该岗位专属TEST任务。
+                     * 只作用于当前机器人的独立 BrowserContext。
+                     */
+                    await page.addInitScript(
+                        plan => {
+
+                            const nowIso =
+                                new Date()
+                                    .toISOString();
+
+
+                            if (
+                                plan.position ===
+                                    "加油车司机"
+                            ) {
+
+                                localStorage.setItem(
+                                    "fuelIntakeRecords",
+                                    JSON.stringify([
+                                        {
+                                            intakeId:
+                                                "TEST-A-FUEL-INTAKE-001",
+
+                                            source:
+                                                "TEST-A组油罐",
+
+                                            oilType:
+                                                "柴油",
+
+                                            amount:
+                                                3000,
+
+                                            remark:
+                                                "TEST辅助车辆联动",
+
+                                            createdAt:
+                                                nowIso,
+
+                                            testFixture:
+                                                true
+                                        }
+                                    ])
+                                );
+
+
+                                localStorage.setItem(
+                                    "fuelRequests",
+                                    JSON.stringify([
+                                        {
+                                            requestId:
+                                                plan.taskId,
+
+                                            vehicleNumber:
+                                                plan.vehicleId,
+
+                                            driverName:
+                                                "TEST-A组汽车司机01",
+
+                                            gpsStatus:
+                                                "范围内",
+
+                                            status:
+                                                "waiting",
+
+                                            requestedAt:
+                                                nowIso,
+
+                                            testFixture:
+                                                true
+                                        }
+                                    ])
+                                );
+
+
+                                localStorage.setItem(
+                                    "fuelRecords",
+                                    "[]"
+                                );
+
+
+                                return;
+                            }
+
+
+                            localStorage.setItem(
+                                "auxiliaryVehicleProfile",
+                                JSON.stringify({
+                                    vehicleType:
+                                        plan.vehicleType,
+
+                                    vehicleNumber:
+                                        plan.vehicleId,
+
+                                    testFixture:
+                                        true
+                                })
+                            );
+
+
+                            let tasks =
+                                [];
+
+
+                            try {
+
+                                const parsed =
+                                    JSON.parse(
+                                        localStorage.getItem(
+                                            "dispatchPublishedTasks"
+                                        ) ||
+                                        "[]"
+                                    );
+
+
+                                tasks =
+                                    Array.isArray(
+                                        parsed
+                                    )
+                                        ? parsed
+                                        : [];
+
+                            } catch (
+                                error
+                            ) {
+
+                                tasks =
+                                    [];
+                            }
+
+
+                            tasks =
+                                tasks.filter(
+                                    item =>
+                                        String(
+                                            item?.taskId ||
+                                            item?.id ||
+                                            ""
+                                        ) !==
+                                            plan.taskId
+                                );
+
+
+                            tasks.push({
+                                taskId:
+                                    plan.taskId,
+
+                                id:
+                                    plan.taskId,
+
+                                taskName:
+                                    "TEST-A组辅助车辆任务-" +
+                                    plan.position,
+
+                                status:
+                                    "active",
+
+                                area:
+                                    "TEST-A组作业区",
+
+                                shift:
+                                    "白班",
+
+                                shiftId:
+                                    "TEST-A-SHIFT-001",
+
+                                publishedAt:
+                                    nowIso,
+
+                                remark:
+                                    plan.work,
+
+                                auxiliaryAssignments: [
+                                    {
+                                        personId:
+                                            plan.personId,
+
+                                        position:
+                                            plan.position,
+
+                                        vehicleId:
+                                            plan.vehicleId,
+
+                                        vehicleNumber:
+                                            plan.vehicleId,
+
+                                        vehicleType:
+                                            plan.vehicleType,
+
+                                        work:
+                                            plan.work,
+
+                                        testFixture:
+                                            true
+                                    }
+                                ],
+
+                                testFixture:
+                                    true
+                            });
+
+
+                            localStorage.setItem(
+                                "dispatchPublishedTasks",
+                                JSON.stringify(
+                                    tasks
+                                )
+                            );
+
+
+                            localStorage.setItem(
+                                "auxiliaryWorkRecords",
+                                "[]"
+                            );
+                        },
+                        plan
+                    );
+
+
+                    const robotName =
+                        "AuxiliaryWorkBot-" +
+                        String(
+                            index +
+                            1
+                        )
+                        .padStart(
+                            2,
+                            "0"
+                        ) +
+                        "-" +
+                        plan.position;
+
+
+                    robotMessage(
+                        robotName,
+                        "开始：" +
+                        plan.position +
+                        " / " +
+                        plan.taskId
+                    );
+
+
+                    const bot =
+                        new AuxiliaryWorkBot(
+                            page,
+                            plan,
+                            robotName
+                        );
+
+
+                    const result =
+                        await bot.run();
+
+
+                    results.push(
+                        result
+                    );
+
+
+                    robotMessage(
+                        robotName,
+                        "PASS：" +
+                        plan.position +
+                        " 已完成TEST作业。"
+                    );
+
+
+                    return result;
+                }
+            );
+
+
+        await Promise.all(
+            jobs
+        );
+
+
+        if (
+            results.length !==
+                6
+        ) {
+
+            throw new Error(
+                "A组辅助车辆联动：完成数量不正确，预期=6；实际=" +
+                results.length
+            );
+        }
+
+
+        const completed =
+            results.filter(
+                item =>
+                    item.status ===
+                        "completed"
+            );
+
+
+        if (
+            completed.length !==
+                6
+        ) {
+
+            throw new Error(
+                "A组辅助车辆联动：不是全部任务都进入completed，实际=" +
+                completed.length
+            );
+        }
+
+
+        const uniquePersons =
+            new Set(
+                results.map(
+                    item =>
+                        item.personId
+                )
+            );
+
+
+        const uniqueTasks =
+            new Set(
+                results.map(
+                    item =>
+                        item.taskId
+                )
+            );
+
+
+        if (
+            uniquePersons.size !==
+                6 ||
+            uniqueTasks.size !==
+                6
+        ) {
+
+            throw new Error(
+                "A组辅助车辆联动：personId或taskId发生重复/串联"
+            );
+        }
+
+
+        const durationMs =
+            Date.now() -
+            suiteStartedAt;
+
+
+        robotMessage(
+            botName,
+            "A组辅助车辆联动汇总：6/6 PASS。"
+        );
+
+
+        robotMessage(
+            botName,
+            "完成岗位：铲车、洒水车、平路机、推土机、大巴、加油车。"
+        );
+
+
+        robotMessage(
+            botName,
+            "数据核对：6个personId + 6个taskId全部唯一；各岗位完成记录均为TEST数据。"
+        );
+
+
+        robotMessage(
+            botName,
+            "当前架构提示：正式dispatch.html尚未读取 auxiliaryWorkRecords / fuelRecords 形成统一“辅助车辆完成回传”视图，因此本轮只验证岗位侧真实完成记录；未修改正式业务补齐该能力。"
+        );
+
+
+        robotMessage(
+            botName,
+            "A组辅助车辆联动总耗时=" +
+            (
+                durationMs /
+                1000
+            )
+            .toFixed(
+                2
+            ) +
+            "s"
+        );
+
+
+        updateBot(
+            botName,
+            "pass",
+            "A组辅助车辆6岗位联动全部通过"
+        );
+
+
+        return {
+            ok:
+                true,
+
+            action:
+                "a-group-auxiliary-linkage",
+
+            total:
+                6,
+
+            durationMs,
+            results,
+
+            businessGap: {
+                dispatchCompletionView:
+                    false,
+
+                note:
+                    "dispatch.html 当前没有统一读取 auxiliaryWorkRecords / fuelRecords 的辅助车辆完成回传视图"
+            }
+        };
+
+
+    } catch (
+        error
+    ) {
+
+        const diagnosis =
+            buildFailureDiagnosis({
+                caseName:
+                    "A组辅助车辆联动",
+
+                error,
+
+                suiteLabel:
+                    "多机器人辅助车辆联动"
+            });
+
+
+        const diagnosticPath =
+            saveFailureDiagnostic(
+                diagnosis
+            );
+
+
+        reportFailureDiagnosis(
+            botName,
+            diagnosis,
+            diagnosticPath
+        );
+
+
+        updateBot(
+            botName,
+            "fail",
+            error?.message ||
+            String(
+                error
+            )
+        );
+
+
+        throw error;
+
+
+    } finally {
+
+        await Promise.all(
+            contexts.map(
+                context =>
+                    context.close()
+                        .catch(
+                            () => {}
+                        )
+            )
+        );
+    }
+}
+
+
 async function runStabilityRegression(
     rounds =
         3
@@ -7728,6 +8400,26 @@ async function executeCommand({
         requestedBot ===
             "TestManager" &&
         (
+            /运行.*A组.*辅助车辆.*联动/i.test(
+                command
+            ) ||
+            /测试.*辅助车辆.*6.*岗位/i.test(
+                command
+            ) ||
+            /辅助车辆.*生产.*联动/i.test(
+                command
+            )
+        )
+    ) {
+
+        return await runAGroupAuxiliaryLinkageTest();
+    }
+
+
+    if (
+        requestedBot ===
+            "TestManager" &&
+        (
             /运行.*A组.*生产.*联动.*闭环/i.test(
                 command
             ) ||
@@ -8741,7 +9433,7 @@ server.listen(
         );
 
         console.log(
-            "🤖 机器人测试控制中心 R0-33 已启动"
+            "🤖 机器人测试控制中心 R0-34 已启动"
         );
 
         console.log(
