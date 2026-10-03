@@ -65,7 +65,7 @@ const {
 
 /*
 =========================================================
-R0-25 RobotControlServer
+R0-26 RobotControlServer
 机器人测试控制中心后台 + Playwright 执行器
 
 当前已接入：
@@ -3860,11 +3860,19 @@ async function runFastRegressionTests(
         [];
 
 
+    const suiteStartedAt =
+        Date.now();
+
+
     const runFastCase =
         async (
             name,
             runner
         ) => {
+
+            const caseStartedAt =
+                Date.now();
+
 
             robotMessage(
                 botName,
@@ -3880,10 +3888,17 @@ async function runFastRegressionTests(
                     await runner();
 
 
+                const durationMs =
+                    Date.now() -
+                    caseStartedAt;
+
+
                 results.push({
                     name,
                     ok:
                         true,
+
+                    durationMs,
 
                     result
                 });
@@ -3893,7 +3908,16 @@ async function runFastRegressionTests(
                     botName,
                     suiteLabel +
                     "通过：" +
-                    name
+                    name +
+                    "；耗时=" +
+                    (
+                        durationMs /
+                        1000
+                    )
+                    .toFixed(
+                        2
+                    ) +
+                    "s"
                 );
 
 
@@ -3932,10 +3956,17 @@ async function runFastRegressionTests(
                 );
 
 
+                const durationMs =
+                    Date.now() -
+                    caseStartedAt;
+
+
                 results.push({
                     name,
                     ok:
                         false,
+
+                    durationMs,
 
                     error:
                         message,
@@ -4282,6 +4313,82 @@ async function runFastRegressionTests(
     );
 
 
+    const suiteDurationMs =
+        Date.now() -
+        suiteStartedAt;
+
+
+    const slowest =
+        [
+            ...results
+        ]
+        .sort(
+            (
+                a,
+                b
+            ) =>
+                Number(
+                    b.durationMs ||
+                    0
+                ) -
+                Number(
+                    a.durationMs ||
+                    0
+                )
+        )
+        .slice(
+            0,
+            3
+        );
+
+
+    robotMessage(
+        botName,
+        suiteLabel +
+        "总耗时=" +
+        (
+            suiteDurationMs /
+            1000
+        )
+        .toFixed(
+            2
+        ) +
+        "s"
+    );
+
+
+    if (
+        slowest.length
+    ) {
+
+        robotMessage(
+            botName,
+            suiteLabel +
+            "最慢用例：" +
+            slowest
+                .map(
+                    item =>
+                        item.name +
+                        "=" +
+                        (
+                            Number(
+                                item.durationMs ||
+                                0
+                            ) /
+                            1000
+                        )
+                        .toFixed(
+                            2
+                        ) +
+                        "s"
+                )
+                .join(
+                    "；"
+                )
+        );
+    }
+
+
     if (
         failed
     ) {
@@ -4340,6 +4447,10 @@ async function runFastRegressionTests(
 
         passed,
         total,
+
+        durationMs:
+            suiteDurationMs,
+
         results
     };
 }
@@ -4355,11 +4466,19 @@ async function runAllCoreRegressionTests() {
         [];
 
 
+    const suiteStartedAt =
+        Date.now();
+
+
     const runCase =
         async (
             name,
             runner
         ) => {
+
+            const caseStartedAt =
+                Date.now();
+
 
             robotMessage(
                 botName,
@@ -4374,10 +4493,17 @@ async function runAllCoreRegressionTests() {
                     await runner();
 
 
+                const durationMs =
+                    Date.now() -
+                    caseStartedAt;
+
+
                 results.push({
                     name,
                     ok:
                         true,
+
+                    durationMs,
 
                     result
                 });
@@ -4386,7 +4512,16 @@ async function runAllCoreRegressionTests() {
                 robotMessage(
                     botName,
                     "回归通过：" +
-                    name
+                    name +
+                    "；耗时=" +
+                    (
+                        durationMs /
+                        1000
+                    )
+                    .toFixed(
+                        2
+                    ) +
+                    "s"
                 );
 
 
@@ -4429,10 +4564,17 @@ async function runAllCoreRegressionTests() {
                 );
 
 
+                const durationMs =
+                    Date.now() -
+                    caseStartedAt;
+
+
                 results.push({
                     name,
                     ok:
                         false,
+
+                    durationMs,
 
                     error:
                         message,
@@ -4618,6 +4760,80 @@ async function runAllCoreRegressionTests() {
     );
 
 
+    const suiteDurationMs =
+        Date.now() -
+        suiteStartedAt;
+
+
+    const slowest =
+        [
+            ...results
+        ]
+        .sort(
+            (
+                a,
+                b
+            ) =>
+                Number(
+                    b.durationMs ||
+                    0
+                ) -
+                Number(
+                    a.durationMs ||
+                    0
+                )
+        )
+        .slice(
+            0,
+            5
+        );
+
+
+    robotMessage(
+        botName,
+        "核心回归总耗时=" +
+        (
+            suiteDurationMs /
+            1000
+        )
+        .toFixed(
+            2
+        ) +
+        "s"
+    );
+
+
+    if (
+        slowest.length
+    ) {
+
+        robotMessage(
+            botName,
+            "核心回归最慢用例：" +
+            slowest
+                .map(
+                    item =>
+                        item.name +
+                        "=" +
+                        (
+                            Number(
+                                item.durationMs ||
+                                0
+                            ) /
+                            1000
+                        )
+                        .toFixed(
+                            2
+                        ) +
+                        "s"
+                )
+                .join(
+                    "；"
+                )
+        );
+    }
+
+
     if (
         failed
     ) {
@@ -4670,6 +4886,10 @@ async function runAllCoreRegressionTests() {
 
         passed,
         total,
+
+        durationMs:
+            suiteDurationMs,
+
         results
     };
 }
@@ -6039,7 +6259,7 @@ server.listen(
         );
 
         console.log(
-            "🤖 机器人测试控制中心 R0-25 已启动"
+            "🤖 机器人测试控制中心 R0-26 已启动"
         );
 
         console.log(
