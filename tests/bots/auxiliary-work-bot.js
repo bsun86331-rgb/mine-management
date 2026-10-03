@@ -40,6 +40,45 @@ class AuxiliaryWorkBot {
     }
 
 
+    async installTestIdFactory() {
+
+        await this.page.evaluate(
+            () => {
+
+                let sequence =
+                    0;
+
+
+                window.createId =
+                    function (
+                        prefix
+                    ) {
+
+                        sequence +=
+                            1;
+
+
+                        return (
+                            "TEST-" +
+                            String(
+                                prefix ||
+                                "ID"
+                            )
+                            .replace(
+                                /[^A-Za-z0-9_-]/g,
+                                "-"
+                            ) +
+                            "-" +
+                            Date.now() +
+                            "-" +
+                            sequence
+                        );
+                    };
+            }
+        );
+    }
+
+
     async readLocalStorage(
         key
     ) {
@@ -121,6 +160,9 @@ class AuxiliaryWorkBot {
         await this.page.waitForTimeout(
             500
         );
+
+
+        await this.installTestIdFactory();
 
 
         const actualPersonId =
@@ -338,6 +380,12 @@ class AuxiliaryWorkBot {
         }
 
 
+        assertTestId(
+            record.workRecordId,
+            "辅助车辆作业记录"
+        );
+
+
         return {
             personId,
             position,
@@ -398,6 +446,9 @@ class AuxiliaryWorkBot {
         await this.page.waitForTimeout(
             400
         );
+
+
+        await this.installTestIdFactory();
 
 
         const startButton =
@@ -538,6 +589,12 @@ class AuxiliaryWorkBot {
                 "：没有生成加油完成记录"
             );
         }
+
+
+        assertTestId(
+            record.fuelId,
+            "加油完成记录"
+        );
 
 
         return {
