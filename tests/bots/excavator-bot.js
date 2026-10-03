@@ -399,6 +399,84 @@ class ExcavatorBot {
                 boundTruckIds.length
         };
     }
+    async assertTripCount(
+        expectedCount
+    ) {
+
+        await this.page.waitForFunction(
+            expected => {
+
+                const el =
+                    document.getElementById(
+                        "totalTripCount"
+                    );
+
+
+                const value =
+                    Number(
+                        String(
+                            el?.textContent ||
+                            "0"
+                        )
+                        .replace(
+                            /[^\d.-]/g,
+                            ""
+                        )
+                    ) || 0;
+
+
+                return value ===
+                    expected;
+            },
+            expectedCount,
+            {
+                timeout:
+                    5000
+            }
+        );
+
+
+        const totalText =
+            (
+                await this.page
+                    .locator(
+                        "#totalTripCount"
+                    )
+                    .textContent()
+            )?.trim() ||
+            "0";
+
+
+        const total =
+            Number(
+                totalText.replace(
+                    /[^\d.-]/g,
+                    ""
+                )
+            ) || 0;
+
+
+        if (
+            total !==
+                expectedCount
+        ) {
+
+            throw new Error(
+                this.name +
+                "：挖机趟次统计不一致，预期=" +
+                expectedCount +
+                "；实际=" +
+                total
+            );
+        }
+
+
+        return {
+            total
+        };
+    }
+
+
 }
 
 
