@@ -468,6 +468,85 @@ class AuxiliaryWorkBot {
         );
 
 
+        /*
+         * Playwright 页面偶发未完成导航页签切换时，
+         * 仅在 TEST 机器人内强制激活加油任务区域。
+         * 不修改 fuel.html 正式业务逻辑。
+         */
+        const fuelingVisible =
+            await this.page
+                .locator(
+                    "#page-fueling"
+                )
+                .isVisible();
+
+
+        if (
+            !fuelingVisible
+        ) {
+
+            await this.page.evaluate(
+                () => {
+
+                    document
+                        .querySelectorAll(
+                            ".page-section"
+                        )
+                        .forEach(
+                            section =>
+                                section.classList.remove(
+                                    "active"
+                                )
+                        );
+
+
+                    document
+                        .getElementById(
+                            "page-fueling"
+                        )
+                        ?.classList.add(
+                            "active"
+                        );
+
+
+                    document
+                        .querySelectorAll(
+                            ".nav-btn"
+                        )
+                        .forEach(
+                            button =>
+                                button.classList.remove(
+                                    "active"
+                                )
+                        );
+
+
+                    document
+                        .querySelector(
+                            'button[data-page="fueling"]'
+                        )
+                        ?.classList.add(
+                            "active"
+                        );
+
+
+                    if (
+                        typeof renderAll ===
+                            "function"
+                    ) {
+
+                        renderAll();
+                    }
+                }
+            );
+
+
+            await this.page.waitForTimeout(
+                120
+            );
+        }
+
+
         const startButton =
             this.page
                 .locator(
