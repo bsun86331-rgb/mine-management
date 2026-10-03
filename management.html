@@ -85,37 +85,37 @@
     <div class="module-grid">
       <article class="module-card" data-module="report-center">
         <div><div class="module-icon">📊</div><h3>报表中心</h3><p>工资、生产、维修费用、加油、折旧、财务、综合绩效排名和考勤。</p></div>
-        <button class="primary" onclick="openPlanned('report-center.html','报表中心')">进入报表中心</button>
+        <button class="primary" onclick="location.href='report-center.html'">进入报表中心</button>
       </article>
 
       <article class="module-card" data-module="warehouse">
         <div><div class="module-icon">📦</div><h3>后勤物资管理</h3><p>库存、领用审核、回收换新、报废、丢失核销和物资台账。</p></div>
-        <button class="success" onclick="openPlanned('warehouse.html','后勤物资管理')">进入物资管理</button>
+        <button class="success" onclick="location.href='warehouse.html'">进入物资管理</button>
       </article>
 
       <article class="module-card" data-module="material-request">
         <div><div class="module-icon">🧾</div><h3>物资领用</h3><p>所有已审核人员均可发起后勤物资领用申请。</p></div>
-        <button class="secondary" onclick="openPlanned('material-request.html','物资领用中心')">发起领用</button>
+        <button class="secondary" onclick="location.href='material-request.html'">发起领用</button>
       </article>
 
       <article class="module-card" data-module="survey">
         <div><div class="module-icon">📐</div><h3>测量成果</h3><p>测量成果、工程量、方量、生产测量资料和数据复核。</p></div>
-        <button class="primary" onclick="planned('测量成果中心')">打开</button>
+        <button class="primary" onclick="openReport('production')">查看生产数据</button>
       </article>
 
       <article class="module-card" data-module="production">
         <div><div class="module-icon">🚚</div><h3>生产统计</h3><p>拉渣、拉煤车数，单车均方，换算产量和计划完成情况。</p></div>
-        <button class="primary" onclick="planned('生产统计中心')">打开</button>
+        <button class="primary" onclick="openReport('production')">查看生产报表</button>
       </article>
 
       <article class="module-card" data-module="safety">
         <div><div class="module-icon">🦺</div><h3>安全管理</h3><p>安全巡检、隐患记录、异常事件和整改跟踪。</p></div>
-        <button class="warning" onclick="planned('安全管理中心')">打开</button>
+        <button class="warning" onclick="location.href='attendance.html'">查看考勤与异常</button>
       </article>
 
       <article class="module-card" data-module="attendance">
         <div><div class="module-icon">📍</div><h3>考勤管理</h3><p>GPS定位打卡、请假过滤、异常考勤和零产量报备。</p></div>
-        <button class="secondary" onclick="openPlanned('attendance.html','考勤中心')">查看考勤</button>
+        <button class="secondary" onclick="location.href='attendance.html'">查看考勤</button>
       </article>
 
       <article class="module-card" data-module="payroll">
@@ -153,17 +153,17 @@
   <section class="card">
     <div class="title-row"><div><h2>⚡ 快捷入口</h2></div></div>
     <div class="quick-grid">
-      <button onclick="openPlanned('material-request.html','物资领用中心')">📦 物资领用</button>
-      <button onclick="openPlanned('fuel-request.html','加油申请中心')">⛽ 加油申请</button>
+      <button onclick="location.href='material-request.html'">📦 物资领用</button>
+      <button onclick="location.href='fuel-request.html'">⛽ 加油申请</button>
       <button onclick="location.href='maintenance-report.html'">⚠️ 异常上报</button>
-      <button onclick="openPlanned('report-center.html','报表中心')">📊 报表中心</button>
-      <button onclick="planned('我的考勤')">📍 我的考勤</button>
-      <button onclick="planned('我的工资明细')">💰 我的工资</button>
+      <button onclick="location.href='report-center.html'">📊 报表中心</button>
+      <button onclick="location.href='attendance.html'">📍 我的考勤</button>
+      <button onclick="openMyPayroll()">💰 我的工资</button>
     </div>
   </section>
 </main>
 
-<footer>矿山管理系统 · 中层管理综合工作台 V2.10.1A</footer>
+<footer>矿山管理系统 · 中层管理综合工作台 V2.11.0</footer>
 
 <script>
 "use strict";
@@ -200,12 +200,112 @@ const POSITION_DESCRIPTIONS={
 };
 
 const POSITION_TODOS={
-  "测量员":[["测量成果整理","整理当日测量数据、方量和生产测量资料。"],["生产数据复核","核对生产区域、工程量及日报基础数据。"]],
-  "安全员":[["安全巡检","检查现场安全隐患并形成整改记录。"],["异常事项跟踪","跟踪已上报安全异常及整改进度。"]],
-  "统计":[["生产日报","汇总拉渣、拉煤车数及转换产量。"],["零产量异常复核","核对有考勤但无车数人员的报备情况。"],["综合绩效排名","汇总运输、油耗和维修费用排名数据。"]],
-  "会计":[["工资数据检查","核对工资标准、绩效、奖励和扣款。"],["月度财务费用","录入折旧、税费、均摊及其他财务费用。"]],
-  "后勤":[["待处理物资领用单","核对申请物资、实际领用数量并确认出库。"],["可回收物资","处理以旧换新、回收、报废和丢失核销。"]]
+  "测量员":[
+    ["生产数据复核","进入生产报表核对车数、方量与生产数据。","report-center.html?section=production"]
+  ],
+  "安全员":[
+    ["考勤与异常复核","检查考勤异常、请假及零产量报备。","attendance.html"]
+  ],
+  "统计":[
+    ["生产日报","汇总运输记录与换算产量。","report-center.html?section=production"],
+    ["综合绩效排名","复核运输、油耗和维修费用排名。","report-center.html?section=ranking"],
+    ["考勤统计","核对考勤与零产量报备。","attendance.html"]
+  ],
+  "会计":[
+    ["工资数据检查","核对工资标准、考勤锁定、奖罚和加班。","report-center.html?section=payroll"],
+    ["月度财务费用","维护折旧、税费、均摊及其他财务费用。","report-center.html?section=finance"]
+  ],
+  "后勤":[
+    ["待处理物资领用单","核对待领用申请并进入后勤物资管理。","warehouse.html"],
+    ["员工物资与回收","处理库存、回收、报废和丢失核销。","warehouse.html"]
+  ]
 };
+
+function readArray(key){
+  try{
+    const data=JSON.parse(localStorage.getItem(key));
+    return Array.isArray(data)?data:[];
+  }catch(error){
+    return [];
+  }
+}
+
+function getRealTodoSnapshot(position){
+  const personId=getPersonId(currentPerson);
+  const materialRequests=readArray("materialRequests");
+  const attendance=readArray("attendanceRecords");
+  const teamTransfers=readArray("teamTransferRequests");
+  const maintenanceRequests=readArray("maintenanceRequests");
+
+  const ownMaterialPending=materialRequests.filter(item=>{
+    const owner=String(item.personId||item.employeeId||item.driverId||"");
+    const status=String(item.status||"").toLowerCase();
+    return owner===personId && ["pending","waiting","submitted"].includes(status);
+  }).length;
+
+  const ownAttendanceAbnormal=attendance.filter(item=>{
+    const owner=String(item.personId||item.employeeId||item.driverId||"");
+    const status=String(item.status||item.attendanceStatus||"").toLowerCase();
+    return owner===personId && ["abnormal","missing","异常","缺卡"].includes(status);
+  }).length;
+
+  const ownTransferPending=teamTransfers.filter(item=>{
+    const owner=String(item.personId||item.employeeId||item.driverId||"");
+    const status=String(item.status||"").toLowerCase();
+    return owner===personId && ["pending","waiting","submitted"].includes(status);
+  }).length;
+
+  const maintenanceOpen=maintenanceRequests.filter(item=>{
+    const status=String(item.status||"").toLowerCase();
+    return !["completed","closed","archived","rejected"].includes(status);
+  }).length;
+
+  const roleTodos=(POSITION_TODOS[position]||[]).map(item=>({
+    title:item[0],
+    detail:item[1],
+    url:item[2],
+    count:0
+  }));
+
+  if(ownMaterialPending){
+    roleTodos.unshift({
+      title:"我的物资申请",
+      detail:"有 "+ownMaterialPending+" 条物资申请正在处理中。",
+      url:"material-request.html",
+      count:ownMaterialPending
+    });
+  }
+
+  if(ownAttendanceAbnormal){
+    roleTodos.unshift({
+      title:"我的考勤异常",
+      detail:"有 "+ownAttendanceAbnormal+" 条考勤记录需要核对。",
+      url:"attendance.html",
+      count:ownAttendanceAbnormal
+    });
+  }
+
+  if(ownTransferPending){
+    roleTodos.unshift({
+      title:"我的换组申请",
+      detail:"有 "+ownTransferPending+" 条换组申请正在审批。",
+      url:"attendance.html",
+      count:ownTransferPending
+    });
+  }
+
+  if(["统计","会计"].includes(position) && maintenanceOpen){
+    roleTodos.push({
+      title:"未闭环维修业务",
+      detail:"当前共有 "+maintenanceOpen+" 条维修流程尚未结束，可进入维修费用报表核对。",
+      url:"report-center.html?section=maintenance",
+      count:maintenanceOpen
+    });
+  }
+
+  return roleTodos;
+}
+
 
 let currentPerson=null;
 
@@ -296,31 +396,49 @@ function render(){
     card.classList.toggle("hidden",!allowed.includes(card.dataset.module));
   });
 
-  const todos=POSITION_TODOS[position]||[];
+  const todos=getRealTodoSnapshot(position);
+  const realPending=todos.reduce((sum,item)=>sum+Number(item.count||0),0);
+
   document.getElementById("todoCount").textContent=String(todos.length);
-  document.getElementById("pendingCount").textContent=String(todos.length);
+  document.getElementById("pendingCount").textContent=String(realPending);
+
+  const summaryBoxes=document.querySelectorAll(".summary-box strong");
+  if(summaryBoxes[1])summaryBoxes[1].textContent=String(readArray("materialRequests").filter(item=>String(item.createdAt||item.submittedAt||"").slice(0,10)===new Date().toISOString().slice(0,10)).length);
+  if(summaryBoxes[3])summaryBoxes[3].textContent=String(readArray("attendanceRecords").filter(item=>["abnormal","missing","异常","缺卡"].includes(String(item.status||item.attendanceStatus||"").toLowerCase())).length);
 
   const box=document.getElementById("todoList");
   box.innerHTML=todos.length
-    ? todos.map((t,i)=>`<div class="todo"><div><strong>${escapeHtml(t[0])}</strong><small>${escapeHtml(t[1])}</small></div><span class="badge ${i===0?"gray":"green"}">待处理</span></div>`).join("")
-    : `<div class="todo"><div><strong>当前暂无岗位待办</strong><small>V3.0 后读取真实业务待办。</small></div><span class="badge gray">0</span></div>`;
+    ? todos.map((item,index)=>`<div class="todo"><div><strong>${escapeHtml(item.title)}</strong><small>${escapeHtml(item.detail)}</small></div><button type="button" class="badge ${item.count?"gray":"green"}" onclick="location.href='${escapeJs(item.url)}'">${item.count?item.count+" 条":"进入"}</button></div>`).join("")
+    : `<div class="todo"><div><strong>当前暂无岗位待办</strong><small>没有读取到需要处理的业务记录。</small></div><span class="badge green">0</span></div>`;
 }
 
 function openReport(section){
-  openPlanned("report-center.html?section="+encodeURIComponent(section),"报表中心");
+  location.href="report-center.html?section="+encodeURIComponent(section);
 }
 
 function openPlanned(url,name){
-  const pure=String(url).split("?")[0];
-  const planned=["report-center.html","material-request.html","attendance.html","warehouse.html"];
-  if(planned.includes(pure)){
-    if(!confirm(name+"入口已经预留。\n如果该页面尚未新建，会暂时显示404。\n\n是否继续？"))return;
-  }
   location.href=url;
 }
 
 function planned(name){
-  alert(name+"已经纳入系统规划。\n当前 V2.10.1A 先完成中层管理综合工作台界面，后续 V3.0 接入真实业务数据。");
+  alert(name+"暂未建立独立业务页面，请使用当前工作台已经接入的相关正式模块。");
+}
+
+function openMyPayroll(){
+  const position=normalizePosition(currentPerson?.position||"");
+
+  if(position==="会计"){
+    openReport("payroll");
+    return;
+  }
+
+  alert("个人工资条由工资最终锁定后生成。普通岗位暂不开放全员工资表权限，请由会计或管理员核对后发放工资条。");
+}
+
+function escapeJs(value){
+  return String(value||"")
+    .replace(/\\/g,"\\\\")
+    .replace(/'/g,"\\'");
 }
 
 function escapeHtml(value){
