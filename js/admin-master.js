@@ -1,6 +1,6 @@
 /* =========================================================
    矿山管理系统
-   V2.9.4A 管理员基础资料中心
+   V2.11.0 管理员基础资料中心
    人员 + 设备 + 后勤物资
 ========================================================= */
 
@@ -62,6 +62,87 @@ function localDate() {
   const offset = d.getTimezoneOffset();
   const local = new Date(d.getTime() - offset * 60000);
   return local.toISOString().slice(0, 10);
+}
+
+
+function normalizePersonnelPosition(position) {
+  const map = {
+    "卡车司机": "汽车司机",
+    "挖掘机司机": "挖机司机",
+    "装载机司机": "铲车司机",
+    "大巴": "大巴司机",
+    "维修人员": "维修员",
+    "修理工": "维修员",
+    "维修管理员": "维修管理",
+    "修理厂管理员": "维修管理",
+    "库房管理员": "库房管理",
+    "调度员": "车队长",
+    "测量人员": "测量员",
+    "安全人员": "安全员",
+    "统计员": "统计",
+    "财务": "会计",
+    "会计员": "会计",
+    "后勤人员": "后勤"
+  };
+
+  return map[position] || position || "";
+}
+
+
+function personnelStateFields(status) {
+  const normalized = String(status || "active");
+
+  if (normalized === "pending") {
+    return {
+      status: "pending",
+      approvalStatus: "pending",
+      personnelStatus: "待审核",
+      enabled: true
+    };
+  }
+
+  if (normalized === "disabled") {
+    return {
+      status: "disabled",
+      approvalStatus: "approved",
+      personnelStatus: "停用",
+      enabled: false
+    };
+  }
+
+  if (normalized === "resigned") {
+    return {
+      status: "resigned",
+      approvalStatus: "approved",
+      personnelStatus: "离职",
+      enabled: false
+    };
+  }
+
+  if (normalized === "working") {
+    return {
+      status: "working",
+      approvalStatus: "approved",
+      personnelStatus: "作业中",
+      enabled: true
+    };
+  }
+
+  if (normalized === "leave") {
+    return {
+      status: "leave",
+      approvalStatus: "approved",
+      personnelStatus: "请假",
+      enabled: true
+    };
+  }
+
+  return {
+    status: "active",
+    approvalStatus: "approved",
+    personnelStatus: "在职可用",
+    enabled: true
+  };
 }
 
 
@@ -240,7 +321,9 @@ function importExistingDriverProfile() {
     driverId: profile.driverId || profileId || "",
     name: profile.name || "",
     phone: profile.phone || "",
-    position: profile.position || "卡车司机",
+    position: normalizePersonnelPosition(
+      profile.position || "汽车司机"
+    ),
     team: profile.team || "",
     idCardNumber:
       profile.idCardNumber ||
@@ -256,14 +339,11 @@ function importExistingDriverProfile() {
       profile.emergencyPhone || "",
     entryDate:
       profile.entryDate || "",
-    status:
-      profile.status === "approved"
-        ? "active"
-        : profile.status === "pending"
+    ...personnelStateFields(
+      profile.status === "pending"
         ? "pending"
-        : "active",
-    approvalStatus:
-      profile.status || "approved",
+        : "active"
+    ),
     remark: profile.remark || "",
     createdAt:
       profile.createdAt || nowISO(),
@@ -500,7 +580,9 @@ function openPersonnelModal(personId = "") {
 
   document.getElementById(
     "personnelPosition"
-  ).value = person.position || "";
+  ).value = normalizePersonnelPosition(
+    person.position || ""
+  );
 
   document.getElementById(
     "personnelTeam"
@@ -597,9 +679,11 @@ function savePersonnel() {
       .value.trim();
 
   const position =
-    document
-      .getElementById("personnelPosition")
-      .value;
+    normalizePersonnelPosition(
+      document
+        .getElementById("personnelPosition")
+        .value
+    );
 
   if (!name) {
     showToast("请填写姓名", "error");
@@ -632,6 +716,13 @@ function savePersonnel() {
     );
     return;
   }
+
+  const selectedStatus =
+    document
+      .getElementById(
+        "personnelStatus"
+      )
+      .value;
 
   const data = {
     name,
@@ -674,12 +765,9 @@ function savePersonnel() {
         )
         .value,
 
-    status:
-      document
-        .getElementById(
-          "personnelStatus"
-        )
-        .value,
+    ...personnelStateFields(
+      selectedStatus
+    ),
 
     remark:
       document
@@ -688,7 +776,6 @@ function savePersonnel() {
         )
         .value.trim(),
 
-    approvalStatus: "approved",
     updatedAt: nowISO()
   };
 
@@ -777,7 +864,12 @@ function renderPersonnel() {
 
     if (
       position &&
-      person.position !== position
+      normalizePersonnelPosition(
+        person.position
+      ) !==
+        normalizePersonnelPosition(
+          position
+        )
     ) {
       return false;
     }
@@ -862,7 +954,9 @@ function renderPersonnel() {
 
               <span>
                 👷 ${escapeHtml(
-                  person.position || "-"
+                  normalizePersonnelPosition(
+                    person.position
+                  ) || "-"
                 )}
               </span>
 
@@ -971,10 +1065,17 @@ function togglePersonnelDisabled(personId) {
     return;
   }
 
-  records[index].status =
+  const nextStatus =
     records[index].status === "disabled"
       ? "active"
       : "disabled";
+
+  Object.assign(
+    records[index],
+    personnelStateFields(
+      nextStatus
+    )
+  );
 
   records[index].updatedAt =
     nowISO();
@@ -3477,9 +3578,9 @@ function confirmResignation() {
   personnel[index] = {
     ...personnel[index],
 
-    status: "resigned",
-
-    enabled: false,
+    ...personnelStateFields(
+      "resigned"
+    ),
 
     resignationDate,
 
