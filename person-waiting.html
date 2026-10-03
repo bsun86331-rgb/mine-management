@@ -1036,111 +1036,46 @@ function getApprovalState(
     person
 ) {
 
-
-    if (
-        !person
-    ) {
-
+    if (!person) {
         return "missing";
-
     }
 
-
     if (
-
-        person.status ===
-            "rejected"
-
-        ||
-
-        person.approvalStatus ===
-            "rejected"
-
+        person.status === "rejected" ||
+        person.approvalStatus === "rejected"
     ) {
-
         return "rejected";
-
     }
 
-
     if (
-
-        person.status ===
-            "disabled"
-
-        ||
-
-        person.status ===
-            "resigned"
-
-        ||
-
-        person.personnelStatus ===
-            "停用"
-
-        ||
-
-        person.personnelStatus ===
-            "离职"
-
+        person.status === "disabled" ||
+        person.status === "resigned" ||
+        person.personnelStatus === "停用" ||
+        person.personnelStatus === "离职"
     ) {
-
         return "disabled";
-
     }
-
 
     if (
-
-        person.status ===
-            "approved"
-
-        ||
-
-        person.status ===
-            "active"
-
-        ||
-
-        person.status ===
-            "working"
-
-        ||
-
-        person.status ===
-            "leave"
-
-        ||
-
-        person.approvalStatus ===
-            "approved"
-
-        ||
-
-        person.personnelStatus ===
-            "在职可用"
-
-        ||
-
-        person.personnelStatus ===
-            "作业中"
-
-        ||
-
-        person.personnelStatus ===
-            "请假"
-
+        person.status === "leave" ||
+        person.personnelStatus === "请假"
     ) {
-
-        return "approved";
-
+        return "leave";
     }
 
+    if (
+        person.status === "approved" ||
+        person.status === "active" ||
+        person.status === "working" ||
+        person.approvalStatus === "approved" ||
+        person.personnelStatus === "在职可用" ||
+        person.personnelStatus === "作业中"
+    ) {
+        return "approved";
+    }
 
     return "pending";
-
 }
-
 
 
 /* =========================================================
@@ -1235,6 +1170,17 @@ function refreshStatus() {
 
         return;
 
+    }
+
+
+    if (
+        state ===
+        "leave"
+    ) {
+
+        renderLeave();
+
+        return;
     }
 
 
@@ -1628,6 +1574,52 @@ function renderRejected(
 
 }
 
+
+
+/* =========================================================
+   请假
+========================================================= */
+
+function renderLeave() {
+
+    setText(
+        "statusIcon",
+        "🌙"
+    );
+
+    setText(
+        "statusTitle",
+        "当前正在请假"
+    );
+
+    setText(
+        "statusText",
+        "当前人员处于请假状态，暂时不能进入工作端。请假结束并恢复在职状态后即可重新进入。"
+    );
+
+    const badge =
+        document.getElementById(
+            "statusBadge"
+        );
+
+    badge.textContent =
+        "请假中";
+
+    badge.className =
+        "badge yellow";
+
+    hideStateBoxes();
+
+    document.getElementById(
+        "enterWorkButton"
+    ).style.display =
+        "none";
+
+    document.getElementById(
+        "editButton"
+    ).style.display =
+        "none";
+}
 
 
 /* =========================================================
