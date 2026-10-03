@@ -1719,21 +1719,15 @@ function getPersonId(person) {
 function getApprovalState(person) {
 
     if (!person) {
-
         return "missing";
-
     }
-
 
     if (
         person.status === "rejected" ||
         person.approvalStatus === "rejected"
     ) {
-
         return "rejected";
-
     }
-
 
     if (
         person.status === "disabled" ||
@@ -1741,50 +1735,30 @@ function getApprovalState(person) {
         person.personnelStatus === "停用" ||
         person.personnelStatus === "离职"
     ) {
-
         return "disabled";
-
     }
 
+    if (
+        person.status === "leave" ||
+        person.personnelStatus === "请假"
+    ) {
+        return "leave";
+    }
 
     const approved = (
-
-        person.approvalStatus ===
-            "approved" ||
-
-        person.status ===
-            "approved" ||
-
-        person.status ===
-            "active" ||
-
-        person.status ===
-            "working" ||
-
-        person.status ===
-            "leave" ||
-
-        person.personnelStatus ===
-            "在职可用" ||
-
-        person.personnelStatus ===
-            "作业中" ||
-
-        person.personnelStatus ===
-            "请假"
-
+        person.approvalStatus === "approved" ||
+        person.status === "approved" ||
+        person.status === "active" ||
+        person.status === "working" ||
+        person.personnelStatus === "在职可用" ||
+        person.personnelStatus === "作业中"
     );
 
-
     if (approved) {
-
         return "approved";
-
     }
 
-
     return "pending";
-
 }
 
 
@@ -2810,6 +2784,20 @@ function selectPosition(position) {
 
         return;
 
+    }
+
+
+    if (
+        state === "leave"
+    ) {
+
+        clearManagementSession();
+
+        alert(
+            "当前人员正在请假，不能进入生产或工作页面。请假结束并由管理人员恢复在职状态后再进入。"
+        );
+
+        return;
     }
 
 
