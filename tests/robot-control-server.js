@@ -49,6 +49,13 @@ const {
 
 
 const {
+    WarehouseBot
+} = require(
+    "./bots/warehouse-bot"
+);
+
+
+const {
     ExcavatorBot
 } = require(
     "./bots/excavator-bot"
@@ -215,6 +222,14 @@ let maintenanceWorkerPage =
 
 
 let maintenanceWorkerBot =
+    null;
+
+
+let warehousePage =
+    null;
+
+
+let warehouseBot =
     null;
 
 
@@ -1019,6 +1034,54 @@ async function getMaintenanceWorkerBot() {
 
 
     return maintenanceWorkerBot;
+}
+
+
+async function getWarehouseBot() {
+
+    await ensureBrowser();
+
+
+    if (
+        warehousePage &&
+        !warehousePage.isClosed() &&
+        warehouseBot
+    ) {
+
+        return warehouseBot;
+    }
+
+
+    warehousePage =
+        await browserContext.newPage();
+
+
+    warehousePage.on(
+        "console",
+        message => {
+
+            if (
+                message.type() ===
+                    "error"
+            ) {
+
+                robotMessage(
+                    "TestManager",
+                    "库房管理页控制台错误：" +
+                    message.text()
+                );
+            }
+        }
+    );
+
+
+    warehouseBot =
+        new WarehouseBot(
+            warehousePage
+        );
+
+
+    return warehouseBot;
 }
 
 
@@ -3639,6 +3702,483 @@ async function runMaintenanceWaitingPartsCycleTest() {
                 "MaintenanceWorkerBot",
                 maintenanceWorkerPage,
                 "maintenance-waiting-parts-cycle"
+            );
+
+        } catch (
+            screenshotError
+        ) {}
+
+
+        throw error;
+    }
+}
+
+
+async function runMaintenanceWarehousePartsLinkageTest() {
+
+    const botName =
+        "TestManager";
+
+
+    try {
+
+        updateBot(
+            botName,
+            "running",
+            "正在执行维修管理 + 维修员 + 库房管理三岗位配件联动"
+        );
+
+
+        robotMessage(
+            botName,
+            "步骤 1/4：完成 TEST 维修管理接车派工，并由维修员接单开始维修。"
+        );
+
+
+        const started =
+            await runMaintenanceWorkerStartRepairTest();
+
+
+        const orderId =
+            String(
+                started.result.orderId
+            );
+
+
+        const workerId =
+            String(
+                started.result.workerId
+            );
+
+
+        const workerName =
+            String(
+                started.result.workerName ||
+                "维修工01"
+            );
+
+
+        const workerBot =
+            await getMaintenanceWorkerBot();
+
+
+        await workerBot.open();
+
+
+        robotMessage(
+            botName,
+            "步骤 2/4：维修员将原 TEST 工单切换为 waiting_parts。"
+        );
+
+
+        await workerBot.page
+            .locator(
+                'button[data-page="working"]'
+            )
+            .click();
+
+
+        await workerBot.page.waitForTimeout(
+            150
+        );
+
+
+        const openButton =
+            workerBot.page.locator(
+                `button[onclick*="openRepairOrder('${orderId}')"]`
+            )
+            .first();
+
+
+        await openButton.waitFor({
+            state:
+                "visible"
+        });
+
+
+        await openButton.click();
+
+
+        await workerBot.page
+            .locator(
+                "#repairOperationArea"
+            )
+            .waitFor({
+                state:
+                    "visible"
+            });
+
+
+        const waitingNote =
+            "TEST-维修工单申请轮胎维修配件";
+
+
+        const promptHandled =
+            new Promise(
+                (
+                    resolve,
+                    reject
+                ) => {
+
+                    workerBot.page.once(
+                        "dialog",
+                        async dialog => {
+
+                            try {
+
+                                if (
+                                    dialog.type() !==
+                                        "prompt"
+                                ) {
+
+                                    throw new Error(
+                                        "三岗位配件联动：等待配件操作没有出现 prompt"
+                                    );
+                                }
+
+
+                                await dialog.accept(
+                                    waitingNote
+                                );
+
+
+                                resolve();
+
+                            } catch (
+                                error
+                            ) {
+
+                                reject(
+                                    error
+                                );
+                            }
+                        }
+                    );
+                }
+            );
+
+
+        await workerBot.page
+            .locator(
+                'button[onclick="setWaitingParts()"]'
+            )
+            .click();
+
+
+        await promptHandled;
+
+
+        await workerBot.page.waitForTimeout(
+            250
+        );
+
+
+        const waitingOrders =
+            await workerBot.readLocalStorage(
+                "maintenanceWorkOrders"
+            );
+
+
+        const waitingOrder =
+            Array.isArray(
+                waitingOrders
+            )
+                ? waitingOrders.find(
+                    item =>
+                        String(
+                            item.orderId ||
+                            ""
+                        ) ===
+                            orderId
+                )
+                : null;
+
+
+        if (
+            !waitingOrder ||
+            waitingOrder.status !==
+                "waiting_parts"
+        ) {
+
+            throw new Error(
+                "三岗位配件联动：维修工单未进入 waiting_parts"
+            );
+        }
+
+
+        robotMessage(
+            botName,
+            "步骤 3/4：库房管理收到 TEST 配件领用申请并真实确认出库。"
+        );
+
+
+        const warehouse =
+            await getWarehouseBot();
+
+
+        await warehouse.open();
+
+
+        const materialRequestId =
+            "TEST-MATERIAL-REQUEST-001";
+
+
+        const materialId =
+            "TEST-MATERIAL-001";
+
+
+        await warehouse.seedTestIssueRequest({
+            requestId:
+                materialRequestId,
+
+            materialId,
+
+            materialCode:
+                "TEST-WL-0001",
+
+            materialName:
+                "TEST-轮胎维修材料",
+
+            personId:
+                workerId,
+
+            personName:
+                workerName,
+
+            position:
+                "维修员",
+
+            requestQuantity:
+                1,
+
+            availableQty:
+                5,
+
+            purpose:
+                "TEST-维修工单 " +
+                orderId +
+                " 配件领用"
+        });
+
+
+        const issued =
+            await warehouse.approveLatestTestRequest();
+
+
+        if (
+            issued.status !==
+                "issued"
+        ) {
+
+            throw new Error(
+                "三岗位配件联动：库房出库后领用申请未进入 issued"
+            );
+        }
+
+
+        robotMessage(
+            botName,
+            "库房出库通过：" +
+            issued.requestId +
+            "；库存 " +
+            issued.availableBefore +
+            " → " +
+            issued.availableAfter +
+            "；台账=" +
+            issued.ledgerType
+        );
+
+
+        robotMessage(
+            botName,
+            "步骤 4/4：维修员确认配件已到，原工单恢复 working。"
+        );
+
+
+        await workerBot.open();
+
+
+        await workerBot.page
+            .locator(
+                'button[data-page="waiting"]'
+            )
+            .click();
+
+
+        await workerBot.page.waitForTimeout(
+            150
+        );
+
+
+        const resumeButton =
+            workerBot.page.locator(
+                `button[onclick*="resumeRepair('${orderId}')"]`
+            )
+            .first();
+
+
+        await resumeButton.waitFor({
+            state:
+                "visible"
+        );
+
+
+        await resumeButton.click();
+
+
+        await workerBot.page.waitForTimeout(
+            250
+        );
+
+
+        const resumedOrders =
+            await workerBot.readLocalStorage(
+                "maintenanceWorkOrders"
+            );
+
+
+        const resumedOrder =
+            Array.isArray(
+                resumedOrders
+            )
+                ? resumedOrders.find(
+                    item =>
+                        String(
+                            item.orderId ||
+                            ""
+                        ) ===
+                            orderId
+                )
+                : null;
+
+
+        if (
+            !resumedOrder ||
+            resumedOrder.status !==
+                "working"
+        ) {
+
+            throw new Error(
+                "三岗位配件联动：配件出库后原维修工单未恢复 working"
+            );
+        }
+
+
+        const requests =
+            await workerBot.readLocalStorage(
+                "maintenanceRequests"
+            );
+
+
+        const maintenanceRequest =
+            Array.isArray(
+                requests
+            )
+                ? requests.find(
+                    item =>
+                        String(
+                            item.requestId ||
+                            item.maintenanceRequestId ||
+                            ""
+                        ) ===
+                            String(
+                                started.result.requestId ||
+                                ""
+                            )
+                )
+                : null;
+
+
+        if (
+            !maintenanceRequest ||
+            maintenanceRequest.status !==
+                "working"
+        ) {
+
+            throw new Error(
+                "三岗位配件联动：维修申请未同步恢复 working"
+            );
+        }
+
+
+        updateBot(
+            botName,
+            "pass",
+            "维修管理 + 维修员 + 库房管理三岗位配件联动通过"
+        );
+
+
+        robotMessage(
+            botName,
+            "三岗位联动汇总：维修派工 → 维修员 waiting_parts → 库房 issued → 维修员 working，全部为 TEST 数据。"
+        );
+
+
+        return {
+            ok:
+                true,
+
+            action:
+                "maintenance-warehouse-parts-linkage",
+
+            orderId,
+
+            workerId,
+
+            waitingStatus:
+                waitingOrder.status,
+
+            warehouseRequestId:
+                issued.requestId,
+
+            warehouseStatus:
+                issued.status,
+
+            availableBefore:
+                issued.availableBefore,
+
+            availableAfter:
+                issued.availableAfter,
+
+            finalOrderStatus:
+                resumedOrder.status,
+
+            finalMaintenanceRequestStatus:
+                maintenanceRequest.status
+        };
+
+
+    } catch (
+        error
+    ) {
+
+        const message =
+            error?.message ||
+            String(
+                error
+            );
+
+
+        updateBot(
+            botName,
+            "fail",
+            message
+        );
+
+
+        robotMessage(
+            botName,
+            "维修管理 + 维修员 + 库房管理三岗位配件联动失败：" +
+            message
+        );
+
+
+        try {
+
+            await captureFailure(
+                "WarehouseBot",
+                warehousePage,
+                "maintenance-warehouse-parts-linkage"
             );
 
         } catch (
@@ -8657,6 +9197,29 @@ async function executeCommand({
     ) {
 
         return await runTemporaryUnloadRejectionTest();
+    }
+
+
+    if (
+        requestedBot ===
+            "TestManager" &&
+        (
+            /运行.*维修.*库房.*三岗位.*联动/i.test(
+                command
+            ) ||
+            /维修管理.*维修员.*库房管理.*联动/i.test(
+                command
+            ) ||
+            /测试.*库房.*配件.*联动/i.test(
+                command
+            ) ||
+            /三岗位.*配件.*闭环/i.test(
+                command
+            )
+        )
+    ) {
+
+        return await runMaintenanceWarehousePartsLinkageTest();
     }
 
 
