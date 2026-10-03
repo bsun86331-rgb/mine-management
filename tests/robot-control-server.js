@@ -81,7 +81,7 @@ const {
 
 /*
 =========================================================
-R0-29 RobotControlServer
+R0-30 RobotControlServer
 机器人测试控制中心后台 + Playwright 执行器
 
 当前已接入：
@@ -4511,7 +4511,7 @@ async function runAGroupMultiRobotLinkageTest() {
 
     robotMessage(
         botName,
-        "A组测试编组：2台挖机 + 6台汽车；每台挖机绑定3名汽车司机。"
+        "A组测试编组：2台挖机 + 6台汽车；每台挖机绑定3名汽车司机；其余17个岗位各1名TEST机器人身份。"
     );
 
 
@@ -4917,6 +4917,44 @@ async function runAGroupMultiRobotLinkageTest() {
         }
 
 
+        if (
+            !Array.isArray(
+                A_GROUP.supportRoles
+            ) ||
+            A_GROUP.supportRoles.length !==
+                17
+        ) {
+
+            throw new Error(
+                "A组联动：其他岗位机器人数量不正确，预期=17；实际=" +
+                String(
+                    A_GROUP.supportRoles?.length ||
+                    0
+                )
+            );
+        }
+
+
+        const supportIds =
+            new Set(
+                A_GROUP.supportRoles.map(
+                    item =>
+                        item.personId
+                )
+            );
+
+
+        if (
+            supportIds.size !==
+                17
+        ) {
+
+            throw new Error(
+                "A组联动：其他岗位存在重复机器人身份"
+            );
+        }
+
+
         for (
             const unit
             of A_GROUP.excavators
@@ -4952,7 +4990,7 @@ async function runAGroupMultiRobotLinkageTest() {
 
         robotMessage(
             botName,
-            "A组多机器人联动汇总：2/2挖机机器人 PASS；6/6汽车司机机器人 PASS。"
+            "A组多机器人联动汇总：2/2挖机机器人 PASS；6/6汽车司机机器人 PASS；17/17其他岗位机器人身份 READY。"
         );
 
 
@@ -4979,7 +5017,7 @@ async function runAGroupMultiRobotLinkageTest() {
         updateBot(
             botName,
             "pass",
-            "A组2套挖机+6名汽车司机多机器人联动通过"
+            "A组2套挖机+6名汽车司机+17个其他岗位机器人联动编组通过"
         );
 
 
@@ -7570,7 +7608,7 @@ server.listen(
         );
 
         console.log(
-            "🤖 机器人测试控制中心 R0-29 已启动"
+            "🤖 机器人测试控制中心 R0-30 已启动"
         );
 
         console.log(
