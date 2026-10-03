@@ -65,7 +65,11 @@ textarea{min-height:72px;resize:vertical}.send{border:0;border-radius:9px;backgr
   <section class="panel readiness">
     <div class="title" style="padding:0 0 10px;border:0">
       <h2>🚦 发布就绪状态</h2>
-      <span id="readinessUpdated">尚无回归结果</span>
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <span id="readinessUpdated">尚无回归结果</span>
+        <a id="latestReportMd" href="/api/report/latest.md" style="display:none;font-size:12px;font-weight:800;text-decoration:none">⬇ Markdown</a>
+        <a id="latestReportJson" href="/api/report/latest.json" style="display:none;font-size:12px;font-weight:800;text-decoration:none">⬇ JSON</a>
+      </div>
     </div>
 
     <div class="readiness-grid">
@@ -216,6 +220,24 @@ function renderReadiness(data){
     : "尚无回归结果";
 }
 
+function renderLatestReport(info){
+  const md=document.getElementById("latestReportMd");
+  const json=document.getElementById("latestReportJson");
+
+  const hasMd=Boolean(info?.markdown);
+  const hasJson=Boolean(info?.json);
+
+  if(md){
+    md.style.display=hasMd ? "inline-block" : "none";
+    md.title=hasMd ? info.markdown : "";
+  }
+
+  if(json){
+    json.style.display=hasJson ? "inline-block" : "none";
+    json.title=hasJson ? info.json : "";
+  }
+}
+
 function time(){
   return new Date().toLocaleTimeString("zh-CN",{hour:"2-digit",minute:"2-digit",second:"2-digit"});
 }
@@ -320,6 +342,7 @@ async function loadStatus(){
     });
 
     renderReadiness(data.readiness||{});
+    renderLatestReport(data.latestReport||{});
 
     setConnection(true,"机器人后台已连接 · http://127.0.0.1:4310");
     return true;
@@ -412,6 +435,7 @@ async function sendCommand(){
     }
 
     input.value="";
+    await loadStatus();
   }catch(error){
     addMessage("TestSafetyGuard",error.message||String(error));
     addTimeline("TestSafetyGuard",error.message||String(error));
