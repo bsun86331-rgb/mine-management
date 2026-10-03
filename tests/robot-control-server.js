@@ -9974,6 +9974,14 @@ async function runReleaseGoldenRegression() {
 
             try {
 
+                /*
+                 * 黄金回归中的每个用例都先清理上一用例留下的 TEST 状态。
+                 * 这样“一键发布检查”先跑完核心回归后，再进入黄金回归时，
+                 * 不会因为维修单 / 运输趟次 / 临时卸料等历史 TEST 数据互相污染。
+                 */
+                await clearTruckDriverTestEnvironment();
+
+
                 const result =
                     await runner();
 
