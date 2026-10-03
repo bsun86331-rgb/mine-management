@@ -2,7 +2,7 @@
 
 /*
 =========================================================
-A组多机器人联动 TEST Fixture R0-3
+A组多机器人联动 TEST Fixture R0-4
 - 2 台 TEST 挖机
 - 每台挖机 3 台 TEST 汽车
 - 2 名 TEST 挖机司机
@@ -968,6 +968,193 @@ async function installAGroupRobotContext(
         identity.personId,
         "机器人身份"
     );
+
+
+    if (
+        identity.type ===
+            "truck"
+    ) {
+
+        await page.addInitScript(
+            () => {
+
+                if (
+                    window.__robotDeterministicGpsInstalled
+                ) {
+
+                    return;
+                }
+
+
+                window.__robotTestGpsState = {
+                    latitude:
+                        43.850000,
+
+                    longitude:
+                        105.750000,
+
+                    accuracy:
+                        10
+                };
+
+
+                const watchers =
+                    new Map();
+
+
+                let watcherId =
+                    1;
+
+
+                const buildPosition =
+                    () => {
+
+                        const state =
+                            window.__robotTestGpsState ||
+                            {};
+
+
+                        return {
+                            coords: {
+                                latitude:
+                                    Number(
+                                        state.latitude
+                                    ),
+
+                                longitude:
+                                    Number(
+                                        state.longitude
+                                    ),
+
+                                accuracy:
+                                    Number(
+                                        state.accuracy ||
+                                        10
+                                    ),
+
+                                altitude:
+                                    null,
+
+                                altitudeAccuracy:
+                                    null,
+
+                                heading:
+                                    null,
+
+                                speed:
+                                    null
+                            },
+
+                            timestamp:
+                                Date.now()
+                        };
+                    };
+
+
+                const fakeGeolocation = {
+
+                    getCurrentPosition(
+                        success
+                    ) {
+
+                        setTimeout(
+                            () => {
+
+                                success(
+                                    buildPosition()
+                                );
+                            },
+                            30
+                        );
+                    },
+
+
+                    watchPosition(
+                        success
+                    ) {
+
+                        const id =
+                            watcherId++;
+
+
+                        const timer =
+                            setInterval(
+                                () => {
+
+                                    success(
+                                        buildPosition()
+                                    );
+                                },
+                                250
+                            );
+
+
+                        watchers.set(
+                            id,
+                            timer
+                        );
+
+
+                        setTimeout(
+                            () => {
+
+                                success(
+                                    buildPosition()
+                                );
+                            },
+                            20
+                        );
+
+
+                        return id;
+                    },
+
+
+                    clearWatch(
+                        id
+                    ) {
+
+                        const timer =
+                            watchers.get(
+                                id
+                            );
+
+
+                        if (
+                            timer
+                        ) {
+
+                            clearInterval(
+                                timer
+                            );
+
+
+                            watchers.delete(
+                                id
+                            );
+                        }
+                    }
+                };
+
+
+                Object.defineProperty(
+                    navigator,
+                    "geolocation",
+                    {
+                        configurable:
+                            true,
+
+                        value:
+                            fakeGeolocation
+                    }
+                );
+
+
+                window.__robotDeterministicGpsInstalled =
+                    true;
+            }
+        );
+    }
 
 
     await page.addInitScript(
