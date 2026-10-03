@@ -8501,11 +8501,39 @@ async function runPersonnelRegistrationApprovalRoleEntryTest() {
         );
 
 
-        await page.locator(
-            "#team"
-        ).selectOption(
-            "后勤办公组"
-        );
+        /*
+         * “测量员”属于后勤办公岗位。
+         * 正式 person-register.html 会自动把 team 固定为“后勤办公组”，
+         * 并将下拉框禁用；这里验证正式规则，而不是强行操作 disabled 控件。
+         */
+        const teamState =
+            await page.locator(
+                "#team"
+            ).evaluate(
+                element => ({
+                    value:
+                        element.value,
+
+                    disabled:
+                        element.disabled
+                })
+            );
+
+
+        if (
+            teamState.value !==
+                "后勤办公组" ||
+            teamState.disabled !==
+                true
+        ) {
+
+            throw new Error(
+                "人员登记闭环：测量员班组规则不正确，实际=" +
+                JSON.stringify(
+                    teamState
+                )
+            );
+        }
 
 
         await page.locator(
