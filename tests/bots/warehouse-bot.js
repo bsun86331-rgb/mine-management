@@ -551,101 +551,74 @@ class WarehouseBot {
         });
 
 
-        const promptHandled =
-            new Promise(
-                (
-                    resolve,
-                    reject
-                ) => {
-
-                    this.page.once(
-                        "dialog",
-                        async dialog => {
-
-                            try {
-
-                                if (
-                                    dialog.type() !==
-                                        "prompt"
-                                ) {
-
-                                    throw new Error(
-                                        "WarehouseBot：确认出库时未出现数量 prompt"
-                                    );
-                                }
+        const dialogs = [];
 
 
-                                await dialog.accept(
-                                    String(
-                                        issueQty
-                                    )
-                                );
+        const dialogHandler =
+            async dialog => {
+
+                dialogs.push(
+                    dialog.type()
+                );
 
 
-                                resolve();
+                if (
+                    dialog.type() ===
+                        "prompt"
+                ) {
 
-                            } catch (
-                                error
-                            ) {
-
-                                reject(
-                                    error
-                                );
-                            }
-                        }
+                    await dialog.accept(
+                        String(
+                            issueQty
+                        )
                     );
+
+
+                    return;
                 }
+
+
+                await dialog.accept();
+            };
+
+
+        this.page.on(
+            "dialog",
+            dialogHandler
+        );
+
+
+        try {
+
+            await approveButton.click();
+
+
+            await this.page.waitForTimeout(
+                250
             );
 
+        } finally {
 
-        const alertHandled =
-            new Promise(
-                (
-                    resolve,
-                    reject
-                ) => {
-
-                    this.page.once(
-                        "dialog",
-                        async dialog => {
-
-                            try {
-
-                                if (
-                                    dialog.type() !==
-                                        "alert"
-                                ) {
-
-                                    throw new Error(
-                                        "WarehouseBot：确认出库后未出现完成 alert"
-                                    );
-                                }
-
-
-                                await dialog.accept();
-
-
-                                resolve();
-
-                            } catch (
-                                error
-                            ) {
-
-                                reject(
-                                    error
-                                );
-                            }
-                        }
-                    );
-                }
+            this.page.off(
+                "dialog",
+                dialogHandler
             );
+        }
 
 
-        await approveButton.click();
+        if (
+            !dialogs.includes(
+                "prompt"
+            ) ||
+            !dialogs.includes(
+                "alert"
+            )
+        ) {
 
-
-        await promptHandled;
-        await alertHandled;
+            throw new Error(
+                "WarehouseBot：确认出库没有完整经过数量确认和完成提示"
+            );
+        }
 
 
         await this.page.waitForTimeout(
