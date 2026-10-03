@@ -5663,6 +5663,41 @@ async function runFastRegressionTests(
                 }
             }
         );
+
+
+        await runFastCase(
+            "辅助车辆完成回传视图",
+            async () => {
+
+                const page =
+                    await browserContext.newPage();
+
+
+                try {
+
+                    const bot =
+                        new DispatchBot(
+                            page
+                        );
+
+
+                    await bot.open();
+
+
+                    await bot.seedAuxiliaryCompletionFeedbackTestData();
+
+
+                    return await bot.verifyAuxiliaryCompletionFeedbackView();
+
+                } finally {
+
+                    await page.close()
+                        .catch(
+                            () => {}
+                        );
+                }
+            }
+        );
     
     
         }
@@ -8141,7 +8176,7 @@ async function runAGroupAuxiliaryLinkageTest() {
 
         robotMessage(
             botName,
-            "当前架构提示：正式dispatch.html尚未读取 auxiliaryWorkRecords / fuelRecords 形成统一“辅助车辆完成回传”视图，因此本轮只验证岗位侧真实完成记录；未修改正式业务补齐该能力。"
+            "当前架构：dispatch.html 已接入 auxiliaryWorkRecords / fuelRecords 统一“辅助车辆完成回传”视图；该视图由独立回归用例继续验证。"
         );
 
 
@@ -8179,12 +8214,12 @@ async function runAGroupAuxiliaryLinkageTest() {
             durationMs,
             results,
 
-            businessGap: {
+            integration: {
                 dispatchCompletionView:
-                    false,
+                    true,
 
-                note:
-                    "dispatch.html 当前没有统一读取 auxiliaryWorkRecords / fuelRecords 的辅助车辆完成回传视图"
+                verificationScenario:
+                    "dispatch-auxiliary-completion-feedback"
             }
         };
 
@@ -9135,6 +9170,13 @@ async function runAllCoreRegressionTests() {
         "等待配件流程闭环",
         async () =>
             await runMaintenanceWaitingPartsCycleTest()
+    );
+
+
+    await runCase(
+        "调度端辅助车辆完成回传",
+        async () =>
+            await runDispatchAuxiliaryCompletionFeedbackTest()
     );
 
 
