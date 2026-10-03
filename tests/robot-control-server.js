@@ -173,6 +173,14 @@ const DIAGNOSTIC_DIR =
     );
 
 
+const READINESS_FILE =
+    path.join(
+        ROOT,
+        "test-results",
+        "release-readiness.json"
+    );
+
+
 const clients =
     new Set();
 
@@ -245,12 +253,98 @@ let pendingNaturalLanguageConfirmation =
 /*
  * 发布就绪状态：
  * 记录最近一次核心回归和黄金回归结果，供测试中心看板读取。
+ * 同时持久化到 test-results/release-readiness.json，
+ * 避免机器人后台重启后看板丢失。
  */
-let readinessState = {
-    core: null,
-    golden: null,
-    updatedAt: null
-};
+function defaultReadinessState() {
+
+    return {
+        core:
+            null,
+
+        golden:
+            null,
+
+        updatedAt:
+            null
+    };
+}
+
+
+function loadReadinessState() {
+
+    try {
+
+        if (
+            !fs.existsSync(
+                READINESS_FILE
+            )
+        ) {
+
+            return defaultReadinessState();
+        }
+
+
+        const parsed =
+            JSON.parse(
+                fs.readFileSync(
+                    READINESS_FILE,
+                    "utf8"
+                )
+            );
+
+
+        return {
+            core:
+                parsed?.core ||
+                null,
+
+            golden:
+                parsed?.golden ||
+                null,
+
+            updatedAt:
+                parsed?.updatedAt ||
+                null
+        };
+
+
+    } catch (
+        error
+    ) {
+
+        return defaultReadinessState();
+    }
+}
+
+
+function saveReadinessState() {
+
+    fs.mkdirSync(
+        path.dirname(
+            READINESS_FILE
+        ),
+        {
+            recursive:
+                true
+        }
+    );
+
+
+    fs.writeFileSync(
+        READINESS_FILE,
+        JSON.stringify(
+            readinessState,
+            null,
+            2
+        ),
+        "utf8"
+    );
+}
+
+
+let readinessState =
+    loadReadinessState();
 
 
 function updateReadinessSuite(
@@ -272,6 +366,9 @@ function updateReadinessSuite(
     readinessState.updatedAt =
         new Date()
             .toISOString();
+
+
+    saveReadinessState();
 
 
     sendEvent({
@@ -13923,6 +14020,34 @@ server.listen(
         console.log(
             "DispatchBot：已接入真实 Playwright TEST临时卸料审核"
         );
+
+        console.log(
+            "发布就绪状态文件：" +
+            path.relative(
+                ROOT,
+                READINESS_FILE
+            )
+        );
+
+        if (
+            readinessState.core ||
+            readinessState.golden
+        ) {
+
+            console.log(
+                "已恢复上次发布就绪状态：" +
+                "核心=" +
+                (
+                    readinessState.core?.status ||
+                    "未运行"
+                ) +
+                "，黄金=" +
+                (
+                    readinessState.golden?.status ||
+                    "未运行"
+                )
+            );
+        }
 
         console.log(
             ""
