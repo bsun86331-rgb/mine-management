@@ -386,9 +386,362 @@ function updateReadinessSuite(
         readiness:
             readinessState,
 
+        coverage:
+            buildCoverageMatrix(),
+
         time:
             readinessState.updatedAt
     });
+}
+
+
+/*
+=========================================================
+功能树 / 测试覆盖矩阵
+
+说明：
+- 模块与“应该覆盖的核心用例”在这里定义。
+- PASS / FAIL 来自最近一次核心 / 黄金回归实际结果，不写死。
+- 如果某模块没有完整覆盖预期用例，则显示“uncovered”。
+=========================================================
+*/
+
+const COVERAGE_MODULES = [
+    {
+        key:
+            "transport",
+
+        label:
+            "运输",
+
+        cases: [
+            "正常装卸运输完整闭环",
+            "维修完成后恢复生产闭环"
+        ]
+    },
+    {
+        key:
+            "gps",
+
+        label:
+            "GPS",
+
+        cases: [
+            "GPS异常场景拦截"
+        ]
+    },
+    {
+        key:
+            "equipment",
+
+        label:
+            "设备检查",
+
+        cases: [
+            "设备异常检查自动维修单"
+        ]
+    },
+    {
+        key:
+            "maintenance",
+
+        label:
+            "维修",
+
+        cases: [
+            "维修单调度审批闭环",
+            "维修管理接车派工闭环",
+            "维修工接单开始维修闭环",
+            "维修工完成维修提交验收闭环",
+            "维修管理验收归档释放闭环",
+            "维修完成后恢复生产闭环",
+            "维修验收不通过返修闭环",
+            "等待配件流程闭环"
+        ]
+    },
+    {
+        key:
+            "warehouse",
+
+        label:
+            "库房",
+
+        cases: [
+            "维修库房三岗位联动",
+            "维修库房完整闭环",
+            "维修库房报表回写"
+        ]
+    },
+    {
+        key:
+            "temporary-unload",
+
+        label:
+            "临时卸料",
+
+        cases: [
+            "临时非卸载区卸料完整闭环",
+            "临时卸料驳回闭环"
+        ]
+    },
+    {
+        key:
+            "auxiliary",
+
+        label:
+            "辅助车辆",
+
+        cases: [
+            "A组辅助车辆调度报表完整闭环"
+        ]
+    },
+    {
+        key:
+            "dispatch-feedback",
+
+        label:
+            "调度回传",
+
+        cases: [
+            "调度端辅助车辆完成回传",
+            "A组辅助车辆调度报表完整闭环"
+        ]
+    },
+    {
+        key:
+            "report-center",
+
+        label:
+            "综合报表",
+
+        cases: [
+            "A组辅助车辆调度报表完整闭环"
+        ]
+    },
+    {
+        key:
+            "natural-language",
+
+        label:
+            "自然语言总控",
+
+        cases: [
+            "总控自然语言解析与确认机制"
+        ]
+    }
+];
+
+
+function collectLatestCaseResults() {
+
+    const rows =
+        [];
+
+
+    for (
+        const suiteName
+        of [
+            "core",
+            "golden"
+        ]
+    ) {
+
+        const suite =
+            readinessState[
+                suiteName
+            ];
+
+
+        const caseResults =
+            Array.isArray(
+                suite?.caseResults
+            )
+                ? suite.caseResults
+                : [];
+
+
+        caseResults.forEach(
+            item => {
+
+                rows.push({
+                    ...item,
+
+                    suite:
+                        suiteName
+                });
+            }
+        );
+    }
+
+
+    return rows;
+}
+
+
+function buildCoverageMatrix() {
+
+    const latest =
+        collectLatestCaseResults();
+
+
+    const byName =
+        new Map();
+
+
+    latest.forEach(
+        item => {
+
+            /*
+             * 核心回归优先于黄金回归；
+             * 同名用例只保留优先级更高的实际结果。
+             */
+            const current =
+                byName.get(
+                    item.name
+                );
+
+
+            if (
+                !current ||
+                (
+                    current.suite ===
+                        "golden" &&
+                    item.suite ===
+                        "core"
+                )
+            ) {
+
+                byName.set(
+                    item.name,
+                    item
+                );
+            }
+        }
+    );
+
+
+    return COVERAGE_MODULES.map(
+        module => {
+
+            const caseRows =
+                module.cases.map(
+                    caseName => {
+
+                        const actual =
+                            byName.get(
+                                caseName
+                            );
+
+
+                        return {
+                            name:
+                                caseName,
+
+                            covered:
+                                Boolean(
+                                    actual
+                                ),
+
+                            ok:
+                                actual
+                                    ? Boolean(
+                                        actual.ok
+                                    )
+                                    : null,
+
+                            suite:
+                                actual?.suite ||
+                                null,
+
+                            durationMs:
+                                Number(
+                                    actual?.durationMs ||
+                                    0
+                                ),
+
+                            error:
+                                actual?.error ||
+                                null
+                        };
+                    }
+                );
+
+
+            const covered =
+                caseRows.filter(
+                    item =>
+                        item.covered
+                );
+
+
+            const failed =
+                covered.filter(
+                    item =>
+                        item.ok ===
+                            false
+                );
+
+
+            let status =
+                "uncovered";
+
+
+            if (
+                failed.length
+            ) {
+
+                status =
+                    "fail";
+
+            } else if (
+                covered.length ===
+                    caseRows.length &&
+                caseRows.length >
+                    0
+            ) {
+
+                status =
+                    "pass";
+            }
+
+
+            return {
+                key:
+                    module.key,
+
+                label:
+                    module.label,
+
+                status,
+
+                covered:
+                    covered.length,
+
+                total:
+                    caseRows.length,
+
+                failedCases:
+                    failed.map(
+                        item =>
+                            item.name
+                    ),
+
+                missingCases:
+                    caseRows
+                        .filter(
+                            item =>
+                                !item.covered
+                        )
+                        .map(
+                            item =>
+                                item.name
+                        ),
+
+                cases:
+                    caseRows
+            };
+        }
+    );
 }
 
 
@@ -10397,7 +10750,25 @@ async function runReleaseGoldenRegression() {
                         .map(
                             item =>
                                 item.name
-                        )
+                        ),
+
+                caseResults:
+                    results.map(
+                        item => ({
+                            name:
+                                item.name,
+
+                            ok:
+                                item.ok,
+
+                            durationMs:
+                                item.durationMs,
+
+                            error:
+                                item.error ||
+                                null
+                        })
+                    )
             }
         );
 
@@ -10444,7 +10815,25 @@ async function runReleaseGoldenRegression() {
                 suiteDurationMs,
 
             failedCases:
-                []
+                [],
+
+            caseResults:
+                results.map(
+                    item => ({
+                        name:
+                            item.name,
+
+                        ok:
+                            item.ok,
+
+                        durationMs:
+                            item.durationMs,
+
+                        error:
+                            item.error ||
+                            null
+                    })
+                )
         }
     );
 
@@ -10901,7 +11290,25 @@ async function runAllCoreRegressionTests() {
                         .map(
                             item =>
                                 item.name
-                        )
+                        ),
+
+                caseResults:
+                    results.map(
+                        item => ({
+                            name:
+                                item.name,
+
+                            ok:
+                                item.ok,
+
+                            durationMs:
+                                item.durationMs,
+
+                            error:
+                                item.error ||
+                                null
+                        })
+                    )
             }
         );
 
@@ -10948,7 +11355,25 @@ async function runAllCoreRegressionTests() {
                 suiteDurationMs,
 
             failedCases:
-                []
+                [],
+
+            caseResults:
+                results.map(
+                    item => ({
+                        name:
+                            item.name,
+
+                        ok:
+                            item.ok,
+
+                        durationMs:
+                            item.durationMs,
+
+                        error:
+                            item.error ||
+                            null
+                    })
+                )
         }
     );
 
@@ -14549,6 +14974,9 @@ const server =
                         readiness:
                             readinessState,
 
+                        coverage:
+                            buildCoverageMatrix(),
+
                         latestReport:
                             latestReportSummary()
                     }
@@ -14574,7 +15002,10 @@ const server =
                             true,
 
                         readiness:
-                            readinessState
+                            readinessState,
+
+                        coverage:
+                            buildCoverageMatrix()
                     }
                 );
 
