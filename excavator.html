@@ -1038,8 +1038,23 @@ function isApprovedPerson(
 
         ||
 
+        person.status ===
+            "pending"
+
+        ||
+
+        person.status ===
+            "leave"
+
+        ||
+
         person.approvalStatus ===
             "rejected"
+
+        ||
+
+        person.approvalStatus ===
+            "pending"
 
         ||
 
@@ -1050,6 +1065,16 @@ function isApprovedPerson(
 
         person.personnelStatus ===
             "离职"
+
+        ||
+
+        person.personnelStatus ===
+            "待审核"
+
+        ||
+
+        person.personnelStatus ===
+            "请假"
     ) {
 
         return false;
@@ -1073,11 +1098,6 @@ function isApprovedPerson(
 
         ||
 
-        person.status ===
-            "leave"
-
-        ||
-
         person.approvalStatus ===
             "approved"
 
@@ -1090,11 +1110,6 @@ function isApprovedPerson(
 
         person.personnelStatus ===
             "作业中"
-
-        ||
-
-        person.personnelStatus ===
-            "请假"
     );
 }
 
