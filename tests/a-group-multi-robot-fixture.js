@@ -2,7 +2,7 @@
 
 /*
 =========================================================
-A组多机器人联动 TEST Fixture R0-2
+A组多机器人联动 TEST Fixture R0-3
 - 2 台 TEST 挖机
 - 每台挖机 3 台 TEST 汽车
 - 2 名 TEST 挖机司机
@@ -1191,12 +1191,205 @@ async function installAGroupRobotContext(
                         excavatorNumber:
                             identity.unit.excavatorId,
 
+                        loadingZoneId:
+                            "TEST-LOAD-001",
+
+                        loadingZoneName:
+                            "TEST-A组测试装载区",
+
+                        unloadingZoneIds: [
+                            "TEST-UNLOAD-WASTE"
+                        ],
+
+                        unloadingZoneNames: [
+                            "TEST-A组测试排土场"
+                        ],
+
+                        vehicleClaimed:
+                            true,
+
                         status:
                             "working",
 
                         testFixture:
                             true
                     })
+                );
+
+
+                localStorage.setItem(
+                    "transportZones",
+                    JSON.stringify([
+                        {
+                            zoneId:
+                                "TEST-LOAD-001",
+
+                            name:
+                                "TEST-A组测试装载区",
+
+                            zoneType:
+                                "loading",
+
+                            latitude:
+                                43.850000,
+
+                            longitude:
+                                105.750000,
+
+                            radius:
+                                80,
+
+                            enabled:
+                                true,
+
+                            testFixture:
+                                true
+                        },
+                        {
+                            zoneId:
+                                "TEST-UNLOAD-WASTE",
+
+                            name:
+                                "TEST-A组测试排土场",
+
+                            zoneType:
+                                "unloading",
+
+                            materialType:
+                                "渣",
+
+                            latitude:
+                                43.860000,
+
+                            longitude:
+                                105.760000,
+
+                            radius:
+                                80,
+
+                            enabled:
+                                true,
+
+                            testFixture:
+                                true
+                        }
+                    ])
+                );
+
+
+                localStorage.setItem(
+                    "equipmentUsageChecks",
+                    JSON.stringify([
+                        {
+                            checkId:
+                                "TEST-A-CHECK-" +
+                                identity.truck.vehicleId,
+
+                            mode:
+                                "shift",
+
+                            inspectionMode:
+                                "shift",
+
+                            shiftId:
+                                "TEST-A-SHIFT-001",
+
+                            equipmentId:
+                                identity.truck.vehicleId,
+
+                            equipmentNumber:
+                                identity.truck.vehicleId,
+
+                            personId:
+                                identity.personId,
+
+                            incomingPersonId:
+                                identity.personId,
+
+                            personName:
+                                identity.personName,
+
+                            incomingPersonName:
+                                identity.personName,
+
+                            locked:
+                                true,
+
+                            completedAt:
+                                payload.nowIso,
+
+                            testFixture:
+                                true
+                        }
+                    ])
+                );
+
+
+                localStorage.setItem(
+                    "equipmentRecords",
+                    JSON.stringify([
+                        {
+                            equipmentId:
+                                identity.truck.vehicleId,
+
+                            equipmentNumber:
+                                identity.truck.vehicleId,
+
+                            equipmentType:
+                                "矿卡",
+
+                            currentStatus:
+                                "作业中",
+
+                            status:
+                                "working",
+
+                            testFixture:
+                                true
+                        },
+                        {
+                            equipmentId:
+                                identity.unit.excavatorId,
+
+                            equipmentNumber:
+                                identity.unit.excavatorId,
+
+                            equipmentType:
+                                "挖掘机",
+
+                            currentStatus:
+                                "作业中",
+
+                            status:
+                                "working",
+
+                            testFixture:
+                                true
+                        }
+                    ])
+                );
+
+
+                localStorage.setItem(
+                    "equipmentOperationalStatus",
+                    JSON.stringify([
+                        {
+                            equipmentId:
+                                identity.truck.vehicleId,
+
+                            status:
+                                "available",
+
+                            source:
+                                "a-group-multi-robot-fixture",
+
+                            updatedAt:
+                                payload.nowIso,
+
+                            testFixture:
+                                true
+                        }
+                    ])
                 );
             }
 
