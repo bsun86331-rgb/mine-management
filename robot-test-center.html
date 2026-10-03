@@ -39,10 +39,11 @@ select,textarea,button{font:inherit}select,textarea{width:100%;border:1px solid 
 textarea{min-height:72px;resize:vertical}.send{border:0;border-radius:9px;background:#2563eb;color:white;font-weight:900;padding:0 16px;cursor:pointer}.send:disabled{opacity:.5;cursor:not-allowed}
 .quick{display:flex;gap:7px;flex-wrap:wrap;margin-top:8px}.quick button{border:1px solid #cbd5e1;background:#f8fafc;border-radius:8px;padding:7px 10px;font-size:12px;font-weight:700;cursor:pointer}
 .readiness{margin-bottom:12px;padding:12px}.readiness-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.ready-card{border:1px solid #dbe3ef;border-radius:10px;padding:11px;background:#fbfdff}.ready-label{font-size:12px;color:#64748b}.ready-value{font-size:18px;font-weight:900;margin-top:4px}.ready-sub{font-size:11px;color:#64748b;margin-top:5px;line-height:1.5}.ready-pass{color:#166534}.ready-fail{color:#b91c1c}.ready-unknown{color:#64748b}
+.coverage{margin-bottom:12px;padding:12px}.coverage-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}.coverage-card{border:1px solid #dbe3ef;border-radius:10px;padding:11px;background:#fbfdff;min-height:112px}.coverage-head{display:flex;align-items:center;justify-content:space-between;gap:8px}.coverage-name{font-weight:900}.coverage-status{font-size:11px;font-weight:900;padding:4px 8px;border-radius:999px}.coverage-status.pass{background:#dcfce7;color:#166534}.coverage-status.fail{background:#fee2e2;color:#b91c1c}.coverage-status.uncovered{background:#f1f5f9;color:#475569}.coverage-count{font-size:12px;color:#64748b;margin-top:8px}.coverage-note{font-size:11px;color:#64748b;line-height:1.45;margin-top:6px;word-break:break-word}.coverage-summary{font-size:12px;color:#64748b}
 .timeline{margin-top:12px}.tl{padding:12px 16px;max-height:240px;overflow:auto}
 .tli{display:grid;grid-template-columns:70px 130px 1fr;gap:10px;padding:7px 0;border-bottom:1px dashed #e2e8f0;font-size:12px}
 .tlt{color:#94a3b8}.tlb{font-weight:800}.tld{color:#475569}
-@media(max-width:900px){.grid{grid-template-columns:1fr}.commandrow{grid-template-columns:1fr}.send{min-height:44px}.messages{max-height:50vh}.readiness-grid{grid-template-columns:1fr}}
+@media(max-width:1100px){.coverage-grid{grid-template-columns:repeat(2,1fr)}}@media(max-width:900px){.grid{grid-template-columns:1fr}.commandrow{grid-template-columns:1fr}.send{min-height:44px}.messages{max-height:50vh}.readiness-grid{grid-template-columns:1fr}.coverage-grid{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -91,6 +92,15 @@ textarea{min-height:72px;resize:vertical}.send{border:0;border-radius:9px;backgr
         <div id="overallReadySub" class="ready-sub">核心 + 黄金都通过后显示“可发布”</div>
       </div>
     </div>
+  </section>
+
+  <section class="panel coverage">
+    <div class="title" style="padding:0 0 10px;border:0">
+      <h2>🧭 功能树 / 测试覆盖矩阵</h2>
+      <span id="coverageSummary" class="coverage-summary">等待读取最近回归结果</span>
+    </div>
+
+    <div id="coverageGrid" class="coverage-grid"></div>
   </section>
 
   <div class="grid">
@@ -221,6 +231,64 @@ function renderReadiness(data){
     : "尚无回归结果";
 }
 
+function renderCoverage(rows){
+  const grid=document.getElementById("coverageGrid");
+  const summary=document.getElementById("coverageSummary");
+
+  const list=Array.isArray(rows) ? rows : [];
+
+  if(!grid||!summary){
+    return;
+  }
+
+  const passCount=list.filter(x=>x.status==="pass").length;
+  const failCount=list.filter(x=>x.status==="fail").length;
+  const uncoveredCount=list.filter(x=>x.status==="uncovered").length;
+
+  summary.textContent=
+    "PASS "+passCount+
+    " · FAIL "+failCount+
+    " · 未覆盖 "+uncoveredCount;
+
+  if(!list.length){
+    grid.innerHTML='<div class="coverage-note">尚无覆盖数据，请至少运行一次核心回归。</div>';
+    return;
+  }
+
+  const statusText={
+    pass:"PASS",
+    fail:"FAIL",
+    uncovered:"未覆盖"
+  };
+
+  grid.innerHTML=list.map(item=>{
+    let note="";
+
+    if(item.status==="fail"){
+      note="失败："+(item.failedCases||[]).join("、");
+    }else if(item.status==="uncovered"){
+      const missing=(item.missingCases||[]);
+      note=missing.length
+        ? "缺少："+missing.join("、")
+        : "尚未纳入回归";
+    }else{
+      note="当前预期用例均已通过";
+    }
+
+    return `
+      <div class="coverage-card">
+        <div class="coverage-head">
+          <div class="coverage-name">${esc(item.label||item.key||"-")}</div>
+          <span class="coverage-status ${esc(item.status||"uncovered")}">${esc(statusText[item.status]||"未覆盖")}</span>
+        </div>
+        <div class="coverage-count">覆盖 ${Number(item.covered||0)} / ${Number(item.total||0)} 个用例</div>
+        <div class="coverage-note">${esc(note)}</div>
+      </div>
+    `;
+  }).join("");
+}
+
+
 function renderLatestReport(info){
   const md=document.getElementById("latestReportMd");
   const json=document.getElementById("latestReportJson");
@@ -343,6 +411,7 @@ async function loadStatus(){
     });
 
     renderReadiness(data.readiness||{});
+    renderCoverage(data.coverage||[]);
     renderLatestReport(data.latestReport||{});
 
     setConnection(true,"机器人后台已连接 · http://127.0.0.1:4310");
@@ -396,6 +465,7 @@ function connectEvents(){
 
     if(data.type==="readiness"){
       renderReadiness(data.readiness||{});
+      renderCoverage(data.coverage||[]);
     }
   };
 }
@@ -465,6 +535,7 @@ document.querySelectorAll("[data-cmd]").forEach(button=>{
 renderBots();
 renderMessages();
 renderTimeline();
+renderCoverage([]);
 setFlow("当前流程：连接后台","正在检查本地机器人服务","CONNECTING");
 
 loadStatus().then(ok=>{
