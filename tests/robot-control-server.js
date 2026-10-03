@@ -4912,6 +4912,299 @@ async function runMaintenanceWarehouseReportCenterTest() {
 }
 
 
+async function runNaturalLanguageCommandParserRegressionTest() {
+
+    const botName =
+        "TestManager";
+
+
+    try {
+
+        updateBot(
+            botName,
+            "running",
+            "正在验证总控自然语言解析与确认机制"
+        );
+
+
+        const cases = [
+            {
+                text:
+                    "把维修、领配件、库房出库到最后验收整套跑一遍",
+
+                expectedAction:
+                    "maintenance-warehouse-full-closed-loop"
+            },
+            {
+                text:
+                    "看看维修和库房结束以后报表有没有更新",
+
+                expectedAction:
+                    "maintenance-warehouse-report-center"
+            },
+            {
+                text:
+                    "把6种辅助车辆都跑一下",
+
+                expectedAction:
+                    "a-group-auxiliary-linkage"
+            },
+            {
+                text:
+                    "测一下司机GPS不准的时候会不会被拦住",
+
+                expectedAction:
+                    "gps-abnormal-blocking-test"
+            },
+            {
+                text:
+                    "看看辅助车辆和加油车完成记录有没有进综合报表",
+
+                expectedAction:
+                    "auxiliary-report-center-verification"
+            },
+            {
+                text:
+                    "把6种辅助车辆从完成到调度回传再到综合报表整套跑一遍",
+
+                expectedAction:
+                    "a-group-auxiliary-dispatch-report-closed-loop"
+            }
+        ];
+
+
+        const results = [];
+
+
+        for (
+            const item
+            of cases
+        ) {
+
+            const parsed =
+                parseNaturalLanguageCommand(
+                    item.text
+                );
+
+
+            if (
+                !parsed.matched
+            ) {
+
+                throw new Error(
+                    "自然语言解析回归：没有识别句子“" +
+                    item.text +
+                    "”"
+                );
+            }
+
+
+            if (
+                parsed.action !==
+                    item.expectedAction
+            ) {
+
+                throw new Error(
+                    "自然语言解析回归：句子“" +
+                    item.text +
+                    "”识别错误，预期=" +
+                    item.expectedAction +
+                    "；实际=" +
+                    parsed.action
+                );
+            }
+
+
+            results.push({
+                text:
+                    item.text,
+
+                action:
+                    parsed.action,
+
+                label:
+                    parsed.label
+            });
+        }
+
+
+        const ambiguous =
+            parseNaturalLanguageCommand(
+                "把维修和库房跑一下"
+            );
+
+
+        if (
+            ambiguous.reason !==
+                "ambiguous" ||
+            ambiguous.candidates.length <
+                2
+        ) {
+
+            throw new Error(
+                "自然语言解析回归：模糊命令没有进入待确认候选状态"
+            );
+        }
+
+
+        const guessed =
+            ambiguous.candidates[
+                0
+            ];
+
+
+        if (
+            !guessed?.action ||
+            !guessed?.label
+        ) {
+
+            throw new Error(
+                "自然语言解析回归：模糊命令没有生成首选猜测"
+            );
+        }
+
+
+        if (
+            !isNaturalLanguageConfirmation(
+                "确认"
+            ) ||
+            !isNaturalLanguageConfirmation(
+                "就这个"
+            ) ||
+            !isNaturalLanguageConfirmation(
+                "开始吧"
+            )
+        ) {
+
+            throw new Error(
+                "自然语言解析回归：确认词识别失败"
+            );
+        }
+
+
+        if (
+            !isNaturalLanguageCancellation(
+                "不对"
+            ) ||
+            !isNaturalLanguageCancellation(
+                "取消"
+            ) ||
+            !isNaturalLanguageCancellation(
+                "重新说"
+            )
+        ) {
+
+            throw new Error(
+                "自然语言解析回归：取消词识别失败"
+            );
+        }
+
+
+        pendingNaturalLanguageConfirmation = {
+            action:
+                guessed.action,
+
+            label:
+                guessed.label,
+
+            originalCommand:
+                "TEST-模糊命令",
+
+            createdAt:
+                Date.now() -
+                10 *
+                60 *
+                1000,
+
+            expiresAt:
+                Date.now() -
+                1
+        };
+
+
+        clearExpiredNaturalLanguageConfirmation();
+
+
+        if (
+            pendingNaturalLanguageConfirmation !==
+                null
+        ) {
+
+            throw new Error(
+                "自然语言解析回归：超时待确认意图没有自动清理"
+            );
+        }
+
+
+        updateBot(
+            botName,
+            "pass",
+            "总控自然语言解析与确认机制回归通过"
+        );
+
+
+        robotMessage(
+            botName,
+            "自然语言回归通过：" +
+            cases.length +
+            " 条明确命令全部识别正确；模糊命令已生成猜测候选；确认/取消词及5分钟超时清理均正常。"
+        );
+
+
+        return {
+            ok:
+                true,
+
+            action:
+                "natural-language-parser-regression",
+
+            parsedCount:
+                results.length,
+
+            ambiguousCandidates:
+                ambiguous.candidates,
+
+            guessedAction:
+                guessed.action,
+
+            results
+        };
+
+
+    } catch (
+        error
+    ) {
+
+        const message =
+            error?.message ||
+            String(
+                error
+            );
+
+
+        pendingNaturalLanguageConfirmation =
+            null;
+
+
+        updateBot(
+            botName,
+            "fail",
+            message
+        );
+
+
+        robotMessage(
+            botName,
+            "总控自然语言解析与确认机制回归失败：" +
+            message
+        );
+
+
+        throw error;
+    }
+}
+
+
 async function runAGroupAuxiliaryDispatchReportClosedLoopTest() {
 
     const botName =
@@ -9684,6 +9977,13 @@ async function runReleaseGoldenRegression() {
     );
 
 
+    await runGoldenCase(
+        "总控自然语言解析与确认机制",
+        async () =>
+            await runNaturalLanguageCommandParserRegressionTest()
+    );
+
+
     const passed =
         results.filter(
             item =>
@@ -10134,6 +10434,13 @@ async function runAllCoreRegressionTests() {
         "A组辅助车辆调度报表完整闭环",
         async () =>
             await runAGroupAuxiliaryDispatchReportClosedLoopTest()
+    );
+
+
+    await runCase(
+        "总控自然语言解析与确认机制",
+        async () =>
+            await runNaturalLanguageCommandParserRegressionTest()
     );
 
 
@@ -10905,6 +11212,42 @@ function naturalLanguageIntentCatalog() {
             examples: [
                 "测一下维修员等配件和库房出库的联动",
                 "跑维修管理维修员库房三岗位联动"
+            ]
+        },
+        {
+            action:
+                "natural-language-parser-regression",
+
+            label:
+                "总控自然语言解析回归",
+
+            runner:
+                async () =>
+                    await runNaturalLanguageCommandParserRegressionTest(),
+
+            requiredGroups: [
+                [
+                    "自然语言",
+                    "大白话",
+                    "模糊命令"
+                ],
+                [
+                    "测试",
+                    "回归",
+                    "验证"
+                ]
+            ],
+
+            bonusTerms: [
+                "总控",
+                "确认",
+                "猜测",
+                "识别"
+            ],
+
+            examples: [
+                "测试一下总控能不能听懂大白话和模糊命令",
+                "验证自然语言猜测确认机制"
             ]
         },
         {
@@ -12396,6 +12739,26 @@ async function executeCommand({
     ) {
 
         return await runTemporaryUnloadRejectionTest();
+    }
+
+
+    if (
+        requestedBot ===
+            "TestManager" &&
+        (
+            /运行.*自然语言.*解析.*回归/i.test(
+                command
+            ) ||
+            /测试.*总控.*自然语言/i.test(
+                command
+            ) ||
+            /验证.*模糊命令.*确认/i.test(
+                command
+            )
+        )
+    ) {
+
+        return await runNaturalLanguageCommandParserRegressionTest();
     }
 
 
