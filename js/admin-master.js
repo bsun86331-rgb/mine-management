@@ -232,6 +232,119 @@ function goHome() {
 }
 
 
+function verifyAdminMasterAccess() {
+  let session = null;
+
+  try {
+    session = JSON.parse(
+      sessionStorage.getItem(
+        "managementSession"
+      )
+    );
+  } catch (error) {
+    session = null;
+  }
+
+  if (
+    !session ||
+    session.verified !== true ||
+    normalizePersonnelPosition(
+      session.position
+    ) !== "管理员" ||
+    Number(
+      session.expiresAt || 0
+    ) <= Date.now()
+  ) {
+    alert(
+      "管理员基础资料中心需要管理员二次验证，请从系统首页重新进入。"
+    );
+
+    location.replace(
+      "index.html"
+    );
+
+    return false;
+  }
+
+  const personnel =
+    readStorage(
+      STORAGE.PERSONNEL,
+      []
+    );
+
+  const adminId =
+    String(
+      session.personId ||
+      localStorage.getItem(
+        "adminPersonId"
+      ) ||
+      ""
+    );
+
+  const admin =
+    personnel.find(
+      item =>
+        String(
+          item.personId ||
+          item.employeeId ||
+          item.driverId ||
+          item.id ||
+          ""
+        ) === adminId
+    );
+
+  if (
+    !admin ||
+    normalizePersonnelPosition(
+      admin.position
+    ) !== "管理员" ||
+    ["rejected","disabled","resigned"].includes(
+      String(
+        admin.status ||
+        ""
+      )
+    ) ||
+    !(
+      admin.approvalStatus === "approved" ||
+      admin.status === "approved" ||
+      admin.status === "active" ||
+      admin.personnelStatus === "在职可用"
+    )
+  ) {
+    alert(
+      "当前管理员身份无效或已停用。"
+    );
+
+    sessionStorage.removeItem(
+      "managementSession"
+    );
+
+    location.replace(
+      "index.html"
+    );
+
+    return false;
+  }
+
+  localStorage.setItem(
+    "adminPersonId",
+    adminId
+  );
+
+  localStorage.setItem(
+    "currentPersonId",
+    adminId
+  );
+
+  localStorage.setItem(
+    "selectedPosition",
+    "管理员"
+  );
+
+  return true;
+}
+
+
 /* =========================================================
    状态文字
 ========================================================= */
@@ -3836,6 +3949,10 @@ function bindModalBackdrop() {
 ========================================================= */
 
 function init() {
+  if (!verifyAdminMasterAccess()) {
+    return;
+  }
+
   importExistingDriverProfile();
 
   setDefaultDates();
@@ -3859,7 +3976,7 @@ function init() {
   toggleMaterialReturnFields();
 
   console.log(
-    "V2.9.4A 管理员基础资料中心已加载"
+    "V2.11.0 管理员基础资料中心已加载"
   );
 }
 
