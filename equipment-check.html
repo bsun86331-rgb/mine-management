@@ -219,13 +219,25 @@ const arr=k=>{try{const d=JSON.parse(localStorage.getItem(k));return Array.isArr
 const obj=k=>{try{const d=JSON.parse(localStorage.getItem(k));return d&&typeof d==="object"&&!Array.isArray(d)?d:null}catch{return null}};
 const save=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
 const pid=p=>String(p?.personId||p?.employeeId||p?.driverId||p?.id||"");
-const norm=p=>({"卡车司机":"汽车司机","汽车驾驶员":"汽车司机","挖掘机司机":"挖机司机","挖机操作手":"挖机司机"}[p]||p||"");
+const norm=p=>({"卡车司机":"汽车司机","汽车驾驶员":"汽车司机","挖掘机司机":"挖机司机","挖机操作手":"挖机司机","装载机司机":"铲车司机","维修人员":"维修员","库房管理员":"库房管理","调度员":"车队长"}[p]||p||"");
 const tid=t=>String(t?.taskId||t?.dispatchTaskId||t?.id||"");
+
+function isProductionEligiblePerson(p){
+ if(!p||p.enabled===false)return false;
+ if(["rejected","pending","disabled","resigned","leave"].includes(String(p.status||"")))return false;
+ if(["rejected","pending"].includes(String(p.approvalStatus||"")))return false;
+ if(["待审核","停用","离职","请假"].includes(String(p.personnelStatus||"")))return false;
+ return p.approvalStatus==="approved"||p.status==="approved"||p.status==="active"||p.status==="working"||p.personnelStatus==="在职可用"||p.personnelStatus==="作业中";
+}
 
 function resolvePerson(){
  const rs=arr(K.PERSONNEL),ids=[localStorage.getItem("currentPersonId"),localStorage.getItem("workerPersonId")].filter(Boolean).map(String);
- for(const id of ids){const p=rs.find(x=>pid(x)===id);if(p)return p}
- try{return JSON.parse(localStorage.getItem("driverProfile")||"null")}catch{return null}
+ for(const id of ids){const p=rs.find(x=>pid(x)===id&&isProductionEligiblePerson(x));if(p)return p}
+ try{
+   const legacy=JSON.parse(localStorage.getItem("driverProfile")||"null");
+   if(legacy&&String(pid(legacy)).toUpperCase().startsWith("TEST-")&&isProductionEligiblePerson(legacy))return legacy;
+ }catch{}
+ return null;
 }
 
 function activeShift(task){
@@ -396,7 +408,8 @@ function createUsageRecord(check){
 }
 
 function submitCheck(){
- if(!person)return alert("无法识别当前使用人。");
+ person=resolvePerson();
+ if(!person)return alert("当前人员未审核、已请假、已停用或已离职，不能提交设备使用检查。");
  if(mode==="shift"&&!ctx?.shiftId)return alert("班次模式下无法识别 shiftId，请先由调度发布本班任务。");
  if(mode==="usage"){syncManualEquipment();if(!document.getElementById("usagePurpose").value.trim())return alert("请填写本次用车用途。")}
  if(!equipment)return alert("请选择或填写使用车辆。");
