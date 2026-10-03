@@ -416,7 +416,8 @@ const COVERAGE_MODULES = [
 
         cases: [
             "全岗位入口联动",
-            "人员登记审核岗位进入闭环"
+            "人员登记审核岗位进入闭环",
+            "人员驳回修改重提再审核闭环"
         ]
     },
     {
@@ -8375,6 +8376,813 @@ async function runAGroupMultiRobotLinkageTest() {
 }
 
 
+async function runPersonnelRejectResubmitApprovalTest() {
+
+    const botName =
+        "TestManager";
+
+    const applicantId =
+        "TEST-PERSON-REJECT-001";
+
+    const adminId =
+        "TEST-ADMIN-REJECT-001";
+
+    const position =
+        "测量员";
+
+    const rejectReason =
+        "TEST-手机号资料需要修正";
+
+    let context =
+        null;
+
+
+    try {
+
+        await ensureBrowser();
+
+
+        context =
+            await browser.newContext({
+                baseURL:
+                    BASE_URL,
+
+                viewport: {
+                    width:
+                        390,
+
+                    height:
+                        844
+                }
+            });
+
+
+        const page =
+            await context.newPage();
+
+
+        await page.addInitScript(
+            testPersonId => {
+
+                try {
+
+                    Object.defineProperty(
+                        Crypto.prototype,
+                        "randomUUID",
+                        {
+                            configurable:
+                                true,
+
+                            value:
+                                () =>
+                                    testPersonId
+                        }
+                    );
+
+                } catch (
+                    error
+                ) {
+
+                    try {
+
+                        window.crypto.randomUUID =
+                            () =>
+                                testPersonId;
+
+                    } catch (
+                        innerError
+                    ) {}
+                }
+            },
+            applicantId
+        );
+
+
+        updateBot(
+            botName,
+            "running",
+            "正在执行人员驳回 → 修改 → 重提 → 再审核闭环"
+        );
+
+
+        robotMessage(
+            botName,
+            "步骤 1/6：TEST 人员提交首次入职申请。"
+        );
+
+
+        await page.goto(
+            "person-register.html?position=" +
+            encodeURIComponent(
+                position
+            ),
+            {
+                waitUntil:
+                    "domcontentloaded"
+            }
+        );
+
+
+        await page.locator(
+            "#name"
+        ).fill(
+            "TEST-驳回重提人员"
+        );
+
+
+        await page.locator(
+            "#phone"
+        ).fill(
+            "13900000002"
+        );
+
+
+        const teamState =
+            await page.locator(
+                "#team"
+            ).evaluate(
+                element => ({
+                    value:
+                        element.value,
+
+                    disabled:
+                        element.disabled
+                })
+            );
+
+
+        if (
+            teamState.value !==
+                "后勤办公组" ||
+            teamState.disabled !==
+                true
+        ) {
+
+            throw new Error(
+                "人员驳回重提闭环：测量员班组规则异常"
+            );
+        }
+
+
+        await page.locator(
+            "#idCardNumber"
+        ).fill(
+            "TEST-IDCARD-REJECT-001"
+        );
+
+
+        await page.locator(
+            "#emergencyContact"
+        ).fill(
+            "TEST-紧急联系人"
+        );
+
+
+        await page.locator(
+            "#emergencyPhone"
+        ).fill(
+            "13800000002"
+        );
+
+
+        await Promise.all([
+            page.waitForURL(
+                url =>
+                    url.pathname.endsWith(
+                        "/person-waiting.html"
+                    ),
+                {
+                    timeout:
+                        15000
+                }
+            ),
+
+            page.locator(
+                "#submitButton"
+            ).click()
+        ]);
+
+
+        robotMessage(
+            botName,
+            "步骤 2/6：TEST 管理员驳回申请并填写驳回原因。"
+        );
+
+
+        await page.evaluate(
+            ({
+                adminId,
+                applicantId
+            }) => {
+
+                let records = [];
+
+                try {
+
+                    records =
+                        JSON.parse(
+                            localStorage.getItem(
+                                "personnelRecords"
+                            ) ||
+                            "[]"
+                        );
+
+                } catch (
+                    error
+                ) {
+
+                    records =
+                        [];
+                }
+
+
+                records =
+                    records.filter(
+                        item =>
+                            String(
+                                item?.personId ||
+                                ""
+                            ) !==
+                                adminId
+                    );
+
+
+                records.push({
+                    personId:
+                        adminId,
+
+                    employeeNo:
+                        "TEST-ADMIN-REJECT",
+
+                    name:
+                        "TEST-管理员",
+
+                    position:
+                        "管理员",
+
+                    team:
+                        "后勤办公组",
+
+                    status:
+                        "approved",
+
+                    approvalStatus:
+                        "approved",
+
+                    personnelStatus:
+                        "在职可用",
+
+                    testFixture:
+                        true
+                });
+
+
+                localStorage.setItem(
+                    "personnelRecords",
+                    JSON.stringify(
+                        records
+                    )
+                );
+
+
+                localStorage.setItem(
+                    "currentPersonId",
+                    applicantId
+                );
+
+
+                localStorage.setItem(
+                    "adminPersonId",
+                    adminId
+                );
+
+
+                sessionStorage.setItem(
+                    "managementSession",
+                    JSON.stringify({
+                        verified:
+                            true,
+
+                        personId:
+                            adminId,
+
+                        position:
+                            "管理员",
+
+                        verifiedAt:
+                            Date.now(),
+
+                        expiresAt:
+                            Date.now() +
+                            60 *
+                            60 *
+                            1000,
+
+                        testFixture:
+                            true
+                    })
+                );
+            },
+            {
+                adminId,
+                applicantId
+            }
+        );
+
+
+        await page.goto(
+            "admin-review.html",
+            {
+                waitUntil:
+                    "domcontentloaded"
+            }
+        );
+
+
+        await page.waitForTimeout(
+            500
+        );
+
+
+        await page.evaluate(
+            ({
+                applicantId,
+                rejectReason
+            }) => {
+
+                window.confirm =
+                    () =>
+                        true;
+
+
+                openDetail(
+                    applicantId
+                );
+
+
+                document.getElementById(
+                    "rejectReasonInput"
+                ).value =
+                    rejectReason;
+
+
+                confirmReject();
+            },
+            {
+                applicantId,
+                rejectReason
+            }
+        );
+
+
+        robotMessage(
+            botName,
+            "步骤 3/6：申请人在等待页看到驳回原因。"
+        );
+
+
+        await page.goto(
+            "person-waiting.html?position=" +
+            encodeURIComponent(
+                position
+            ) +
+            "&personId=" +
+            encodeURIComponent(
+                applicantId
+            ),
+            {
+                waitUntil:
+                    "domcontentloaded"
+            }
+        );
+
+
+        await page.waitForTimeout(
+            300
+        );
+
+
+        const rejectedView =
+            await page.evaluate(
+                () => ({
+                    title:
+                        document.getElementById(
+                            "statusTitle"
+                        )?.textContent
+                        ?.trim() ||
+                        "",
+
+                    reason:
+                        document.getElementById(
+                            "rejectReason"
+                        )?.textContent
+                        ?.trim() ||
+                        "",
+
+                    editDisplay:
+                        getComputedStyle(
+                            document.getElementById(
+                                "editButton"
+                            )
+                        ).display
+                })
+            );
+
+
+        if (
+            rejectedView.title !==
+                "审核未通过" ||
+            !rejectedView.reason.includes(
+                rejectReason
+            ) ||
+            rejectedView.editDisplay ===
+                "none"
+        ) {
+
+            throw new Error(
+                "人员驳回重提闭环：等待页没有正确显示驳回状态/原因/修改入口"
+            );
+        }
+
+
+        robotMessage(
+            botName,
+            "步骤 4/6：申请人点击修改资料，修正手机号后重新提交。"
+        );
+
+
+        await Promise.all([
+            page.waitForURL(
+                url =>
+                    url.pathname.endsWith(
+                        "/person-register.html"
+                    ) &&
+                    url.searchParams.get(
+                        "rejected"
+                    ) ===
+                        "1",
+                {
+                    timeout:
+                        15000
+                }
+            ),
+
+            page.locator(
+                "#editButton"
+            ).click()
+        ]);
+
+
+        await page.locator(
+            "#phone"
+        ).fill(
+            "13900000999"
+        );
+
+
+        await Promise.all([
+            page.waitForURL(
+                url =>
+                    url.pathname.endsWith(
+                        "/person-waiting.html"
+                    ),
+                {
+                    timeout:
+                        15000
+                }
+            ),
+
+            page.locator(
+                "#submitButton"
+            ).click()
+        ]);
+
+
+        const resubmitted =
+            await page.evaluate(
+                applicantId => {
+
+                    let records = [];
+
+                    try {
+
+                        records =
+                            JSON.parse(
+                                localStorage.getItem(
+                                    "personnelRecords"
+                                ) ||
+                                "[]"
+                            );
+
+                    } catch (
+                        error
+                    ) {
+
+                        records =
+                            [];
+                    }
+
+
+                    return records.find(
+                        item =>
+                            String(
+                                item?.personId ||
+                                ""
+                            ) ===
+                                applicantId
+                    ) ||
+                    null;
+                },
+                applicantId
+            );
+
+
+        if (
+            !resubmitted ||
+            resubmitted.status !==
+                "pending" ||
+            resubmitted.approvalStatus !==
+                "pending" ||
+            resubmitted.phone !==
+                "13900000999" ||
+            Number(
+                resubmitted.resubmitCount ||
+                0
+            ) <
+                1 ||
+            resubmitted.rejectReason ||
+            resubmitted.rejectionReason
+        ) {
+
+            throw new Error(
+                "人员驳回重提闭环：重新提交后的 pending / 修正资料 / 驳回信息清理不正确"
+            );
+        }
+
+
+        robotMessage(
+            botName,
+            "步骤 5/6：TEST 管理员再次审核通过。"
+        );
+
+
+        await page.evaluate(
+            ({
+                adminId,
+                applicantId
+            }) => {
+
+                localStorage.setItem(
+                    "currentPersonId",
+                    applicantId
+                );
+
+
+                localStorage.setItem(
+                    "adminPersonId",
+                    adminId
+                );
+
+
+                sessionStorage.setItem(
+                    "managementSession",
+                    JSON.stringify({
+                        verified:
+                            true,
+
+                        personId:
+                            adminId,
+
+                        position:
+                            "管理员",
+
+                        verifiedAt:
+                            Date.now(),
+
+                        expiresAt:
+                            Date.now() +
+                            60 *
+                            60 *
+                            1000,
+
+                        testFixture:
+                            true
+                    })
+                );
+            },
+            {
+                adminId,
+                applicantId
+            }
+        );
+
+
+        await page.goto(
+            "admin-review.html",
+            {
+                waitUntil:
+                    "domcontentloaded"
+            }
+        );
+
+
+        await page.waitForTimeout(
+            400
+        );
+
+
+        await page.evaluate(
+            applicantId => {
+
+                window.confirm =
+                    () =>
+                        true;
+
+
+                openDetail(
+                    applicantId
+                );
+
+
+                approveCurrentPerson();
+            },
+            applicantId
+        );
+
+
+        const approved =
+            await page.evaluate(
+                applicantId => {
+
+                    let records = [];
+
+                    try {
+
+                        records =
+                            JSON.parse(
+                                localStorage.getItem(
+                                    "personnelRecords"
+                                ) ||
+                                "[]"
+                            );
+
+                    } catch (
+                        error
+                    ) {
+
+                        records =
+                            [];
+                    }
+
+
+                    return records.find(
+                        item =>
+                            String(
+                                item?.personId ||
+                                ""
+                            ) ===
+                                applicantId
+                    ) ||
+                    null;
+                },
+                applicantId
+            );
+
+
+        if (
+            !approved ||
+            approved.status !==
+                "approved" ||
+            approved.approvalStatus !==
+                "approved" ||
+            approved.personnelStatus !==
+                "在职可用"
+        ) {
+
+            throw new Error(
+                "人员驳回重提闭环：再次审核后未进入 approved / 在职可用"
+            );
+        }
+
+
+        robotMessage(
+            botName,
+            "步骤 6/6：审核通过后从首页进入正确岗位页面。"
+        );
+
+
+        await page.goto(
+            "index.html",
+            {
+                waitUntil:
+                    "domcontentloaded"
+            }
+        );
+
+
+        await page.evaluate(
+            targetPosition => {
+
+                selectPosition(
+                    targetPosition
+                );
+            },
+            position
+        );
+
+
+        await page.waitForURL(
+            url =>
+                url.pathname.endsWith(
+                    "/management.html"
+                ),
+            {
+                timeout:
+                    15000
+            }
+        );
+
+
+        updateBot(
+            botName,
+            "pass",
+            "人员驳回 → 修改 → 重提 → 再审核 → 岗位进入闭环通过"
+        );
+
+
+        robotMessage(
+            botName,
+            "人员驳回重提闭环通过：" +
+            applicantId +
+            "；驳回原因可见；资料已修正；resubmitCount=" +
+            resubmitted.resubmitCount +
+            "；最终进入 management.html"
+        );
+
+
+        return {
+            ok:
+                true,
+
+            action:
+                "personnel-reject-resubmit-approval",
+
+            personId:
+                applicantId,
+
+            rejectReason,
+
+            resubmitCount:
+                resubmitted.resubmitCount,
+
+            finalPage:
+                "management.html"
+        };
+
+
+    } catch (
+        error
+    ) {
+
+        const message =
+            error?.message ||
+            String(
+                error
+            );
+
+
+        updateBot(
+            botName,
+            "fail",
+            message
+        );
+
+
+        robotMessage(
+            botName,
+            "人员驳回修改重提再审核闭环失败：" +
+            message
+        );
+
+
+        throw error;
+
+
+    } finally {
+
+        if (
+            context
+        ) {
+
+            await context.close()
+                .catch(
+                    () => {}
+                );
+        }
+    }
+}
+
+
 async function runPersonnelRegistrationApprovalRoleEntryTest() {
 
     const botName =
@@ -11716,6 +12524,13 @@ async function runAllCoreRegressionTests() {
 
 
     await runCase(
+        "人员驳回修改重提再审核闭环",
+        async () =>
+            await runPersonnelRejectResubmitApprovalTest()
+    );
+
+
+    await runCase(
         "正常装卸运输完整闭环",
         async () =>
             await runNormalTransportClosedLoopTest()
@@ -14703,6 +15518,26 @@ async function executeCommand({
     ) {
 
         return await runCurrentTestReport();
+    }
+
+
+    if (
+        requestedBot ===
+            "TestManager" &&
+        (
+            /运行.*人员.*驳回.*重提.*闭环/i.test(
+                command
+            ) ||
+            /测试.*人员.*驳回.*修改.*再审核/i.test(
+                command
+            ) ||
+            /人员资料.*驳回.*重新提交/i.test(
+                command
+            )
+        )
+    ) {
+
+        return await runPersonnelRejectResubmitApprovalTest();
     }
 
 
