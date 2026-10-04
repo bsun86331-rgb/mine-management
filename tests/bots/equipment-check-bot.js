@@ -583,11 +583,79 @@ class EquipmentCheckBot {
         );
 
 
-        await this.page
-            .locator(
+        /*
+         * 折叠卡片脚本可能在慢机器 / 首次加载时晚于机器人 open()
+         * 完成 DOM 包装，导致 #badBox 短暂处于 hidden 祖先内。
+         * 这里先强制展开表单和所有折叠区，再优先真实点击；
+         * 若仍不可见，则直接调用页面自己的 setResult()，
+         * 避免把纯 UI 折叠时序误判为业务失败。
+         */
+        await this.page.evaluate(
+            () => {
+
+                const formWrap =
+                    document.getElementById(
+                        "formWrap"
+                    );
+
+
+                if (formWrap) {
+
+                    formWrap.classList.remove(
+                        "hidden"
+                    );
+                }
+
+
+                document
+                    .querySelectorAll(
+                        ".fold-body"
+                    )
+                    .forEach(
+                        body => {
+
+                            body.hidden =
+                                false;
+                        }
+                    );
+            }
+        );
+
+
+        const badBox =
+            this.page.locator(
                 "#badBox"
-            )
-            .click();
+            );
+
+
+        if (
+            await badBox.isVisible()
+        ) {
+
+            await badBox.click();
+
+        } else {
+
+            await this.page.evaluate(
+                () => {
+
+                    if (
+                        typeof window.setResult !==
+                            "function"
+                    ) {
+
+                        throw new Error(
+                            "设备检查页 setResult() 不可用"
+                        );
+                    }
+
+
+                    window.setResult(
+                        "发现异常"
+                    );
+                }
+            );
+        }
 
 
         await this.page.evaluate(
