@@ -80,6 +80,123 @@ class WarehouseBot {
 
     async open() {
 
+        /*
+         * V2.11.1A
+         * 生产端 warehouse.html 已启用岗位访问保护。
+         * 机器人先在同源页面写入 TEST 库房管理身份，
+         * 再进入正式库房页面，避免绕过生产权限逻辑。
+         */
+        await this.page.goto(
+            "index.html",
+            {
+                waitUntil:
+                    "domcontentloaded"
+            }
+        );
+
+
+        await this.page.evaluate(
+            () => {
+
+                const warehouseId =
+                    "TEST-WAREHOUSE-MANAGER-001";
+
+
+                let records = [];
+
+                try {
+
+                    const parsed =
+                        JSON.parse(
+                            localStorage.getItem(
+                                "personnelRecords"
+                            )
+                        );
+
+
+                    records =
+                        Array.isArray(
+                            parsed
+                        )
+                            ? parsed
+                            : [];
+
+                } catch (
+                    error
+                ) {
+
+                    records = [];
+                }
+
+
+                records =
+                    records.filter(
+                        item =>
+                            String(
+                                item.personId ||
+                                item.employeeId ||
+                                item.id ||
+                                ""
+                            ) !==
+                                warehouseId
+                    );
+
+
+                records.push({
+                    personId:
+                        warehouseId,
+
+                    employeeId:
+                        warehouseId,
+
+                    employeeNo:
+                        warehouseId,
+
+                    name:
+                        "TEST-库房管理",
+
+                    position:
+                        "库房管理",
+
+                    department:
+                        "TEST-后勤",
+
+                    approvalStatus:
+                        "approved",
+
+                    status:
+                        "active",
+
+                    personnelStatus:
+                        "在职可用",
+
+                    testFixture:
+                        true
+                });
+
+
+                localStorage.setItem(
+                    "personnelRecords",
+                    JSON.stringify(
+                        records
+                    )
+                );
+
+
+                localStorage.setItem(
+                    "currentPersonId",
+                    warehouseId
+                );
+
+
+                localStorage.setItem(
+                    "selectedPosition",
+                    "库房管理"
+                );
+            }
+        );
+
+
         await this.page.goto(
             "warehouse.html",
             {
