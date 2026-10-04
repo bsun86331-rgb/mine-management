@@ -2552,6 +2552,30 @@ function initialize() {
     renderAll();
 
 
+    window.addEventListener(
+        "storage",
+        event => {
+
+            if (
+                [
+                    STORAGE.REQUESTS,
+                    STORAGE.WORK_ORDERS,
+                    STORAGE.BAYS,
+                    STORAGE.COSTS,
+                    STORAGE.OPERATIONAL_STATUS,
+                    "personnelRecords"
+                ]
+                .includes(
+                    event.key
+                )
+            ) {
+
+                renderAll();
+            }
+        }
+    );
+
+
     setInterval(
         renderAll,
         5000
