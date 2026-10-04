@@ -2265,12 +2265,18 @@ function isMaintenancePersonApproved(person) {
 
 
     if (
+        person.enabled === false ||
         person.status === "rejected" ||
         person.approvalStatus === "rejected" ||
+        person.status === "pending" ||
+        person.approvalStatus === "pending" ||
         person.status === "disabled" ||
         person.status === "resigned" ||
+        person.status === "leave" ||
+        person.personnelStatus === "待审核" ||
         person.personnelStatus === "停用" ||
-        person.personnelStatus === "离职"
+        person.personnelStatus === "离职" ||
+        person.personnelStatus === "请假"
     ) {
         return false;
     }
@@ -2281,10 +2287,8 @@ function isMaintenancePersonApproved(person) {
         person.status === "approved" ||
         person.status === "active" ||
         person.status === "working" ||
-        person.status === "leave" ||
         person.personnelStatus === "在职可用" ||
-        person.personnelStatus === "作业中" ||
-        person.personnelStatus === "请假"
+        person.personnelStatus === "作业中"
     );
 }
 
