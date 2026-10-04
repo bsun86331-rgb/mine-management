@@ -485,7 +485,8 @@ const COVERAGE_MODULES = [
             "维修验收不通过返修闭环",
             "等待配件流程闭环",
             "第四批人员状态与月报一致性批量回归",
-            "第五批数据持久化与重复提交一致性批量回归"
+            "第五批数据持久化与重复提交一致性批量回归",
+            "第五批第二轮多页面同步与异常恢复一致性批量回归"
         ]
     },
     {
@@ -500,7 +501,8 @@ const COVERAGE_MODULES = [
             "维修库房完整闭环",
             "维修库房报表回写",
             "第三批库房与报表一致性批量回归",
-            "第五批数据持久化与重复提交一致性批量回归"
+            "第五批数据持久化与重复提交一致性批量回归",
+            "第五批第二轮多页面同步与异常恢复一致性批量回归"
         ]
     },
     {
@@ -537,7 +539,8 @@ const COVERAGE_MODULES = [
         cases: [
             "A组辅助车辆调度报表完整闭环",
             "第二批生产系统权限与状态批量回归",
-            "第四批第二轮设备生命周期与残留任务一致性批量回归"
+            "第四批第二轮设备生命周期与残留任务一致性批量回归",
+            "第五批第二轮多页面同步与异常恢复一致性批量回归"
         ]
     },
     {
@@ -8089,6 +8092,351 @@ async function runFifthBatchPersistenceIdempotencyTest() {
             of [
                 maintenancePage,
                 warehousePage
+            ]
+        ) {
+
+            if (
+                page &&
+                !page.isClosed()
+            ) {
+
+                await page.close()
+                    .catch(
+                        () => {}
+                    );
+            }
+        }
+    }
+}
+
+
+
+async function runFifthBatchCrossTabRecoveryTest() {
+
+    const botName =
+        "TestManager";
+
+    let auxiliaryPage =
+        null;
+
+    let writerPage =
+        null;
+
+    try {
+
+        await ensureBrowser();
+
+        updateBot(
+            botName,
+            "running",
+            "正在执行第五批第二轮多页面同步与异常恢复一致性批量回归"
+        );
+
+        robotMessage(
+            botName,
+            "步骤 1/2：建立辅助车辆 working 作业，并保持对应调度任务 active。"
+        );
+
+        auxiliaryPage =
+            await browserContext.newPage();
+
+        await auxiliaryPage.addInitScript(
+            () => {
+
+                const personId =
+                    "TEST-AUX-STORAGE-001";
+
+                localStorage.setItem(
+                    "personnelRecords",
+                    JSON.stringify([
+                        {
+                            personId,
+                            employeeId:
+                                personId,
+                            name:
+                                "TEST-辅助司机",
+                            position:
+                                "铲车司机",
+                            status:
+                                "active",
+                            approvalStatus:
+                                "approved",
+                            personnelStatus:
+                                "在职可用",
+                            enabled:
+                                true,
+                            testFixture:
+                                true
+                        }
+                    ])
+                );
+
+                localStorage.setItem(
+                    "currentPersonId",
+                    personId
+                );
+
+                localStorage.setItem(
+                    "selectedPosition",
+                    "铲车司机"
+                );
+
+                localStorage.setItem(
+                    "auxiliaryVehicleProfile",
+                    JSON.stringify({
+                        vehicleType:
+                            "铲车",
+                        vehicleNumber:
+                            "TEST-AUX-STORAGE-EQ-001"
+                    })
+                );
+
+                localStorage.setItem(
+                    "dispatchPublishedTasks",
+                    JSON.stringify([
+                        {
+                            taskId:
+                                "TEST-AUX-STORAGE-TASK-001",
+                            status:
+                                "active",
+                            area:
+                                "TEST区域",
+                            shift:
+                                "白班",
+                            publishedAt:
+                                new Date()
+                                    .toISOString(),
+                            auxiliaryAssignments: [
+                                {
+                                    vehicleId:
+                                        "TEST-AUX-STORAGE-EQ-001",
+                                    vehicleNumber:
+                                        "TEST-AUX-STORAGE-EQ-001",
+                                    work:
+                                        "TEST辅助作业"
+                                }
+                            ]
+                        }
+                    ])
+                );
+
+                localStorage.setItem(
+                    "auxiliaryWorkRecords",
+                    JSON.stringify([
+                        {
+                            workRecordId:
+                                "TEST-AUX-STORAGE-WORK-001",
+                            taskId:
+                                "TEST-AUX-STORAGE-TASK-001",
+                            personId,
+                            personName:
+                                "TEST-辅助司机",
+                            vehicleType:
+                                "铲车",
+                            vehicleNumber:
+                                "TEST-AUX-STORAGE-EQ-001",
+                            status:
+                                "working",
+                            startedAt:
+                                new Date()
+                                    .toISOString(),
+                            testFixture:
+                                true
+                        }
+                    ])
+                );
+            }
+        );
+
+        await auxiliaryPage.goto(
+            "auxiliary.html",
+            {
+                waitUntil:
+                    "domcontentloaded"
+            }
+        );
+
+        await auxiliaryPage.waitForTimeout(
+            250
+        );
+
+        const before =
+            await auxiliaryPage.evaluate(
+                () =>
+                    JSON.parse(
+                        localStorage.getItem(
+                            "auxiliaryWorkRecords"
+                        ) ||
+                        "[]"
+                    )[0]
+                    ?.status ||
+                    ""
+            );
+
+        if (
+            before !==
+                "working"
+        ) {
+
+            throw new Error(
+                "第五批第二轮：测试前置 working 作业没有正确建立"
+            );
+        }
+
+        robotMessage(
+            botName,
+            "步骤 2/2：另一页面结束调度任务，验证辅助车辆页面通过 storage 事件立即中断旧 working 记录。"
+        );
+
+        writerPage =
+            await browserContext.newPage();
+
+        await writerPage.goto(
+            "index.html",
+            {
+                waitUntil:
+                    "domcontentloaded"
+            }
+        );
+
+        await writerPage.evaluate(
+            () => {
+
+                const tasks =
+                    JSON.parse(
+                        localStorage.getItem(
+                            "dispatchPublishedTasks"
+                        ) ||
+                        "[]"
+                    );
+
+                const task =
+                    tasks.find(
+                        item =>
+                            item.taskId ===
+                                "TEST-AUX-STORAGE-TASK-001"
+                    );
+
+                if (task) {
+                    task.status =
+                        "completed";
+
+                    task.completedAt =
+                        new Date()
+                            .toISOString();
+                }
+
+                localStorage.setItem(
+                    "dispatchPublishedTasks",
+                    JSON.stringify(
+                        tasks
+                    )
+                );
+            }
+        );
+
+        await auxiliaryPage.waitForFunction(
+            () => {
+
+                const rows =
+                    JSON.parse(
+                        localStorage.getItem(
+                            "auxiliaryWorkRecords"
+                        ) ||
+                        "[]"
+                    );
+
+                return rows.find(
+                    item =>
+                        item.workRecordId ===
+                            "TEST-AUX-STORAGE-WORK-001"
+                )
+                ?.status ===
+                    "interrupted";
+            },
+            null,
+            {
+                timeout:
+                    5000
+            }
+        );
+
+        const recovered =
+            await auxiliaryPage.evaluate(
+                () =>
+                    JSON.parse(
+                        localStorage.getItem(
+                            "auxiliaryWorkRecords"
+                        ) ||
+                        "[]"
+                    )
+                    .find(
+                        item =>
+                            item.workRecordId ===
+                                "TEST-AUX-STORAGE-WORK-001"
+                    )
+            );
+
+        if (
+            recovered?.status !==
+                "interrupted" ||
+            !recovered?.interruptedAt
+        ) {
+
+            throw new Error(
+                "第五批第二轮：跨页面任务结束后旧 working 记录没有自动恢复为 interrupted"
+            );
+        }
+
+        updateBot(
+            botName,
+            "pass",
+            "第五批第二轮多页面同步与异常恢复一致性批量回归通过"
+        );
+
+        robotMessage(
+            botName,
+            "第五批第二轮通过：跨页面任务状态变化能立即同步，旧 working 作业自动中断。"
+        );
+
+        return {
+            ok:
+                true,
+            action:
+                "fifth-batch-cross-tab-recovery"
+        };
+
+    } catch (
+        error
+    ) {
+
+        const message =
+            error?.message ||
+            String(
+                error
+            );
+
+        updateBot(
+            botName,
+            "fail",
+            message
+        );
+
+        robotMessage(
+            botName,
+            "第五批第二轮多页面同步与异常恢复一致性批量回归失败：" +
+            message
+        );
+
+        throw error;
+
+    } finally {
+
+        for (
+            const page
+            of [
+                auxiliaryPage,
+                writerPage
             ]
         ) {
 
@@ -17106,6 +17454,13 @@ async function runAllCoreRegressionTests() {
         "第五批数据持久化与重复提交一致性批量回归",
         async () =>
             await runFifthBatchPersistenceIdempotencyTest()
+    );
+
+
+    await runCase(
+        "第五批第二轮多页面同步与异常恢复一致性批量回归",
+        async () =>
+            await runFifthBatchCrossTabRecoveryTest()
     );
 
 
