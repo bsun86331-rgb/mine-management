@@ -10569,7 +10569,10 @@ async function runManagementAdminBatchRegressionTest() {
                 ),
             {
                 timeout:
-                    10000
+                    10000,
+
+                waitUntil:
+                    "domcontentloaded"
             }
         );
 
