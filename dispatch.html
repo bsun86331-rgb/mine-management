@@ -12169,11 +12169,20 @@ function dispatchFindMasterEquipmentStatus(
             record
         ) {
 
-            return (
-                record.status ||
-                record.equipmentStatus ||
-                ""
-            );
+            const status =
+                String(
+                    record.status ||
+                    record.equipmentStatus ||
+                    ""
+                );
+
+
+            if (
+                status
+            ) {
+
+                return status;
+            }
         }
     }
 
