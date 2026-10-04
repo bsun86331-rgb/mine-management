@@ -2740,19 +2740,73 @@ function migrateLegacyReports() {
 
 
     legacy.forEach(
-        report => {
+        (
+            report,
+            legacyIndex
+        ) => {
 
             const legacyId =
-                report.reportId ||
-                report.requestId ||
-                "";
+                String(
+                    report.reportId ||
+                    report.requestId ||
+                    ""
+                )
+                .trim();
+
+
+            const legacyFingerprint =
+                legacyId
+                    ? "id:" + legacyId
+                    : [
+                        "fp",
+                        String(
+                            report.vehicleNumber ||
+                            ""
+                        ),
+                        String(
+                            report.vehicleType ||
+                            ""
+                        ),
+                        String(
+                            report.faultType ||
+                            ""
+                        ),
+                        String(
+                            report.description ||
+                            ""
+                        ),
+                        String(
+                            report.createdAt ||
+                            ""
+                        ),
+                        String(
+                            report.personId ||
+                            report.personName ||
+                            ""
+                        ),
+                        String(
+                            legacyIndex
+                        )
+                    ]
+                    .join(
+                        "|"
+                    );
 
 
             const exists =
                 requests.some(
                     item =>
-                        item.legacyId ===
-                        legacyId
+                        String(
+                            item.legacyFingerprint ||
+                            (
+                                item.legacyId
+                                    ? "id:" +
+                                      item.legacyId
+                                    : ""
+                            ) ||
+                            ""
+                        ) ===
+                            legacyFingerprint
                 );
 
 
@@ -2778,6 +2832,8 @@ function migrateLegacyReports() {
                     ),
 
                 legacyId,
+
+                legacyFingerprint,
 
                 applicantId:
                     report.personId ||
