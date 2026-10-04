@@ -1717,7 +1717,7 @@ function confirmLostWriteOff(lostId) {
     renderAll();
 }
 
-function addLedger(function addLedger(data) {
+function addLedger(data) {
     const records = readArray(STORAGE.LEDGER);
 
     records.push({
@@ -2129,7 +2129,7 @@ function showReportPreview(type) {
     );
 }
 
-function value(function value(id) {
+function value(id) {
     return (document.getElementById(id)?.value || "").trim();
 }
 
