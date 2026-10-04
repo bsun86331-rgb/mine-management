@@ -4429,6 +4429,57 @@ function saveCostSheet() {
     }
 
 
+    if (
+        order.status ===
+            "completed"
+    ) {
+
+        alert(
+            "该维修工单已经完成归档，不能重复生成费用单。"
+        );
+
+        closeModal(
+            "costModal"
+        );
+
+        renderAll();
+
+        return;
+    }
+
+
+    const existingCost =
+        getCosts()
+            .find(
+                item =>
+                    String(
+                        item.orderId ||
+                        ""
+                    ) ===
+                        String(
+                            orderId
+                        )
+            );
+
+
+    if (
+        existingCost
+    ) {
+
+        alert(
+            "该维修工单已经存在费用单，不能重复保存。"
+        );
+
+        closeModal(
+            "costModal"
+        );
+
+        renderAll();
+
+        return;
+    }
+
+
     const labor =
         Number(
             document.getElementById(
@@ -4566,6 +4617,15 @@ function completeOrder(
 
     if (
         !order
+    ) {
+
+        return;
+    }
+
+
+    if (
+        order.status ===
+            "completed"
     ) {
 
         return;
