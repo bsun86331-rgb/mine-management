@@ -2858,6 +2858,123 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
 
+    function findCurrentVehicleMasterStatus(
+        vehicleNumber
+    ) {
+
+        const id =
+            String(
+                vehicleNumber ||
+                ""
+            );
+
+
+        if (!id) {
+
+            return "";
+        }
+
+
+        for (
+            let index = 0;
+            index <
+                localStorage.length;
+            index++
+        ) {
+
+            const key =
+                localStorage.key(
+                    index
+                );
+
+
+            if (
+                !key ||
+                !/equipment|vehicle|设备|车辆/i.test(
+                    key
+                ) ||
+                [
+                    STORAGE.OPERATIONAL_STATUS,
+                    "equipmentMeterReadings",
+                    "equipmentMaintenanceSettings",
+                    "maintenanceAlerts",
+                    "equipmentMaintenanceRecords",
+                    "equipmentUsageChecks",
+                    "equipmentUsageRecords"
+                ]
+                .includes(
+                    key
+                )
+            ) {
+
+                continue;
+            }
+
+
+            let data;
+
+
+            try {
+
+                data =
+                    JSON.parse(
+                        localStorage.getItem(
+                            key
+                        )
+                    );
+
+            } catch (
+                error
+            ) {
+
+                continue;
+            }
+
+
+            const list =
+                Array.isArray(
+                    data
+                )
+                    ? data
+                    : (
+                        data &&
+                        typeof data ===
+                            "object"
+                            ? [data]
+                            : []
+                    );
+
+
+            const record =
+                list.find(
+                    item =>
+                        String(
+                            item?.equipmentNumber ||
+                            item?.vehicleNumber ||
+                            item?.equipmentId ||
+                            item?.vehicleId ||
+                            item?.number ||
+                            ""
+                        ) ===
+                            id
+                );
+
+
+            if (record) {
+
+                return String(
+                    record.status ||
+                    record.equipmentStatus ||
+                    ""
+                );
+            }
+        }
+
+
+        return "";
+    }
+
+
     function getCurrentVehicleOperationalStatus() {
 
         const vehicle =
@@ -2921,6 +3038,34 @@ document.addEventListener("DOMContentLoaded", function () {
                 );
 
 
+        const masterStatus =
+            findCurrentVehicleMasterStatus(
+                vehicle
+            );
+
+
+        /*
+         * 主设备档案的阻断状态优先于旧 working / available。
+         * 防止历史运行状态覆盖管理员最新“停用”设置。
+         */
+        if (
+            isEquipmentOperationallyBlockedStatus(
+                masterStatus
+            )
+        ) {
+
+            return {
+                vehicle,
+
+                status:
+                    masterStatus,
+
+                source:
+                    "equipment_master"
+            };
+        }
+
+
         if (
             record?.status
         ) {
@@ -2942,10 +3087,13 @@ document.addEventListener("DOMContentLoaded", function () {
             vehicle,
 
             status:
+                masterStatus ||
                 "available",
 
             source:
-                "default"
+                masterStatus
+                    ? "equipment_master"
+                    : "default"
         };
     }
 
