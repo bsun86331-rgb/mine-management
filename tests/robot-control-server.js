@@ -9341,6 +9341,32 @@ async function runProductionSystemBatchRegressionTest() {
                             "selectedPosition",
                             "汽车司机"
                         );
+
+
+                        /*
+                         * 模拟 index.html 真实岗位入口 rememberRolePerson：
+                         * 正式入口不仅保存 currentPersonId / selectedPosition，
+                         * 还会保存 rolePersonIds 与 workerPersonId / workerPosition。
+                         */
+                        localStorage.setItem(
+                            "rolePersonIds",
+                            JSON.stringify({
+                                "汽车司机":
+                                    personId
+                            })
+                        );
+
+
+                        localStorage.setItem(
+                            "workerPersonId",
+                            personId
+                        );
+
+
+                        localStorage.setItem(
+                            "workerPosition",
+                            "汽车司机"
+                        );
                     }
                 );
 
