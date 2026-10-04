@@ -1542,6 +1542,259 @@ function findCurrentTask() {
    当前任务显示
 ========================================================= */
 
+function getExcavatorOperationalState(
+    equipmentId
+) {
+
+    const id =
+        String(
+            equipmentId ||
+            ""
+        )
+        .trim();
+
+
+    if (!id) {
+
+        return {
+            status:
+                "available",
+
+            source:
+                "default"
+        };
+    }
+
+
+    const activeRepairStatuses =
+        new Set([
+            "pending_dispatch",
+            "waiting_entry",
+            "waiting_assignment",
+            "assigned",
+            "working",
+            "waiting_parts",
+            "waiting_inspection",
+            "inspection_passed",
+            "rework"
+        ]);
+
+
+    const activeRepair =
+        readArray(
+            "maintenanceRequests"
+        )
+        .some(
+            item =>
+                String(
+                    item.equipmentId ||
+                    item.equipmentNumber ||
+                    item.vehicleId ||
+                    item.vehicleNumber ||
+                    ""
+                ) ===
+                    id
+                &&
+                activeRepairStatuses.has(
+                    item.status
+                )
+        )
+        ||
+        readArray(
+            "maintenanceWorkOrders"
+        )
+        .some(
+            item =>
+                String(
+                    item.equipmentId ||
+                    item.equipmentNumber ||
+                    item.vehicleId ||
+                    item.vehicleNumber ||
+                    ""
+                ) ===
+                    id
+                &&
+                item.status !==
+                    "completed"
+        );
+
+
+    if (activeRepair) {
+
+        return {
+            status:
+                "maintenance",
+
+            source:
+                "repair_flow"
+        };
+    }
+
+
+    const operational =
+        readArray(
+            "equipmentOperationalStatus"
+        )
+        .find(
+            item =>
+                String(
+                    item.equipmentId ||
+                    ""
+                ) ===
+                    id
+        );
+
+
+    let masterStatus =
+        "";
+
+
+    for (
+        let index = 0;
+        index <
+            localStorage.length;
+        index++
+    ) {
+
+        const key =
+            localStorage.key(
+                index
+            );
+
+
+        if (
+            !key ||
+            !/equipment|vehicle|设备|车辆/i.test(
+                key
+            ) ||
+            [
+                "equipmentOperationalStatus",
+                "equipmentMeterReadings",
+                "equipmentMaintenanceSettings",
+                "maintenanceAlerts",
+                "equipmentMaintenanceRecords",
+                "equipmentUsageChecks",
+                "equipmentUsageRecords"
+            ]
+            .includes(
+                key
+            )
+        ) {
+
+            continue;
+        }
+
+
+        let data;
+
+
+        try {
+
+            data =
+                JSON.parse(
+                    localStorage.getItem(
+                        key
+                    )
+                );
+
+        } catch (
+            error
+        ) {
+
+            continue;
+        }
+
+
+        const list =
+            Array.isArray(
+                data
+            )
+                ? data
+                : (
+                    data &&
+                    typeof data ===
+                        "object"
+                        ? [data]
+                        : []
+                );
+
+
+        const record =
+            list.find(
+                item =>
+                    String(
+                        item?.equipmentNumber ||
+                        item?.vehicleNumber ||
+                        item?.equipmentId ||
+                        item?.vehicleId ||
+                        item?.number ||
+                        ""
+                    ) ===
+                        id
+            );
+
+
+        if (record) {
+
+            masterStatus =
+                String(
+                    record.status ||
+                    record.equipmentStatus ||
+                    ""
+                );
+
+            break;
+        }
+    }
+
+
+    if (
+        [
+            "maintenance",
+            "service",
+            "disabled"
+        ]
+        .includes(
+            masterStatus
+        )
+    ) {
+
+        return {
+            status:
+                masterStatus,
+
+            source:
+                "equipment_master"
+        };
+    }
+
+
+    if (operational?.status) {
+
+        return {
+            status:
+                operational.status,
+
+            source:
+                operational.source ||
+                "operational_status"
+        };
+    }
+
+
+    return {
+        status:
+            masterStatus ||
+            "available",
+
+        source:
+            masterStatus
+                ? "equipment_master"
+                : "default"
+    };
+}
+
+
 function renderCurrentTask() {
 
     const area =
@@ -1608,6 +1861,60 @@ function renderCurrentTask() {
         currentExcavatorAssignment.excavatorId ||
         currentExcavatorAssignment.excavatorNumber ||
         "";
+
+
+    const operationalState =
+        getExcavatorOperationalState(
+            excavatorId
+        );
+
+
+    if (
+        [
+            "maintenance",
+            "service",
+            "disabled"
+        ]
+        .includes(
+            operationalState.status
+        )
+    ) {
+
+        if (badge) {
+
+            badge.textContent =
+                operationalState.status === "maintenance"
+                    ? "维修中"
+                    : operationalState.status === "service"
+                        ? "保养中"
+                        : "已停用";
+
+
+            badge.className =
+                "badge disabled";
+        }
+
+
+        if (area) {
+
+            area.innerHTML = `
+                <div class="warning-box">
+                    当前挖机不可继续生产。<br>
+                    设备：${escapeHtml(excavatorId || "-")}<br>
+                    状态：${escapeHtml(operationalState.status)}
+                </div>
+            `;
+        }
+
+
+        document.getElementById(
+            "tripSection"
+        ).style.display =
+            "none";
+
+
+        return;
+    }
 
 
     const binding =
