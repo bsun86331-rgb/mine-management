@@ -12247,6 +12247,41 @@ function dispatchGetEquipmentOperationalStatus(
         );
 
 
+    const masterStatus =
+        dispatchFindMasterEquipmentStatus(
+            id
+        );
+
+
+    /*
+     * V2.11.2A
+     * 阻断状态优先于旧的 working / available。
+     *
+     * 历史版本可能残留：
+     * - equipmentOperationalStatus = working
+     * - 设备主档 = disabled
+     *
+     * 此时不能让旧运行状态覆盖管理员最新停用状态。
+     */
+    if (
+        dispatchOperationalBlockedStatus(
+            masterStatus
+        )
+    ) {
+
+        return {
+            equipmentId:
+                id,
+
+            status:
+                masterStatus,
+
+            source:
+                "equipment_master"
+        };
+    }
+
+
     if (
         operational?.status
     ) {
@@ -12263,12 +12298,6 @@ function dispatchGetEquipmentOperationalStatus(
                 "operational_status"
         };
     }
-
-
-    const masterStatus =
-        dispatchFindMasterEquipmentStatus(
-            id
-        );
 
 
     return {
