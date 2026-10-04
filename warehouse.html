@@ -960,6 +960,102 @@ const STORAGE = {
     LEDGER: "materialLedger"
 };
 
+/* =========================================================
+   V2.11.1A 库房岗位访问保护
+========================================================= */
+
+function normalizeWarehousePosition(position) {
+    const map = {
+        "库房管理员": "库房管理",
+        "仓库管理员": "库房管理"
+    };
+    return map[position] || position || "";
+}
+
+function getWarehousePersonId(person) {
+    return String(
+        person?.personId ||
+        person?.employeeId ||
+        person?.driverId ||
+        person?.id ||
+        ""
+    );
+}
+
+function isWarehousePersonApproved(person) {
+    if (!person) return false;
+
+    if (
+        person.status === "rejected" ||
+        person.approvalStatus === "rejected" ||
+        person.status === "disabled" ||
+        person.status === "resigned" ||
+        person.personnelStatus === "停用" ||
+        person.personnelStatus === "离职" ||
+        person.personnelStatus === "待审核"
+    ) {
+        return false;
+    }
+
+    return (
+        person.approvalStatus === "approved" ||
+        person.status === "approved" ||
+        person.status === "active" ||
+        person.status === "working" ||
+        person.personnelStatus === "在职可用" ||
+        person.personnelStatus === "作业中"
+    );
+}
+
+function verifyWarehouseAccess() {
+    const records = readArray("personnelRecords");
+    const currentId = String(localStorage.getItem("currentPersonId") || "");
+    const selectedPosition = normalizeWarehousePosition(
+        localStorage.getItem("selectedPosition") || ""
+    );
+
+    let person = null;
+
+    if (currentId) {
+        person = records.find(item =>
+            getWarehousePersonId(item) === currentId
+        ) || null;
+    }
+
+    if (!person && selectedPosition === "库房管理") {
+        const matches = records.filter(item =>
+            normalizeWarehousePosition(item.position) === "库房管理" &&
+            isWarehousePersonApproved(item)
+        );
+
+        if (matches.length === 1) {
+            person = matches[0];
+        }
+    }
+
+    if (
+        !person ||
+        normalizeWarehousePosition(person.position) !== "库房管理" ||
+        !isWarehousePersonApproved(person)
+    ) {
+        alert("当前账号不是已审核的库房管理岗位，不能进入后勤物资库。");
+        location.replace("index.html");
+        return false;
+    }
+
+    localStorage.setItem(
+        "currentPersonId",
+        getWarehousePersonId(person)
+    );
+    localStorage.setItem(
+        "selectedPosition",
+        "库房管理"
+    );
+
+    return true;
+}
+
+
 function readArray(key) {
     try {
         const data = JSON.parse(localStorage.getItem(key));
@@ -999,6 +1095,56 @@ function getMaterials() {
 function findMaterial(materialId) {
     return getMaterials().find(item => item.materialId === materialId) || null;
 }
+
+function getHoldingQuantity(personName, materialId) {
+    return readArray(STORAGE.HOLDERS)
+        .filter(item =>
+            item.status !== "closed" &&
+            String(item.personName || "").trim() === String(personName || "").trim() &&
+            String(item.materialId || "") === String(materialId || "")
+        )
+        .reduce(
+            (sum, item) => sum + Number(item.quantity || 0),
+            0
+        );
+}
+
+function consumeHolding(personName, materialId, quantity, closeReason) {
+    let remaining = Math.max(0, Number(quantity || 0));
+    const holders = readArray(STORAGE.HOLDERS);
+
+    for (const item of holders) {
+        if (remaining <= 0) break;
+
+        if (
+            item.status === "closed" ||
+            String(item.personName || "").trim() !== String(personName || "").trim() ||
+            String(item.materialId || "") !== String(materialId || "")
+        ) {
+            continue;
+        }
+
+        const current = Math.max(0, Number(item.quantity || 0));
+        const used = Math.min(current, remaining);
+
+        item.quantity = current - used;
+        remaining -= used;
+
+        if (item.quantity <= 0) {
+            item.quantity = 0;
+            item.status = "closed";
+            item.closedAt = new Date().toISOString();
+            item.closeReason = closeReason || "returned";
+        } else {
+            item.updatedAt = new Date().toISOString();
+        }
+    }
+
+    saveArray(STORAGE.HOLDERS, holders);
+
+    return remaining === 0;
+}
+
 
 function saveMaterialMaster() {
     const code = value("masterCode");
@@ -1108,6 +1254,11 @@ function approveRequest(requestId) {
         return;
     }
 
+    if (request.status && request.status !== "pending") {
+        alert("该领用单已经处理，不能重复出库。");
+        return;
+    }
+
     const actualQuantity = Number(prompt("请输入实际发放数量：", request.requestQuantity || request.quantity || 1));
 
     if (!actualQuantity || actualQuantity <= 0) {
@@ -1210,6 +1361,16 @@ function submitRecycle() {
         return;
     }
 
+    const holdingQty = getHoldingQuantity(personName, materialId);
+
+    if (holdingQty < quantity) {
+        alert(
+            "回收数量超过该员工当前持有数量。当前持有：" +
+            holdingQty
+        );
+        return;
+    }
+
     const records = readArray(STORAGE.RECYCLES);
 
     records.push({
@@ -1232,7 +1393,7 @@ function submitRecycle() {
     saveArray(STORAGE.MATERIALS, materials);
 
     addLedger({
-        type: type === "exchange" ? "以旧换新回收" : "回收",
+        type: type === "exchange" ? "以旧换新回收待检" : "回收待检",
         materialId,
         materialName: material.name,
         quantity,
@@ -1261,10 +1422,29 @@ function inspectRecycle(recycleId, result) {
         return;
     }
 
-    material.pendingInspectQty = Math.max(0, Number(material.pendingInspectQty || 0) - Number(record.quantity || 0));
+    const quantity = Math.max(0, Number(record.quantity || 0));
+    material.pendingInspectQty = Math.max(
+        0,
+        Number(material.pendingInspectQty || 0) - quantity
+    );
 
     if (result === "available") {
-        material.availableQty = Number(material.availableQty || 0) + Number(record.quantity || 0);
+        if (!consumeHolding(
+            record.personName,
+            record.materialId,
+            quantity,
+            "recycle_returned"
+        )) {
+            alert("员工持有记录不足，无法完成回收入库。");
+            return;
+        }
+
+        material.availableQty = Number(material.availableQty || 0) + quantity;
+        material.issuedQty = Math.max(
+            0,
+            Number(material.issuedQty || 0) - quantity
+        );
+
         record.status = "returned_to_stock";
         record.inspectionResult = "可继续使用";
 
@@ -1272,15 +1452,43 @@ function inspectRecycle(recycleId, result) {
             type: "回收入库",
             materialId: material.materialId,
             materialName: material.name,
-            quantity: record.quantity,
+            quantity,
             personName: record.personName,
             remark: "检查合格，重新入库"
         });
 
     } else {
-        material.pendingScrapQty = Number(material.pendingScrapQty || 0) + Number(record.quantity || 0);
+        material.pendingScrapQty =
+            Number(material.pendingScrapQty || 0) + quantity;
+
         record.status = "pending_scrap";
         record.inspectionResult = "不可继续使用";
+
+        const scraps = readArray(STORAGE.SCRAPS);
+
+        if (!scraps.some(item => item.sourceRecycleId === recycleId)) {
+            scraps.push({
+                scrapId: createId("SCRAP"),
+                sourceRecycleId: recycleId,
+                materialId: record.materialId,
+                materialName: record.materialName,
+                quantity,
+                personName: record.personName,
+                reason: "回收检查不合格",
+                status: "pending_approval",
+                createdAt: new Date().toISOString()
+            });
+            saveArray(STORAGE.SCRAPS, scraps);
+        }
+
+        addLedger({
+            type: "回收转待报废",
+            materialId: material.materialId,
+            materialName: material.name,
+            quantity,
+            personName: record.personName,
+            remark: "检查不合格，已自动生成报废审批"
+        });
     }
 
     record.inspectedAt = new Date().toISOString();
@@ -1297,13 +1505,23 @@ function submitScrap() {
     const personName = value("scrapPersonName");
     const reason = value("scrapReason");
 
-    if (!materialId || !quantity || quantity <= 0 || !reason) {
-        alert("请完整填写物资、数量和报废原因。");
+    if (!materialId || !quantity || quantity <= 0 || !reason || !personName) {
+        alert("请完整填写物资、数量、原领用人和报废原因。");
         return;
     }
 
     const material = findMaterial(materialId);
     if (!material) return;
+
+    const holdingQty = getHoldingQuantity(personName, materialId);
+
+    if (holdingQty < quantity) {
+        alert(
+            "报废数量超过该员工当前持有数量。当前持有：" +
+            holdingQty
+        );
+        return;
+    }
 
     const records = readArray(STORAGE.SCRAPS);
 
@@ -1341,11 +1559,43 @@ function approveScrap(scrapId) {
     const material = materials.find(item => item.materialId === record.materialId);
     if (!material) return;
 
-    material.pendingScrapQty = Math.max(0, Number(material.pendingScrapQty || 0) - Number(record.quantity || 0));
-    material.scrappedQty = Number(material.scrappedQty || 0) + Number(record.quantity || 0);
+    const quantity = Math.max(0, Number(record.quantity || 0));
+
+    if (!consumeHolding(
+        record.personName,
+        record.materialId,
+        quantity,
+        "scrapped"
+    )) {
+        alert("员工持有记录不足，无法批准报废。");
+        return;
+    }
+
+    material.pendingScrapQty = Math.max(
+        0,
+        Number(material.pendingScrapQty || 0) - quantity
+    );
+    material.issuedQty = Math.max(
+        0,
+        Number(material.issuedQty || 0) - quantity
+    );
+    material.scrappedQty =
+        Number(material.scrappedQty || 0) + quantity;
 
     record.status = "scrapped";
     record.approvedAt = new Date().toISOString();
+
+    if (record.sourceRecycleId) {
+        const recycles = readArray(STORAGE.RECYCLES);
+        const recycle = recycles.find(
+            item => item.recycleId === record.sourceRecycleId
+        );
+        if (recycle) {
+            recycle.status = "scrapped";
+            recycle.scrappedAt = record.approvedAt;
+            saveArray(STORAGE.RECYCLES, recycles);
+        }
+    }
 
     saveArray(STORAGE.MATERIALS, materials);
     saveArray(STORAGE.SCRAPS, records);
@@ -1354,7 +1604,7 @@ function approveScrap(scrapId) {
         type: "报废核销",
         materialId: material.materialId,
         materialName: material.name,
-        quantity: record.quantity,
+        quantity,
         personName: record.personName || "-",
         remark: record.reason
     });
@@ -1376,6 +1626,16 @@ function submitLost() {
 
     const material = findMaterial(materialId);
     if (!material) return;
+
+    const holdingQty = getHoldingQuantity(personName, materialId);
+
+    if (holdingQty < quantity) {
+        alert(
+            "丢失数量超过该员工当前持有数量。当前持有：" +
+            holdingQty
+        );
+        return;
+    }
 
     const records = readArray(STORAGE.LOSTS);
 
@@ -1418,8 +1678,26 @@ function confirmLostWriteOff(lostId) {
     const material = materials.find(item => item.materialId === record.materialId);
     if (!material) return;
 
-    material.pendingLostQty = Math.max(0, Number(material.pendingLostQty || 0) - Number(record.quantity || 0));
-    material.issuedQty = Math.max(0, Number(material.issuedQty || 0) - Number(record.quantity || 0));
+    const quantity = Math.max(0, Number(record.quantity || 0));
+
+    if (!consumeHolding(
+        record.personName,
+        record.materialId,
+        quantity,
+        "lost_writeoff"
+    )) {
+        alert("员工持有记录不足，无法完成丢失核销。");
+        return;
+    }
+
+    material.pendingLostQty = Math.max(
+        0,
+        Number(material.pendingLostQty || 0) - quantity
+    );
+    material.issuedQty = Math.max(
+        0,
+        Number(material.issuedQty || 0) - quantity
+    );
 
     record.status = "written_off";
     record.writeOffAt = new Date().toISOString();
@@ -1431,7 +1709,7 @@ function confirmLostWriteOff(lostId) {
         type: "丢失核销",
         materialId: material.materialId,
         materialName: material.name,
-        quantity: record.quantity,
+        quantity,
         personName: record.personName,
         remark: "赔偿金额：" + Number(record.compensationAmount || 0)
     });
@@ -1439,7 +1717,7 @@ function confirmLostWriteOff(lostId) {
     renderAll();
 }
 
-function addLedger(data) {
+function addLedger(function addLedger(data) {
     const records = readArray(STORAGE.LEDGER);
 
     records.push({
@@ -1806,29 +2084,52 @@ function initializeDemoData() {
 }
 
 function showReportPreview(type) {
+    const ledger = readArray(STORAGE.LEDGER);
     const materials = getMaterials();
-    const available = materials.reduce((s, i) => s + Number(i.availableQty || 0), 0);
-    const issued = materials.reduce((s, i) => s + Number(i.issuedQty || 0), 0);
+    const now = new Date();
+    const dayKey = now.toISOString().slice(0, 10);
+    const monthKey = dayKey.slice(0, 7);
 
-    if (type === "daily") {
-        alert(
-            "库存日报预览\n\n" +
-            "物资种类：" + materials.length + "\n" +
-            "当前可用库存：" + available + "\n" +
-            "当前已发放：" + issued + "\n\n" +
-            "正式日报将在 V3.0 根据每日业务流水自动生成。"
-        );
-    } else {
-        alert(
-            "月度物资报表预览\n\n" +
-            "当前物资种类：" + materials.length + "\n" +
-            "当前可用库存：" + available + "\n\n" +
-            "V3.0 后自动计算月初库存、本月入库、本月领用、本月回收、本月报废、本月丢失和月末库存。"
-        );
-    }
+    const rows = ledger.filter(item => {
+        const key = String(item.createdAt || "").slice(0, type === "daily" ? 10 : 7);
+        return key === (type === "daily" ? dayKey : monthKey);
+    });
+
+    const sumType = matcher =>
+        rows
+            .filter(item => matcher.test(String(item.type || "")))
+            .reduce((sum, item) => sum + Number(item.quantity || 0), 0);
+
+    const inbound = sumType(/入库/);
+    const outbound = sumType(/^出库$/);
+    const recycled = sumType(/回收入库/);
+    const scrapped = sumType(/报废核销/);
+    const lost = sumType(/丢失核销/);
+    const available = materials.reduce(
+        (sum, item) => sum + Number(item.availableQty || 0),
+        0
+    );
+    const issued = materials.reduce(
+        (sum, item) => sum + Number(item.issuedQty || 0),
+        0
+    );
+
+    alert(
+        (type === "daily" ? "库存日报" : "月度物资报表") +
+        "\n\n统计范围：" +
+        (type === "daily" ? dayKey : monthKey) +
+        "\n入库：" + inbound +
+        "\n出库：" + outbound +
+        "\n回收入库：" + recycled +
+        "\n报废核销：" + scrapped +
+        "\n丢失核销：" + lost +
+        "\n当前可用库存：" + available +
+        "\n当前已发放：" + issued +
+        "\n业务流水：" + rows.length + " 条"
+    );
 }
 
-function value(id) {
+function value(function value(id) {
     return (document.getElementById(id)?.value || "").trim();
 }
 
@@ -1861,7 +2162,9 @@ function escapeJs(value) {
         .replaceAll("\r", "\\r");
 }
 
-renderAll();
+if (verifyWarehouseAccess()) {
+    renderAll();
+}
 </script>
 
 </body>
