@@ -9354,8 +9354,59 @@ async function runProductionSystemBatchRegressionTest() {
             );
 
 
-            await page.waitForTimeout(
-                300
+            /*
+             * driver-work.html 的身份恢复逻辑位于外部 js/driver-work.js。
+             * GitHub Pages 首次加载或缓存更新时，固定等待 300ms 偶发早于
+             * 身份恢复完成，因此这里等待“已生成 driverProfile”或“已发生跳转”。
+             */
+            await page.waitForFunction(
+                () => {
+
+                    const currentPage =
+                        location.pathname
+                            .split(
+                                "/"
+                            )
+                            .pop();
+
+
+                    if (
+                        currentPage !==
+                            "driver-work.html"
+                    ) {
+
+                        return true;
+                    }
+
+
+                    try {
+
+                        const profile =
+                            JSON.parse(
+                                localStorage.getItem(
+                                    "driverProfile"
+                                ) ||
+                                "null"
+                            );
+
+
+                        return Boolean(
+                            profile?.personId ||
+                            profile?.driverId
+                        );
+
+                    } catch (
+                        error
+                    ) {
+
+                        return false;
+                    }
+                },
+                null,
+                {
+                    timeout:
+                        10000
+                }
             );
 
 
