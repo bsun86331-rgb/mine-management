@@ -1143,6 +1143,11 @@ function isApproved(
 
     if (
 
+        person.enabled ===
+            false
+
+        ||
+
         person.status ===
             "rejected"
 
@@ -1150,6 +1155,16 @@ function isApproved(
 
         person.approvalStatus ===
             "rejected"
+
+        ||
+
+        person.status ===
+            "pending"
+
+        ||
+
+        person.approvalStatus ===
+            "pending"
 
         ||
 
@@ -1163,6 +1178,16 @@ function isApproved(
 
         ||
 
+        person.status ===
+            "leave"
+
+        ||
+
+        person.personnelStatus ===
+            "待审核"
+
+        ||
+
         person.personnelStatus ===
             "停用"
 
@@ -1170,6 +1195,11 @@ function isApproved(
 
         person.personnelStatus ===
             "离职"
+
+        ||
+
+        person.personnelStatus ===
+            "请假"
 
     ) {
 
@@ -1200,11 +1230,6 @@ function isApproved(
 
         ||
 
-        person.status ===
-            "leave"
-
-        ||
-
         person.personnelStatus ===
             "在职可用"
 
@@ -1212,11 +1237,6 @@ function isApproved(
 
         person.personnelStatus ===
             "作业中"
-
-        ||
-
-        person.personnelStatus ===
-            "请假"
 
     );
 
