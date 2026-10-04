@@ -1736,14 +1736,23 @@ function getExcavatorOperationalState(
 
         if (record) {
 
-            masterStatus =
+            const candidateStatus =
                 String(
                     record.status ||
                     record.equipmentStatus ||
                     ""
                 );
 
-            break;
+
+            if (
+                candidateStatus
+            ) {
+
+                masterStatus =
+                    candidateStatus;
+
+                break;
+            }
         }
     }
 
