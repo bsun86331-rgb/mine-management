@@ -553,7 +553,8 @@ const COVERAGE_MODULES = [
 
         cases: [
             "调度端辅助车辆完成回传",
-            "A组辅助车辆调度报表完整闭环"
+            "A组辅助车辆调度报表完整闭环",
+            "第六批任务版本冲突与审计日志一致性批量回归"
         ]
     },
     {
@@ -8714,6 +8715,408 @@ async function runFifthBatchLegacyMigrationCompatibilityTest() {
         robotMessage(
             botName,
             "第五批第三轮旧数据迁移兼容一致性批量回归失败：" +
+            message
+        );
+
+        throw error;
+
+    } finally {
+
+        if (
+            page &&
+            !page.isClosed()
+        ) {
+
+            await page.close()
+                .catch(
+                    () => {}
+                );
+        }
+    }
+}
+
+
+
+async function runSixthBatchTaskVersionAuditTest() {
+
+    const botName =
+        "TestManager";
+
+    let page =
+        null;
+
+    try {
+
+        await ensureBrowser();
+
+        updateBot(
+            botName,
+            "running",
+            "正在执行第六批任务版本冲突与审计日志一致性批量回归"
+        );
+
+        robotMessage(
+            botName,
+            "步骤 1/3：打开任务编辑页并保存初始版本快照。"
+        );
+
+        page =
+            await browserContext.newPage();
+
+        page.on(
+            "dialog",
+            async dialog =>
+                await dialog.accept()
+                    .catch(
+                        () => {}
+                    )
+        );
+
+        await page.addInitScript(
+            () => {
+
+                const personId =
+                    "TEST-DISPATCH-VERSION-001";
+
+                localStorage.setItem(
+                    "personnelRecords",
+                    JSON.stringify([
+                        {
+                            personId,
+                            employeeId:
+                                personId,
+                            name:
+                                "TEST-车队长",
+                            position:
+                                "车队长",
+                            status:
+                                "active",
+                            approvalStatus:
+                                "approved",
+                            personnelStatus:
+                                "在职可用",
+                            enabled:
+                                true,
+                            testFixture:
+                                true
+                        }
+                    ])
+                );
+
+                localStorage.setItem(
+                    "currentPersonId",
+                    personId
+                );
+
+                localStorage.setItem(
+                    "selectedPosition",
+                    "车队长"
+                );
+
+                localStorage.setItem(
+                    "transportZones",
+                    JSON.stringify([
+                        {
+                            zoneId:
+                                "TEST-ZONE-LOAD-001",
+                            name:
+                                "TEST装载区",
+                            zoneType:
+                                "loading",
+                            enabled:
+                                true
+                        },
+                        {
+                            zoneId:
+                                "TEST-ZONE-UNLOAD-001",
+                            name:
+                                "TEST卸载区",
+                            zoneType:
+                                "unloading",
+                            enabled:
+                                true
+                        }
+                    ])
+                );
+
+                localStorage.setItem(
+                    "dispatchPublishedTasks",
+                    JSON.stringify([
+                        {
+                            taskId:
+                                "TEST-TASK-CONFLICT-001",
+                            dispatchTaskId:
+                                "TEST-TASK-CONFLICT-001",
+                            taskName:
+                                "TEST初始任务",
+                            loadingPoint:
+                                "TEST装载区",
+                            loadingArea:
+                                "TEST装载区",
+                            allowedUnloadingZones: [
+                                "TEST卸载区"
+                            ],
+                            unloadingZones: [
+                                "TEST卸载区"
+                            ],
+                            unloadingPoint:
+                                "TEST卸载区",
+                            status:
+                                "active",
+                            masterTask:
+                                true,
+                            createdAt:
+                                "2026-10-05T00:00:00.000Z",
+                            updatedAt:
+                                "2026-10-05T00:00:00.000Z",
+                            testFixture:
+                                true
+                        }
+                    ])
+                );
+
+                localStorage.setItem(
+                    "dispatchTaskAuditLog",
+                    "[]"
+                );
+            }
+        );
+
+        await page.goto(
+            "dispatch.html",
+            {
+                waitUntil:
+                    "domcontentloaded"
+            }
+        );
+
+        await page.waitForTimeout(
+            300
+        );
+
+        await page.evaluate(
+            () => {
+
+                openTaskEditorFromCoreList(
+                    "TEST-TASK-CONFLICT-001"
+                );
+            }
+        );
+
+        robotMessage(
+            botName,
+            "步骤 2/3：模拟另一页面先更新任务，验证旧编辑页保存时被冲突保护拦截。"
+        );
+
+        const conflictState =
+            await page.evaluate(
+                () => {
+
+                    const tasks =
+                        JSON.parse(
+                            localStorage.getItem(
+                                "dispatchPublishedTasks"
+                            ) ||
+                            "[]"
+                        );
+
+                    const task =
+                        tasks.find(
+                            item =>
+                                item.taskId ===
+                                    "TEST-TASK-CONFLICT-001"
+                        );
+
+                    task.taskName =
+                        "TEST其他页面新版本";
+
+                    task.updatedAt =
+                        "2026-10-05T00:05:00.000Z";
+
+                    localStorage.setItem(
+                        "dispatchPublishedTasks",
+                        JSON.stringify(
+                            tasks
+                        )
+                    );
+
+                    document.getElementById(
+                        "taskManualName"
+                    ).value =
+                        "TEST旧页面覆盖尝试";
+
+                    saveTaskFromForm();
+
+                    const latest =
+                        JSON.parse(
+                            localStorage.getItem(
+                                "dispatchPublishedTasks"
+                            ) ||
+                            "[]"
+                        )
+                        .find(
+                            item =>
+                                item.taskId ===
+                                    "TEST-TASK-CONFLICT-001"
+                        );
+
+                    const audit =
+                        JSON.parse(
+                            localStorage.getItem(
+                                "dispatchTaskAuditLog"
+                            ) ||
+                            "[]"
+                        );
+
+                    return {
+                        taskName:
+                            latest?.taskName ||
+                            "",
+
+                        updatedAt:
+                            latest?.updatedAt ||
+                            "",
+
+                        updateAuditCount:
+                            audit.filter(
+                                item =>
+                                    item.action ===
+                                        "update_task"
+                            ).length
+                    };
+                }
+            );
+
+        if (
+            conflictState.taskName !==
+                "TEST其他页面新版本" ||
+            conflictState.updatedAt !==
+                "2026-10-05T00:05:00.000Z" ||
+            conflictState.updateAuditCount !==
+                0
+        ) {
+
+            throw new Error(
+                "第六批回归：旧页面覆盖了较新的任务版本，或冲突保存错误写入审计日志"
+            );
+        }
+
+        robotMessage(
+            botName,
+            "步骤 3/3：重新打开最新版本后正常保存，验证生成唯一 update_task 审计记录。"
+        );
+
+        const validState =
+            await page.evaluate(
+                () => {
+
+                    openTaskEditorFromCoreList(
+                        "TEST-TASK-CONFLICT-001"
+                    );
+
+                    document.getElementById(
+                        "taskManualName"
+                    ).value =
+                        "TEST确认后的新版本";
+
+                    saveTaskFromForm();
+
+                    const latest =
+                        JSON.parse(
+                            localStorage.getItem(
+                                "dispatchPublishedTasks"
+                            ) ||
+                            "[]"
+                        )
+                        .find(
+                            item =>
+                                item.taskId ===
+                                    "TEST-TASK-CONFLICT-001"
+                        );
+
+                    const audit =
+                        JSON.parse(
+                            localStorage.getItem(
+                                "dispatchTaskAuditLog"
+                            ) ||
+                            "[]"
+                        )
+                        .filter(
+                            item =>
+                                item.action ===
+                                    "update_task" &&
+                                item.taskId ===
+                                    "TEST-TASK-CONFLICT-001"
+                        );
+
+                    return {
+                        taskName:
+                            latest?.taskName ||
+                            "",
+
+                        auditCount:
+                            audit.length,
+
+                        previousName:
+                            audit[0]
+                                ?.previous
+                                ?.taskName ||
+                            ""
+                    };
+                }
+            );
+
+        if (
+            validState.taskName !==
+                "TEST确认后的新版本" ||
+            validState.auditCount !==
+                1 ||
+            validState.previousName !==
+                "TEST其他页面新版本"
+        ) {
+
+            throw new Error(
+                "第六批回归：正常任务修改或审计快照不完整"
+            );
+        }
+
+        updateBot(
+            botName,
+            "pass",
+            "第六批任务版本冲突与审计日志一致性批量回归通过"
+        );
+
+        robotMessage(
+            botName,
+            "第六批回归通过：旧页面不能覆盖新任务版本，正常修改会生成带前一版本快照的审计日志。"
+        );
+
+        return {
+            ok:
+                true,
+            action:
+                "sixth-batch-task-version-audit"
+        };
+
+    } catch (
+        error
+    ) {
+
+        const message =
+            error?.message ||
+            String(
+                error
+            );
+
+        updateBot(
+            botName,
+            "fail",
+            message
+        );
+
+        robotMessage(
+            botName,
+            "第六批任务版本冲突与审计日志一致性批量回归失败：" +
             message
         );
 
@@ -17748,6 +18151,13 @@ async function runAllCoreRegressionTests() {
         "第五批第三轮旧数据迁移兼容一致性批量回归",
         async () =>
             await runFifthBatchLegacyMigrationCompatibilityTest()
+    );
+
+
+    await runCase(
+        "第六批任务版本冲突与审计日志一致性批量回归",
+        async () =>
+            await runSixthBatchTaskVersionAuditTest()
     );
 
 
