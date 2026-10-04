@@ -2173,6 +2173,15 @@ function escapeJs(value) {
 
 if (verifyWarehouseAccess()) {
     renderAll();
+
+    window.addEventListener("storage", event => {
+        if (
+            Object.values(STORAGE).includes(event.key) ||
+            event.key === "personnelRecords"
+        ) {
+            renderAll();
+        }
+    });
 }
 </script>
 
