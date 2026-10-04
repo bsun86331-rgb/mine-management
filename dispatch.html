@@ -23621,6 +23621,9 @@ let taskFormMode =
 let taskFormEditingTaskId =
     "";
 
+let taskFormEditingUpdatedAt =
+    "";
+
 
 function coreReadArray(
     key
@@ -26681,6 +26684,16 @@ function setTaskFormMode(
         );
 
 
+    if (
+        mode !==
+            "edit"
+    ) {
+
+        taskFormEditingUpdatedAt =
+            "";
+    }
+
+
     const button =
         document.getElementById(
             "generateTaskButton"
@@ -27152,6 +27165,15 @@ function openTaskEditorFromCoreList(
     );
 
 
+    taskFormEditingUpdatedAt =
+        String(
+            task.updatedAt ||
+            task.publishedAt ||
+            task.createdAt ||
+            ""
+        );
+
+
     const taskName =
         document.getElementById(
             "taskManualName"
@@ -27208,6 +27230,96 @@ function openTaskEditorFromCoreList(
 
 
     scrollToTaskCreateSection();
+}
+
+
+function appendDispatchTaskAudit(
+    action,
+    task,
+    details =
+        {}
+) {
+
+    const key =
+        "dispatchTaskAuditLog";
+
+
+    let rows =
+        [];
+
+
+    try {
+
+        const parsed =
+            JSON.parse(
+                localStorage.getItem(
+                    key
+                ) ||
+                "[]"
+            );
+
+
+        rows =
+            Array.isArray(
+                parsed
+            )
+                ? parsed
+                : [];
+
+    } catch (
+        error
+    ) {
+
+        rows =
+            [];
+    }
+
+
+    rows.push({
+        auditId:
+            "DISPATCH_AUDIT_" +
+            Date.now() +
+            "_" +
+            Math.random()
+                .toString(36)
+                .slice(2, 7),
+
+        action:
+            action,
+
+        taskId:
+            shiftTaskId(
+                task
+            ),
+
+        taskName:
+            task?.taskName ||
+            "",
+
+        updatedAt:
+            task?.updatedAt ||
+            "",
+
+        createdAt:
+            new Date()
+                .toISOString(),
+
+        operator:
+            localStorage.getItem(
+                "currentPersonId"
+            ) ||
+            "dispatch",
+
+        ...details
+    });
+
+
+    localStorage.setItem(
+        key,
+        JSON.stringify(
+            rows
+        )
+    );
 }
 
 
@@ -27328,6 +27440,36 @@ function saveTaskFromForm() {
         }
 
 
+        const latestUpdatedAt =
+            String(
+                task.updatedAt ||
+                task.publishedAt ||
+                task.createdAt ||
+                ""
+            );
+
+
+        if (
+            taskFormEditingUpdatedAt &&
+            latestUpdatedAt !==
+                taskFormEditingUpdatedAt
+        ) {
+
+            alert(
+                "保存失败：该任务已经被其他页面或其他操作修改。\n\n" +
+                "为避免旧页面覆盖新数据，请重新打开任务后再修改。"
+            );
+
+            return;
+        }
+
+
+        const beforeSnapshot =
+            shiftDeepClone(
+                task
+            );
+
+
         /*
          * 编辑任务时保留原 taskId / 编号，不新建。
          */
@@ -27363,6 +27505,20 @@ function saveTaskFromForm() {
         savePublishedShiftTasks(
             tasks
         );
+
+
+        appendDispatchTaskAudit(
+            "update_task",
+            task,
+            {
+                previous:
+                    beforeSnapshot
+            }
+        );
+
+
+        taskFormEditingUpdatedAt =
+            task.updatedAt;
 
 
         alert(
@@ -27428,6 +27584,15 @@ function saveTaskFromForm() {
 
         savePublishedShiftTasks(
             tasks
+        );
+
+
+        appendDispatchTaskAudit(
+            "create_task",
+            tasks[
+                tasks.length -
+                1
+            ]
         );
 
 
