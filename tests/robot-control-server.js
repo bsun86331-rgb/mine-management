@@ -486,7 +486,8 @@ const COVERAGE_MODULES = [
             "等待配件流程闭环",
             "第四批人员状态与月报一致性批量回归",
             "第五批数据持久化与重复提交一致性批量回归",
-            "第五批第二轮多页面同步与异常恢复一致性批量回归"
+            "第五批第二轮多页面同步与异常恢复一致性批量回归",
+            "第五批第三轮旧数据迁移兼容一致性批量回归"
         ]
     },
     {
@@ -8450,6 +8451,285 @@ async function runFifthBatchCrossTabRecoveryTest() {
                         () => {}
                     );
             }
+        }
+    }
+}
+
+
+
+async function runFifthBatchLegacyMigrationCompatibilityTest() {
+
+    const botName =
+        "TestManager";
+
+    let page =
+        null;
+
+    try {
+
+        await ensureBrowser();
+
+        updateBot(
+            botName,
+            "running",
+            "正在执行第五批第三轮旧数据迁移兼容一致性批量回归"
+        );
+
+        robotMessage(
+            botName,
+            "步骤 1/2：构造两条没有 reportId / requestId 的旧版维修故障记录。"
+        );
+
+        page =
+            await browserContext.newPage();
+
+        page.on(
+            "dialog",
+            async dialog =>
+                await dialog.accept()
+                    .catch(
+                        () => {}
+                    )
+        );
+
+        await page.addInitScript(
+            () => {
+
+                const personId =
+                    "TEST-MAINT-LEGACY-001";
+
+                localStorage.setItem(
+                    "personnelRecords",
+                    JSON.stringify([
+                        {
+                            personId,
+                            employeeId:
+                                personId,
+                            name:
+                                "TEST-维修管理",
+                            position:
+                                "维修管理",
+                            status:
+                                "active",
+                            approvalStatus:
+                                "approved",
+                            personnelStatus:
+                                "在职可用",
+                            enabled:
+                                true,
+                            testFixture:
+                                true
+                        }
+                    ])
+                );
+
+                localStorage.setItem(
+                    "currentPersonId",
+                    personId
+                );
+
+                localStorage.setItem(
+                    "selectedPosition",
+                    "维修管理"
+                );
+
+                localStorage.setItem(
+                    "maintenanceRequests",
+                    "[]"
+                );
+
+                localStorage.setItem(
+                    "maintenanceReports",
+                    JSON.stringify([
+                        {
+                            personId:
+                                "TEST-LEGACY-PERSON-001",
+                            personName:
+                                "TEST-旧记录1",
+                            vehicleType:
+                                "卡车",
+                            vehicleNumber:
+                                "TEST-LEGACY-EQ-001",
+                            faultType:
+                                "发动机",
+                            description:
+                                "TEST-旧版无ID故障1",
+                            level:
+                                "一般",
+                            createdAt:
+                                "2026-10-01T01:00:00.000Z",
+                            testFixture:
+                                true
+                        },
+                        {
+                            personId:
+                                "TEST-LEGACY-PERSON-002",
+                            personName:
+                                "TEST-旧记录2",
+                            vehicleType:
+                                "挖机",
+                            vehicleNumber:
+                                "TEST-LEGACY-EQ-002",
+                            faultType:
+                                "液压",
+                            description:
+                                "TEST-旧版无ID故障2",
+                            level:
+                                "严重",
+                            createdAt:
+                                "2026-10-01T02:00:00.000Z",
+                            testFixture:
+                                true
+                        }
+                    ])
+                );
+            }
+        );
+
+        await page.goto(
+            "maintenance.html",
+            {
+                waitUntil:
+                    "domcontentloaded"
+            }
+        );
+
+        await page.waitForTimeout(
+            250
+        );
+
+        robotMessage(
+            botName,
+            "步骤 2/2：验证两条无ID旧记录都迁移成功，并且重复执行迁移不会再次新增。"
+        );
+
+        const state =
+            await page.evaluate(
+                () => {
+
+                    const before =
+                        JSON.parse(
+                            localStorage.getItem(
+                                "maintenanceRequests"
+                            ) ||
+                            "[]"
+                        )
+                        .filter(
+                            item =>
+                                String(
+                                    item.legacyFingerprint ||
+                                    ""
+                                )
+                                .startsWith(
+                                    "fp|"
+                                )
+                        );
+
+                    migrateLegacyReports();
+
+                    const after =
+                        JSON.parse(
+                            localStorage.getItem(
+                                "maintenanceRequests"
+                            ) ||
+                            "[]"
+                        )
+                        .filter(
+                            item =>
+                                String(
+                                    item.legacyFingerprint ||
+                                    ""
+                                )
+                                .startsWith(
+                                    "fp|"
+                                )
+                        );
+
+                    return {
+                        beforeCount:
+                            before.length,
+
+                        afterCount:
+                            after.length,
+
+                        fingerprints:
+                            after.map(
+                                item =>
+                                    item.legacyFingerprint
+                            )
+                    };
+                }
+            );
+
+        if (
+            state.beforeCount !==
+                2 ||
+            state.afterCount !==
+                2 ||
+            new Set(
+                state.fingerprints
+            ).size !==
+                2
+        ) {
+
+            throw new Error(
+                "第五批第三轮：旧版无ID维修记录迁移存在丢失或重复"
+            );
+        }
+
+        updateBot(
+            botName,
+            "pass",
+            "第五批第三轮旧数据迁移兼容一致性批量回归通过"
+        );
+
+        robotMessage(
+            botName,
+            "第五批第三轮通过：无ID旧维修记录不会丢失，重复迁移也不会重复新增。"
+        );
+
+        return {
+            ok:
+                true,
+            action:
+                "fifth-batch-legacy-migration-compatibility"
+        };
+
+    } catch (
+        error
+    ) {
+
+        const message =
+            error?.message ||
+            String(
+                error
+            );
+
+        updateBot(
+            botName,
+            "fail",
+            message
+        );
+
+        robotMessage(
+            botName,
+            "第五批第三轮旧数据迁移兼容一致性批量回归失败：" +
+            message
+        );
+
+        throw error;
+
+    } finally {
+
+        if (
+            page &&
+            !page.isClosed()
+        ) {
+
+            await page.close()
+                .catch(
+                    () => {}
+                );
         }
     }
 }
@@ -17461,6 +17741,13 @@ async function runAllCoreRegressionTests() {
         "第五批第二轮多页面同步与异常恢复一致性批量回归",
         async () =>
             await runFifthBatchCrossTabRecoveryTest()
+    );
+
+
+    await runCase(
+        "第五批第三轮旧数据迁移兼容一致性批量回归",
+        async () =>
+            await runFifthBatchLegacyMigrationCompatibilityTest()
     );
 
 
