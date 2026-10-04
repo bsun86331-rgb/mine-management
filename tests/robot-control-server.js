@@ -5346,9 +5346,94 @@ async function runMaintenanceWarehouseReportCenterTest() {
                         };
 
 
+                    const currentMonth =
+                        (() => {
+
+                            const now =
+                                new Date();
+
+
+                            return [
+                                now.getFullYear(),
+                                String(
+                                    now.getMonth() +
+                                    1
+                                )
+                                .padStart(
+                                    2,
+                                    "0"
+                                )
+                            ]
+                            .join(
+                                "-"
+                            );
+                        })();
+
+
+                    const maintenanceCostMonthKey =
+                        item => {
+
+                            const raw =
+                                item?.issuedAt ||
+                                item?.completedAt ||
+                                item?.createdAt ||
+                                item?.updatedAt ||
+                                "";
+
+
+                            if (!raw) {
+                                return "";
+                            }
+
+
+                            const date =
+                                new Date(
+                                    raw
+                                );
+
+
+                            if (
+                                Number.isNaN(
+                                    date.getTime()
+                                )
+                            ) {
+                                return String(
+                                    raw
+                                )
+                                .slice(
+                                    0,
+                                    7
+                                );
+                            }
+
+
+                            return [
+                                date.getFullYear(),
+                                String(
+                                    date.getMonth() +
+                                    1
+                                )
+                                .padStart(
+                                    2,
+                                    "0"
+                                )
+                            ]
+                            .join(
+                                "-"
+                            );
+                        };
+
+
                     const costs =
                         readArray(
                             "maintenanceCosts"
+                        )
+                        .filter(
+                            item =>
+                                maintenanceCostMonthKey(
+                                    item
+                                ) ===
+                                    currentMonth
                         );
 
 
