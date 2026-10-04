@@ -4304,6 +4304,31 @@ function submitLeave() {
 
     renderAll();
 
+window.addEventListener(
+    "storage",
+    event => {
+
+        if (
+            [
+                STORAGE.TASKS,
+                STORAGE.WORK_RECORDS,
+                STORAGE.VEHICLE_PROFILE,
+                "personnelRecords",
+                "equipmentOperationalStatus",
+                "maintenanceRequests",
+                "maintenanceWorkOrders"
+            ]
+            .includes(
+                event.key
+            )
+        ) {
+
+            renderAll();
+        }
+    }
+);
+
+
 
     alert(
         "请假申请已经提交。"
@@ -4633,10 +4658,109 @@ function goFuelRequest() {
    总刷新
 ========================================================= */
 
+function recoverStaleActiveWork() {
+
+    const active =
+        getActiveWorkRecord();
+
+
+    if (
+        !active
+    ) {
+
+        return;
+    }
+
+
+    const taskId =
+        String(
+            active.taskId ||
+            ""
+        );
+
+
+    if (
+        !taskId
+    ) {
+
+        return;
+    }
+
+
+    const task =
+        getTasks()
+            .find(
+                item =>
+                    String(
+                        item.taskId ||
+                        item.id ||
+                        ""
+                    ) ===
+                        taskId
+            );
+
+
+    if (
+        task &&
+        (
+            task.status ===
+                "pending" ||
+            task.status ===
+                "active"
+        )
+    ) {
+
+        return;
+    }
+
+
+    const records =
+        getWorkRecords();
+
+
+    const item =
+        records.find(
+            record =>
+                record.workRecordId ===
+                    active.workRecordId
+        );
+
+
+    if (
+        !item
+    ) {
+
+        return;
+    }
+
+
+    item.status =
+        "interrupted";
+
+    item.interruptedAt =
+        new Date()
+            .toISOString();
+
+    item.interruptReason =
+        task
+            ? "调度任务已结束或失效"
+            : "原调度任务已不存在";
+
+
+    save(
+        STORAGE.WORK_RECORDS,
+        records
+    );
+}
+
+
 function renderAll() {
 
     currentPerson =
         getCurrentPerson();
+
+
+    recoverStaleActiveWork();
 
 
     /*
