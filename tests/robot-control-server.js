@@ -484,7 +484,8 @@ const COVERAGE_MODULES = [
             "维修完成后恢复生产闭环",
             "维修验收不通过返修闭环",
             "等待配件流程闭环",
-            "第四批人员状态与月报一致性批量回归"
+            "第四批人员状态与月报一致性批量回归",
+            "第五批数据持久化与重复提交一致性批量回归"
         ]
     },
     {
@@ -498,7 +499,8 @@ const COVERAGE_MODULES = [
             "维修库房三岗位联动",
             "维修库房完整闭环",
             "维修库房报表回写",
-            "第三批库房与报表一致性批量回归"
+            "第三批库房与报表一致性批量回归",
+            "第五批数据持久化与重复提交一致性批量回归"
         ]
     },
     {
@@ -7664,6 +7666,430 @@ async function runFourthBatchEquipmentLifecycleResidualTaskTest() {
         for (
             const page
             of pages
+        ) {
+
+            if (
+                page &&
+                !page.isClosed()
+            ) {
+
+                await page.close()
+                    .catch(
+                        () => {}
+                    );
+            }
+        }
+    }
+}
+
+
+
+async function runFifthBatchPersistenceIdempotencyTest() {
+
+    const botName =
+        "TestManager";
+
+    let maintenancePage =
+        null;
+
+    let warehousePage =
+        null;
+
+    try {
+
+        await ensureBrowser();
+
+        updateBot(
+            botName,
+            "running",
+            "正在执行第五批数据持久化与重复提交一致性批量回归"
+        );
+
+        robotMessage(
+            botName,
+            "步骤 1/2：验证同一维修工单重复保存费用不会生成重复费用记录。"
+        );
+
+        maintenancePage =
+            await browserContext.newPage();
+
+        maintenancePage.on(
+            "dialog",
+            async dialog =>
+                await dialog.accept()
+                    .catch(
+                        () => {}
+                    )
+        );
+
+        await maintenancePage.addInitScript(
+            () => {
+
+                const personId =
+                    "TEST-MAINT-IDEMP-001";
+
+                localStorage.setItem(
+                    "personnelRecords",
+                    JSON.stringify([
+                        {
+                            personId,
+                            employeeId:
+                                personId,
+                            name:
+                                "TEST-维修管理",
+                            position:
+                                "维修管理",
+                            status:
+                                "active",
+                            approvalStatus:
+                                "approved",
+                            personnelStatus:
+                                "在职可用",
+                            enabled:
+                                true,
+                            testFixture:
+                                true
+                        }
+                    ])
+                );
+
+                localStorage.setItem(
+                    "currentPersonId",
+                    personId
+                );
+
+                localStorage.setItem(
+                    "selectedPosition",
+                    "维修管理"
+                );
+
+                localStorage.setItem(
+                    "maintenanceWorkOrders",
+                    JSON.stringify([
+                        {
+                            orderId:
+                                "TEST-ORDER-IDEMP-001",
+                            requestId:
+                                "TEST-REQ-IDEMP-001",
+                            equipmentType:
+                                "卡车",
+                            equipmentNumber:
+                                "TEST-EQ-IDEMP-001",
+                            bayId:
+                                "BAY-01",
+                            status:
+                                "waiting_inspection",
+                            testFixture:
+                                true
+                        }
+                    ])
+                );
+
+                localStorage.setItem(
+                    "maintenanceRequests",
+                    JSON.stringify([
+                        {
+                            requestId:
+                                "TEST-REQ-IDEMP-001",
+                            equipmentNumber:
+                                "TEST-EQ-IDEMP-001",
+                            status:
+                                "waiting_inspection",
+                            testFixture:
+                                true
+                        }
+                    ])
+                );
+
+                localStorage.setItem(
+                    "maintenanceCosts",
+                    "[]"
+                );
+            }
+        );
+
+        await maintenancePage.goto(
+            "maintenance.html",
+            {
+                waitUntil:
+                    "domcontentloaded"
+            }
+        );
+
+        await maintenancePage.waitForTimeout(
+            250
+        );
+
+        const maintenanceState =
+            await maintenancePage.evaluate(
+                () => {
+
+                    document.getElementById(
+                        "costOrderId"
+                    ).value =
+                        "TEST-ORDER-IDEMP-001";
+
+                    document.getElementById(
+                        "laborCost"
+                    ).value =
+                        "100";
+
+                    document.getElementById(
+                        "partsCost"
+                    ).value =
+                        "50";
+
+                    document.getElementById(
+                        "externalCost"
+                    ).value =
+                        "0";
+
+                    document.getElementById(
+                        "otherCost"
+                    ).value =
+                        "0";
+
+                    saveCostSheet();
+
+                    document.getElementById(
+                        "costOrderId"
+                    ).value =
+                        "TEST-ORDER-IDEMP-001";
+
+                    saveCostSheet();
+
+                    const costs =
+                        JSON.parse(
+                            localStorage.getItem(
+                                "maintenanceCosts"
+                            ) ||
+                            "[]"
+                        );
+
+                    const orders =
+                        JSON.parse(
+                            localStorage.getItem(
+                                "maintenanceWorkOrders"
+                            ) ||
+                            "[]"
+                        );
+
+                    return {
+                        costCount:
+                            costs.filter(
+                                item =>
+                                    item.orderId ===
+                                        "TEST-ORDER-IDEMP-001"
+                            ).length,
+
+                        orderStatus:
+                            orders.find(
+                                item =>
+                                    item.orderId ===
+                                        "TEST-ORDER-IDEMP-001"
+                            )?.status ||
+                            ""
+                    };
+                }
+            );
+
+        if (
+            maintenanceState.costCount !==
+                1 ||
+            maintenanceState.orderStatus !==
+                "completed"
+        ) {
+
+            throw new Error(
+                "第五批回归：维修费用重复提交未被幂等拦截"
+            );
+        }
+
+        robotMessage(
+            botName,
+            "步骤 2/2：验证已出库领用单不能被旧页面再次驳回覆盖状态。"
+        );
+
+        warehousePage =
+            await browserContext.newPage();
+
+        warehousePage.on(
+            "dialog",
+            async dialog => {
+
+                if (
+                    dialog.type() ===
+                        "prompt"
+                ) {
+
+                    await dialog.accept(
+                        "TEST-重复驳回"
+                    );
+
+                } else {
+
+                    await dialog.accept();
+                }
+            }
+        );
+
+        await warehousePage.addInitScript(
+            () => {
+
+                const personId =
+                    "TEST-WAREHOUSE-IDEMP-001";
+
+                localStorage.setItem(
+                    "personnelRecords",
+                    JSON.stringify([
+                        {
+                            personId,
+                            employeeId:
+                                personId,
+                            name:
+                                "TEST-库房管理",
+                            position:
+                                "库房管理",
+                            status:
+                                "active",
+                            approvalStatus:
+                                "approved",
+                            personnelStatus:
+                                "在职可用",
+                            enabled:
+                                true,
+                            testFixture:
+                                true
+                        }
+                    ])
+                );
+
+                localStorage.setItem(
+                    "currentPersonId",
+                    personId
+                );
+
+                localStorage.setItem(
+                    "selectedPosition",
+                    "库房管理"
+                );
+
+                localStorage.setItem(
+                    "materialRequests",
+                    JSON.stringify([
+                        {
+                            requestId:
+                                "TEST-WH-IDEMP-001",
+                            materialId:
+                                "TEST-MAT-IDEMP-001",
+                            status:
+                                "issued",
+                            actualQuantity:
+                                1,
+                            testFixture:
+                                true
+                        }
+                    ])
+                );
+            }
+        );
+
+        await warehousePage.goto(
+            "warehouse.html",
+            {
+                waitUntil:
+                    "domcontentloaded"
+            }
+        );
+
+        await warehousePage.waitForTimeout(
+            200
+        );
+
+        const warehouseStatus =
+            await warehousePage.evaluate(
+                () => {
+
+                    rejectRequest(
+                        "TEST-WH-IDEMP-001"
+                    );
+
+                    return JSON.parse(
+                        localStorage.getItem(
+                            "materialRequests"
+                        ) ||
+                        "[]"
+                    )
+                    .find(
+                        item =>
+                            item.requestId ===
+                                "TEST-WH-IDEMP-001"
+                    )
+                    ?.status ||
+                    "";
+                }
+            );
+
+        if (
+            warehouseStatus !==
+                "issued"
+        ) {
+
+            throw new Error(
+                "第五批回归：已出库领用单被重复操作覆盖为其他状态"
+            );
+        }
+
+        updateBot(
+            botName,
+            "pass",
+            "第五批数据持久化与重复提交一致性批量回归通过"
+        );
+
+        robotMessage(
+            botName,
+            "第五批回归通过：维修费用重复提交与库房已处理状态覆盖均已拦截。"
+        );
+
+        return {
+            ok:
+                true,
+            action:
+                "fifth-batch-persistence-idempotency"
+        };
+
+    } catch (
+        error
+    ) {
+
+        const message =
+            error?.message ||
+            String(
+                error
+            );
+
+        updateBot(
+            botName,
+            "fail",
+            message
+        );
+
+        robotMessage(
+            botName,
+            "第五批数据持久化与重复提交一致性批量回归失败：" +
+            message
+        );
+
+        throw error;
+
+    } finally {
+
+        for (
+            const page
+            of [
+                maintenancePage,
+                warehousePage
+            ]
         ) {
 
             if (
@@ -16673,6 +17099,13 @@ async function runAllCoreRegressionTests() {
         "第四批第二轮设备生命周期与残留任务一致性批量回归",
         async () =>
             await runFourthBatchEquipmentLifecycleResidualTaskTest()
+    );
+
+
+    await runCase(
+        "第五批数据持久化与重复提交一致性批量回归",
+        async () =>
+            await runFifthBatchPersistenceIdempotencyTest()
     );
 
 
