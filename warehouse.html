@@ -1334,6 +1334,15 @@ function rejectRequest(requestId) {
 
     if (!request) return;
 
+    if (
+        request.status &&
+        request.status !== "pending"
+    ) {
+        alert("该领用单已经处理，不能重复驳回或覆盖现有状态。");
+        renderAll();
+        return;
+    }
+
     request.status = "rejected";
     request.rejectReason = reason.trim();
     request.updatedAt = new Date().toISOString();
