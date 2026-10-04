@@ -669,6 +669,7 @@
         <button class="nav-tab active" data-report="payroll" onclick="openReport('payroll', this)">💰 工资表</button>
         <button class="nav-tab" data-report="production" onclick="openReport('production', this)">🚚 生产报表</button>
         <button class="nav-tab" data-report="maintenance" onclick="openReport('maintenance', this)">🔧 维修费用</button>
+        <button class="nav-tab" data-report="warehouse" onclick="openReport('warehouse', this)">📦 库房流水</button>
         <button class="nav-tab" data-report="fuel" onclick="openReport('fuel', this)">⛽ 加油统计</button>
         <button class="nav-tab" data-report="depreciation" onclick="openReport('depreciation', this)">📉 折旧费用</button>
         <button class="nav-tab" data-report="finance" onclick="openReport('finance', this)">🧮 财务费用</button>
@@ -1115,6 +1116,51 @@
                     </table>
                 </div>
             </section>
+        </section>
+    </section>
+
+    <!-- 库房流水 -->
+    <section id="report-warehouse" class="page">
+        <section class="card">
+            <div class="section-title">
+                <div>
+                    <h2>📦 库房流水统计</h2>
+                    <p>直接读取 warehouse.html 的物资台账与当前库存，按月汇总入库、出库、回收、报废及丢失核销。</p>
+                </div>
+                <span id="warehouseLedgerBadge" class="badge blue">本月流水 0 条</span>
+            </div>
+
+            <div class="toolbar">
+                <input type="month" id="warehouseMonth" onchange="renderWarehouse()">
+                <button type="button" class="secondary-btn" onclick="location.href='warehouse.html'">📦 打开库房管理端</button>
+            </div>
+
+            <div class="summary-grid" style="margin-bottom:14px;">
+                <div class="summary-box"><span>本月入库</span><strong id="warehouseMonthInbound">0</strong></div>
+                <div class="summary-box"><span>本月出库</span><strong id="warehouseMonthOutbound">0</strong></div>
+                <div class="summary-box"><span>回收入库</span><strong id="warehouseMonthRecycle">0</strong></div>
+                <div class="summary-box"><span>报废 / 丢失核销</span><strong id="warehouseMonthWriteoff">0</strong></div>
+                <div class="summary-box"><span>当前可用库存</span><strong id="warehouseCurrentAvailable">0</strong></div>
+                <div class="summary-box"><span>当前已发放</span><strong id="warehouseCurrentIssued">0</strong></div>
+                <div class="summary-box"><span>待出库申请</span><strong id="warehousePendingRequests">0</strong></div>
+                <div class="summary-box"><span>异常待处理</span><strong id="warehousePendingAbnormal">0</strong></div>
+            </div>
+
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>时间</th>
+                            <th>业务类型</th>
+                            <th>物资</th>
+                            <th>数量</th>
+                            <th>人员 / 单位</th>
+                            <th>说明</th>
+                        </tr>
+                    </thead>
+                    <tbody id="warehouseLedgerTableBody"></tbody>
+                </table>
+            </div>
         </section>
     </section>
 
@@ -1699,13 +1745,14 @@
 let currentPerson = null;
 
 const REPORT_ACCESS = {
-    "总经理": ["payroll","production","maintenance","fuel","depreciation","finance","ranking","attendance"],
-    "管理员": ["payroll","production","maintenance","fuel","depreciation","finance","ranking","attendance"],
-    "统计": ["production","maintenance","fuel","ranking","attendance"],
-    "会计": ["payroll","maintenance","fuel","depreciation","finance"],
+    "总经理": ["payroll","production","maintenance","warehouse","fuel","depreciation","finance","ranking","attendance"],
+    "管理员": ["payroll","production","maintenance","warehouse","fuel","depreciation","finance","ranking","attendance"],
+    "统计": ["production","maintenance","warehouse","fuel","ranking","attendance"],
+    "会计": ["payroll","maintenance","warehouse","fuel","depreciation","finance"],
     "测量员": ["production"],
     "安全员": ["attendance"],
-    "后勤": ["attendance"],
+    "后勤": ["warehouse","attendance"],
+    "库房管理": ["warehouse"],
     "车队长": ["production","ranking","attendance"]
 };
 
@@ -5734,6 +5781,81 @@ function renderAuxiliaryProductionReport() {
 }
 
 
+function renderWarehouse() {
+    const selectedMonth =
+        document.getElementById("warehouseMonth")?.value ||
+        reportMonthNow();
+
+    const materials = readArray("warehouseMaterials");
+    const requests = readArray("materialRequests");
+    const recycles = readArray("materialRecycleRecords");
+    const scraps = readArray("materialScrapRecords");
+    const losts = readArray("materialLostRecords");
+
+    const ledger =
+        readArray("materialLedger")
+            .filter(item =>
+                String(item.createdAt || "").slice(0, 7) === selectedMonth
+            )
+            .sort((a, b) =>
+                new Date(b.createdAt || 0) -
+                new Date(a.createdAt || 0)
+            );
+
+    const sumType = matcher =>
+        ledger
+            .filter(item => matcher.test(String(item.type || "")))
+            .reduce((sum, item) => sum + Number(item.quantity || 0), 0);
+
+    const values = {
+        warehouseMonthInbound: sumType(/入库/),
+        warehouseMonthOutbound: sumType(/^出库$/),
+        warehouseMonthRecycle: sumType(/回收入库/),
+        warehouseMonthWriteoff: sumType(/报废核销|丢失核销/),
+        warehouseCurrentAvailable:
+            materials.reduce((sum, item) => sum + Number(item.availableQty || 0), 0),
+        warehouseCurrentIssued:
+            materials.reduce((sum, item) => sum + Number(item.issuedQty || 0), 0),
+        warehousePendingRequests:
+            requests.filter(item => !item.status || item.status === "pending").length,
+        warehousePendingAbnormal:
+            recycles.filter(item =>
+                item.status === "pending_inspection" ||
+                item.status === "pending_scrap"
+            ).length +
+            scraps.filter(item => item.status === "pending_approval").length +
+            losts.filter(item => item.status === "pending_compensation").length
+    };
+
+    Object.entries(values).forEach(([id, value]) => {
+        const element = document.getElementById(id);
+        if (element) element.textContent = String(value);
+    });
+
+    const badge = document.getElementById("warehouseLedgerBadge");
+    if (badge) {
+        badge.textContent = "本月流水 " + ledger.length + " 条";
+    }
+
+    const body = document.getElementById("warehouseLedgerTableBody");
+    if (!body) return;
+
+    body.innerHTML =
+        ledger.length
+            ? ledger.slice(0, 200).map(item => `
+                <tr>
+                    <td>${item.createdAt ? new Date(item.createdAt).toLocaleString("zh-CN") : "-"}</td>
+                    <td>${escapeHtml(item.type || "-")}</td>
+                    <td>${escapeHtml(item.materialName || "-")}</td>
+                    <td>${Number(item.quantity || 0)}</td>
+                    <td>${escapeHtml(item.personName || "-")}</td>
+                    <td>${escapeHtml(item.remark || "-")}</td>
+                </tr>
+            `).join("")
+            : `<tr><td colspan="6" class="empty">当前月份暂无库房业务流水</td></tr>`;
+}
+
+
 function renderMaintenance() {
     const costs = readArray("maintenanceCosts");
     const grouped = {};
@@ -7664,6 +7786,7 @@ function renderAllReports() {
     renderProduction();
     renderAuxiliaryProductionReport();
     renderMaintenance();
+    renderWarehouse();
     renderFuel();
     renderDepreciation();
     renderFinance();
@@ -7729,6 +7852,11 @@ if (verifyAccess()) {
             "fuelMonth"
         );
 
+    const warehouseMonth =
+        document.getElementById(
+            "warehouseMonth"
+        );
+
 
     const payrollMonth =
         document.getElementById(
@@ -7772,6 +7900,11 @@ if (verifyAccess()) {
 
     if (fuelMonth) {
         fuelMonth.value =
+            defaultMonth;
+    }
+
+    if (warehouseMonth) {
+        warehouseMonth.value =
             defaultMonth;
     }
 
