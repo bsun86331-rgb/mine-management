@@ -17931,124 +17931,143 @@ async function runAttendanceClosedLoopTest() {
                     "TEST-ATTENDANCE-001";
 
 
-                localStorage.setItem(
-                    "personnelRecords",
-                    JSON.stringify([
-                        {
-                            personId,
-                            employeeNo:
+                /*
+                 * addInitScript 会在 reload 时再次执行。
+                 * 首次进入时初始化 TEST 数据；刷新后必须保留刚刚写入的
+                 * attendanceRecords，才能验证“刷新持久化”。
+                 */
+                if (
+                    sessionStorage.getItem(
+                        "TEST-ATTENDANCE-SEEDED"
+                    ) !==
+                        "1"
+                ) {
+
+                    localStorage.setItem(
+                        "personnelRecords",
+                        JSON.stringify([
+                            {
                                 personId,
+                                employeeNo:
+                                    personId,
+
+                                name:
+                                    "TEST-考勤人员",
+
+                                position:
+                                    "后勤",
+
+                                department:
+                                    "TEST-综合部",
+
+                                status:
+                                    "active",
+
+                                approvalStatus:
+                                    "approved",
+
+                                personnelStatus:
+                                    "在职可用",
+
+                                enabled:
+                                    true,
+
+                                testFixture:
+                                    true
+                            }
+                        ])
+                    );
+
+
+                    localStorage.setItem(
+                        "currentPersonId",
+                        personId
+                    );
+
+
+                    localStorage.setItem(
+                        "selectedPosition",
+                        "后勤"
+                    );
+
+
+                    localStorage.setItem(
+                        "attendanceRecords",
+                        JSON.stringify([])
+                    );
+
+
+                    localStorage.setItem(
+                        "zeroProductionReports",
+                        JSON.stringify([])
+                    );
+
+
+                    localStorage.setItem(
+                        "leaveRequests",
+                        JSON.stringify([])
+                    );
+
+
+                    localStorage.setItem(
+                        "leaveRecords",
+                        JSON.stringify([])
+                    );
+
+
+                    localStorage.setItem(
+                        "driverLeaveRequests",
+                        JSON.stringify([])
+                    );
+
+
+                    localStorage.setItem(
+                        "attendanceGeofenceAttempts",
+                        JSON.stringify([])
+                    );
+
+
+                    /*
+                     * 本用例测试“完整考勤闭环”，
+                     * 因此把范围限制设为管理员明确停用。
+                     * 页面仍然必须获取定位，但不因距离而拦截。
+                     */
+                    localStorage.setItem(
+                        "attendanceGeofenceConfig",
+                        JSON.stringify({
+                            enabled:
+                                false,
 
                             name:
-                                "TEST-考勤人员",
+                                "TEST-考勤点",
 
-                            position:
-                                "后勤",
+                            latitude:
+                                43.650000,
 
-                            department:
-                                "TEST-综合部",
+                            longitude:
+                                111.970000,
 
-                            status:
-                                "active",
+                            radiusMeters:
+                                500,
 
-                            approvalStatus:
-                                "approved",
+                            maxAccuracyMeters:
+                                50,
 
-                            personnelStatus:
-                                "在职可用",
+                            updatedAt:
+                                new Date()
+                                    .toISOString(),
 
-                            enabled:
-                                true,
-
-                            testFixture:
-                                true
-                        }
-                    ])
-                );
+                            updatedBy:
+                                "TEST-ADMIN"
+                        })
+                    );
 
 
-                localStorage.setItem(
-                    "currentPersonId",
-                    personId
-                );
-
-
-                localStorage.setItem(
-                    "selectedPosition",
-                    "后勤"
-                );
-
-
-                localStorage.setItem(
-                    "attendanceRecords",
-                    JSON.stringify([])
-                );
-
-
-                localStorage.setItem(
-                    "zeroProductionReports",
-                    JSON.stringify([])
-                );
-
-
-                localStorage.setItem(
-                    "leaveRequests",
-                    JSON.stringify([])
-                );
-
-
-                localStorage.setItem(
-                    "leaveRecords",
-                    JSON.stringify([])
-                );
-
-
-                localStorage.setItem(
-                    "driverLeaveRequests",
-                    JSON.stringify([])
-                );
-
-
-                localStorage.setItem(
-                    "attendanceGeofenceAttempts",
-                    JSON.stringify([])
-                );
-
-
-                /*
-                 * 本用例测试“完整考勤闭环”，
-                 * 因此把范围限制设为管理员明确停用。
-                 * 页面仍然必须获取定位，但不因距离而拦截。
-                 */
-                localStorage.setItem(
-                    "attendanceGeofenceConfig",
-                    JSON.stringify({
-                        enabled:
-                            false,
-
-                        name:
-                            "TEST-考勤点",
-
-                        latitude:
-                            43.650000,
-
-                        longitude:
-                            111.970000,
-
-                        radiusMeters:
-                            500,
-
-                        maxAccuracyMeters:
-                            50,
-
-                        updatedAt:
-                            new Date()
-                                .toISOString(),
-
-                        updatedBy:
-                            "TEST-ADMIN"
-                    })
-                );
+                    sessionStorage.setItem(
+                        "TEST-ATTENDANCE-SEEDED",
+                        "1"
+                    );
+                }
 
 
                 Object.defineProperty(
