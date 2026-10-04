@@ -495,7 +495,8 @@ const COVERAGE_MODULES = [
         cases: [
             "维修库房三岗位联动",
             "维修库房完整闭环",
-            "维修库房报表回写"
+            "维修库房报表回写",
+            "第三批库房与报表一致性批量回归"
         ]
     },
     {
@@ -553,7 +554,8 @@ const COVERAGE_MODULES = [
             "综合报表",
 
         cases: [
-            "A组辅助车辆调度报表完整闭环"
+            "A组辅助车辆调度报表完整闭环",
+            "第三批库房与报表一致性批量回归"
         ]
     },
     {
@@ -5532,6 +5534,817 @@ async function runMaintenanceWarehouseReportCenterTest() {
 
 
     } finally {
+
+        if (
+            reportPage &&
+            !reportPage.isClosed()
+        ) {
+
+            await reportPage.close()
+                .catch(
+                    () => {}
+                );
+        }
+    }
+}
+
+
+async function runThirdBatchWarehouseReportConsistencyTest() {
+
+    const botName =
+        "TestManager";
+
+
+    let unauthorizedPage =
+        null;
+
+
+    let reportPage =
+        null;
+
+
+    try {
+
+        updateBot(
+            botName,
+            "running",
+            "正在执行第三批库房与报表一致性批量回归"
+        );
+
+
+        robotMessage(
+            botName,
+            "步骤 1/4：验证 warehouse.html 只允许已审核库房管理岗位进入。"
+        );
+
+
+        unauthorizedPage =
+            await browserContext.newPage();
+
+
+        unauthorizedPage.on(
+            "dialog",
+            async dialog => {
+
+                await dialog.accept()
+                    .catch(
+                        () => {}
+                    );
+            }
+        );
+
+
+        await unauthorizedPage.addInitScript(
+            () => {
+
+                const id =
+                    "TEST-UNAUTHORIZED-DRIVER-001";
+
+
+                localStorage.setItem(
+                    "personnelRecords",
+                    JSON.stringify([
+                        {
+                            personId:
+                                id,
+                            employeeId:
+                                id,
+                            name:
+                                "TEST-无权限司机",
+                            position:
+                                "汽车司机",
+                            approvalStatus:
+                                "approved",
+                            status:
+                                "active",
+                            personnelStatus:
+                                "在职可用",
+                            testFixture:
+                                true
+                        }
+                    ])
+                );
+
+
+                localStorage.setItem(
+                    "currentPersonId",
+                    id
+                );
+
+
+                localStorage.setItem(
+                    "selectedPosition",
+                    "汽车司机"
+                );
+            }
+        );
+
+
+        await unauthorizedPage.goto(
+            "warehouse.html",
+            {
+                waitUntil:
+                    "domcontentloaded"
+            }
+        );
+
+
+        await unauthorizedPage.waitForTimeout(
+            350
+        );
+
+
+        if (
+            !unauthorizedPage.url()
+                .includes(
+                    "index.html"
+                )
+        ) {
+
+            throw new Error(
+                "第三批库房回归：非库房岗位未被 warehouse.html 拦截"
+            );
+        }
+
+
+        await unauthorizedPage.close();
+
+        unauthorizedPage =
+            null;
+
+
+        robotMessage(
+            botName,
+            "步骤 2/4：验证可回收物资回收入库后库存、已发放和员工持有同步扣减。"
+        );
+
+
+        const warehouse =
+            await getWarehouseBot();
+
+
+        await warehouse.open();
+
+
+        await warehouse.page.evaluate(
+            () => {
+
+                const now =
+                    new Date()
+                        .toISOString();
+
+
+                localStorage.setItem(
+                    "warehouseMaterials",
+                    JSON.stringify([
+                        {
+                            materialId:
+                                "TEST-RECYCLE-MAT-001",
+                            code:
+                                "TEST-RC-001",
+                            name:
+                                "TEST-可回收工具",
+                            category:
+                                "TEST-工具",
+                            unit:
+                                "个",
+                            type:
+                                "recyclable",
+                            availableQty:
+                                8,
+                            issuedQty:
+                                2,
+                            pendingReturnQty:
+                                0,
+                            pendingInspectQty:
+                                1,
+                            pendingScrapQty:
+                                0,
+                            scrappedQty:
+                                0,
+                            pendingLostQty:
+                                0,
+                            status:
+                                "active",
+                            createdAt:
+                                now
+                        }
+                    ])
+                );
+
+
+                localStorage.setItem(
+                    "materialHolders",
+                    JSON.stringify([
+                        {
+                            holderId:
+                                "TEST-HOLDER-001",
+                            personId:
+                                "TEST-PERSON-001",
+                            personName:
+                                "TEST-领用人",
+                            position:
+                                "维修员",
+                            materialId:
+                                "TEST-RECYCLE-MAT-001",
+                            materialCode:
+                                "TEST-RC-001",
+                            materialName:
+                                "TEST-可回收工具",
+                            quantity:
+                                2,
+                            status:
+                                "holding",
+                            issuedAt:
+                                now
+                        }
+                    ])
+                );
+
+
+                localStorage.setItem(
+                    "materialRecycleRecords",
+                    JSON.stringify([
+                        {
+                            recycleId:
+                                "TEST-RECYCLE-RETURN-001",
+                            personName:
+                                "TEST-领用人",
+                            materialId:
+                                "TEST-RECYCLE-MAT-001",
+                            materialName:
+                                "TEST-可回收工具",
+                            quantity:
+                                1,
+                            type:
+                                "return",
+                            status:
+                                "pending_inspection",
+                            createdAt:
+                                now
+                        }
+                    ])
+                );
+
+
+                localStorage.setItem(
+                    "materialScrapRecords",
+                    "[]"
+                );
+
+
+                localStorage.setItem(
+                    "materialLostRecords",
+                    "[]"
+                );
+
+
+                localStorage.setItem(
+                    "materialLedger",
+                    "[]"
+                );
+
+
+                inspectRecycle(
+                    "TEST-RECYCLE-RETURN-001",
+                    "available"
+                );
+            }
+        );
+
+
+        const returnState =
+            await warehouse.page.evaluate(
+                () => {
+
+                    const read =
+                        key =>
+                            JSON.parse(
+                                localStorage.getItem(
+                                    key
+                                ) ||
+                                "[]"
+                            );
+
+
+                    return {
+                        material:
+                            read(
+                                "warehouseMaterials"
+                            )[0],
+
+                        holder:
+                            read(
+                                "materialHolders"
+                            )[0],
+
+                        recycle:
+                            read(
+                                "materialRecycleRecords"
+                            )[0],
+
+                        ledger:
+                            read(
+                                "materialLedger"
+                            )
+                    };
+                }
+            );
+
+
+        if (
+            Number(
+                returnState.material
+                    ?.availableQty ||
+                0
+            ) !==
+                9 ||
+            Number(
+                returnState.material
+                    ?.issuedQty ||
+                0
+            ) !==
+                1 ||
+            Number(
+                returnState.holder
+                    ?.quantity ||
+                0
+            ) !==
+                1 ||
+            returnState.recycle
+                ?.status !==
+                "returned_to_stock"
+        ) {
+
+            throw new Error(
+                "第三批库房回归：回收入库后的库存 / 已发放 / 持有人数量未保持一致"
+            );
+        }
+
+
+        robotMessage(
+            botName,
+            "步骤 3/4：验证回收检查不合格会自动生成报废审批，批准后同步销减持有与已发放。"
+        );
+
+
+        const scrapState =
+            await warehouse.page.evaluate(
+                () => {
+
+                    const read =
+                        key =>
+                            JSON.parse(
+                                localStorage.getItem(
+                                    key
+                                ) ||
+                                "[]"
+                            );
+
+
+                    const save =
+                        (
+                            key,
+                            value
+                        ) =>
+                            localStorage.setItem(
+                                key,
+                                JSON.stringify(
+                                    value
+                                )
+                            );
+
+
+                    const materials =
+                        read(
+                            "warehouseMaterials"
+                        );
+
+
+                    materials[0]
+                        .pendingInspectQty =
+                            1;
+
+
+                    save(
+                        "warehouseMaterials",
+                        materials
+                    );
+
+
+                    const recycles =
+                        read(
+                            "materialRecycleRecords"
+                        );
+
+
+                    recycles.push({
+                        recycleId:
+                            "TEST-RECYCLE-SCRAP-001",
+                        personName:
+                            "TEST-领用人",
+                        materialId:
+                            "TEST-RECYCLE-MAT-001",
+                        materialName:
+                            "TEST-可回收工具",
+                        quantity:
+                            1,
+                        type:
+                            "return",
+                        status:
+                            "pending_inspection",
+                        createdAt:
+                            new Date()
+                                .toISOString()
+                    });
+
+
+                    save(
+                        "materialRecycleRecords",
+                        recycles
+                    );
+
+
+                    inspectRecycle(
+                        "TEST-RECYCLE-SCRAP-001",
+                        "scrap"
+                    );
+
+
+                    const scraps =
+                        read(
+                            "materialScrapRecords"
+                        );
+
+
+                    const generated =
+                        scraps.find(
+                            item =>
+                                item.sourceRecycleId ===
+                                    "TEST-RECYCLE-SCRAP-001"
+                        );
+
+
+                    if (!generated) {
+
+                        return {
+                            generated:
+                                false
+                        };
+                    }
+
+
+                    approveScrap(
+                        generated.scrapId
+                    );
+
+
+                    return {
+                        generated:
+                            true,
+
+                        material:
+                            read(
+                                "warehouseMaterials"
+                            )[0],
+
+                        holder:
+                            read(
+                                "materialHolders"
+                            )[0],
+
+                        recycle:
+                            read(
+                                "materialRecycleRecords"
+                            )
+                            .find(
+                                item =>
+                                    item.recycleId ===
+                                        "TEST-RECYCLE-SCRAP-001"
+                            ),
+
+                        scrap:
+                            read(
+                                "materialScrapRecords"
+                            )
+                            .find(
+                                item =>
+                                    item.scrapId ===
+                                        generated.scrapId
+                            ),
+
+                        ledger:
+                            read(
+                                "materialLedger"
+                            )
+                    };
+                }
+            );
+
+
+        if (
+            !scrapState.generated ||
+            Number(
+                scrapState.material
+                    ?.issuedQty ||
+                0
+            ) !==
+                0 ||
+            Number(
+                scrapState.material
+                    ?.pendingScrapQty ||
+                0
+            ) !==
+                0 ||
+            Number(
+                scrapState.material
+                    ?.scrappedQty ||
+                0
+            ) !==
+                1 ||
+            Number(
+                scrapState.holder
+                    ?.quantity ||
+                0
+            ) !==
+                0 ||
+            scrapState.holder
+                ?.status !==
+                "closed" ||
+            scrapState.recycle
+                ?.status !==
+                "scrapped" ||
+            scrapState.scrap
+                ?.status !==
+                "scrapped"
+        ) {
+
+            throw new Error(
+                "第三批库房回归：待报废自动建单或报废核销一致性失败"
+            );
+        }
+
+
+        robotMessage(
+            botName,
+            "步骤 4/4：打开综合报表中心，核对库房流水页与本地台账一致。"
+        );
+
+
+        reportPage =
+            await browserContext.newPage();
+
+
+        await reportPage.addInitScript(
+            () => {
+
+                const id =
+                    "TEST-REPORT-ADMIN-WAREHOUSE-001";
+
+
+                let rows = [];
+
+                try {
+
+                    const parsed =
+                        JSON.parse(
+                            localStorage.getItem(
+                                "personnelRecords"
+                            )
+                        );
+
+
+                    rows =
+                        Array.isArray(
+                            parsed
+                        )
+                            ? parsed
+                            : [];
+
+                } catch (
+                    error
+                ) {
+
+                    rows = [];
+                }
+
+
+                rows =
+                    rows.filter(
+                        item =>
+                            String(
+                                item.personId ||
+                                item.employeeId ||
+                                ""
+                            ) !==
+                                id
+                    );
+
+
+                rows.push({
+                    personId:
+                        id,
+                    employeeId:
+                        id,
+                    employeeNo:
+                        id,
+                    name:
+                        "TEST-报表管理员",
+                    position:
+                        "管理员",
+                    approvalStatus:
+                        "approved",
+                    status:
+                        "active",
+                    personnelStatus:
+                        "在职可用",
+                    testFixture:
+                        true
+                });
+
+
+                localStorage.setItem(
+                    "personnelRecords",
+                    JSON.stringify(
+                        rows
+                    )
+                );
+
+
+                localStorage.setItem(
+                    "adminPersonId",
+                    id
+                );
+
+
+                localStorage.setItem(
+                    "currentPersonId",
+                    id
+                );
+
+
+                localStorage.setItem(
+                    "selectedPosition",
+                    "管理员"
+                );
+            }
+        );
+
+
+        await reportPage.goto(
+            "report-center.html?section=warehouse",
+            {
+                waitUntil:
+                    "domcontentloaded"
+            }
+        );
+
+
+        await reportPage.waitForTimeout(
+            350
+        );
+
+
+        const reportVisible =
+            await reportPage
+                .locator(
+                    "#report-warehouse"
+                )
+                .isVisible();
+
+
+        const reportRows =
+            await reportPage
+                .locator(
+                    "#warehouseLedgerTableBody tr"
+                )
+                .count();
+
+
+        const ledgerCount =
+            await reportPage.evaluate(
+                () =>
+                    JSON.parse(
+                        localStorage.getItem(
+                            "materialLedger"
+                        ) ||
+                        "[]"
+                    )
+                    .filter(
+                        item =>
+                            String(
+                                item.createdAt ||
+                                ""
+                            )
+                            .slice(
+                                0,
+                                7
+                            ) ===
+                                new Date()
+                                    .toISOString()
+                                    .slice(
+                                        0,
+                                        7
+                                    )
+                    )
+                    .length
+            );
+
+
+        if (
+            !reportVisible ||
+            (
+                ledgerCount >
+                    0 &&
+                reportRows <
+                    1
+            )
+        ) {
+
+            throw new Error(
+                "第三批库房回归：综合报表中心未正确显示库房流水"
+            );
+        }
+
+
+        updateBot(
+            botName,
+            "pass",
+            "第三批库房与报表一致性批量回归通过"
+        );
+
+
+        robotMessage(
+            botName,
+            "第三批回归通过：权限拦截、回收入库、自动报废建单、持有人销账、库存守恒、综合报表库房流水均正常。"
+        );
+
+
+        return {
+            ok:
+                true,
+
+            action:
+                "third-batch-warehouse-report-consistency",
+
+            returnAvailable:
+                returnState.material
+                    .availableQty,
+
+            finalIssued:
+                scrapState.material
+                    .issuedQty,
+
+            finalScrapped:
+                scrapState.material
+                    .scrappedQty,
+
+            reportRows,
+            ledgerCount
+        };
+
+
+    } catch (
+        error
+    ) {
+
+        const message =
+            error?.message ||
+            String(
+                error
+            );
+
+
+        updateBot(
+            botName,
+            "fail",
+            message
+        );
+
+
+        robotMessage(
+            botName,
+            "第三批库房与报表一致性批量回归失败：" +
+            message
+        );
+
+
+        throw error;
+
+
+    } finally {
+
+        if (
+            unauthorizedPage &&
+            !unauthorizedPage.isClosed()
+        ) {
+
+            await unauthorizedPage.close()
+                .catch(
+                    () => {}
+                );
+        }
+
 
         if (
             reportPage &&
@@ -14438,6 +15251,13 @@ async function runAllCoreRegressionTests() {
         "维修库房报表回写",
         async () =>
             await runMaintenanceWarehouseReportCenterTest()
+    );
+
+
+    await runCase(
+        "第三批库房与报表一致性批量回归",
+        async () =>
+            await runThirdBatchWarehouseReportConsistencyTest()
     );
 
 
