@@ -464,7 +464,8 @@ const COVERAGE_MODULES = [
 
         cases: [
             "设备异常检查自动维修单",
-            "第二批生产系统权限与状态批量回归"
+            "第二批生产系统权限与状态批量回归",
+            "第四批第二轮设备生命周期与残留任务一致性批量回归"
         ]
     },
     {
@@ -520,7 +521,8 @@ const COVERAGE_MODULES = [
             "挖机端",
 
         cases: [
-            "第二批生产系统权限与状态批量回归"
+            "第二批生产系统权限与状态批量回归",
+            "第四批第二轮设备生命周期与残留任务一致性批量回归"
         ]
     },
     {
@@ -532,7 +534,8 @@ const COVERAGE_MODULES = [
 
         cases: [
             "A组辅助车辆调度报表完整闭环",
-            "第二批生产系统权限与状态批量回归"
+            "第二批生产系统权限与状态批量回归",
+            "第四批第二轮设备生命周期与残留任务一致性批量回归"
         ]
     },
     {
@@ -6890,6 +6893,680 @@ async function runFourthBatchPersonnelStatusMonthlyReportTest() {
         robotMessage(
             botName,
             "第四批人员状态与月报一致性批量回归失败：" +
+            message
+        );
+
+
+        throw error;
+
+
+    } finally {
+
+        for (
+            const page
+            of pages
+        ) {
+
+            if (
+                page &&
+                !page.isClosed()
+            ) {
+
+                await page.close()
+                    .catch(
+                        () => {}
+                    );
+            }
+        }
+    }
+}
+
+
+async function runFourthBatchEquipmentLifecycleResidualTaskTest() {
+
+    const botName =
+        "TestManager";
+
+
+    const pages =
+        [];
+
+
+    try {
+
+        await ensureBrowser();
+
+
+        updateBot(
+            botName,
+            "running",
+            "正在执行第四批第二轮设备生命周期与残留任务一致性批量回归"
+        );
+
+
+        robotMessage(
+            botName,
+            "步骤 1/3：验证设备主档停用优先于历史 working 状态，调度不可继续使用。"
+        );
+
+
+        const dispatchPage =
+            await browserContext.newPage();
+
+
+        pages.push(
+            dispatchPage
+        );
+
+
+        await dispatchPage.addInitScript(
+            () => {
+
+                const personId =
+                    "TEST-DISPATCH-LIFECYCLE-001";
+
+
+                localStorage.setItem(
+                    "personnelRecords",
+                    JSON.stringify([
+                        {
+                            personId,
+                            employeeId:
+                                personId,
+                            name:
+                                "TEST-车队长",
+                            position:
+                                "车队长",
+                            status:
+                                "active",
+                            approvalStatus:
+                                "approved",
+                            personnelStatus:
+                                "在职可用",
+                            enabled:
+                                true,
+                            testFixture:
+                                true
+                        }
+                    ])
+                );
+
+
+                localStorage.setItem(
+                    "currentPersonId",
+                    personId
+                );
+
+
+                localStorage.setItem(
+                    "selectedPosition",
+                    "车队长"
+                );
+
+
+                localStorage.setItem(
+                    "equipmentRecords",
+                    JSON.stringify([
+                        {
+                            equipmentId:
+                                "TEST-EQ-DISABLED-001",
+                            equipmentNumber:
+                                "TEST-EQ-DISABLED-001",
+                            status:
+                                "disabled",
+                            equipmentStatus:
+                                "disabled",
+                            adminBaseStatus:
+                                "disabled",
+                            testFixture:
+                                true
+                        }
+                    ])
+                );
+
+
+                localStorage.setItem(
+                    "equipmentOperationalStatus",
+                    JSON.stringify([
+                        {
+                            equipmentId:
+                                "TEST-EQ-DISABLED-001",
+                            status:
+                                "working",
+                            source:
+                                "legacy_task",
+                            testFixture:
+                                true
+                        }
+                    ])
+                );
+            }
+        );
+
+
+        await dispatchPage.goto(
+            "dispatch.html",
+            {
+                waitUntil:
+                    "domcontentloaded"
+            }
+        );
+
+
+        await dispatchPage.waitForTimeout(
+            250
+        );
+
+
+        const dispatchState =
+            await dispatchPage.evaluate(
+                () => {
+
+                    const state =
+                        dispatchGetEquipmentOperationalStatus(
+                            "TEST-EQ-DISABLED-001"
+                        );
+
+
+                    return {
+                        status:
+                            state.status,
+                        blocked:
+                            dispatchIsEquipmentOperationallyBlocked(
+                                "TEST-EQ-DISABLED-001"
+                            )
+                    };
+                }
+            );
+
+
+        if (
+            dispatchState.status !==
+                "disabled" ||
+            dispatchState.blocked !==
+                true
+        ) {
+
+            throw new Error(
+                "第四批第二轮：设备主档停用没有覆盖历史 working 状态"
+            );
+        }
+
+
+        robotMessage(
+            botName,
+            "步骤 2/3：验证辅助车辆停用后不能开始作业，人员变为请假后 working 记录自动中断。"
+        );
+
+
+        const auxiliaryPage =
+            await browserContext.newPage();
+
+
+        pages.push(
+            auxiliaryPage
+        );
+
+
+        await auxiliaryPage.addInitScript(
+            () => {
+
+                const personId =
+                    "TEST-AUX-LIFECYCLE-001";
+
+
+                localStorage.setItem(
+                    "personnelRecords",
+                    JSON.stringify([
+                        {
+                            personId,
+                            employeeId:
+                                personId,
+                            name:
+                                "TEST-辅助司机",
+                            position:
+                                "铲车司机",
+                            team:
+                                "生产A组",
+                            status:
+                                "active",
+                            approvalStatus:
+                                "approved",
+                            personnelStatus:
+                                "在职可用",
+                            enabled:
+                                true,
+                            testFixture:
+                                true
+                        }
+                    ])
+                );
+
+
+                localStorage.setItem(
+                    "currentPersonId",
+                    personId
+                );
+
+
+                localStorage.setItem(
+                    "selectedPosition",
+                    "铲车司机"
+                );
+
+
+                localStorage.setItem(
+                    "auxiliaryVehicleProfile",
+                    JSON.stringify({
+                        vehicleType:
+                            "铲车",
+                        vehicleNumber:
+                            "TEST-AUX-DISABLED-001"
+                    })
+                );
+
+
+                localStorage.setItem(
+                    "equipmentRecords",
+                    JSON.stringify([
+                        {
+                            equipmentId:
+                                "TEST-AUX-DISABLED-001",
+                            equipmentNumber:
+                                "TEST-AUX-DISABLED-001",
+                            status:
+                                "disabled",
+                            equipmentStatus:
+                                "disabled",
+                            adminBaseStatus:
+                                "disabled",
+                            testFixture:
+                                true
+                        }
+                    ])
+                );
+
+
+                localStorage.setItem(
+                    "equipmentOperationalStatus",
+                    JSON.stringify([
+                        {
+                            equipmentId:
+                                "TEST-AUX-DISABLED-001",
+                            status:
+                                "working",
+                            source:
+                                "legacy_task",
+                            testFixture:
+                                true
+                        }
+                    ])
+                );
+
+
+                localStorage.setItem(
+                    "auxiliaryWorkRecords",
+                    JSON.stringify([
+                        {
+                            workRecordId:
+                                "TEST-AUX-WORK-001",
+                            personId,
+                            personName:
+                                "TEST-辅助司机",
+                            vehicleNumber:
+                                "TEST-AUX-DISABLED-001",
+                            status:
+                                "working",
+                            startedAt:
+                                new Date()
+                                    .toISOString(),
+                            testFixture:
+                                true
+                        }
+                    ])
+                );
+            }
+        );
+
+
+        await auxiliaryPage.goto(
+            "auxiliary.html",
+            {
+                waitUntil:
+                    "domcontentloaded"
+            }
+        );
+
+
+        await auxiliaryPage.waitForTimeout(
+            250
+        );
+
+
+        const auxiliaryBlocked =
+            await auxiliaryPage.evaluate(
+                () =>
+                    getAuxiliaryVehicleOperationalState(
+                        "TEST-AUX-DISABLED-001"
+                    )
+                    .status
+            );
+
+
+        if (
+            auxiliaryBlocked !==
+                "disabled"
+        ) {
+
+            throw new Error(
+                "第四批第二轮：辅助车辆没有识别主档停用状态"
+            );
+        }
+
+
+        const interrupted =
+            await auxiliaryPage.evaluate(
+                () => {
+
+                    const rows =
+                        JSON.parse(
+                            localStorage.getItem(
+                                "personnelRecords"
+                            ) ||
+                            "[]"
+                        );
+
+
+                    rows[0].status =
+                        "leave";
+
+                    rows[0].personnelStatus =
+                        "请假";
+
+
+                    localStorage.setItem(
+                        "personnelRecords",
+                        JSON.stringify(
+                            rows
+                        )
+                    );
+
+
+                    renderAll();
+
+
+                    const records =
+                        JSON.parse(
+                            localStorage.getItem(
+                                "auxiliaryWorkRecords"
+                            ) ||
+                            "[]"
+                        );
+
+
+                    return records[0];
+                }
+            );
+
+
+        if (
+            interrupted?.status !==
+                "interrupted" ||
+            !interrupted?.interruptedAt
+        ) {
+
+            throw new Error(
+                "第四批第二轮：辅助车辆人员失去生产资格后仍残留 working 作业"
+            );
+        }
+
+
+        robotMessage(
+            botName,
+            "步骤 3/3：验证挖机主档停用后不再显示为可执行生产任务。"
+        );
+
+
+        const excavatorPage =
+            await browserContext.newPage();
+
+
+        pages.push(
+            excavatorPage
+        );
+
+
+        await excavatorPage.addInitScript(
+            () => {
+
+                const personId =
+                    "TEST-EXC-LIFECYCLE-001";
+
+
+                localStorage.setItem(
+                    "personnelRecords",
+                    JSON.stringify([
+                        {
+                            personId,
+                            employeeId:
+                                personId,
+                            name:
+                                "TEST-挖机司机",
+                            position:
+                                "挖机司机",
+                            team:
+                                "生产A组",
+                            status:
+                                "active",
+                            approvalStatus:
+                                "approved",
+                            personnelStatus:
+                                "在职可用",
+                            enabled:
+                                true,
+                            testFixture:
+                                true
+                        }
+                    ])
+                );
+
+
+                localStorage.setItem(
+                    "currentPersonId",
+                    personId
+                );
+
+
+                localStorage.setItem(
+                    "selectedPosition",
+                    "挖机司机"
+                );
+
+
+                localStorage.setItem(
+                    "equipmentRecords",
+                    JSON.stringify([
+                        {
+                            equipmentId:
+                                "TEST-EXC-DISABLED-001",
+                            equipmentNumber:
+                                "TEST-EXC-DISABLED-001",
+                            status:
+                                "disabled",
+                            equipmentStatus:
+                                "disabled",
+                            adminBaseStatus:
+                                "disabled",
+                            testFixture:
+                                true
+                        }
+                    ])
+                );
+
+
+                localStorage.setItem(
+                    "equipmentOperationalStatus",
+                    JSON.stringify([
+                        {
+                            equipmentId:
+                                "TEST-EXC-DISABLED-001",
+                            status:
+                                "working",
+                            source:
+                                "legacy_task",
+                            testFixture:
+                                true
+                        }
+                    ])
+                );
+
+
+                localStorage.setItem(
+                    "dispatchPublishedTasks",
+                    JSON.stringify([
+                        {
+                            taskId:
+                                "TEST-TASK-EXC-001",
+                            status:
+                                "active",
+                            shift:
+                                "白班",
+                            area:
+                                "TEST区域",
+                            loadingPoint:
+                                "TEST装载区",
+                            unloadingPoint:
+                                "TEST卸载区",
+                            publishedAt:
+                                new Date()
+                                    .toISOString(),
+                            excavatorDriverAssignments: [
+                                {
+                                    driverId:
+                                        personId,
+                                    driverName:
+                                        "TEST-挖机司机",
+                                    excavatorId:
+                                        "TEST-EXC-DISABLED-001",
+                                    excavatorNumber:
+                                        "TEST-EXC-DISABLED-001"
+                                }
+                            ],
+                            bindings: [
+                                {
+                                    excavatorId:
+                                        "TEST-EXC-DISABLED-001",
+                                    truckIds:
+                                        []
+                                }
+                            ]
+                        }
+                    ])
+                );
+            }
+        );
+
+
+        await excavatorPage.goto(
+            "excavator.html",
+            {
+                waitUntil:
+                    "domcontentloaded"
+            }
+        );
+
+
+        await excavatorPage.waitForTimeout(
+            300
+        );
+
+
+        const excavatorSnapshot =
+            await excavatorPage.evaluate(
+                () => ({
+                    status:
+                        getExcavatorOperationalState(
+                            "TEST-EXC-DISABLED-001"
+                        )
+                        .status,
+
+                    badge:
+                        document.getElementById(
+                            "taskStatusBadge"
+                        )
+                        ?.textContent
+                        ?.trim() ||
+                        "",
+
+                    tripDisplay:
+                        document.getElementById(
+                            "tripSection"
+                        )
+                        ?.style
+                        ?.display ||
+                        ""
+                })
+            );
+
+
+        if (
+            excavatorSnapshot.status !==
+                "disabled" ||
+            excavatorSnapshot.badge !==
+                "已停用" ||
+            excavatorSnapshot.tripDisplay !==
+                "none"
+        ) {
+
+            throw new Error(
+                "第四批第二轮：停用挖机仍被显示为可执行任务"
+            );
+        }
+
+
+        updateBot(
+            botName,
+            "pass",
+            "第四批第二轮设备生命周期与残留任务一致性批量回归通过"
+        );
+
+
+        robotMessage(
+            botName,
+            "第四批第二轮通过：主档停用优先、调度禁用、辅助车辆作业中断、挖机停用拦截均正常。"
+        );
+
+
+        return {
+            ok:
+                true,
+
+            action:
+                "fourth-batch-equipment-lifecycle-residual-task"
+        };
+
+
+    } catch (
+        error
+    ) {
+
+        const message =
+            error?.message ||
+            String(
+                error
+            );
+
+
+        updateBot(
+            botName,
+            "fail",
+            message
+        );
+
+
+        robotMessage(
+            botName,
+            "第四批第二轮设备生命周期与残留任务一致性批量回归失败：" +
             message
         );
 
@@ -15904,6 +16581,13 @@ async function runAllCoreRegressionTests() {
         "第四批人员状态与月报一致性批量回归",
         async () =>
             await runFourthBatchPersonnelStatusMonthlyReportTest()
+    );
+
+
+    await runCase(
+        "第四批第二轮设备生命周期与残留任务一致性批量回归",
+        async () =>
+            await runFourthBatchEquipmentLifecycleResidualTaskTest()
     );
 
 
