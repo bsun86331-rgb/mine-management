@@ -482,7 +482,8 @@ const COVERAGE_MODULES = [
             "维修管理验收归档释放闭环",
             "维修完成后恢复生产闭环",
             "维修验收不通过返修闭环",
-            "等待配件流程闭环"
+            "等待配件流程闭环",
+            "第四批人员状态与月报一致性批量回归"
         ]
     },
     {
@@ -555,7 +556,8 @@ const COVERAGE_MODULES = [
 
         cases: [
             "A组辅助车辆调度报表完整闭环",
-            "第三批库房与报表一致性批量回归"
+            "第三批库房与报表一致性批量回归",
+            "第四批人员状态与月报一致性批量回归"
         ]
     },
     {
@@ -6355,6 +6357,563 @@ async function runThirdBatchWarehouseReportConsistencyTest() {
                 .catch(
                     () => {}
                 );
+        }
+    }
+}
+
+
+async function runFourthBatchPersonnelStatusMonthlyReportTest() {
+
+    const botName =
+        "TestManager";
+
+
+    const pages =
+        [];
+
+
+    try {
+
+        await ensureBrowser();
+
+
+        updateBot(
+            botName,
+            "running",
+            "正在执行第四批人员状态与月报一致性批量回归"
+        );
+
+
+        robotMessage(
+            botName,
+            "步骤 1/3：验证请假维修管理不能进入 maintenance.html。"
+        );
+
+
+        const managerPage =
+            await browserContext.newPage();
+
+
+        pages.push(
+            managerPage
+        );
+
+
+        managerPage.on(
+            "dialog",
+            async dialog =>
+                await dialog.accept()
+                    .catch(
+                        () => {}
+                    )
+        );
+
+
+        await managerPage.addInitScript(
+            () => {
+
+                const id =
+                    "TEST-MAINT-MANAGER-LEAVE-001";
+
+
+                localStorage.setItem(
+                    "personnelRecords",
+                    JSON.stringify([
+                        {
+                            personId:
+                                id,
+                            employeeId:
+                                id,
+                            name:
+                                "TEST-请假维修管理",
+                            position:
+                                "维修管理",
+                            status:
+                                "leave",
+                            approvalStatus:
+                                "approved",
+                            personnelStatus:
+                                "请假",
+                            enabled:
+                                true,
+                            testFixture:
+                                true
+                        }
+                    ])
+                );
+
+
+                localStorage.setItem(
+                    "currentPersonId",
+                    id
+                );
+
+
+                localStorage.setItem(
+                    "selectedPosition",
+                    "维修管理"
+                );
+            }
+        );
+
+
+        await managerPage.goto(
+            "maintenance.html",
+            {
+                waitUntil:
+                    "domcontentloaded"
+            }
+        );
+
+
+        await managerPage.waitForURL(
+            url =>
+                url.pathname.endsWith(
+                    "/index.html"
+                ),
+            {
+                timeout:
+                    10000,
+
+                waitUntil:
+                    "domcontentloaded"
+            }
+        );
+
+
+        robotMessage(
+            botName,
+            "步骤 2/3：验证请假维修员不能进入 maintenance-worker.html。"
+        );
+
+
+        const workerPage =
+            await browserContext.newPage();
+
+
+        pages.push(
+            workerPage
+        );
+
+
+        workerPage.on(
+            "dialog",
+            async dialog =>
+                await dialog.accept()
+                    .catch(
+                        () => {}
+                    )
+        );
+
+
+        await workerPage.addInitScript(
+            () => {
+
+                const id =
+                    "TEST-MAINT-WORKER-LEAVE-001";
+
+
+                localStorage.setItem(
+                    "personnelRecords",
+                    JSON.stringify([
+                        {
+                            personId:
+                                id,
+                            employeeId:
+                                id,
+                            name:
+                                "TEST-请假维修员",
+                            position:
+                                "维修员",
+                            status:
+                                "leave",
+                            approvalStatus:
+                                "approved",
+                            personnelStatus:
+                                "请假",
+                            enabled:
+                                true,
+                            testFixture:
+                                true
+                        }
+                    ])
+                );
+
+
+                localStorage.setItem(
+                    "currentPersonId",
+                    id
+                );
+
+
+                localStorage.setItem(
+                    "selectedPosition",
+                    "维修员"
+                );
+            }
+        );
+
+
+        await workerPage.goto(
+            "maintenance-worker.html",
+            {
+                waitUntil:
+                    "domcontentloaded"
+            }
+        );
+
+
+        await workerPage.waitForURL(
+            url =>
+                url.pathname.endsWith(
+                    "/index.html"
+                ),
+            {
+                timeout:
+                    10000,
+
+                waitUntil:
+                    "domcontentloaded"
+            }
+        );
+
+
+        robotMessage(
+            botName,
+            "步骤 3/3：验证综合报表维修费用只统计所选月份。"
+        );
+
+
+        const reportPage =
+            await browserContext.newPage();
+
+
+        pages.push(
+            reportPage
+        );
+
+
+        await reportPage.addInitScript(
+            () => {
+
+                const adminId =
+                    "TEST-REPORT-MONTH-ADMIN-001";
+
+
+                const now =
+                    new Date();
+
+
+                const monthKey =
+                    date =>
+                        [
+                            date.getFullYear(),
+                            String(
+                                date.getMonth() +
+                                1
+                            )
+                            .padStart(
+                                2,
+                                "0"
+                            )
+                        ]
+                        .join(
+                            "-"
+                        );
+
+
+                const currentMonth =
+                    monthKey(
+                        now
+                    );
+
+
+                const previousDate =
+                    new Date(
+                        now.getFullYear(),
+                        now.getMonth() -
+                        1,
+                        15,
+                        12,
+                        0,
+                        0
+                    );
+
+
+                const previousMonth =
+                    monthKey(
+                        previousDate
+                    );
+
+
+                localStorage.setItem(
+                    "personnelRecords",
+                    JSON.stringify([
+                        {
+                            personId:
+                                adminId,
+                            employeeId:
+                                adminId,
+                            employeeNo:
+                                adminId,
+                            name:
+                                "TEST-报表管理员",
+                            position:
+                                "管理员",
+                            approvalStatus:
+                                "approved",
+                            status:
+                                "active",
+                            personnelStatus:
+                                "在职可用",
+                            enabled:
+                                true,
+                            testFixture:
+                                true
+                        }
+                    ])
+                );
+
+
+                localStorage.setItem(
+                    "adminPersonId",
+                    adminId
+                );
+
+
+                localStorage.setItem(
+                    "currentPersonId",
+                    adminId
+                );
+
+
+                localStorage.setItem(
+                    "selectedPosition",
+                    "管理员"
+                );
+
+
+                sessionStorage.setItem(
+                    "managementSession",
+                    JSON.stringify({
+                        verified:
+                            true,
+                        personId:
+                            adminId,
+                        position:
+                            "管理员",
+                        verifiedAt:
+                            Date.now(),
+                        expiresAt:
+                            Date.now() +
+                            60 *
+                            60 *
+                            1000,
+                        testFixture:
+                            true
+                    })
+                );
+
+
+                localStorage.setItem(
+                    "maintenanceCosts",
+                    JSON.stringify([
+                        {
+                            costId:
+                                "TEST-COST-CURRENT-001",
+                            orderId:
+                                "TEST-ORDER-CURRENT-001",
+                            equipmentNumber:
+                                "TEST-EQ-CURRENT",
+                            equipmentType:
+                                "卡车",
+                            laborCost:
+                                20,
+                            partsCost:
+                                30,
+                            externalCost:
+                                10,
+                            otherCost:
+                                40,
+                            totalCost:
+                                100,
+                            issuedAt:
+                                currentMonth +
+                                "-15T12:00:00.000Z"
+                        },
+                        {
+                            costId:
+                                "TEST-COST-PREVIOUS-001",
+                            orderId:
+                                "TEST-ORDER-PREVIOUS-001",
+                            equipmentNumber:
+                                "TEST-EQ-PREVIOUS",
+                            equipmentType:
+                                "卡车",
+                            laborCost:
+                                50,
+                            partsCost:
+                                100,
+                            externalCost:
+                                50,
+                            otherCost:
+                                100,
+                            totalCost:
+                                300,
+                            issuedAt:
+                                previousMonth +
+                                "-15T12:00:00.000Z"
+                        }
+                    ])
+                );
+            }
+        );
+
+
+        await reportPage.goto(
+            "report-center.html",
+            {
+                waitUntil:
+                    "domcontentloaded"
+            }
+        );
+
+
+        await reportPage.waitForTimeout(
+            350
+        );
+
+
+        const summary =
+            Number(
+                await reportPage
+                    .locator(
+                        "#summaryMaintenance"
+                    )
+                    .textContent()
+            );
+
+
+        if (
+            summary !==
+                100
+        ) {
+
+            throw new Error(
+                "第四批月报回归：本月维修费用概览应为100，实际=" +
+                summary
+            );
+        }
+
+
+        await reportPage
+            .locator(
+                'button[data-report="maintenance"]'
+            )
+            .click();
+
+
+        await reportPage.waitForTimeout(
+            120
+        );
+
+
+        const currentRows =
+            await reportPage
+                .locator(
+                    "#maintenanceTableBody tr"
+                )
+                .allTextContents();
+
+
+        if (
+            currentRows.some(
+                text =>
+                    text.includes(
+                        "TEST-EQ-PREVIOUS"
+                    )
+            ) ||
+            !currentRows.some(
+                text =>
+                    text.includes(
+                        "TEST-EQ-CURRENT"
+                    )
+            )
+        ) {
+
+            throw new Error(
+                "第四批月报回归：维修费用表没有按当前月份过滤"
+            );
+        }
+
+
+        updateBot(
+            botName,
+            "pass",
+            "第四批人员状态与月报一致性批量回归通过"
+        );
+
+
+        robotMessage(
+            botName,
+            "第四批回归通过：请假维修管理/维修员均被拦截，维修费用概览和明细均只统计当前月份。"
+        );
+
+
+        return {
+            ok:
+                true,
+
+            action:
+                "fourth-batch-personnel-status-monthly-report"
+        };
+
+
+    } catch (
+        error
+    ) {
+
+        const message =
+            error?.message ||
+            String(
+                error
+            );
+
+
+        updateBot(
+            botName,
+            "fail",
+            message
+        );
+
+
+        robotMessage(
+            botName,
+            "第四批人员状态与月报一致性批量回归失败：" +
+            message
+        );
+
+
+        throw error;
+
+
+    } finally {
+
+        for (
+            const page
+            of pages
+        ) {
+
+            if (
+                page &&
+                !page.isClosed()
+            ) {
+
+                await page.close()
+                    .catch(
+                        () => {}
+                    );
+            }
         }
     }
 }
@@ -15338,6 +15897,13 @@ async function runAllCoreRegressionTests() {
         "第三批库房与报表一致性批量回归",
         async () =>
             await runThirdBatchWarehouseReportConsistencyTest()
+    );
+
+
+    await runCase(
+        "第四批人员状态与月报一致性批量回归",
+        async () =>
+            await runFourthBatchPersonnelStatusMonthlyReportTest()
     );
 
 
