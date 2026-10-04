@@ -572,6 +572,72 @@ const COVERAGE_MODULES = [
     },
     {
         key:
+            "attendance",
+
+        label:
+            "考勤",
+
+        cases: [
+            "考勤完整闭环"
+        ]
+    },
+    {
+        key:
+            "fuel",
+
+        label:
+            "油料",
+
+        cases: [
+            "油料管理完整闭环"
+        ]
+    },
+    {
+        key:
+            "fuel-request",
+
+        label:
+            "加油申请",
+
+        cases: [
+            "加油申请完整闭环"
+        ]
+    },
+    {
+        key:
+            "material-request",
+
+        label:
+            "物资申请",
+
+        cases: [
+            "物资申请完整闭环"
+        ]
+    },
+    {
+        key:
+            "finance-cost",
+
+        label:
+            "财务成本",
+
+        cases: [
+            "财务成本统计完整闭环"
+        ]
+    },
+    {
+        key:
+            "payroll-settings",
+
+        label:
+            "工资设置",
+
+        cases: [
+            "工资设置完整闭环"
+        ]
+    },
+    {
+        key:
             "natural-language",
 
         label:
