@@ -17877,6 +17877,710 @@ async function runReleaseGoldenRegression() {
 }
 
 
+async function runAttendanceClosedLoopTest() {
+
+    const botName =
+        "TestManager";
+
+
+    let context =
+        null;
+
+
+    try {
+
+        await ensureBrowser();
+
+
+        updateBot(
+            botName,
+            "running",
+            "正在执行考勤完整闭环测试"
+        );
+
+
+        robotMessage(
+            botName,
+            "考勤步骤 1/4：创建 TEST 考勤人员、TEST 打卡范围与模拟定位。"
+        );
+
+
+        context =
+            await browser.newContext({
+                baseURL:
+                    BASE_URL,
+
+                viewport: {
+                    width:
+                        1280,
+
+                    height:
+                        900
+                }
+            });
+
+
+        const page =
+            await context.newPage();
+
+
+        await page.addInitScript(
+            () => {
+
+                const personId =
+                    "TEST-ATTENDANCE-001";
+
+
+                localStorage.setItem(
+                    "personnelRecords",
+                    JSON.stringify([
+                        {
+                            personId,
+                            employeeNo:
+                                personId,
+
+                            name:
+                                "TEST-考勤人员",
+
+                            position:
+                                "后勤",
+
+                            department:
+                                "TEST-综合部",
+
+                            status:
+                                "active",
+
+                            approvalStatus:
+                                "approved",
+
+                            personnelStatus:
+                                "在职可用",
+
+                            enabled:
+                                true,
+
+                            testFixture:
+                                true
+                        }
+                    ])
+                );
+
+
+                localStorage.setItem(
+                    "currentPersonId",
+                    personId
+                );
+
+
+                localStorage.setItem(
+                    "selectedPosition",
+                    "后勤"
+                );
+
+
+                localStorage.setItem(
+                    "attendanceRecords",
+                    JSON.stringify([])
+                );
+
+
+                localStorage.setItem(
+                    "zeroProductionReports",
+                    JSON.stringify([])
+                );
+
+
+                localStorage.setItem(
+                    "leaveRequests",
+                    JSON.stringify([])
+                );
+
+
+                localStorage.setItem(
+                    "leaveRecords",
+                    JSON.stringify([])
+                );
+
+
+                localStorage.setItem(
+                    "driverLeaveRequests",
+                    JSON.stringify([])
+                );
+
+
+                localStorage.setItem(
+                    "attendanceGeofenceAttempts",
+                    JSON.stringify([])
+                );
+
+
+                /*
+                 * 本用例测试“完整考勤闭环”，
+                 * 因此把范围限制设为管理员明确停用。
+                 * 页面仍然必须获取定位，但不因距离而拦截。
+                 */
+                localStorage.setItem(
+                    "attendanceGeofenceConfig",
+                    JSON.stringify({
+                        enabled:
+                            false,
+
+                        name:
+                            "TEST-考勤点",
+
+                        latitude:
+                            43.650000,
+
+                        longitude:
+                            111.970000,
+
+                        radiusMeters:
+                            500,
+
+                        maxAccuracyMeters:
+                            50,
+
+                        updatedAt:
+                            new Date()
+                                .toISOString(),
+
+                        updatedBy:
+                            "TEST-ADMIN"
+                    })
+                );
+
+
+                Object.defineProperty(
+                    navigator,
+                    "geolocation",
+                    {
+                        configurable:
+                            true,
+
+                        value: {
+                            getCurrentPosition(
+                                success
+                            ) {
+
+                                setTimeout(
+                                    () =>
+                                        success({
+                                            coords: {
+                                                latitude:
+                                                    43.650000,
+
+                                                longitude:
+                                                    111.970000,
+
+                                                accuracy:
+                                                    5
+                                            }
+                                        }),
+                                    0
+                                );
+                            },
+
+                            watchPosition(
+                                success
+                            ) {
+
+                                this.getCurrentPosition(
+                                    success
+                                );
+
+                                return 1;
+                            },
+
+                            clearWatch() {}
+                        }
+                    }
+                );
+            }
+        );
+
+
+        page.on(
+            "dialog",
+            async dialog => {
+
+                await dialog.accept();
+            }
+        );
+
+
+        await page.goto(
+            "attendance.html",
+            {
+                waitUntil:
+                    "domcontentloaded"
+            }
+        );
+
+
+        await page.waitForFunction(
+            () =>
+                document
+                    .getElementById(
+                        "approvalBadge"
+                    )
+                    ?.textContent
+                    ?.includes(
+                        "已审核"
+                    ),
+            null,
+            {
+                timeout:
+                    10000
+            }
+        );
+
+
+        const identity =
+            await page.evaluate(
+                () => ({
+                    personId:
+                        document
+                            .getElementById(
+                                "personId"
+                            )
+                            ?.textContent ||
+                        "",
+
+                    personName:
+                        document
+                            .getElementById(
+                                "personName"
+                            )
+                            ?.textContent ||
+                        "",
+
+                    zoneText:
+                        document
+                            .getElementById(
+                                "attendanceZoneInfo"
+                            )
+                            ?.textContent ||
+                        ""
+                })
+            );
+
+
+        if (
+            identity.personId !==
+                "TEST-ATTENDANCE-001"
+        ) {
+
+            throw new Error(
+                "考勤回归：TEST人员身份恢复失败，实际=" +
+                identity.personId
+            );
+        }
+
+
+        robotMessage(
+            botName,
+            "考勤步骤 2/4：执行上班定位打卡。"
+        );
+
+
+        await page
+            .getByRole(
+                "button",
+                {
+                    name:
+                        /上班打卡/
+                }
+            )
+            .click();
+
+
+        await page.waitForFunction(
+            () => {
+
+                try {
+
+                    const rows =
+                        JSON.parse(
+                            localStorage.getItem(
+                                "attendanceRecords"
+                            ) ||
+                            "[]"
+                        );
+
+
+                    return rows.some(
+                        item =>
+                            String(
+                                item.personId ||
+                                ""
+                            ) ===
+                                "TEST-ATTENDANCE-001" &&
+                            Boolean(
+                                item.checkInAt
+                            )
+                    );
+
+                } catch (
+                    error
+                ) {
+
+                    return false;
+                }
+            },
+            null,
+            {
+                timeout:
+                    10000
+            }
+        );
+
+
+        robotMessage(
+            botName,
+            "考勤步骤 3/4：执行下班定位打卡，并验证记录完成。"
+        );
+
+
+        await page
+            .getByRole(
+                "button",
+                {
+                    name:
+                        /下班打卡/
+                }
+            )
+            .click();
+
+
+        await page.waitForFunction(
+            () => {
+
+                try {
+
+                    const rows =
+                        JSON.parse(
+                            localStorage.getItem(
+                                "attendanceRecords"
+                            ) ||
+                            "[]"
+                        );
+
+
+                    return rows.some(
+                        item =>
+                            String(
+                                item.personId ||
+                                ""
+                            ) ===
+                                "TEST-ATTENDANCE-001" &&
+                            Boolean(
+                                item.checkInAt
+                            ) &&
+                            Boolean(
+                                item.checkOutAt
+                            )
+                    );
+
+                } catch (
+                    error
+                ) {
+
+                    return false;
+                }
+            },
+            null,
+            {
+                timeout:
+                    10000
+            }
+        );
+
+
+        const stored =
+            await page.evaluate(
+                () => {
+
+                    const records =
+                        JSON.parse(
+                            localStorage.getItem(
+                                "attendanceRecords"
+                            ) ||
+                            "[]"
+                        );
+
+
+                    const attempts =
+                        JSON.parse(
+                            localStorage.getItem(
+                                "attendanceGeofenceAttempts"
+                            ) ||
+                            "[]"
+                        );
+
+
+                    const record =
+                        records.find(
+                            item =>
+                                String(
+                                    item.personId ||
+                                    ""
+                                ) ===
+                                    "TEST-ATTENDANCE-001"
+                        ) ||
+                        null;
+
+
+                    return {
+                        record,
+                        attempts:
+                            attempts.filter(
+                                item =>
+                                    String(
+                                        item.personId ||
+                                        ""
+                                    ) ===
+                                        "TEST-ATTENDANCE-001"
+                            )
+                    };
+                }
+            );
+
+
+        if (
+            !stored.record?.checkInAt ||
+            !stored.record?.checkOutAt
+        ) {
+
+            throw new Error(
+                "考勤回归：上下班打卡记录不完整"
+            );
+        }
+
+
+        if (
+            stored.record
+                ?.attendanceStatus !==
+                "present"
+        ) {
+
+            throw new Error(
+                "考勤回归：考勤状态不是 present，实际=" +
+                String(
+                    stored.record
+                        ?.attendanceStatus ||
+                        ""
+                )
+            );
+        }
+
+
+        if (
+            stored.record
+                ?.checkInGeofence
+                ?.valid !==
+                true ||
+            stored.record
+                ?.checkOutGeofence
+                ?.valid !==
+                true
+        ) {
+
+            throw new Error(
+                "考勤回归：打卡范围快照没有保存为有效状态"
+            );
+        }
+
+
+        if (
+            stored.attempts.length <
+                2 ||
+            stored.attempts.some(
+                item =>
+                    item.valid !==
+                        true
+            )
+        ) {
+
+            throw new Error(
+                "考勤回归：定位校验尝试记录异常，数量=" +
+                stored.attempts.length
+            );
+        }
+
+
+        robotMessage(
+            botName,
+            "考勤步骤 4/4：刷新页面，验证完整考勤持久化与历史展示。"
+        );
+
+
+        await page.reload({
+            waitUntil:
+                "domcontentloaded"
+        });
+
+
+        await page.waitForFunction(
+            () =>
+                document
+                    .getElementById(
+                        "attendanceStatus"
+                    )
+                    ?.textContent
+                    ?.includes(
+                        "已完成"
+                    ),
+            null,
+            {
+                timeout:
+                    10000
+            }
+        );
+
+
+        const afterReload =
+            await page.evaluate(
+                () => ({
+                    checkIn:
+                        document
+                            .getElementById(
+                                "checkInTime"
+                            )
+                            ?.textContent ||
+                        "",
+
+                    checkOut:
+                        document
+                            .getElementById(
+                                "checkOutTime"
+                            )
+                            ?.textContent ||
+                        "",
+
+                    status:
+                        document
+                            .getElementById(
+                                "attendanceStatus"
+                            )
+                            ?.textContent ||
+                        "",
+
+                    history:
+                        document
+                            .getElementById(
+                                "attendanceTableBody"
+                            )
+                            ?.textContent ||
+                        ""
+                })
+            );
+
+
+        if (
+            !afterReload.checkIn ||
+            afterReload.checkIn ===
+                "-" ||
+            !afterReload.checkOut ||
+            afterReload.checkOut ===
+                "-"
+        ) {
+
+            throw new Error(
+                "考勤回归：刷新后打卡时间没有正确恢复"
+            );
+        }
+
+
+        if (
+            !afterReload.history.includes(
+                "已完成"
+            )
+        ) {
+
+            throw new Error(
+                "考勤回归：近期考勤历史未显示已完成记录"
+            );
+        }
+
+
+        robotMessage(
+            botName,
+            "考勤完整闭环通过：TEST人员身份、上班打卡、下班打卡、定位校验记录、刷新持久化均正常。"
+        );
+
+
+        updateBot(
+            botName,
+            "pass",
+            "考勤完整闭环测试通过"
+        );
+
+
+        return {
+            ok:
+                true,
+
+            action:
+                "attendance-closed-loop-test",
+
+            personId:
+                identity.personId,
+
+            attendanceStatus:
+                stored.record
+                    ?.attendanceStatus,
+
+            geofenceAttempts:
+                stored.attempts.length,
+
+            afterReload
+        };
+
+
+    } catch (
+        error
+    ) {
+
+        const message =
+            error?.message ||
+            String(
+                error
+            );
+
+
+        updateBot(
+            botName,
+            "fail",
+            message
+        );
+
+
+        robotMessage(
+            botName,
+            "考勤完整闭环测试失败：" +
+            message
+        );
+
+
+        throw error;
+
+
+    } finally {
+
+        if (
+            context
+        ) {
+
+            await context.close()
+                .catch(
+                    () => {}
+                );
+        }
+    }
+}
+
+
 async function runAllCoreRegressionTests() {
 
     const botName =
@@ -18238,6 +18942,13 @@ async function runAllCoreRegressionTests() {
         "A组辅助车辆调度报表完整闭环",
         async () =>
             await runAGroupAuxiliaryDispatchReportClosedLoopTest()
+    );
+
+
+    await runCase(
+        "考勤完整闭环",
+        async () =>
+            await runAttendanceClosedLoopTest()
     );
 
 
@@ -21792,6 +22503,23 @@ async function executeCommand({
             status:
                 "skipped"
         };
+    }
+
+
+    if (
+        requestedBot ===
+            "TestManager" &&
+        (
+            /测试.*考勤.*完整.*闭环/i.test(
+                command
+            ) ||
+            /考勤.*完整.*闭环/i.test(
+                command
+            )
+        )
+    ) {
+
+        return await runAttendanceClosedLoopTest();
     }
 
 
