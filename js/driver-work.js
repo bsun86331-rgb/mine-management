@@ -2962,11 +2962,20 @@ document.addEventListener("DOMContentLoaded", function () {
 
             if (record) {
 
-                return String(
-                    record.status ||
-                    record.equipmentStatus ||
-                    ""
-                );
+                const candidateStatus =
+                    String(
+                        record.status ||
+                        record.equipmentStatus ||
+                        ""
+                    );
+
+
+                if (
+                    candidateStatus
+                ) {
+
+                    return candidateStatus;
+                }
             }
         }
 
