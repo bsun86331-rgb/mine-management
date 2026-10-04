@@ -1170,8 +1170,13 @@
             <div class="section-title">
                 <div>
                     <h2>🔧 维修费用统计</h2>
-                    <p>按设备汇总工时费、配件费、外修费、其他费用及总费用。</p>
+                    <p>按月份、设备汇总工时费、配件费、外修费、其他费用及总费用。</p>
                 </div>
+                <span class="badge blue" id="maintenanceMonthBadge">本月维修 0 笔</span>
+            </div>
+
+            <div class="toolbar">
+                <input type="month" id="maintenanceMonth" onchange="renderMaintenance()">
             </div>
 
             <div class="table-wrap">
@@ -2356,9 +2361,24 @@ function openReport(report, button) {
 function renderSummary() {
     document.getElementById("summaryPeople").textContent = String(getPersonnelRecords().length);
 
-    const costs = readArray("maintenanceCosts");
-    const totalMaintenance = costs.reduce((sum, item) => sum + Number(item.totalCost || 0), 0);
-    document.getElementById("summaryMaintenance").textContent = totalMaintenance.toFixed(0);
+    const currentMonth =
+        reportMonthNow();
+
+    const costs =
+        readArray("maintenanceCosts")
+            .filter(item =>
+                maintenanceCostMonthKey(item) === currentMonth
+            );
+
+    const totalMaintenance =
+        costs.reduce(
+            (sum, item) =>
+                sum + Number(item.totalCost || 0),
+            0
+        );
+
+    document.getElementById("summaryMaintenance").textContent =
+        totalMaintenance.toFixed(0);
 
     const fuelRecords = readArray("fuelRecords");
     const totalFuel = fuelRecords.reduce((sum, item) => sum + Number(item.quantity || item.fuelQuantity || 0), 0);
@@ -5856,12 +5876,47 @@ function renderWarehouse() {
 }
 
 
+function maintenanceCostMonthKey(item) {
+    const raw =
+        item?.issuedAt ||
+        item?.completedAt ||
+        item?.createdAt ||
+        item?.updatedAt ||
+        "";
+
+    if (!raw) {
+        return "";
+    }
+
+    const date = new Date(raw);
+
+    if (Number.isNaN(date.getTime())) {
+        return String(raw).slice(0, 7);
+    }
+
+    return [
+        date.getFullYear(),
+        String(date.getMonth() + 1).padStart(2, "0")
+    ].join("-");
+}
+
+
 function renderMaintenance() {
-    const costs = readArray("maintenanceCosts");
+    const selectedMonth =
+        document.getElementById("maintenanceMonth")?.value ||
+        reportMonthNow();
+
+    const costs =
+        readArray("maintenanceCosts")
+            .filter(item =>
+                maintenanceCostMonthKey(item) === selectedMonth
+            );
+
     const grouped = {};
 
     costs.forEach(item => {
         const key = item.equipmentNumber || item.orderId || "未编号";
+
         if (!grouped[key]) {
             grouped[key] = {
                 equipmentNumber: key,
@@ -5883,8 +5938,21 @@ function renderMaintenance() {
         grouped[key].totalCost += Number(item.totalCost || 0);
     });
 
+    const badge =
+        document.getElementById("maintenanceMonthBadge");
+
+    if (badge) {
+        badge.textContent =
+            selectedMonth +
+            " · 维修 " +
+            costs.length +
+            " 笔";
+    }
+
     const rows = Object.values(grouped);
     const body = document.getElementById("maintenanceTableBody");
+
+    if (!body) return;
 
     body.innerHTML = rows.length
         ? rows.map(item => `
@@ -5899,8 +5967,9 @@ function renderMaintenance() {
                 <td>${item.totalCost.toFixed(2)}</td>
             </tr>
         `).join("")
-        : `<tr><td colspan="8" class="empty">暂无维修费用数据</td></tr>`;
+        : `<tr><td colspan="8" class="empty">当前月份暂无维修费用数据</td></tr>`;
 }
+
 
 function fuelDateKey(value) {
     const date = value ? new Date(value) : new Date();
@@ -7845,6 +7914,12 @@ if (verifyAccess()) {
         document.getElementById(
             "financeMonth"
         );
+    const maintenanceMonth =
+        document.getElementById(
+            "maintenanceMonth"
+        );
+
+
 
 
     const fuelMonth =
@@ -7896,6 +7971,12 @@ if (verifyAccess()) {
         financeMonth.value =
             defaultMonth;
     }
+    if (maintenanceMonth) {
+        maintenanceMonth.value =
+            defaultMonth;
+    }
+
+
 
 
     if (fuelMonth) {
