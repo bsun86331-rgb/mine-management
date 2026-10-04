@@ -18600,6 +18600,871 @@ async function runAttendanceClosedLoopTest() {
 }
 
 
+async function runFuelManagementClosedLoopTest() {
+
+    const botName =
+        "TestManager";
+
+
+    let context =
+        null;
+
+
+    try {
+
+        await ensureBrowser();
+
+
+        updateBot(
+            botName,
+            "running",
+            "正在执行油料管理完整闭环测试"
+        );
+
+
+        robotMessage(
+            botName,
+            "油料步骤 1/4：创建 TEST 加油车司机、TEST 待加油申请与空油料台账。"
+        );
+
+
+        context =
+            await browser.newContext({
+                baseURL:
+                    BASE_URL,
+
+                viewport: {
+                    width:
+                        1280,
+
+                    height:
+                        900
+                }
+            });
+
+
+        const page =
+            await context.newPage();
+
+
+        await page.addInitScript(
+            () => {
+
+                const personId =
+                    "TEST-FUEL-DRIVER-001";
+
+
+                /*
+                 * 只在首次进入时播种，reload 时保留本轮刚生成的数据。
+                 */
+                if (
+                    sessionStorage.getItem(
+                        "TEST-FUEL-SEEDED"
+                    ) !==
+                        "1"
+                ) {
+
+                    localStorage.setItem(
+                        "personnelRecords",
+                        JSON.stringify([
+                            {
+                                personId,
+                                employeeNo:
+                                    personId,
+
+                                name:
+                                    "TEST-加油车司机",
+
+                                position:
+                                    "加油车司机",
+
+                                team:
+                                    "生产A组",
+
+                                status:
+                                    "active",
+
+                                approvalStatus:
+                                    "approved",
+
+                                personnelStatus:
+                                    "在职可用",
+
+                                enabled:
+                                    true,
+
+                                testFixture:
+                                    true
+                            }
+                        ])
+                    );
+
+
+                    localStorage.setItem(
+                        "currentPersonId",
+                        personId
+                    );
+
+
+                    localStorage.setItem(
+                        "selectedPosition",
+                        "加油车司机"
+                    );
+
+
+                    localStorage.setItem(
+                        "fuelIntakeRecords",
+                        JSON.stringify([])
+                    );
+
+
+                    localStorage.setItem(
+                        "fuelRequests",
+                        JSON.stringify([
+                            {
+                                requestId:
+                                    "TEST-FUELREQ-001",
+
+                                vehicleNumber:
+                                    "TEST-TRUCK-001",
+
+                                driverName:
+                                    "TEST-运输司机",
+
+                                gpsStatus:
+                                    "范围内",
+
+                                status:
+                                    "waiting",
+
+                                requestedAt:
+                                    new Date()
+                                        .toISOString(),
+
+                                testFixture:
+                                    true
+                            }
+                        ])
+                    );
+
+
+                    localStorage.setItem(
+                        "fuelRecords",
+                        JSON.stringify([])
+                    );
+
+
+                    localStorage.setItem(
+                        "fuelStockAdjustments",
+                        JSON.stringify([])
+                    );
+
+
+                    sessionStorage.setItem(
+                        "TEST-FUEL-SEEDED",
+                        "1"
+                    );
+                }
+
+
+                /*
+                 * TEST 写入保护：
+                 * fuel.html 自身 createId() 生成 INTAKE_/FUEL_ 前缀，
+                 * 机器人环境必须统一改成 TEST- 前缀。
+                 */
+                if (
+                    !window.__robotFuelWriteGuardInstalled
+                ) {
+
+                    const originalSetItem =
+                        Storage.prototype.setItem;
+
+
+                    Storage.prototype.setItem =
+                        function (
+                            key,
+                            value
+                        ) {
+
+                            if (
+                                this ===
+                                    window.localStorage &&
+                                [
+                                    "fuelIntakeRecords",
+                                    "fuelRequests",
+                                    "fuelRecords",
+                                    "fuelStockAdjustments"
+                                ].includes(
+                                    key
+                                )
+                            ) {
+
+                                try {
+
+                                    const rows =
+                                        JSON.parse(
+                                            value
+                                        );
+
+
+                                    if (
+                                        Array.isArray(
+                                            rows
+                                        )
+                                    ) {
+
+                                        rows.forEach(
+                                            item => {
+
+                                                if (
+                                                    key ===
+                                                        "fuelIntakeRecords" &&
+                                                    item?.intakeId &&
+                                                    !String(
+                                                        item.intakeId
+                                                    )
+                                                    .startsWith(
+                                                        "TEST-"
+                                                    )
+                                                ) {
+
+                                                    item.intakeId =
+                                                        "TEST-" +
+                                                        String(
+                                                            item.intakeId
+                                                        );
+                                                }
+
+
+                                                if (
+                                                    key ===
+                                                        "fuelRecords" &&
+                                                    item?.fuelId &&
+                                                    !String(
+                                                        item.fuelId
+                                                    )
+                                                    .startsWith(
+                                                        "TEST-"
+                                                    )
+                                                ) {
+
+                                                    item.fuelId =
+                                                        "TEST-" +
+                                                        String(
+                                                            item.fuelId
+                                                        );
+                                                }
+
+
+                                                if (
+                                                    key ===
+                                                        "fuelStockAdjustments" &&
+                                                    item?.adjustmentId &&
+                                                    !String(
+                                                        item.adjustmentId
+                                                    )
+                                                    .startsWith(
+                                                        "TEST-"
+                                                    )
+                                                ) {
+
+                                                    item.adjustmentId =
+                                                        "TEST-" +
+                                                        String(
+                                                            item.adjustmentId
+                                                        );
+                                                }
+                                            }
+                                        );
+
+
+                                        value =
+                                            JSON.stringify(
+                                                rows
+                                            );
+                                    }
+
+                                } catch (
+                                    error
+                                ) {}
+                            }
+
+
+                            return originalSetItem.call(
+                                this,
+                                key,
+                                value
+                            );
+                        };
+
+
+                    window.__robotFuelWriteGuardInstalled =
+                        true;
+                }
+            }
+        );
+
+
+        page.on(
+            "dialog",
+            async dialog => {
+
+                await dialog.accept();
+            }
+        );
+
+
+        await page.goto(
+            "fuel.html",
+            {
+                waitUntil:
+                    "domcontentloaded"
+            }
+        );
+
+
+        await page.waitForFunction(
+            () =>
+                document
+                    .getElementById(
+                        "queueCount"
+                    )
+                    ?.textContent
+                    ?.includes(
+                        "1"
+                    ),
+            null,
+            {
+                timeout:
+                    10000
+            }
+        );
+
+
+        robotMessage(
+            botName,
+            "油料步骤 2/4：录入 TEST 抽油入库 1000L，并验证理论库存。"
+        );
+
+
+        await page
+            .locator(
+                '[data-page="intake"]'
+            )
+            .click();
+
+
+        await page
+            .locator(
+                "#intakeSource"
+            )
+            .fill(
+                "TEST-1号柴油罐"
+            );
+
+
+        await page
+            .locator(
+                "#intakeAmount"
+            )
+            .fill(
+                "1000"
+            );
+
+
+        await page
+            .locator(
+                "#intakeRemark"
+            )
+            .fill(
+                "TEST-油料完整闭环"
+            );
+
+
+        await page
+            .getByRole(
+                "button",
+                {
+                    name:
+                        /确认抽油入库/
+                }
+            )
+            .click();
+
+
+        await page.waitForFunction(
+            () => {
+
+                try {
+
+                    const rows =
+                        JSON.parse(
+                            localStorage.getItem(
+                                "fuelIntakeRecords"
+                            ) ||
+                            "[]"
+                        );
+
+
+                    return (
+                        rows.length ===
+                            1 &&
+                        String(
+                            rows[0]
+                                ?.intakeId ||
+                                ""
+                        )
+                        .startsWith(
+                            "TEST-"
+                        ) &&
+                        Number(
+                            rows[0]
+                                ?.amount ||
+                                0
+                        ) ===
+                            1000
+                    );
+
+                } catch (
+                    error
+                ) {
+
+                    return false;
+                }
+            },
+            null,
+            {
+                timeout:
+                    10000
+            }
+        );
+
+
+        const stockAfterIntake =
+            await page.evaluate(
+                () =>
+                    Number(
+                        document
+                            .getElementById(
+                                "currentStock"
+                            )
+                            ?.textContent ||
+                            0
+                    )
+            );
+
+
+        if (
+            stockAfterIntake !==
+                1000
+        ) {
+
+            throw new Error(
+                "油料回归：抽油入库后理论库存不是1000L，实际=" +
+                stockAfterIntake
+            );
+        }
+
+
+        robotMessage(
+            botName,
+            "油料步骤 3/4：对 TEST-TRUCK-001 开始加油并完成 200L 加油记录。"
+        );
+
+
+        await page
+            .locator(
+                '[data-page="fueling"]'
+            )
+            .click();
+
+
+        await page
+            .getByRole(
+                "button",
+                {
+                    name:
+                        /开始加油/
+                }
+            )
+            .click();
+
+
+        await page.waitForFunction(
+            () =>
+                Boolean(
+                    document
+                        .getElementById(
+                            "fuelCompleteAmount"
+                        )
+                ),
+            null,
+            {
+                timeout:
+                    10000
+            }
+        );
+
+
+        await page
+            .locator(
+                "#fuelCompleteAmount"
+            )
+            .fill(
+                "200"
+            );
+
+
+        await page.evaluate(
+            () => {
+
+                /*
+                 * 这里不走图片压缩算法，只注入一个 TEST 图片凭证，
+                 * 仍由正式 submitFuelCompletion() 完成业务写入。
+                 */
+                pendingFuelAmount =
+                    "200";
+
+                pendingFuelPhotoData =
+                    "data:image/png;base64,VEVTVA==";
+            }
+        );
+
+
+        await page
+            .getByRole(
+                "button",
+                {
+                    name:
+                        /提交加油完成/
+                }
+            )
+            .click();
+
+
+        await page.waitForFunction(
+            () => {
+
+                try {
+
+                    const requests =
+                        JSON.parse(
+                            localStorage.getItem(
+                                "fuelRequests"
+                            ) ||
+                            "[]"
+                        );
+
+
+                    const records =
+                        JSON.parse(
+                            localStorage.getItem(
+                                "fuelRecords"
+                            ) ||
+                            "[]"
+                        );
+
+
+                    const request =
+                        requests.find(
+                            item =>
+                                item.requestId ===
+                                    "TEST-FUELREQ-001"
+                        );
+
+
+                    const record =
+                        records.find(
+                            item =>
+                                item.requestId ===
+                                    "TEST-FUELREQ-001"
+                        );
+
+
+                    return Boolean(
+                        request?.status ===
+                            "completed" &&
+                        record &&
+                        String(
+                            record.fuelId ||
+                            ""
+                        )
+                        .startsWith(
+                            "TEST-"
+                        ) &&
+                        Number(
+                            record.amount ||
+                            0
+                        ) ===
+                            200 &&
+                        record.confirmationStatus ===
+                            "pending"
+                    );
+
+                } catch (
+                    error
+                ) {
+
+                    return false;
+                }
+            },
+            null,
+            {
+                timeout:
+                    10000
+            }
+        );
+
+
+        robotMessage(
+            botName,
+            "油料步骤 4/4：验证库存 1000 → 800L，并刷新确认数据持久化。"
+        );
+
+
+        const beforeReload =
+            await page.evaluate(
+                () => {
+
+                    const intakes =
+                        JSON.parse(
+                            localStorage.getItem(
+                                "fuelIntakeRecords"
+                            ) ||
+                            "[]"
+                        );
+
+
+                    const requests =
+                        JSON.parse(
+                            localStorage.getItem(
+                                "fuelRequests"
+                            ) ||
+                            "[]"
+                        );
+
+
+                    const records =
+                        JSON.parse(
+                            localStorage.getItem(
+                                "fuelRecords"
+                            ) ||
+                            "[]"
+                        );
+
+
+                    return {
+                        intakes,
+                        requests,
+                        records,
+                        stock:
+                            Number(
+                                document
+                                    .getElementById(
+                                        "currentStock"
+                                    )
+                                    ?.textContent ||
+                                    0
+                            )
+                    };
+                }
+            );
+
+
+        if (
+            beforeReload.stock !==
+                800
+        ) {
+
+            throw new Error(
+                "油料回归：加油完成后理论库存不是800L，实际=" +
+                beforeReload.stock
+            );
+        }
+
+
+        await page.reload({
+            waitUntil:
+                "domcontentloaded"
+        });
+
+
+        await page.waitForFunction(
+            () =>
+                Number(
+                    document
+                        .getElementById(
+                            "currentStock"
+                        )
+                        ?.textContent ||
+                        0
+                ) ===
+                    800,
+            null,
+            {
+                timeout:
+                    10000
+            }
+        );
+
+
+        const afterReload =
+            await page.evaluate(
+                () => {
+
+                    const intakes =
+                        JSON.parse(
+                            localStorage.getItem(
+                                "fuelIntakeRecords"
+                            ) ||
+                            "[]"
+                        );
+
+
+                    const requests =
+                        JSON.parse(
+                            localStorage.getItem(
+                                "fuelRequests"
+                            ) ||
+                            "[]"
+                        );
+
+
+                    const records =
+                        JSON.parse(
+                            localStorage.getItem(
+                                "fuelRecords"
+                            ) ||
+                            "[]"
+                        );
+
+
+                    return {
+                        intakeCount:
+                            intakes.length,
+
+                        requestStatus:
+                            requests.find(
+                                item =>
+                                    item.requestId ===
+                                        "TEST-FUELREQ-001"
+                            )
+                            ?.status ||
+                            "",
+
+                        fuelCount:
+                            records.length,
+
+                        fuelId:
+                            records[0]
+                                ?.fuelId ||
+                            "",
+
+                        stock:
+                            Number(
+                                document
+                                    .getElementById(
+                                        "currentStock"
+                                    )
+                                    ?.textContent ||
+                                    0
+                            )
+                    };
+                }
+            );
+
+
+        if (
+            afterReload.intakeCount !==
+                1 ||
+            afterReload.requestStatus !==
+                "completed" ||
+            afterReload.fuelCount !==
+                1 ||
+            !String(
+                afterReload.fuelId
+            )
+            .startsWith(
+                "TEST-"
+            ) ||
+            afterReload.stock !==
+                800
+        ) {
+
+            throw new Error(
+                "油料回归：刷新后油料数据未正确保持"
+            );
+        }
+
+
+        robotMessage(
+            botName,
+            "油料管理完整闭环通过：TEST抽油入库、待加油任务、加油完成、库存扣减、刷新持久化均正常。"
+        );
+
+
+        updateBot(
+            botName,
+            "pass",
+            "油料管理完整闭环测试通过"
+        );
+
+
+        return {
+            ok:
+                true,
+
+            action:
+                "fuel-management-closed-loop-test",
+
+            beforeReload,
+            afterReload
+        };
+
+
+    } catch (
+        error
+    ) {
+
+        const message =
+            error?.message ||
+            String(
+                error
+            );
+
+
+        updateBot(
+            botName,
+            "fail",
+            message
+        );
+
+
+        robotMessage(
+            botName,
+            "油料管理完整闭环测试失败：" +
+            message
+        );
+
+
+        throw error;
+
+
+    } finally {
+
+        if (
+            context
+        ) {
+
+            await context.close()
+                .catch(
+                    () => {}
+                );
+        }
+    }
+}
+
+
 async function runAllCoreRegressionTests() {
 
     const botName =
@@ -18968,6 +19833,13 @@ async function runAllCoreRegressionTests() {
         "考勤完整闭环",
         async () =>
             await runAttendanceClosedLoopTest()
+    );
+
+
+    await runCase(
+        "油料管理完整闭环",
+        async () =>
+            await runFuelManagementClosedLoopTest()
     );
 
 
@@ -22539,6 +23411,23 @@ async function executeCommand({
     ) {
 
         return await runAttendanceClosedLoopTest();
+    }
+
+
+    if (
+        requestedBot ===
+            "TestManager" &&
+        (
+            /测试.*油料.*完整.*闭环/i.test(
+                command
+            ) ||
+            /油料.*完整.*闭环/i.test(
+                command
+            )
+        )
+    ) {
+
+        return await runFuelManagementClosedLoopTest();
     }
 
 
