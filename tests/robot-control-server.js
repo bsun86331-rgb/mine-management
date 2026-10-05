@@ -3197,6 +3197,192 @@ async function runNormalTransportClosedLoopTest() {
 }
 
 
+async function cleanupMaintenanceTestResidueBeforeEquipmentCheck() {
+
+    const page =
+        await browserContext.newPage();
+
+
+    try {
+
+        await page.goto(
+            "index.html",
+            {
+                waitUntil:
+                    "domcontentloaded"
+            }
+        );
+
+
+        await page.evaluate(
+            () => {
+
+                const keys = [
+                    "equipmentUsageChecks",
+                    "equipmentMeterReadings",
+                    "equipmentUsageRecords",
+                    "maintenanceRequests",
+                    "maintenanceWorkOrders",
+                    "maintenanceCosts",
+                    "workshopBays",
+                    "warehouseMaterials",
+                    "materialRequests",
+                    "materialLedger",
+                    "materialHolders",
+                    "materialRecycleRecords",
+                    "materialScrapRecords",
+                    "materialLostRecords"
+                ];
+
+
+                const isTestRecord =
+                    item => {
+
+                        if (
+                            !item ||
+                            typeof item !==
+                                "object"
+                        ) {
+
+                            return false;
+                        }
+
+
+                        const fields = [
+                            "id",
+                            "taskId",
+                            "shiftId",
+                            "checkId",
+                            "requestId",
+                            "maintenanceRequestId",
+                            "orderId",
+                            "costId",
+                            "equipmentId",
+                            "equipmentNumber",
+                            "materialId",
+                            "holderId",
+                            "recycleId",
+                            "scrapId",
+                            "lossId",
+                            "transactionId",
+                            "ledgerId",
+                            "bayId",
+                            "personId",
+                            "workerId"
+                        ];
+
+
+                        return fields.some(
+                            field =>
+                                String(
+                                    item[
+                                        field
+                                    ] ||
+                                    ""
+                                )
+                                .startsWith(
+                                    "TEST-"
+                                )
+                        );
+                    };
+
+
+                keys.forEach(
+                    key => {
+
+                        try {
+
+                            const rows =
+                                JSON.parse(
+                                    localStorage.getItem(
+                                        key
+                                    ) ||
+                                    "[]"
+                                );
+
+
+                            if (
+                                !Array.isArray(
+                                    rows
+                                )
+                            ) {
+
+                                return;
+                            }
+
+
+                            localStorage.setItem(
+                                key,
+                                JSON.stringify(
+                                    rows.filter(
+                                        item =>
+                                            !isTestRecord(
+                                                item
+                                            )
+                                    )
+                                )
+                            );
+
+                        } catch (
+                            error
+                        ) {}
+                    }
+                );
+
+
+                try {
+
+                    const queue =
+                        JSON.parse(
+                            localStorage.getItem(
+                                "mineDataPendingQueue"
+                            ) ||
+                            "[]"
+                        );
+
+
+                    if (
+                        Array.isArray(
+                            queue
+                        )
+                    ) {
+
+                        localStorage.setItem(
+                            "mineDataPendingQueue",
+                            JSON.stringify(
+                                queue.filter(
+                                    item =>
+                                        !String(
+                                            JSON.stringify(
+                                                item?.payload ||
+                                                {}
+                                            )
+                                        )
+                                        .includes(
+                                            "TEST-"
+                                        )
+                                )
+                            )
+                        );
+                    }
+
+                } catch (
+                    error
+                ) {}
+            }
+        );
+
+
+    } finally {
+
+        await page.close()
+            .catch(
+                () => {}
+            );
+    }
+}
+
+
 async function runEquipmentAbnormalMaintenanceRequestTest() {
 
     const botName =
@@ -3214,8 +3400,11 @@ async function runEquipmentAbnormalMaintenanceRequestTest() {
 
         robotMessage(
             botName,
-            "步骤 1/2：准备 TEST 司机、TEST 班次和 TEST 设备环境。"
+            "步骤 1/2：清理上一轮 TEST 维修残留，并准备 TEST 司机、TEST 班次和 TEST 设备环境。"
         );
+
+
+        await cleanupMaintenanceTestResidueBeforeEquipmentCheck();
 
 
         await prepareTruckDriverTestEnvironment();
