@@ -2136,6 +2136,8 @@ footer {
 
 
 
+<script src="js/data-service.js"></script>
+
 <script>
 
 "use strict";
@@ -2178,6 +2180,41 @@ const STORAGE = {
         "equipmentOperationalStatus"
 
 };
+
+
+function syncMaintenanceData(
+    table,
+    row,
+    label
+) {
+
+    if (
+        !window.MineDataService ||
+        !row
+    ) {
+
+        return;
+    }
+
+
+    Promise.resolve(
+        window.MineDataService.upsert(
+            table,
+            row
+        )
+    )
+    .catch(
+        error => {
+
+            console.warn(
+                "DataService " +
+                (label || table) +
+                " 同步失败，原本地维修流程已保留：",
+                error
+            );
+        }
+    );
+}
 
 
 /* =========================================================
@@ -3484,6 +3521,13 @@ function receiveVehicle(
     );
 
 
+    syncMaintenanceData(
+        "maintenance_requests",
+        item,
+        "接车状态"
+    );
+
+
     renderAll();
 
 
@@ -3849,6 +3893,20 @@ function confirmAssignment() {
     save(
         STORAGE.REQUESTS,
         requests
+    );
+
+
+    syncMaintenanceData(
+        "maintenance_orders",
+        order,
+        "维修工单"
+    );
+
+
+    syncMaintenanceData(
+        "maintenance_requests",
+        request,
+        "维修申请派工状态"
     );
 
 
@@ -4290,6 +4348,13 @@ function approveInspection() {
     );
 
 
+    syncMaintenanceData(
+        "maintenance_orders",
+        order,
+        "验收通过"
+    );
+
+
     closeModal(
         "inspectionModal"
     );
@@ -4373,6 +4438,13 @@ function rejectInspection() {
     save(
         STORAGE.WORK_ORDERS,
         orders
+    );
+
+
+    syncMaintenanceData(
+        "maintenance_orders",
+        order,
+        "返修状态"
     );
 
 
@@ -4655,6 +4727,16 @@ function saveCostSheet() {
     );
 
 
+    syncMaintenanceData(
+        "maintenance_costs",
+        costs[
+            costs.length -
+            1
+        ],
+        "维修费用"
+    );
+
+
     completeOrder(
         orderId
     );
@@ -4755,7 +4837,21 @@ function completeOrder(
             STORAGE.REQUESTS,
             requests
         );
+
+
+        syncMaintenanceData(
+            "maintenance_requests",
+            request,
+            "维修申请完成状态"
+        );
     }
+
+
+    syncMaintenanceData(
+        "maintenance_orders",
+        order,
+        "维修工单完成状态"
+    );
 
 
     releaseBay(
