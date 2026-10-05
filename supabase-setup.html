@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Supabase 正式站点初始化</title>
+<style>
+body{margin:0;background:#f1f5f9;color:#0f172a;font-family:Arial,"Microsoft YaHei",sans-serif}
+header{background:#0f172a;color:#fff;padding:18px}
+main{max-width:900px;margin:auto;padding:16px}
+.card{background:#fff;border-radius:14px;padding:16px;margin-bottom:14px;box-shadow:0 4px 16px rgba(15,23,42,.06)}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.kpi{background:#f8fafc;padding:12px;border-radius:10px}.kpi span{display:block;color:#64748b;font-size:12px}.kpi strong{display:block;margin-top:4px;font-size:18px}
+label{display:block;margin:12px 0 5px;font-weight:700}
+input{width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid #cbd5e1;border-radius:9px}
+.row{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+button{padding:10px 14px;border:0;border-radius:9px;font-weight:700;cursor:pointer}
+.primary{background:#2563eb;color:#fff}.secondary{background:#e2e8f0}.danger{background:#fee2e2;color:#991b1b}
+.result{margin-top:14px;padding:12px;border-radius:10px;white-space:pre-wrap;word-break:break-word;background:#f8fafc;border:1px solid #e2e8f0}
+.ok{background:#ecfdf5;border-color:#86efac;color:#166534}.fail{background:#fef2f2;border-color:#fecaca;color:#991b1b}
+.note{font-size:12px;color:#64748b;line-height:1.7}
+@media(max-width:760px){.grid{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<header>
+<h2 style="margin:0">🔐 Supabase 正式站点初始化</h2>
+<div style="font-size:12px;color:#cbd5e1;margin-top:5px">配置保存在当前 GitHub Pages 来源，不写入仓库；用于正式页面连接 Supabase。</div>
+</header>
+<main>
+<section class="card">
+<div class="grid">
+<div class="kpi"><span>DataService</span><strong id="serviceState">-</strong></div>
+<div class="kpi"><span>Supabase配置</span><strong id="configState">-</strong></div>
+<div class="kpi"><span>Auth</span><strong id="authState">-</strong></div>
+<div class="kpi"><span>当前模式</span><strong id="modeState">-</strong></div>
+</div>
+</section>
+
+<section class="card">
+<h3>1. Supabase 公共配置</h3>
+<p class="note">只填写 Project URL 和 Publishable key。不要填写 service_role / secret key。</p>
+<label>Project URL</label>
+<input id="url" type="text" placeholder="https://xxxx.supabase.co">
+<label>Publishable key</label>
+<input id="key" type="password" placeholder="sb_publishable_...">
+<div class="row">
+<button class="primary" onclick="saveConfig()">保存配置</button>
+<button class="primary" onclick="testConnection()">测试连接</button>
+<button class="danger" onclick="clearConfig()">清除配置</button>
+</div>
+<div id="configResult" class="result">等待配置。</div>
+</section>
+
+<section class="card">
+<h3>2. Supabase Auth 登录</h3>
+<p class="note">当前阶段先使用已创建并绑定 personnel.auth_user_id 的测试管理员账号。</p>
+<label>Email</label>
+<input id="email" type="email" value="test-manager@example.com" autocomplete="username">
+<label>Password</label>
+<input id="password" type="password" autocomplete="current-password">
+<div class="row">
+<button class="primary" onclick="login()">Auth 登录</button>
+<button class="secondary" onclick="refresh()">刷新状态</button>
+<button class="danger" onclick="logout()">Auth 退出</button>
+</div>
+<div id="authResult" class="result">尚未登录。</div>
+</section>
+
+<section class="card">
+<h3>3. 正式配置权限检查</h3>
+<p class="note">使用 TEST-AUTH-MANAGER-CONFIG 验证 authenticated 管理员 RLS；测试完成自动清理。</p>
+<button class="primary" onclick="testManagement()">测试管理权限 RLS</button>
+<div id="rlsResult" class="result">尚未测试。</div>
+</section>
+</main>
+
+<script src="js/data-service.js"></script>
+<script>
+"use strict";
+
+const ds=()=>window.MineDataService||null;
+
+function refresh(){
+  const s=ds();
+  document.getElementById("serviceState").textContent=s?"READY":"MISSING";
+  if(!s)return;
+  const ci=s.getConnectionInfo();
+  const ai=s.getAuthInfo();
+  document.getElementById("configState").textContent=ci.configured?"READY":"未配置";
+  document.getElementById("authState").textContent=ai.signedIn?"SIGNED IN":"未登录";
+  document.getElementById("modeState").textContent=String(ci.mode||"-").toUpperCase();
+  if(ci.url)document.getElementById("url").value=ci.url;
+  document.getElementById("authResult").className=ai.signedIn?"result ok":"result";
+  document.getElementById("authResult").textContent=
+    "Signed in: "+(ai.signedIn?"YES":"NO")+
+    "\nUser ID: "+(ai.userId||"-")+
+    "\nEmail: "+(ai.email||"-");
+}
+
+function saveConfig(){
+  const s=ds(); if(!s)return;
+  const url=document.getElementById("url").value.trim();
+  const anonKey=document.getElementById("key").value.trim();
+  const box=document.getElementById("configResult");
+  if(!url||!anonKey){
+    box.className="result fail";
+    box.textContent="请同时填写 Project URL 和 Publishable key。";
+    return;
+  }
+  s.configureSupabase({url,anonKey,persist:true});
+  document.getElementById("key").value="";
+  box.className="result ok";
+  box.textContent="配置已保存到正式站点当前浏览器。";
+  refresh();
+}
+
+async function testConnection(){
+  const s=ds(); if(!s)return;
+  const box=document.getElementById("configResult");
+  box.className="result";
+  box.textContent="正在测试...";
+  const r=await s.testConnection();
+  box.className=r.ok?"result ok":"result fail";
+  box.textContent=(r.ok?"PASS\n":"FAIL\n")+r.message;
+  refresh();
+}
+
+function clearConfig(){
+  const s=ds(); if(!s)return;
+  s.clearSupabaseConfig();
+  document.getElementById("url").value="";
+  document.getElementById("key").value="";
+  document.getElementById("configResult").className="result";
+  document.getElementById("configResult").textContent="配置已清除。";
+  refresh();
+}
+
+async function login(){
+  const s=ds(); if(!s)return;
+  const email=document.getElementById("email").value.trim();
+  const password=document.getElementById("password").value;
+  const box=document.getElementById("authResult");
+  box.className="result";
+  box.textContent="正在登录...";
+  try{
+    await s.signInWithPassword({email,password});
+    document.getElementById("password").value="";
+    refresh();
+  }catch(e){
+    box.className="result fail";
+    box.textContent="FAIL\n"+(e?.message||String(e));
+  }
+}
+
+async function logout(){
+  const s=ds(); if(!s)return;
+  await s.signOutAuth();
+  refresh();
+}
+
+async function testManagement(){
+  const s=ds(); if(!s)return;
+  const box=document.getElementById("rlsResult");
+  box.className="result";
+  box.textContent="正在验证 authenticated 管理员 RLS...";
+  const r=await s.testAuthenticatedManagementAccess();
+  box.className=r.ok?"result ok":"result fail";
+  box.textContent=(r.ok?"PASS\n":"FAIL\n")+r.message+
+    (r.testId?"\nTest ID: "+r.testId:"")+
+    (r.email?"\nEmail: "+r.email:"");
+}
+
+refresh();
+</script>
+</body>
+</html>
