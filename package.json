@@ -6,7 +6,8 @@
     "robot:server": "node tests/robot-control-server.js",
     "test:robots": "playwright test",
     "test:robots:ui": "playwright test --ui",
-    "test:temporary-unload": "playwright test temporary-unload.spec.js"
+    "test:temporary-unload": "playwright test temporary-unload.spec.js",
+    "data:server": "node tests/data-service-check-server.js"
   },
   "devDependencies": {
     "@playwright/test": "^1.55.0"
