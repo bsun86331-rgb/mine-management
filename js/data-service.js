@@ -180,6 +180,12 @@ Purpose:
         vehicle_change_requests:
             "driverVehicleChangeRequests",
 
+        general_manager_business_settings:
+            "generalManagerBusinessSettings",
+
+        production_volume_settings:
+            "productionVolumeSettings",
+
         system_settings:
             "mineSystemSettings"
     };
@@ -362,6 +368,10 @@ Purpose:
                 "payroll_rules" ||
             table ===
                 "attendance_geofence_config" ||
+            table ===
+                "general_manager_business_settings" ||
+            table ===
+                "production_volume_settings" ||
             table ===
                 "system_settings"
         ) {
