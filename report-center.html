@@ -4673,15 +4673,43 @@ function getProductionVolumeSettings() {
 }
 
 function saveProductionVolumeSettings(settings) {
+    const nextSettings = {
+        ...settings,
+
+        updatedAt:
+            new Date()
+                .toISOString()
+    };
+
+
     localStorage.setItem(
         PRODUCTION_VOLUME_SETTINGS_KEY,
-        JSON.stringify({
-            ...settings,
-            updatedAt:
-                new Date()
-                    .toISOString()
-        })
+        JSON.stringify(
+            nextSettings
+        )
     );
+
+
+    if (
+        window.MineDataService
+    ) {
+
+        Promise.resolve(
+            window.MineDataService.setSingleton(
+                "production_volume_settings",
+                nextSettings
+            )
+        )
+        .catch(
+            error => {
+
+                console.warn(
+                    "DataService 生产方量设置同步失败，原本地配置已保留：",
+                    error
+                );
+            }
+        );
+    }
 }
 
 function toggleVolumeSettings() {
