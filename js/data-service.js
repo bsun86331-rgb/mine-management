@@ -1947,6 +1947,265 @@ Purpose:
     }
 
 
+    async function testAuthenticatedManagementAccess() {
+
+        if (
+            !SupabaseAdapter.isConfigured()
+        ) {
+
+            return {
+                ok:
+                    false,
+
+                message:
+                    "Supabase 尚未配置"
+            };
+        }
+
+
+        const auth =
+            getAuthInfo();
+
+
+        if (
+            !auth.signedIn
+        ) {
+
+            return {
+                ok:
+                    false,
+
+                message:
+                    "当前尚未登录 Supabase Auth"
+            };
+        }
+
+
+        const testId =
+            "TEST-AUTH-MANAGER-CONFIG";
+
+
+        const now =
+            new Date()
+                .toISOString();
+
+
+        const gmInput = {
+            singletonId:
+                testId,
+
+            reportMonth:
+                "2099-11",
+
+            comprehensiveUnitPrice:
+                20.66,
+
+            updatedAt:
+                now
+        };
+
+
+        const volumeInput = {
+            singletonId:
+                testId,
+
+            defaultVolumePerTrip:
+                39.75,
+
+            vehicleModels: {
+                "TEST-AUTH-MODEL":
+                    42.5
+            },
+
+            updatedAt:
+                now
+        };
+
+
+        try {
+
+            await SupabaseAdapter.upsert(
+                "general_manager_business_settings",
+                gmInput
+            );
+
+
+            await SupabaseAdapter.upsert(
+                "production_volume_settings",
+                volumeInput
+            );
+
+
+            const gmRows =
+                await SupabaseAdapter.request(
+                    "general_manager_business_settings",
+                    {
+                        query:
+                            "select=singleton_id,report_month,comprehensive_unit_price&singleton_id=eq." +
+                            encodeURIComponent(
+                                testId
+                            ) +
+                            "&limit=1"
+                    }
+                );
+
+
+            const volumeRows =
+                await SupabaseAdapter.request(
+                    "production_volume_settings",
+                    {
+                        query:
+                            "select=singleton_id,default_volume_per_trip,vehicle_models&singleton_id=eq." +
+                            encodeURIComponent(
+                                testId
+                            ) +
+                            "&limit=1"
+                    }
+                );
+
+
+            const gmOk =
+                Array.isArray(
+                    gmRows
+                ) &&
+                gmRows.length ===
+                    1 &&
+                gmRows[
+                    0
+                ]?.singleton_id ===
+                    testId;
+
+
+            const volumeOk =
+                Array.isArray(
+                    volumeRows
+                ) &&
+                volumeRows.length ===
+                    1 &&
+                volumeRows[
+                    0
+                ]?.singleton_id ===
+                    testId;
+
+
+            await SupabaseAdapter.request(
+                "general_manager_business_settings",
+                {
+                    method:
+                        "DELETE",
+
+                    query:
+                        "singleton_id=eq." +
+                        encodeURIComponent(
+                            testId
+                        ),
+
+                    prefer:
+                        "return=minimal"
+                }
+            );
+
+
+            await SupabaseAdapter.request(
+                "production_volume_settings",
+                {
+                    method:
+                        "DELETE",
+
+                    query:
+                        "singleton_id=eq." +
+                        encodeURIComponent(
+                            testId
+                        ),
+
+                    prefer:
+                        "return=minimal"
+                }
+            );
+
+
+            if (
+                !gmOk ||
+                !volumeOk
+            ) {
+
+                return {
+                    ok:
+                        false,
+
+                    message:
+                        "authenticated 管理员写入成功，但回读校验未全部通过"
+                };
+            }
+
+
+            return {
+                ok:
+                    true,
+
+                message:
+                    "authenticated + 管理员身份通过正式配置 RLS，写入、回读、清理全部通过",
+
+                testId,
+
+                userId:
+                    auth.userId,
+
+                email:
+                    auth.email
+            };
+
+        } catch (
+            error
+        ) {
+
+            for (
+                const table
+                of [
+                    "general_manager_business_settings",
+                    "production_volume_settings"
+                ]
+            ) {
+
+                try {
+
+                    await SupabaseAdapter.request(
+                        table,
+                        {
+                            method:
+                                "DELETE",
+
+                            query:
+                                "singleton_id=eq." +
+                                encodeURIComponent(
+                                    testId
+                                ),
+
+                            prefer:
+                                "return=minimal"
+                        }
+                    );
+
+                } catch (
+                    cleanupError
+                ) {}
+            }
+
+
+            return {
+                ok:
+                    false,
+
+                message:
+                    error?.message ||
+                    String(
+                        error
+                    )
+            };
+        }
+    }
+
+
     async function testBusinessConfigMappings() {
 
         if (
@@ -2971,6 +3230,8 @@ Purpose:
         testPendingQueueRoundTrip,
 
         testBusinessConfigMappings,
+
+        testAuthenticatedManagementAccess,
 
         getAuthInfo,
 
