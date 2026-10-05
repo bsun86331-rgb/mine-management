@@ -5273,6 +5273,10 @@ async function runMaintenanceWarehouseReportCenterTest() {
         null;
 
 
+    let cleanupPage =
+        null;
+
+
     try {
 
         updateBot(
@@ -5284,8 +5288,198 @@ async function runMaintenanceWarehouseReportCenterTest() {
 
         robotMessage(
             botName,
-            "步骤 1/2：先运行维修 + 库房配件 + 验收归档完整闭环。"
+            "步骤 1/2：先清理上一轮 TEST 维修/库房残留，再运行完整闭环。"
         );
+
+
+        /*
+         * 报表回写用例会再次完整跑一遍维修链。
+         * 前面的第20用例刚刚留下了一套已完成 TEST 数据；
+         * 如果不隔离，设备检查机器人可能读到旧的残留检查记录，
+         * 从而命中 taskId 为空的旧兼容数据。
+         *
+         * 这里只删除 TEST- 数据，不碰任何正式数据。
+         */
+        cleanupPage =
+            await browserContext.newPage();
+
+
+        await cleanupPage.goto(
+            "index.html",
+            {
+                waitUntil:
+                    "domcontentloaded"
+            }
+        );
+
+
+        await cleanupPage.evaluate(
+            () => {
+
+                const keys = [
+                    "equipmentUsageChecks",
+                    "equipmentMeterReadings",
+                    "equipmentUsageRecords",
+                    "maintenanceRequests",
+                    "maintenanceWorkOrders",
+                    "maintenanceCosts",
+                    "workshopBays",
+                    "warehouseMaterials",
+                    "materialRequests",
+                    "materialLedger",
+                    "materialHolders",
+                    "materialRecycleRecords",
+                    "materialScrapRecords",
+                    "materialLostRecords"
+                ];
+
+
+                const isTestRecord =
+                    item => {
+
+                        if (
+                            !item ||
+                            typeof item !==
+                                "object"
+                        ) {
+
+                            return false;
+                        }
+
+
+                        const fields = [
+                            "id",
+                            "taskId",
+                            "shiftId",
+                            "checkId",
+                            "requestId",
+                            "maintenanceRequestId",
+                            "orderId",
+                            "costId",
+                            "equipmentId",
+                            "equipmentNumber",
+                            "materialId",
+                            "holderId",
+                            "recycleId",
+                            "scrapId",
+                            "lossId",
+                            "transactionId",
+                            "ledgerId",
+                            "bayId",
+                            "personId",
+                            "workerId"
+                        ];
+
+
+                        return fields.some(
+                            field =>
+                                String(
+                                    item[
+                                        field
+                                    ] ||
+                                    ""
+                                )
+                                .startsWith(
+                                    "TEST-"
+                                )
+                        );
+                    };
+
+
+                keys.forEach(
+                    key => {
+
+                        try {
+
+                            const rows =
+                                JSON.parse(
+                                    localStorage.getItem(
+                                        key
+                                    ) ||
+                                    "[]"
+                                );
+
+
+                            if (
+                                !Array.isArray(
+                                    rows
+                                )
+                            ) {
+
+                                return;
+                            }
+
+
+                            localStorage.setItem(
+                                key,
+                                JSON.stringify(
+                                    rows.filter(
+                                        item =>
+                                            !isTestRecord(
+                                                item
+                                            )
+                                    )
+                                )
+                            );
+
+                        } catch (
+                            error
+                        ) {}
+                    }
+                );
+
+
+                /*
+                 * 清理 DataService 测试队列里上一轮 TEST 写入，
+                 * 防止后续检查时再次把历史 TEST 记录带回来。
+                 */
+                try {
+
+                    const queue =
+                        JSON.parse(
+                            localStorage.getItem(
+                                "mineDataPendingQueue"
+                            ) ||
+                            "[]"
+                        );
+
+
+                    if (
+                        Array.isArray(
+                            queue
+                        )
+                    ) {
+
+                        localStorage.setItem(
+                            "mineDataPendingQueue",
+                            JSON.stringify(
+                                queue.filter(
+                                    item =>
+                                        !String(
+                                            JSON.stringify(
+                                                item?.payload ||
+                                                {}
+                                            )
+                                        )
+                                        .includes(
+                                            "TEST-"
+                                        )
+                                )
+                            )
+                        );
+                    }
+
+                } catch (
+                    error
+                ) {}
+            }
+        );
+
+
+        await cleanupPage.close();
+
+        cleanupPage =
+            null;
 
 
         const closedLoop =
@@ -5753,6 +5947,18 @@ async function runMaintenanceWarehouseReportCenterTest() {
 
 
     } finally {
+
+        if (
+            cleanupPage &&
+            !cleanupPage.isClosed()
+        ) {
+
+            await cleanupPage.close()
+                .catch(
+                    () => {}
+                );
+        }
+
 
         if (
             reportPage &&
