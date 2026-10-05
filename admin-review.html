@@ -4738,6 +4738,38 @@ function saveAttendanceZoneConfig() {
     );
 
 
+    /*
+     * V2.10.3C
+     * 考勤范围配置并行进入统一 DataService。
+     *
+     * attendanceGeofenceConfig 本身就是单例配置，
+     * 因此使用 setSingleton()：
+     * - 继续保留原 localStorage
+     * - 同时进入 pending queue
+     * - 后续切换 Supabase 时可直接同步共享配置
+     */
+    if (
+        window.MineDataService
+    ) {
+
+        Promise.resolve(
+            window.MineDataService.setSingleton(
+                "attendance_geofence_config",
+                config
+            )
+        )
+        .catch(
+            error => {
+
+                console.warn(
+                    "DataService 考勤范围配置同步失败，原本地配置已保留：",
+                    error
+                );
+            }
+        );
+    }
+
+
     renderAttendanceZoneConfig();
 
 
