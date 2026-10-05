@@ -502,7 +502,16 @@ Purpose:
             "lockId",
 
             "audit_id",
-            "auditId"
+            "auditId",
+
+            "reward_id",
+            "rewardId",
+
+            "penalty_id",
+            "penaltyId",
+
+            "overtime_id",
+            "overtimeId"
         ];
 
 
