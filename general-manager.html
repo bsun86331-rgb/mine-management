@@ -1171,6 +1171,7 @@
     src="js/general-manager.js?v=2.9.3"
 ></script>
 
+<script src="js/data-service.js"></script>
 <script>
 "use strict";
 
@@ -1937,6 +1938,28 @@ function saveGeneralManagerBusinessData() {
             settings
         )
     );
+
+
+    if (
+        window.MineDataService
+    ) {
+
+        Promise.resolve(
+            window.MineDataService.setSingleton(
+                "general_manager_business_settings",
+                settings
+            )
+        )
+        .catch(
+            error => {
+
+                console.warn(
+                    "DataService 总经理经营参数同步失败，原本地配置已保留：",
+                    error
+                );
+            }
+        );
+    }
 
 
     localStorage.setItem(
