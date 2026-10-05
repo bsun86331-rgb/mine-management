@@ -105,7 +105,7 @@ textarea{min-height:72px;resize:vertical}.send{border:0;border-radius:9px;backgr
 
   <div class="grid">
     <section class="panel">
-      <div class="title"><h2>机器人</h2><span>3 个</span></div>
+      <div class="title"><h2>机器人</h2><span id="robotCount">10 个</span></div>
       <div id="bots" class="bots"></div>
     </section>
 
@@ -157,8 +157,15 @@ textarea{min-height:72px;resize:vertical}.send{border:0;border-radius:9px;backgr
 
 const botsState = {
   TestManager:{name:"TestManager",icon:"🧠",role:"测试总控：分配步骤、判断 PASS / FAIL、汇总报告",status:"idle",step:"等待测试命令"},
-  DispatchBot:{name:"DispatchBot",icon:"📋",role:"调度机器人：审核 TEST 任务、GPS异常、临时卸料",status:"idle",step:"待命"},
-  TruckDriverBot:{name:"TruckDriverBot",icon:"🚚",role:"汽车司机机器人：执行 TEST 司机端运输流程",status:"idle",step:"待命"}
+  DispatchBot:{name:"DispatchBot",icon:"📋",role:"调度机器人：审批任务、维修申请、临时卸料并验证调度回传",status:"idle",step:"待命"},
+  TruckDriverBot:{name:"TruckDriverBot",icon:"🚚",role:"汽车司机机器人：执行 TEST 运输、GPS、装卸闭环",status:"idle",step:"待命"},
+  EquipmentCheckBot:{name:"EquipmentCheckBot",icon:"🧰",role:"设备检查机器人：执行设备使用检查、异常锁定与维修单生成",status:"idle",step:"待命"},
+  MaintenanceManagerBot:{name:"MaintenanceManagerBot",icon:"🏭",role:"维修管理机器人：接车、派工、验收、返修与归档",status:"idle",step:"待命"},
+  MaintenanceWorkerBot:{name:"MaintenanceWorkerBot",icon:"🔧",role:"维修工机器人：接单、开工、维修、提交验收",status:"idle",step:"待命"},
+  WarehouseBot:{name:"WarehouseBot",icon:"📦",role:"库房机器人：配件出入库、领用、回写维修与报表",status:"idle",step:"待命"},
+  ExcavatorBot:{name:"ExcavatorBot",icon:"🚜",role:"挖机机器人：验证挖机任务、司机与跟随车辆编组",status:"idle",step:"待命"},
+  RoleEntryBot:{name:"RoleEntryBot",icon:"👥",role:"岗位入口机器人：验证人员审核、岗位识别与入口权限",status:"idle",step:"待命"},
+  AuxiliaryWorkBot:{name:"AuxiliaryWorkBot",icon:"🚐",role:"辅助车辆机器人：执行辅助车辆任务、完成回传与报表闭环",status:"idle",step:"待命"}
 };
 
 const messageRows = [];
@@ -325,6 +332,11 @@ function statusLabel(s){
 }
 
 function renderBots(){
+  const robotCount=document.getElementById("robotCount");
+  if(robotCount){
+    robotCount.textContent=Object.keys(botsState).length+" 个";
+  }
+
   bots.innerHTML = Object.values(botsState).map(b=>`
     <div class="bot" data-name="${esc(b.name)}">
       <div class="bothead">
