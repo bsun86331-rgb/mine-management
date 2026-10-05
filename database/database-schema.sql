@@ -54,6 +54,7 @@ create table if not exists production_volume_settings (
 
 create table if not exists personnel (
   person_id text primary key,
+  auth_user_id uuid unique references auth.users(id),
   employee_no text,
   name text not null,
   position text not null,
@@ -746,3 +747,110 @@ end $$;
 -- 注意：RLS 策略暂不在 V1 自动开启。
 -- 先完成数据迁移和角色模型后，再单独生成 rls-policies.sql。
 -- =========================================================
+
+
+-- =========================================================
+-- Supabase Auth / 正式管理权限
+-- =========================================================
+
+-- 兼容已经创建过 personnel 表的项目
+alter table public.personnel
+add column if not exists auth_user_id uuid references auth.users(id);
+
+create unique index if not exists uq_personnel_auth_user_id
+on public.personnel(auth_user_id)
+where auth_user_id is not null;
+
+create schema if not exists private;
+
+create or replace function private.is_management_user()
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select exists (
+    select 1
+    from public.personnel p
+    where p.auth_user_id = (select auth.uid())
+      and p.position in ('总经理', '管理员')
+      and coalesce(p.approval_status, 'approved') = 'approved'
+      and coalesce(p.enabled, true) = true
+  );
+$$;
+
+revoke all on function private.is_management_user() from public;
+grant usage on schema private to authenticated;
+grant execute on function private.is_management_user() to authenticated;
+
+alter table public.general_manager_business_settings enable row level security;
+alter table public.production_volume_settings enable row level security;
+
+drop policy if exists "management config select" on public.general_manager_business_settings;
+drop policy if exists "management config insert" on public.general_manager_business_settings;
+drop policy if exists "management config update" on public.general_manager_business_settings;
+drop policy if exists "management config delete" on public.general_manager_business_settings;
+
+create policy "management config select"
+on public.general_manager_business_settings
+for select
+to authenticated
+using ((select private.is_management_user()));
+
+create policy "management config insert"
+on public.general_manager_business_settings
+for insert
+to authenticated
+with check ((select private.is_management_user()));
+
+create policy "management config update"
+on public.general_manager_business_settings
+for update
+to authenticated
+using ((select private.is_management_user()))
+with check ((select private.is_management_user()));
+
+create policy "management config delete"
+on public.general_manager_business_settings
+for delete
+to authenticated
+using ((select private.is_management_user()));
+
+drop policy if exists "management volume select" on public.production_volume_settings;
+drop policy if exists "management volume insert" on public.production_volume_settings;
+drop policy if exists "management volume update" on public.production_volume_settings;
+drop policy if exists "management volume delete" on public.production_volume_settings;
+
+create policy "management volume select"
+on public.production_volume_settings
+for select
+to authenticated
+using ((select private.is_management_user()));
+
+create policy "management volume insert"
+on public.production_volume_settings
+for insert
+to authenticated
+with check ((select private.is_management_user()));
+
+create policy "management volume update"
+on public.production_volume_settings
+for update
+to authenticated
+using ((select private.is_management_user()))
+with check ((select private.is_management_user()));
+
+create policy "management volume delete"
+on public.production_volume_settings
+for delete
+to authenticated
+using ((select private.is_management_user()));
+
+grant select, insert, update, delete
+on public.general_manager_business_settings
+to authenticated;
+
+grant select, insert, update, delete
+on public.production_volume_settings
+to authenticated;
