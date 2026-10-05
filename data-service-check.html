@@ -47,6 +47,7 @@ button{padding:10px 14px;border:0;border-radius:9px;font-weight:700;cursor:point
 <div class="row">
 <button class="primary" onclick="saveConfig()">保存配置</button>
 <button class="primary" onclick="testConnection()">测试连接</button>
+<button class="primary" onclick="testRemoteWrite()">写入 TEST 并回读</button>
 <button class="secondary" onclick="refreshStatus()">刷新状态</button>
 <button class="danger" onclick="clearConfig()">清除配置</button>
 </div>
@@ -59,8 +60,9 @@ button{padding:10px 14px;border:0;border-radius:9px;font-weight:700;cursor:point
 1. DataService 显示 READY；<br>
 2. 当前模式仍保持 local；<br>
 3. Supabase 配置显示 READY；<br>
-4. 点击“测试连接”后显示“Supabase REST 连接正常，system_settings 表可访问”。<br><br>
-只有以上全部通过后，下一步才会做 TEST- 前缀测试记录的单条上传验证。
+4. 点击“测试连接”后显示“Supabase REST 连接正常，system_settings 表可访问”；<br>
+5. 点击“写入 TEST 并回读”后显示“TEST 单条写入、回读、清理全部通过”。<br><br>
+测试记录固定使用 TEST-DATASERVICE-CONNECTION，验证完成后会自动删除。
 </div>
 </section>
 </main>
@@ -134,6 +136,23 @@ async function testConnection(){
 
   box.className=result.ok?"result ok":"result fail";
   box.textContent=(result.ok?"PASS\n":"FAIL\n")+result.message;
+  refreshStatus();
+}
+
+async function testRemoteWrite(){
+  const service=ds();
+  if(!service) return;
+
+  const box=document.getElementById("result");
+  box.className="result";
+  box.textContent="正在写入 TEST 记录并回读校验...";
+
+  const result=await service.testRemoteRoundTrip();
+
+  box.className=result.ok?"result ok":"result fail";
+  box.textContent=(result.ok?"PASS\n":"FAIL\n")+result.message+
+    (result.settingKey?"\nKey: "+result.settingKey:"");
+
   refreshStatus();
 }
 
