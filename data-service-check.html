@@ -49,6 +49,7 @@ button{padding:10px 14px;border:0;border-radius:9px;font-weight:700;cursor:point
 <button class="primary" onclick="testConnection()">测试连接</button>
 <button class="primary" onclick="testRemoteWrite()">写入 TEST 并回读</button>
 <button class="primary" onclick="testPendingQueue()">测试 pending queue</button>
+<button class="primary" onclick="testBusinessConfigs()">测试正式配置映射</button>
 <button class="secondary" onclick="refreshStatus()">刷新状态</button>
 <button class="danger" onclick="clearConfig()">清除配置</button>
 </div>
@@ -63,8 +64,9 @@ button{padding:10px 14px;border:0;border-radius:9px;font-weight:700;cursor:point
 3. Supabase 配置显示 READY；<br>
 4. 点击“测试连接”后显示“Supabase REST 连接正常，system_settings 表可访问”；<br>
 5. 点击“写入 TEST 并回读”后显示“TEST 单条写入、回读、清理全部通过”；<br>
-6. 待同步队列为 0 时，点击“测试 pending queue”，验证 local pending queue → Supabase 同步链路。<br><br>
-测试记录固定使用 TEST-DATASERVICE-CONNECTION，验证完成后会自动删除；队列测试检测到真实 pending 数据时会自动停止。
+6. 待同步队列为 0 时，点击“测试 pending queue”，验证 local pending queue → Supabase 同步链路；<br>
+7. 点击“测试正式配置映射”，验证 general_manager_business_settings 与 production_volume_settings 的 camelCase → snake_case 字段转换。<br><br>
+所有验证均使用 TEST- 数据并自动清理；队列测试检测到真实 pending 数据时会自动停止。
 </div>
 </section>
 </main>
@@ -171,6 +173,23 @@ async function testPendingQueue(){
   box.className=result.ok?"result ok":"result fail";
   box.textContent=(result.ok?"PASS\n":"FAIL\n")+result.message+
     (result.settingKey?"\nKey: "+result.settingKey:"");
+
+  refreshStatus();
+}
+
+async function testBusinessConfigs(){
+  const service=ds();
+  if(!service) return;
+
+  const box=document.getElementById("result");
+  box.className="result";
+  box.textContent="正在验证两张正式配置表的字段映射...";
+
+  const result=await service.testBusinessConfigMappings();
+
+  box.className=result.ok?"result ok":"result fail";
+  box.textContent=(result.ok?"PASS\n":"FAIL\n")+result.message+
+    (result.testId?"\nTest ID: "+result.testId:"");
 
   refreshStatus();
 }
