@@ -57,6 +57,21 @@ button{padding:10px 14px;border:0;border-radius:9px;font-weight:700;cursor:point
 </section>
 
 <section class="card">
+<h3>Supabase Auth 测试登录</h3>
+<p class="note">这里使用 Supabase Authentication 中创建的测试用户。不要填写现有矿山系统的管理员临时密码。</p>
+<label for="authEmail">测试用户 Email</label>
+<input id="authEmail" type="email" placeholder="例如 test-manager@example.com" autocomplete="username">
+<label for="authPassword">测试用户 Password</label>
+<input id="authPassword" type="password" placeholder="Supabase Auth 测试用户密码" autocomplete="current-password">
+<div class="row">
+<button class="primary" onclick="authLogin()">Auth 登录</button>
+<button class="secondary" onclick="authStatus()">Auth 状态</button>
+<button class="danger" onclick="authLogout()">Auth 退出</button>
+</div>
+<div id="authResult" class="result">尚未登录 Supabase Auth。</div>
+</section>
+
+<section class="card">
 <h3>本阶段判定标准</h3>
 <div class="note">
 1. DataService 显示 READY；<br>
@@ -126,6 +141,7 @@ function saveConfig(){
   box.textContent="配置已保存到当前浏览器。\nURL: "+result.url+"\nKey: "+maskKey(anonKey)+"\n当前业务模式仍为 local。";
   document.getElementById("anonKey").value="";
   refreshStatus();
+renderAuthInfo();
 }
 
 async function testConnection(){
@@ -192,6 +208,51 @@ async function testBusinessConfigs(){
     (result.testId?"\nTest ID: "+result.testId:"");
 
   refreshStatus();
+}
+
+function renderAuthInfo(message){
+  const service=ds();
+  const box=document.getElementById("authResult");
+  if(!service || !box) return;
+
+  const info=service.getAuthInfo();
+  box.className=info.signedIn?"result ok":"result";
+  box.textContent=(message?message+"\n":"")+
+    "Signed in: "+(info.signedIn?"YES":"NO")+
+    "\nUser ID: "+(info.userId||"-")+
+    "\nEmail: "+(info.email||"-");
+}
+
+async function authLogin(){
+  const service=ds();
+  if(!service) return;
+
+  const email=document.getElementById("authEmail").value.trim();
+  const password=document.getElementById("authPassword").value;
+  const box=document.getElementById("authResult");
+
+  box.className="result";
+  box.textContent="正在登录 Supabase Auth...";
+
+  try{
+    await service.signInWithPassword({email,password});
+    document.getElementById("authPassword").value="";
+    renderAuthInfo("PASS\nSupabase Auth 登录成功");
+  }catch(error){
+    box.className="result fail";
+    box.textContent="FAIL\n"+(error?.message||String(error));
+  }
+}
+
+function authStatus(){
+  renderAuthInfo("当前 Auth 状态");
+}
+
+async function authLogout(){
+  const service=ds();
+  if(!service) return;
+  await service.signOutAuth();
+  renderAuthInfo("已退出 Supabase Auth");
 }
 
 function clearConfig(){
