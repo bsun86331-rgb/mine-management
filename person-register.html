@@ -757,6 +757,8 @@
 
 
 
+<script src="js/data-service.js"></script>
+
 <script>
 
 "use strict";
@@ -3091,6 +3093,39 @@ async function submitRegistration() {
         savePersonnelRecords(
             records
         );
+
+
+        /*
+         * V2.10.2A
+         * 第一批数据库迁移：人员注册写入统一 DataService。
+         *
+         * 当前仍是 local-first：
+         * 1. 原有 personnelRecords 继续保留，保证旧页面兼容；
+         * 2. DataService.upsert() 为该人员补 client_record_id；
+         * 3. 同时写入 mineDataPendingQueue，供后续 Supabase 同步；
+         * 4. DataService 异常不能阻断原有人员注册流程。
+         */
+        if (
+            window.MineDataService
+        ) {
+
+            try {
+
+                await window.MineDataService.upsert(
+                    "personnel",
+                    person
+                );
+
+            } catch (
+                dataServiceError
+            ) {
+
+                console.warn(
+                    "DataService 人员写入失败，已保留原本地人员数据：",
+                    dataServiceError
+                );
+            }
+        }
 
 
         /*
