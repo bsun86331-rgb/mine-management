@@ -1776,6 +1776,181 @@ Purpose:
     }
 
 
+    async function testRemoteRoundTrip() {
+
+        if (
+            !SupabaseAdapter.isConfigured()
+        ) {
+
+            return {
+                ok:
+                    false,
+
+                message:
+                    "Supabase 尚未配置"
+            };
+        }
+
+
+        const settingKey =
+            "TEST-DATASERVICE-CONNECTION";
+
+
+        const testedAt =
+            new Date()
+                .toISOString();
+
+
+        const row = {
+            setting_key:
+                settingKey,
+
+            setting_value: {
+                source:
+                    "data-service-check",
+
+                marker:
+                    "TEST-ONLY",
+
+                tested_at:
+                    testedAt
+            },
+
+            updated_by:
+                "TEST-DATASERVICE",
+
+            updated_at:
+                testedAt
+        };
+
+
+        try {
+
+            await SupabaseAdapter.upsert(
+                "system_settings",
+                row
+            );
+
+
+            const readBack =
+                await SupabaseAdapter.request(
+                    "system_settings",
+                    {
+                        query:
+                            "select=setting_key,setting_value,updated_by,updated_at&setting_key=eq." +
+                            encodeURIComponent(
+                                settingKey
+                            ) +
+                            "&limit=1"
+                    }
+                );
+
+
+            const matched =
+                Array.isArray(
+                    readBack
+                ) &&
+                readBack.length ===
+                    1 &&
+                readBack[
+                    0
+                ]?.setting_key ===
+                    settingKey &&
+                readBack[
+                    0
+                ]?.setting_value?.marker ===
+                    "TEST-ONLY";
+
+
+            await SupabaseAdapter.request(
+                "system_settings",
+                {
+                    method:
+                        "DELETE",
+
+                    query:
+                        "setting_key=eq." +
+                        encodeURIComponent(
+                            settingKey
+                        ),
+
+                    prefer:
+                        "return=minimal"
+                }
+            );
+
+
+            if (
+                !matched
+            ) {
+
+                return {
+                    ok:
+                        false,
+
+                    message:
+                        "TEST 写入成功，但回读校验未通过"
+                };
+            }
+
+
+            return {
+                ok:
+                    true,
+
+                message:
+                    "TEST 单条写入、回读、清理全部通过",
+
+                settingKey,
+
+                readBack:
+                    readBack[
+                        0
+                    ]
+            };
+
+        } catch (
+            error
+        ) {
+
+            try {
+
+                await SupabaseAdapter.request(
+                    "system_settings",
+                    {
+                        method:
+                            "DELETE",
+
+                        query:
+                            "setting_key=eq." +
+                            encodeURIComponent(
+                                settingKey
+                            ),
+
+                        prefer:
+                            "return=minimal"
+                    }
+                );
+
+            } catch (
+                cleanupError
+            ) {}
+
+
+            return {
+                ok:
+                    false,
+
+                message:
+                    error?.message ||
+                    String(
+                        error
+                    )
+            };
+        }
+    }
+
+
     async function list(
         table
     ) {
@@ -1881,6 +2056,8 @@ Purpose:
         getConnectionInfo,
 
         testConnection,
+
+        testRemoteRoundTrip,
 
         list,
 
