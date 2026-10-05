@@ -1006,6 +1006,8 @@ footer {
 
 
 
+<script src="js/data-service.js"></script>
+
 <script>
 
 "use strict";
@@ -1029,6 +1031,41 @@ const STORAGE = {
         "maintenanceWorkerDrafts"
 
 };
+
+
+function syncWorkerMaintenanceData(
+    table,
+    row,
+    label
+) {
+
+    if (
+        !window.MineDataService ||
+        !row
+    ) {
+
+        return;
+    }
+
+
+    Promise.resolve(
+        window.MineDataService.upsert(
+            table,
+            row
+        )
+    )
+    .catch(
+        error => {
+
+            console.warn(
+                "DataService " +
+                (label || table) +
+                " 同步失败，原维修员端流程已保留：",
+                error
+            );
+        }
+    );
+}
 
 
 
@@ -1819,6 +1856,40 @@ function saveOrders(
         records
     );
 
+
+    /*
+     * V2.10.0R
+     * 维修员端每次正式工单状态变化均并行进入 DataService。
+     * 测试工单也保留 TEST 前缀，由现有测试隔离规则约束。
+     */
+    if (
+        window.MineDataService &&
+        Array.isArray(
+            records
+        )
+    ) {
+
+        records
+            .forEach(
+                order => {
+
+                    if (
+                        !order?.orderId
+                    ) {
+
+                        return;
+                    }
+
+
+                    syncWorkerMaintenanceData(
+                        "maintenance_orders",
+                        order,
+                        "维修员工单"
+                    );
+                }
+            );
+    }
+
 }
 
 
@@ -1917,6 +1988,13 @@ function syncRequestFromOrder(
     save(
         STORAGE.REQUESTS,
         requests
+    );
+
+
+    syncWorkerMaintenanceData(
+        "maintenance_requests",
+        request,
+        "维修申请状态"
     );
 
 }
