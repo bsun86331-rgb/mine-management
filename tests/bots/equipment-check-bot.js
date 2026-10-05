@@ -712,6 +712,180 @@ class EquipmentCheckBot {
                 .inputValue();
 
 
+        /*
+         * R0-1C
+         * 连续维修回归偶发出现 taskId 为空。
+         * 这里不再猜测修复，只在失败前采集完整只读诊断快照，
+         * 便于定位到底是 localStorage、页面 ctx 还是 DOM 丢失。
+         */
+        if (
+            !taskId ||
+            !shiftId
+        ) {
+
+            const diagnostic =
+                await this.page.evaluate(
+                    () => {
+
+                        const readJson =
+                            key => {
+
+                                try {
+
+                                    return JSON.parse(
+                                        localStorage.getItem(
+                                            key
+                                        ) ||
+                                        "null"
+                                    );
+
+                                } catch (
+                                    error
+                                ) {
+
+                                    return localStorage.getItem(
+                                        key
+                                    );
+                                }
+                            };
+
+
+                        let pageCtx =
+                            null;
+
+                        let pageMode =
+                            null;
+
+
+                        try {
+
+                            pageCtx =
+                                typeof ctx !==
+                                    "undefined"
+                                    ? ctx
+                                    : null;
+
+                        } catch (
+                            error
+                        ) {}
+
+
+                        try {
+
+                            pageMode =
+                                typeof mode !==
+                                    "undefined"
+                                    ? mode
+                                    : null;
+
+                        } catch (
+                            error
+                        ) {}
+
+
+                        const equipmentSelect =
+                            document.getElementById(
+                                "equipmentSelect"
+                            );
+
+
+                        return {
+                            href:
+                                location.href,
+
+                            currentPersonId:
+                                localStorage.getItem(
+                                    "currentPersonId"
+                                ),
+
+                            workerPersonId:
+                                localStorage.getItem(
+                                    "workerPersonId"
+                                ),
+
+                            driverProfile:
+                                readJson(
+                                    "driverProfile"
+                                ),
+
+                            driverCurrentTask:
+                                readJson(
+                                    "driverCurrentTask"
+                                ),
+
+                            robotTestFixture:
+                                readJson(
+                                    "__robotTestFixture"
+                                ),
+
+                            dispatchPublishedTasks:
+                                readJson(
+                                    "dispatchPublishedTasks"
+                                ),
+
+                            dispatchShiftExecutions:
+                                readJson(
+                                    "dispatchShiftExecutions"
+                                ),
+
+                            domTaskId:
+                                document.getElementById(
+                                    "taskId"
+                                )?.value ||
+                                "",
+
+                            domShiftId:
+                                document.getElementById(
+                                    "shiftId"
+                                )?.value ||
+                                "",
+
+                            pageMode,
+                            pageCtx,
+
+                            equipmentSelectValue:
+                                equipmentSelect?.value ||
+                                "",
+
+                            equipmentSelectedText:
+                                equipmentSelect
+                                    ?.options[
+                                        equipmentSelect
+                                            .selectedIndex
+                                    ]
+                                    ?.textContent ||
+                                "",
+
+                            equipmentOptions:
+                                equipmentSelect
+                                    ? [
+                                          ...equipmentSelect
+                                              .options
+                                      ]
+                                      .map(
+                                          option => ({
+                                              value:
+                                                  option.value,
+
+                                              text:
+                                                  option.textContent
+                                          })
+                                      )
+                                    : []
+                        };
+                    }
+                );
+
+
+            throw new Error(
+                "设备检查上下文诊断：" +
+                JSON.stringify(
+                    diagnostic
+                )
+            );
+        }
+
+
         assertTestId(
             taskId,
             "设备检查任务"
