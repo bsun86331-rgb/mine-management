@@ -1255,6 +1255,108 @@ Purpose:
     };
 
 
+    function toRemotePayload(
+        table,
+        payload
+    ) {
+
+        const value =
+            clone(
+                payload
+            );
+
+
+        if (
+            !value ||
+            typeof value !==
+                "object" ||
+            Array.isArray(
+                value
+            )
+        ) {
+
+            return value;
+        }
+
+
+        if (
+            table ===
+                "general_manager_business_settings"
+        ) {
+
+            return {
+                singleton_id:
+                    value.singleton_id ||
+                    value.singletonId ||
+                    "default",
+
+                report_month:
+                    value.report_month ??
+                    value.reportMonth ??
+                    "",
+
+                comprehensive_unit_price:
+                    Number(
+                        value.comprehensive_unit_price ??
+                        value.comprehensiveUnitPrice ??
+                        0
+                    ),
+
+                updated_at:
+                    value.updated_at ||
+                    value.updatedAt ||
+                    new Date()
+                        .toISOString()
+            };
+        }
+
+
+        if (
+            table ===
+                "production_volume_settings"
+        ) {
+
+            return {
+                singleton_id:
+                    value.singleton_id ||
+                    value.singletonId ||
+                    "default",
+
+                default_volume_per_trip:
+                    Number(
+                        value.default_volume_per_trip ??
+                        value.defaultVolumePerTrip ??
+                        0
+                    ),
+
+                vehicle_models:
+                    (
+                        value.vehicle_models &&
+                        typeof value.vehicle_models ===
+                            "object"
+                    )
+                        ? value.vehicle_models
+                        : (
+                            value.vehicleModels &&
+                            typeof value.vehicleModels ===
+                                "object"
+                        )
+                            ? value.vehicleModels
+                            : {},
+
+                updated_at:
+                    value.updated_at ||
+                    value.updatedAt ||
+                    new Date()
+                        .toISOString()
+            };
+        }
+
+
+        return value;
+    }
+
+
     const SupabaseAdapter = {
 
         isConfigured() {
@@ -1394,7 +1496,10 @@ Purpose:
                         "POST",
 
                     body:
-                        row
+                        toRemotePayload(
+                            table,
+                            row
+                        )
                 }
             );
         },
@@ -1415,7 +1520,10 @@ Purpose:
                         "resolution=merge-duplicates,return=representation",
 
                     body:
-                        row
+                        toRemotePayload(
+                            table,
+                            row
+                        )
                 }
             );
         }
@@ -1602,6 +1710,271 @@ Purpose:
                 listPendingQueue()
                     .length
         };
+    }
+
+
+    async function testBusinessConfigMappings() {
+
+        if (
+            !SupabaseAdapter.isConfigured()
+        ) {
+
+            return {
+                ok:
+                    false,
+
+                message:
+                    "Supabase 尚未配置"
+            };
+        }
+
+
+        const testId =
+            "TEST-DATASERVICE-CONFIG";
+
+
+        const now =
+            new Date()
+                .toISOString();
+
+
+        const gmInput = {
+            singletonId:
+                testId,
+
+            reportMonth:
+                "2099-12",
+
+            comprehensiveUnitPrice:
+                19.88,
+
+            updatedAt:
+                now
+        };
+
+
+        const volumeInput = {
+            singletonId:
+                testId,
+
+            defaultVolumePerTrip:
+                38.5,
+
+            vehicleModels: {
+                "TEST-MODEL":
+                    41.25
+            },
+
+            updatedAt:
+                now
+        };
+
+
+        try {
+
+            await SupabaseAdapter.upsert(
+                "general_manager_business_settings",
+                gmInput
+            );
+
+
+            await SupabaseAdapter.upsert(
+                "production_volume_settings",
+                volumeInput
+            );
+
+
+            const gmRows =
+                await SupabaseAdapter.request(
+                    "general_manager_business_settings",
+                    {
+                        query:
+                            "select=singleton_id,report_month,comprehensive_unit_price,updated_at&singleton_id=eq." +
+                            encodeURIComponent(
+                                testId
+                            ) +
+                            "&limit=1"
+                    }
+                );
+
+
+            const volumeRows =
+                await SupabaseAdapter.request(
+                    "production_volume_settings",
+                    {
+                        query:
+                            "select=singleton_id,default_volume_per_trip,vehicle_models,updated_at&singleton_id=eq." +
+                            encodeURIComponent(
+                                testId
+                            ) +
+                            "&limit=1"
+                    }
+                );
+
+
+            const gmOk =
+                Array.isArray(
+                    gmRows
+                ) &&
+                gmRows.length ===
+                    1 &&
+                gmRows[
+                    0
+                ]?.singleton_id ===
+                    testId &&
+                gmRows[
+                    0
+                ]?.report_month ===
+                    "2099-12" &&
+                Number(
+                    gmRows[
+                        0
+                    ]?.comprehensive_unit_price
+                ) ===
+                    19.88;
+
+
+            const volumeOk =
+                Array.isArray(
+                    volumeRows
+                ) &&
+                volumeRows.length ===
+                    1 &&
+                volumeRows[
+                    0
+                ]?.singleton_id ===
+                    testId &&
+                Number(
+                    volumeRows[
+                        0
+                    ]?.default_volume_per_trip
+                ) ===
+                    38.5 &&
+                Number(
+                    volumeRows[
+                        0
+                    ]?.vehicle_models?.[
+                        "TEST-MODEL"
+                    ]
+                ) ===
+                    41.25;
+
+
+            await SupabaseAdapter.request(
+                "general_manager_business_settings",
+                {
+                    method:
+                        "DELETE",
+
+                    query:
+                        "singleton_id=eq." +
+                        encodeURIComponent(
+                            testId
+                        ),
+
+                    prefer:
+                        "return=minimal"
+                }
+            );
+
+
+            await SupabaseAdapter.request(
+                "production_volume_settings",
+                {
+                    method:
+                        "DELETE",
+
+                    query:
+                        "singleton_id=eq." +
+                        encodeURIComponent(
+                            testId
+                        ),
+
+                    prefer:
+                        "return=minimal"
+                }
+            );
+
+
+            if (
+                !gmOk ||
+                !volumeOk
+            ) {
+
+                return {
+                    ok:
+                        false,
+
+                    message:
+                        "配置字段映射写入成功，但回读校验未全部通过",
+
+                    generalManager:
+                        gmOk,
+
+                    productionVolume:
+                        volumeOk
+                };
+            }
+
+
+            return {
+                ok:
+                    true,
+
+                message:
+                    "两张正式配置表字段映射、写入、回读、清理全部通过",
+
+                testId
+            };
+
+        } catch (
+            error
+        ) {
+
+            for (
+                const table
+                of [
+                    "general_manager_business_settings",
+                    "production_volume_settings"
+                ]
+            ) {
+
+                try {
+
+                    await SupabaseAdapter.request(
+                        table,
+                        {
+                            method:
+                                "DELETE",
+
+                            query:
+                                "singleton_id=eq." +
+                                encodeURIComponent(
+                                    testId
+                                ),
+
+                            prefer:
+                                "return=minimal"
+                        }
+                    );
+
+                } catch (
+                    cleanupError
+                ) {}
+            }
+
+
+            return {
+                ok:
+                    false,
+
+                message:
+                    error?.message ||
+                    String(
+                        error
+                    )
+            };
+        }
     }
 
 
@@ -2362,6 +2735,8 @@ Purpose:
         testRemoteRoundTrip,
 
         testPendingQueueRoundTrip,
+
+        testBusinessConfigMappings,
 
         list,
 
