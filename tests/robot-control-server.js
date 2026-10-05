@@ -19465,6 +19465,710 @@ async function runFuelManagementClosedLoopTest() {
 }
 
 
+async function runFuelRequestClosedLoopTest() {
+
+    const botName =
+        "TestManager";
+
+
+    let context =
+        null;
+
+
+    try {
+
+        await ensureBrowser();
+
+
+        updateBot(
+            botName,
+            "running",
+            "正在执行加油申请完整闭环测试"
+        );
+
+
+        robotMessage(
+            botName,
+            "加油申请步骤 1/4：创建 TEST 申请人、TEST 加油点配置与模拟GPS。"
+        );
+
+
+        context =
+            await browser.newContext({
+                baseURL:
+                    BASE_URL,
+
+                viewport: {
+                    width:
+                        1280,
+
+                    height:
+                        900
+                }
+            });
+
+
+        const page =
+            await context.newPage();
+
+
+        await page.addInitScript(
+            () => {
+
+                const personId =
+                    "TEST-FUEL-REQUEST-001";
+
+
+                if (
+                    sessionStorage.getItem(
+                        "TEST-FUEL-REQUEST-SEEDED"
+                    ) !==
+                        "1"
+                ) {
+
+                    localStorage.setItem(
+                        "personnelRecords",
+                        JSON.stringify([
+                            {
+                                personId,
+                                employeeNo:
+                                    personId,
+
+                                name:
+                                    "TEST-加油申请人",
+
+                                position:
+                                    "汽车司机",
+
+                                department:
+                                    "TEST-生产A组",
+
+                                team:
+                                    "TEST-生产A组",
+
+                                status:
+                                    "active",
+
+                                approvalStatus:
+                                    "approved",
+
+                                personnelStatus:
+                                    "在职可用",
+
+                                enabled:
+                                    true,
+
+                                testFixture:
+                                    true
+                            }
+                        ])
+                    );
+
+
+                    localStorage.setItem(
+                        "currentPersonId",
+                        personId
+                    );
+
+
+                    localStorage.setItem(
+                        "selectedPosition",
+                        "汽车司机"
+                    );
+
+
+                    localStorage.setItem(
+                        "fuelRequests",
+                        JSON.stringify([])
+                    );
+
+
+                    localStorage.setItem(
+                        "fuelRecords",
+                        JSON.stringify([])
+                    );
+
+
+                    localStorage.setItem(
+                        "fuelRequestDraft",
+                        JSON.stringify({
+                            equipmentType:
+                                "矿卡",
+
+                            equipmentNumber:
+                                "TEST-TRUCK-FUEL-001",
+
+                            remark:
+                                "TEST-加油申请完整闭环"
+                        })
+                    );
+
+
+                    localStorage.setItem(
+                        "fuelStationConfig",
+                        JSON.stringify({
+                            latitude:
+                                43.650000,
+
+                            longitude:
+                                111.970000,
+
+                            radius:
+                                50,
+
+                            fuelTruckNumber:
+                                "TEST-FUEL-TRUCK-001"
+                        })
+                    );
+
+
+                    sessionStorage.setItem(
+                        "TEST-FUEL-REQUEST-SEEDED",
+                        "1"
+                    );
+                }
+
+
+                if (
+                    !window.__robotFuelRequestGuardInstalled
+                ) {
+
+                    const originalSetItem =
+                        Storage.prototype.setItem;
+
+
+                    Storage.prototype.setItem =
+                        function (
+                            key,
+                            value
+                        ) {
+
+                            if (
+                                this ===
+                                    window.localStorage &&
+                                key ===
+                                    "fuelRequests"
+                            ) {
+
+                                try {
+
+                                    const rows =
+                                        JSON.parse(
+                                            value
+                                        );
+
+
+                                    if (
+                                        Array.isArray(
+                                            rows
+                                        )
+                                    ) {
+
+                                        rows.forEach(
+                                            item => {
+
+                                                if (
+                                                    item?.requestId &&
+                                                    !String(
+                                                        item.requestId
+                                                    )
+                                                    .startsWith(
+                                                        "TEST-"
+                                                    )
+                                                ) {
+
+                                                    item.requestId =
+                                                        "TEST-" +
+                                                        String(
+                                                            item.requestId
+                                                        );
+                                                }
+                                            }
+                                        );
+
+
+                                        value =
+                                            JSON.stringify(
+                                                rows
+                                            );
+                                    }
+
+                                } catch (
+                                    error
+                                ) {}
+                            }
+
+
+                            return originalSetItem.call(
+                                this,
+                                key,
+                                value
+                            );
+                        };
+
+
+                    window.__robotFuelRequestGuardInstalled =
+                        true;
+                }
+
+
+                Object.defineProperty(
+                    navigator,
+                    "geolocation",
+                    {
+                        configurable:
+                            true,
+
+                        value: {
+                            getCurrentPosition(
+                                success
+                            ) {
+
+                                setTimeout(
+                                    () =>
+                                        success({
+                                            coords: {
+                                                latitude:
+                                                    43.650050,
+
+                                                longitude:
+                                                    111.970050,
+
+                                                accuracy:
+                                                    5
+                                            }
+                                        }),
+                                    0
+                                );
+                            }
+                        }
+                    }
+                );
+            }
+        );
+
+
+        page.on(
+            "dialog",
+            async dialog => {
+
+                await dialog.accept();
+            }
+        );
+
+
+        await page.goto(
+            "fuel-request.html",
+            {
+                waitUntil:
+                    "domcontentloaded"
+            }
+        );
+
+
+        await page.waitForFunction(
+            () =>
+                document
+                    .getElementById(
+                        "personBadge"
+                    )
+                    ?.textContent
+                    ?.includes(
+                        "已识别"
+                    ),
+            null,
+            {
+                timeout:
+                    10000
+            }
+        );
+
+
+        const identity =
+            await page.evaluate(
+                () => ({
+                    personId:
+                        document
+                            .getElementById(
+                                "personId"
+                            )
+                            ?.textContent ||
+                        "",
+
+                    equipmentNumber:
+                        document
+                            .getElementById(
+                                "equipmentNumber"
+                            )
+                            ?.value ||
+                        ""
+                })
+            );
+
+
+        if (
+            identity.personId !==
+                "TEST-FUEL-REQUEST-001"
+        ) {
+
+            throw new Error(
+                "加油申请回归：TEST申请人身份恢复失败，实际=" +
+                identity.personId
+            );
+        }
+
+
+        if (
+            identity.equipmentNumber !==
+                "TEST-TRUCK-FUEL-001"
+        ) {
+
+            throw new Error(
+                "加油申请回归：设备草稿恢复失败，实际=" +
+                identity.equipmentNumber
+            );
+        }
+
+
+        robotMessage(
+            botName,
+            "加油申请步骤 2/4：调用正式定位流程并验证进入加油范围。"
+        );
+
+
+        await page.evaluate(
+            () => {
+
+                startLocation();
+            }
+        );
+
+
+        await page.waitForFunction(
+            () =>
+                window.isInsideFuelRange ===
+                    true &&
+                document
+                    .getElementById(
+                        "submitRequestButton"
+                    )
+                    ?.disabled ===
+                    false,
+            null,
+            {
+                timeout:
+                    10000
+            }
+        );
+
+
+        robotMessage(
+            botName,
+            "加油申请步骤 3/4：提交 TEST 加油申请并验证 waiting 状态。"
+        );
+
+
+        await page
+            .locator(
+                "#submitRequestButton"
+            )
+            .click();
+
+
+        await page.waitForFunction(
+            () => {
+
+                try {
+
+                    const rows =
+                        JSON.parse(
+                            localStorage.getItem(
+                                "fuelRequests"
+                            ) ||
+                            "[]"
+                        );
+
+
+                    return rows.some(
+                        item =>
+                            String(
+                                item.applicantId ||
+                                ""
+                            ) ===
+                                "TEST-FUEL-REQUEST-001" &&
+                            String(
+                                item.equipmentNumber ||
+                                ""
+                            ) ===
+                                "TEST-TRUCK-FUEL-001" &&
+                            item.status ===
+                                "waiting" &&
+                            String(
+                                item.requestId ||
+                                ""
+                            )
+                            .startsWith(
+                                "TEST-"
+                            )
+                    );
+
+                } catch (
+                    error
+                ) {
+
+                    return false;
+                }
+            },
+            null,
+            {
+                timeout:
+                    10000
+            }
+        );
+
+
+        const beforeReload =
+            await page.evaluate(
+                () => {
+
+                    const rows =
+                        JSON.parse(
+                            localStorage.getItem(
+                                "fuelRequests"
+                            ) ||
+                            "[]"
+                        );
+
+
+                    const request =
+                        rows.find(
+                            item =>
+                                String(
+                                    item.applicantId ||
+                                    ""
+                                ) ===
+                                    "TEST-FUEL-REQUEST-001"
+                        ) ||
+                        null;
+
+
+                    return {
+                        count:
+                            rows.length,
+
+                        request,
+
+                        currentText:
+                            document
+                                .getElementById(
+                                    "currentRequestArea"
+                                )
+                                ?.textContent ||
+                            ""
+                    };
+                }
+            );
+
+
+        if (
+            beforeReload.count !==
+                1 ||
+            beforeReload.request?.status !==
+                "waiting" ||
+            beforeReload.request?.gpsStatus !==
+                "范围内" ||
+            beforeReload.request?.fuelTruckNumber !==
+                "TEST-FUEL-TRUCK-001" ||
+            !beforeReload.currentText.includes(
+                "等待加油"
+            )
+        ) {
+
+            throw new Error(
+                "加油申请回归：提交后状态或当前申请展示异常"
+            );
+        }
+
+
+        robotMessage(
+            botName,
+            "加油申请步骤 4/4：刷新页面，验证申请和设备草稿持久化。"
+        );
+
+
+        await page.reload({
+            waitUntil:
+                "domcontentloaded"
+        });
+
+
+        await page.waitForFunction(
+            () =>
+                document
+                    .getElementById(
+                        "currentRequestArea"
+                    )
+                    ?.textContent
+                    ?.includes(
+                        "等待加油"
+                    ),
+            null,
+            {
+                timeout:
+                    10000
+            }
+        );
+
+
+        const afterReload =
+            await page.evaluate(
+                () => {
+
+                    const rows =
+                        JSON.parse(
+                            localStorage.getItem(
+                                "fuelRequests"
+                            ) ||
+                            "[]"
+                        );
+
+
+                    const request =
+                        rows.find(
+                            item =>
+                                String(
+                                    item.applicantId ||
+                                    ""
+                                ) ===
+                                    "TEST-FUEL-REQUEST-001"
+                        ) ||
+                        null;
+
+
+                    return {
+                        count:
+                            rows.length,
+
+                        requestId:
+                            request?.requestId ||
+                            "",
+
+                        status:
+                            request?.status ||
+                            "",
+
+                        equipmentNumber:
+                            document
+                                .getElementById(
+                                    "equipmentNumber"
+                                )
+                                ?.value ||
+                            "",
+
+                        currentText:
+                            document
+                                .getElementById(
+                                    "currentRequestArea"
+                                )
+                                ?.textContent ||
+                            ""
+                    };
+                }
+            );
+
+
+        if (
+            afterReload.count !==
+                1 ||
+            !String(
+                afterReload.requestId
+            )
+            .startsWith(
+                "TEST-"
+            ) ||
+            afterReload.status !==
+                "waiting" ||
+            afterReload.equipmentNumber !==
+                "TEST-TRUCK-FUEL-001" ||
+            !afterReload.currentText.includes(
+                "等待加油"
+            )
+        ) {
+
+            throw new Error(
+                "加油申请回归：刷新后申请数据未正确保持"
+            );
+        }
+
+
+        robotMessage(
+            botName,
+            "加油申请完整闭环通过：TEST身份、GPS范围判断、申请提交、防重复状态、刷新持久化均正常。"
+        );
+
+
+        updateBot(
+            botName,
+            "pass",
+            "加油申请完整闭环测试通过"
+        );
+
+
+        return {
+            ok:
+                true,
+
+            action:
+                "fuel-request-closed-loop-test",
+
+            beforeReload,
+            afterReload
+        };
+
+
+    } catch (
+        error
+    ) {
+
+        const message =
+            error?.message ||
+            String(
+                error
+            );
+
+
+        updateBot(
+            botName,
+            "fail",
+            message
+        );
+
+
+        robotMessage(
+            botName,
+            "加油申请完整闭环测试失败：" +
+            message
+        );
+
+
+        throw error;
+
+
+    } finally {
+
+        if (
+            context
+        ) {
+
+            await context.close()
+                .catch(
+                    () => {}
+                );
+        }
+    }
+}
+
+
 async function runAllCoreRegressionTests() {
 
     const botName =
@@ -19840,6 +20544,13 @@ async function runAllCoreRegressionTests() {
         "油料管理完整闭环",
         async () =>
             await runFuelManagementClosedLoopTest()
+    );
+
+
+    await runCase(
+        "加油申请完整闭环",
+        async () =>
+            await runFuelRequestClosedLoopTest()
     );
 
 
@@ -23428,6 +24139,23 @@ async function executeCommand({
     ) {
 
         return await runFuelManagementClosedLoopTest();
+    }
+
+
+    if (
+        requestedBot ===
+            "TestManager" &&
+        (
+            /测试.*加油申请.*完整.*闭环/i.test(
+                command
+            ) ||
+            /加油申请.*完整.*闭环/i.test(
+                command
+            )
+        )
+    ) {
+
+        return await runFuelRequestClosedLoopTest();
     }
 
 
