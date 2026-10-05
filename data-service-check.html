@@ -66,6 +66,7 @@ button{padding:10px 14px;border:0;border-radius:9px;font-weight:700;cursor:point
 <div class="row">
 <button class="primary" onclick="authLogin()">Auth 登录</button>
 <button class="secondary" onclick="authStatus()">Auth 状态</button>
+<button class="primary" onclick="testManagementRls()">测试管理权限 RLS</button>
 <button class="danger" onclick="authLogout()">Auth 退出</button>
 </div>
 <div id="authResult" class="result">尚未登录 Supabase Auth。</div>
@@ -246,6 +247,24 @@ async function authLogin(){
 
 function authStatus(){
   renderAuthInfo("当前 Auth 状态");
+}
+
+async function testManagementRls(){
+  const service=ds();
+  if(!service) return;
+
+  const box=document.getElementById("authResult");
+  box.className="result";
+  box.textContent="正在验证 authenticated + 管理员 RLS 权限...";
+
+  const result=await service.testAuthenticatedManagementAccess();
+
+  box.className=result.ok?"result ok":"result fail";
+  box.textContent=(result.ok?"PASS\n":"FAIL\n")+result.message+
+    (result.testId?"\nTest ID: "+result.testId:"")+
+    (result.email?"\nEmail: "+result.email:"");
+
+  refreshStatus();
 }
 
 async function authLogout(){
