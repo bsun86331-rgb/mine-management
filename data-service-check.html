@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>DataService / Supabase 连接检查</title>
+<style>
+body{margin:0;background:#f1f5f9;color:#0f172a;font-family:Arial,"Microsoft YaHei",sans-serif}
+header{background:#0f172a;color:#fff;padding:18px}
+main{max-width:980px;margin:auto;padding:16px}
+.card{background:#fff;border-radius:14px;padding:16px;margin-bottom:14px;box-shadow:0 4px 16px rgba(15,23,42,.06)}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.kpi{background:#f8fafc;padding:12px;border-radius:10px}.kpi span{display:block;color:#64748b;font-size:12px}.kpi strong{display:block;margin-top:4px;font-size:20px}
+label{display:block;margin:12px 0 5px;font-weight:700}
+input{width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid #cbd5e1;border-radius:9px;font-size:14px}
+.row{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+button{padding:10px 14px;border:0;border-radius:9px;font-weight:700;cursor:pointer}
+.primary{background:#2563eb;color:#fff}.secondary{background:#e2e8f0;color:#0f172a}.danger{background:#fee2e2;color:#991b1b}
+.result{margin-top:14px;padding:12px;border-radius:10px;white-space:pre-wrap;word-break:break-word;background:#f8fafc;border:1px solid #e2e8f0}
+.ok{background:#ecfdf5;border-color:#86efac;color:#166534}.fail{background:#fef2f2;border-color:#fecaca;color:#991b1b}
+.note{color:#64748b;font-size:12px;line-height:1.7}
+@media(max-width:760px){.grid{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<header>
+<h2 style="margin:0">🔌 DataService / Supabase 连接检查</h2>
+<div style="font-size:12px;color:#cbd5e1;margin-top:5px">只做配置与连接诊断，不切换正式业务页面，不批量上传数据。</div>
+</header>
+<main>
+<section class="card">
+<div class="grid">
+<div class="kpi"><span>DataService</span><strong id="serviceState">-</strong></div>
+<div class="kpi"><span>当前模式</span><strong id="modeState">-</strong></div>
+<div class="kpi"><span>Supabase配置</span><strong id="configState">-</strong></div>
+<div class="kpi"><span>待同步队列</span><strong id="pendingState">0</strong></div>
+</div>
+</section>
+
+<section class="card">
+<h3>Supabase 项目配置</h3>
+<p class="note">这里使用 Supabase Project URL 和 anon/public key。配置只保存在当前浏览器 localStorage，不写入 GitHub 仓库。不要在这里填写 service_role key。</p>
+<label for="url">Project URL</label>
+<input id="url" type="text" placeholder="https://xxxx.supabase.co" autocomplete="off">
+<label for="anonKey">anon / public key</label>
+<input id="anonKey" type="password" placeholder="粘贴 anon/public key" autocomplete="off">
+<div class="row">
+<button class="primary" onclick="saveConfig()">保存配置</button>
+<button class="primary" onclick="testConnection()">测试连接</button>
+<button class="secondary" onclick="refreshStatus()">刷新状态</button>
+<button class="danger" onclick="clearConfig()">清除配置</button>
+</div>
+<div id="result" class="result">等待操作。</div>
+</section>
+
+<section class="card">
+<h3>本阶段判定标准</h3>
+<div class="note">
+1. DataService 显示 READY；<br>
+2. 当前模式仍保持 local；<br>
+3. Supabase 配置显示 READY；<br>
+4. 点击“测试连接”后显示“Supabase REST 连接正常，system_settings 表可访问”。<br><br>
+只有以上全部通过后，下一步才会做 TEST- 前缀测试记录的单条上传验证。
+</div>
+</section>
+</main>
+
+<script src="js/data-service.js"></script>
+<script>
+"use strict";
+
+function ds(){
+  return window.MineDataService || null;
+}
+
+function maskKey(value){
+  const text=String(value||"");
+  if(!text) return "";
+  if(text.length<=12) return "••••••••";
+  return text.slice(0,6)+"••••••••"+text.slice(-4);
+}
+
+function refreshStatus(){
+  const service=ds();
+  document.getElementById("serviceState").textContent=service?"READY":"MISSING";
+
+  if(!service){
+    document.getElementById("result").className="result fail";
+    document.getElementById("result").textContent="未加载 MineDataService。";
+    return;
+  }
+
+  const info=service.getConnectionInfo();
+  document.getElementById("modeState").textContent=String(info.mode||"-").toUpperCase();
+  document.getElementById("configState").textContent=info.configured?"READY":"未配置";
+  document.getElementById("pendingState").textContent=String(info.pending||0);
+
+  if(info.url){
+    document.getElementById("url").value=info.url;
+  }
+}
+
+function saveConfig(){
+  const service=ds();
+  if(!service) return;
+
+  const url=document.getElementById("url").value.trim();
+  const anonKey=document.getElementById("anonKey").value.trim();
+
+  const box=document.getElementById("result");
+
+  if(!url || !anonKey){
+    box.className="result fail";
+    box.textContent="请同时填写 Project URL 和 anon/public key。";
+    return;
+  }
+
+  const result=service.configureSupabase({url,anonKey,persist:true});
+  box.className="result ok";
+  box.textContent="配置已保存到当前浏览器。\nURL: "+result.url+"\nKey: "+maskKey(anonKey)+"\n当前业务模式仍为 local。";
+  document.getElementById("anonKey").value="";
+  refreshStatus();
+}
+
+async function testConnection(){
+  const service=ds();
+  if(!service) return;
+
+  const box=document.getElementById("result");
+  box.className="result";
+  box.textContent="正在测试 Supabase REST 连接...";
+
+  const result=await service.testConnection();
+
+  box.className=result.ok?"result ok":"result fail";
+  box.textContent=(result.ok?"PASS\n":"FAIL\n")+result.message;
+  refreshStatus();
+}
+
+function clearConfig(){
+  const service=ds();
+  if(!service) return;
+
+  service.clearSupabaseConfig();
+  document.getElementById("url").value="";
+  document.getElementById("anonKey").value="";
+
+  const box=document.getElementById("result");
+  box.className="result";
+  box.textContent="Supabase 本机配置已清除，模式保持 local。";
+  refreshStatus();
+}
+
+refreshStatus();
+</script>
+</body>
+</html>
