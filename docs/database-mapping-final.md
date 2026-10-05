@@ -21,9 +21,9 @@
 | generalManagerCostInputs | 正式业务数据 | finance_costs | 总经理手工补录成本统一进入财务成本表 |
 | auxiliaryVehicleProfile | 本地缓存 + 正式设备主数据 | vehicles / 本地 profile cache | 正式车辆资料来自 vehicles，本地只缓存当前辅助车辆 |
 | auxiliaryWorkRecords | 正式业务数据 | auxiliary_work_records | 辅助车辆作业记录 |
-| generalManagerBusinessSettings | 系统配置 | system_settings | 总经理经营参数统一系统设置 |
+| generalManagerBusinessSettings | 系统配置 | general_manager_business_settings | 总经理经营参数独立单例配置 |
 | penaltyRecords | 正式业务数据 | penalty_records | 罚款/处罚记录，后续参与工资扣款 |
-| productionVolumeSettings | 系统配置 | system_settings | 生产量、计价等经营参数 |
+| productionVolumeSettings | 系统配置 | production_volume_settings | 默认单车均方、车型均方独立单例配置 |
 | temporaryUnloadRequests | 正式业务数据 | temporary_unload_requests | 临时卸料申请与审批闭环 |
 | auxiliaryDemoTasks | 测试/演示数据 | 不进入生产数据库 | 仅用于演示/测试 |
 | dispatchUserProfile | 本地会话缓存 | personnel / 本地 profile cache | 正式人员来自 personnel |
@@ -84,6 +84,8 @@
 | payrollStandards | payroll_standards |
 | payrollRules | payroll_rules |
 | teamTransferRequests | team_transfer_requests |
+| generalManagerBusinessSettings | general_manager_business_settings |
+| productionVolumeSettings | production_volume_settings |
 
 ## 四、本地保留，不作为正式业务主数据
 
