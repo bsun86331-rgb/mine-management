@@ -902,6 +902,16 @@ async function initializeTruckDriverTestEnvironment(
                                 "shift",
                             inspectionMode:
                                 "shift",
+
+                            /*
+                             * R0-4G
+                             * 设备检查安全规则要求班次检查必须携带 TEST taskId。
+                             * 旧 fixture 只有 shiftId，重复跑维修链时机器人有机会
+                             * 读到这条基础锁定记录，从而触发“设备检查任务 ID为空”。
+                             */
+                            taskId:
+                                TEST_DATA.taskId,
+
                             shiftId:
                                 TEST_DATA.shiftId,
                             equipmentId:
