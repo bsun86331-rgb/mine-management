@@ -14931,14 +14931,187 @@ document.addEventListener(
         value
     ) {
 
+        let previous =
+            [];
+
+
+        try {
+
+            const parsed =
+                JSON.parse(
+                    localStorage.getItem(
+                        key
+                    ) ||
+                    "[]"
+                );
+
+
+            previous =
+                Array.isArray(
+                    parsed
+                )
+                    ? parsed
+                    : [];
+
+        } catch (
+            error
+        ) {
+
+            previous =
+                [];
+        }
+
+
         localStorage.setItem(
             key,
             JSON.stringify(
                 value
             )
         );
-    }
 
+
+        /*
+         * V2.10.4F
+         * 管理人员奖励 / 罚款 / 加班并行接入 DataService。
+         * 只同步本次新增或发生变化的记录，不全量广播历史台账。
+         */
+        if (
+            !window.MineDataService ||
+            !Array.isArray(
+                value
+            )
+        ) {
+
+            return;
+        }
+
+
+        const tableMap = {
+            [KEY.REWARDS]:
+                "reward_records",
+
+            [KEY.PENALTIES]:
+                "penalty_records",
+
+            [KEY.OVERTIME]:
+                "overtime_records"
+        };
+
+
+        const idFieldMap = {
+            [KEY.REWARDS]:
+                "rewardId",
+
+            [KEY.PENALTIES]:
+                "penaltyId",
+
+            [KEY.OVERTIME]:
+                "overtimeId"
+        };
+
+
+        const table =
+            tableMap[
+                key
+            ];
+
+
+        const idField =
+            idFieldMap[
+                key
+            ];
+
+
+        if (
+            !table ||
+            !idField
+        ) {
+
+            return;
+        }
+
+
+        const previousMap =
+            new Map(
+                previous
+                    .filter(
+                        item =>
+                            item?.[
+                                idField
+                            ]
+                    )
+                    .map(
+                        item => [
+                            String(
+                                item[
+                                    idField
+                                ]
+                            ),
+                            item
+                        ]
+                    )
+            );
+
+
+        value.forEach(
+            item => {
+
+                const id =
+                    String(
+                        item?.[
+                            idField
+                        ] ||
+                        ""
+                    );
+
+
+                if (
+                    !id
+                ) {
+
+                    return;
+                }
+
+
+                const oldItem =
+                    previousMap.get(
+                        id
+                    );
+
+
+                if (
+                    oldItem &&
+                    JSON.stringify(
+                        oldItem
+                    ) ===
+                    JSON.stringify(
+                        item
+                    )
+                ) {
+
+                    return;
+                }
+
+
+                Promise.resolve(
+                    window.MineDataService.upsert(
+                        table,
+                        item
+                    )
+                )
+                .catch(
+                    error => {
+
+                        console.warn(
+                            "DataService 管理人员奖罚/加班同步失败，原本地记录已保留：",
+                            key,
+                            error
+                        );
+                    }
+                );
+            }
+        );
+    }
 
     function esc(value) {
 
