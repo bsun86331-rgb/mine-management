@@ -20257,6 +20257,729 @@ async function runFuelRequestClosedLoopTest() {
 }
 
 
+async function runMaterialRequestClosedLoopTest() {
+
+    const botName =
+        "TestManager";
+
+
+    let context =
+        null;
+
+
+    try {
+
+        await ensureBrowser();
+
+
+        updateBot(
+            botName,
+            "running",
+            "正在执行物资申请完整闭环测试"
+        );
+
+
+        robotMessage(
+            botName,
+            "物资申请步骤 1/4：创建 TEST 人员、TEST 标准物资与空申请台账。"
+        );
+
+
+        context =
+            await browser.newContext({
+                baseURL:
+                    BASE_URL,
+
+                viewport: {
+                    width:
+                        1280,
+
+                    height:
+                        900
+                }
+            });
+
+
+        const page =
+            await context.newPage();
+
+
+        await page.addInitScript(
+            () => {
+
+                const personId =
+                    "TEST-MATERIAL-REQUEST-001";
+
+
+                if (
+                    sessionStorage.getItem(
+                        "TEST-MATERIAL-REQUEST-SEEDED"
+                    ) !==
+                        "1"
+                ) {
+
+                    localStorage.setItem(
+                        "personnelRecords",
+                        JSON.stringify([
+                            {
+                                personId,
+
+                                employeeNo:
+                                    personId,
+
+                                name:
+                                    "TEST-物资申请人",
+
+                                position:
+                                    "测量员",
+
+                                department:
+                                    "TEST-测量组",
+
+                                status:
+                                    "active",
+
+                                approvalStatus:
+                                    "approved",
+
+                                personnelStatus:
+                                    "在职可用",
+
+                                enabled:
+                                    true,
+
+                                testFixture:
+                                    true
+                            }
+                        ])
+                    );
+
+
+                    localStorage.setItem(
+                        "currentPersonId",
+                        personId
+                    );
+
+
+                    localStorage.setItem(
+                        "selectedPosition",
+                        "测量员"
+                    );
+
+
+                    localStorage.setItem(
+                        "warehouseMaterials",
+                        JSON.stringify([
+                            {
+                                materialId:
+                                    "TEST-MAT-001",
+
+                                code:
+                                    "TEST-MAT-CODE-001",
+
+                                name:
+                                    "TEST-反光背心",
+
+                                category:
+                                    "劳保用品",
+
+                                spec:
+                                    "XL",
+
+                                unit:
+                                    "件",
+
+                                type:
+                                    "consumable",
+
+                                availableQty:
+                                    20,
+
+                                status:
+                                    "active",
+
+                                testFixture:
+                                    true
+                            }
+                        ])
+                    );
+
+
+                    localStorage.setItem(
+                        "materialRequests",
+                        JSON.stringify([])
+                    );
+
+
+                    sessionStorage.setItem(
+                        "TEST-MATERIAL-REQUEST-SEEDED",
+                        "1"
+                    );
+                }
+
+
+                if (
+                    !window.__robotMaterialRequestGuardInstalled
+                ) {
+
+                    const originalSetItem =
+                        Storage.prototype.setItem;
+
+
+                    Storage.prototype.setItem =
+                        function (
+                            key,
+                            value
+                        ) {
+
+                            if (
+                                this ===
+                                    window.localStorage &&
+                                key ===
+                                    "materialRequests"
+                            ) {
+
+                                try {
+
+                                    const rows =
+                                        JSON.parse(
+                                            value
+                                        );
+
+
+                                    if (
+                                        Array.isArray(
+                                            rows
+                                        )
+                                    ) {
+
+                                        rows.forEach(
+                                            item => {
+
+                                                if (
+                                                    item?.requestId &&
+                                                    !String(
+                                                        item.requestId
+                                                    )
+                                                    .startsWith(
+                                                        "TEST-"
+                                                    )
+                                                ) {
+
+                                                    item.requestId =
+                                                        "TEST-" +
+                                                        String(
+                                                            item.requestId
+                                                        );
+                                                }
+                                            }
+                                        );
+
+
+                                        value =
+                                            JSON.stringify(
+                                                rows
+                                            );
+                                    }
+
+                                } catch (
+                                    error
+                                ) {}
+                            }
+
+
+                            return originalSetItem.call(
+                                this,
+                                key,
+                                value
+                            );
+                        };
+
+
+                    window.__robotMaterialRequestGuardInstalled =
+                        true;
+                }
+            }
+        );
+
+
+        page.on(
+            "dialog",
+            async dialog => {
+
+                await dialog.accept();
+            }
+        );
+
+
+        await page.goto(
+            "material-request.html",
+            {
+                waitUntil:
+                    "domcontentloaded"
+            }
+        );
+
+
+        await page.waitForFunction(
+            () =>
+                document
+                    .getElementById(
+                        "approvalBadge"
+                    )
+                    ?.textContent
+                    ?.includes(
+                        "已审核"
+                    ),
+            null,
+            {
+                timeout:
+                    10000
+            }
+        );
+
+
+        const identity =
+            await page.evaluate(
+                () => ({
+                    personId:
+                        document
+                            .getElementById(
+                                "personId"
+                            )
+                            ?.textContent ||
+                        "",
+
+                    optionCount:
+                        document
+                            .getElementById(
+                                "materialSelect"
+                            )
+                            ?.options
+                            ?.length ||
+                        0
+                })
+            );
+
+
+        if (
+            identity.personId !==
+                "TEST-MATERIAL-REQUEST-001"
+        ) {
+
+            throw new Error(
+                "物资申请回归：TEST人员身份恢复失败，实际=" +
+                identity.personId
+            );
+        }
+
+
+        if (
+            identity.optionCount <
+                2
+        ) {
+
+            throw new Error(
+                "物资申请回归：未加载TEST标准物资"
+            );
+        }
+
+
+        robotMessage(
+            botName,
+            "物资申请步骤 2/4：选择 TEST 物资，填写数量、用途和备注。"
+        );
+
+
+        await page
+            .locator(
+                "#materialSelect"
+            )
+            .selectOption(
+                "TEST-MAT-001"
+            );
+
+
+        await page
+            .locator(
+                "#requestQuantity"
+            )
+            .fill(
+                "3"
+            );
+
+
+        await page
+            .locator(
+                "#requestType"
+            )
+            .selectOption(
+                "normal"
+            );
+
+
+        await page
+            .locator(
+                "#purpose"
+            )
+            .fill(
+                "TEST-现场测量作业使用"
+            );
+
+
+        await page
+            .locator(
+                "#remark"
+            )
+            .fill(
+                "TEST-物资申请完整闭环"
+            );
+
+
+        const materialInfo =
+            await page
+                .locator(
+                    "#materialInfo"
+                )
+                .textContent();
+
+
+        if (
+            !String(
+                materialInfo ||
+                ""
+            )
+            .includes(
+                "TEST-反光背心"
+            )
+        ) {
+
+            throw new Error(
+                "物资申请回归：物资详情未正确展示"
+            );
+        }
+
+
+        robotMessage(
+            botName,
+            "物资申请步骤 3/4：提交申请并验证 pending 状态和 TEST- 前缀。"
+        );
+
+
+        await page
+            .getByRole(
+                "button",
+                {
+                    name:
+                        /提交物料领用单/
+                }
+            )
+            .click();
+
+
+        await page.waitForFunction(
+            () => {
+
+                try {
+
+                    const rows =
+                        JSON.parse(
+                            localStorage.getItem(
+                                "materialRequests"
+                            ) ||
+                            "[]"
+                        );
+
+
+                    return rows.some(
+                        item =>
+                            String(
+                                item.personId ||
+                                ""
+                            ) ===
+                                "TEST-MATERIAL-REQUEST-001" &&
+                            String(
+                                item.materialId ||
+                                ""
+                            ) ===
+                                "TEST-MAT-001" &&
+                            Number(
+                                item.requestQuantity ||
+                                item.quantity ||
+                                0
+                            ) ===
+                                3 &&
+                            item.status ===
+                                "pending" &&
+                            String(
+                                item.requestId ||
+                                ""
+                            )
+                            .startsWith(
+                                "TEST-"
+                            )
+                    );
+
+                } catch (
+                    error
+                ) {
+
+                    return false;
+                }
+            },
+            null,
+            {
+                timeout:
+                    10000
+            }
+        );
+
+
+        const beforeReload =
+            await page.evaluate(
+                () => {
+
+                    const rows =
+                        JSON.parse(
+                            localStorage.getItem(
+                                "materialRequests"
+                            ) ||
+                            "[]"
+                        );
+
+
+                    const request =
+                        rows.find(
+                            item =>
+                                String(
+                                    item.personId ||
+                                    ""
+                                ) ===
+                                    "TEST-MATERIAL-REQUEST-001"
+                        ) ||
+                        null;
+
+
+                    return {
+                        count:
+                            rows.length,
+
+                        request,
+
+                        listText:
+                            document
+                                .getElementById(
+                                    "myRequestList"
+                                )
+                                ?.textContent ||
+                            ""
+                    };
+                }
+            );
+
+
+        if (
+            beforeReload.count !==
+                1 ||
+            beforeReload.request?.status !==
+                "pending" ||
+            beforeReload.request?.materialName !==
+                "TEST-反光背心" ||
+            Number(
+                beforeReload.request
+                    ?.requestQuantity ||
+                0
+            ) !==
+                3 ||
+            !beforeReload.listText.includes(
+                "待后勤处理"
+            )
+        ) {
+
+            throw new Error(
+                "物资申请回归：提交后申请状态或列表展示异常"
+            );
+        }
+
+
+        robotMessage(
+            botName,
+            "物资申请步骤 4/4：刷新页面，验证申请记录持久化。"
+        );
+
+
+        await page.reload({
+            waitUntil:
+                "domcontentloaded"
+        });
+
+
+        await page.waitForFunction(
+            () =>
+                document
+                    .getElementById(
+                        "myRequestList"
+                    )
+                    ?.textContent
+                    ?.includes(
+                        "待后勤处理"
+                    ),
+            null,
+            {
+                timeout:
+                    10000
+            }
+        );
+
+
+        const afterReload =
+            await page.evaluate(
+                () => {
+
+                    const rows =
+                        JSON.parse(
+                            localStorage.getItem(
+                                "materialRequests"
+                            ) ||
+                            "[]"
+                        );
+
+
+                    const request =
+                        rows.find(
+                            item =>
+                                String(
+                                    item.personId ||
+                                    ""
+                                ) ===
+                                    "TEST-MATERIAL-REQUEST-001"
+                        ) ||
+                        null;
+
+
+                    return {
+                        count:
+                            rows.length,
+
+                        requestId:
+                            request?.requestId ||
+                            "",
+
+                        status:
+                            request?.status ||
+                            "",
+
+                        quantity:
+                            Number(
+                                request
+                                    ?.requestQuantity ||
+                                0
+                            ),
+
+                        listText:
+                            document
+                                .getElementById(
+                                    "myRequestList"
+                                )
+                                ?.textContent ||
+                            ""
+                    };
+                }
+            );
+
+
+        if (
+            afterReload.count !==
+                1 ||
+            !String(
+                afterReload.requestId
+            )
+            .startsWith(
+                "TEST-"
+            ) ||
+            afterReload.status !==
+                "pending" ||
+            afterReload.quantity !==
+                3 ||
+            !afterReload.listText.includes(
+                "TEST-反光背心"
+            )
+        ) {
+
+            throw new Error(
+                "物资申请回归：刷新后申请数据未正确保持"
+            );
+        }
+
+
+        robotMessage(
+            botName,
+            "物资申请完整闭环通过：TEST身份、标准物资、申请提交、pending状态、刷新持久化均正常。"
+        );
+
+
+        updateBot(
+            botName,
+            "pass",
+            "物资申请完整闭环测试通过"
+        );
+
+
+        return {
+            ok:
+                true,
+
+            action:
+                "material-request-closed-loop-test",
+
+            beforeReload,
+            afterReload
+        };
+
+
+    } catch (
+        error
+    ) {
+
+        const message =
+            error?.message ||
+            String(
+                error
+            );
+
+
+        updateBot(
+            botName,
+            "fail",
+            message
+        );
+
+
+        robotMessage(
+            botName,
+            "物资申请完整闭环测试失败：" +
+            message
+        );
+
+
+        throw error;
+
+
+    } finally {
+
+        if (
+            context
+        ) {
+
+            await context.close()
+                .catch(
+                    () => {}
+                );
+        }
+    }
+}
+
+
 async function runAllCoreRegressionTests() {
 
     const botName =
@@ -20639,6 +21362,13 @@ async function runAllCoreRegressionTests() {
         "加油申请完整闭环",
         async () =>
             await runFuelRequestClosedLoopTest()
+    );
+
+
+    await runCase(
+        "物资申请完整闭环",
+        async () =>
+            await runMaterialRequestClosedLoopTest()
     );
 
 
@@ -24244,6 +24974,23 @@ async function executeCommand({
     ) {
 
         return await runFuelRequestClosedLoopTest();
+    }
+
+
+    if (
+        requestedBot ===
+            "TestManager" &&
+        (
+            /测试.*物资申请.*完整.*闭环/i.test(
+                command
+            ) ||
+            /物资申请.*完整.*闭环/i.test(
+                command
+            )
+        )
+    ) {
+
+        return await runMaterialRequestClosedLoopTest();
     }
 
 
