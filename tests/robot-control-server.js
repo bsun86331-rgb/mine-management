@@ -20980,6 +20980,561 @@ async function runMaterialRequestClosedLoopTest() {
 }
 
 
+async function runFinanceCostClosedLoopTest() {
+
+    const botName =
+        "TestManager";
+
+
+    let context =
+        null;
+
+
+    try {
+
+        await ensureBrowser();
+
+
+        updateBot(
+            botName,
+            "running",
+            "正在执行财务成本统计完整闭环测试"
+        );
+
+
+        robotMessage(
+            botName,
+            "财务步骤 1/4：创建空 TEST 财务费用台账。"
+        );
+
+
+        context =
+            await browser.newContext({
+                baseURL:
+                    BASE_URL,
+
+                viewport: {
+                    width:
+                        1280,
+
+                    height:
+                        900
+                }
+            });
+
+
+        const page =
+            await context.newPage();
+
+
+        await page.addInitScript(
+            () => {
+
+                if (
+                    sessionStorage.getItem(
+                        "TEST-FINANCE-COST-SEEDED"
+                    ) !==
+                        "1"
+                ) {
+
+                    localStorage.setItem(
+                        "financeCostRecords",
+                        JSON.stringify([])
+                    );
+
+
+                    sessionStorage.setItem(
+                        "TEST-FINANCE-COST-SEEDED",
+                        "1"
+                    );
+                }
+
+
+                if (
+                    !window.__robotFinanceCostGuardInstalled
+                ) {
+
+                    const originalSetItem =
+                        Storage.prototype.setItem;
+
+
+                    Storage.prototype.setItem =
+                        function (
+                            key,
+                            value
+                        ) {
+
+                            if (
+                                this ===
+                                    window.localStorage &&
+                                key ===
+                                    "financeCostRecords"
+                            ) {
+
+                                try {
+
+                                    const rows =
+                                        JSON.parse(
+                                            value
+                                        );
+
+
+                                    if (
+                                        Array.isArray(
+                                            rows
+                                        )
+                                    ) {
+
+                                        rows.forEach(
+                                            item => {
+
+                                                if (
+                                                    item?.financeCostId &&
+                                                    !String(
+                                                        item.financeCostId
+                                                    )
+                                                    .startsWith(
+                                                        "TEST-"
+                                                    )
+                                                ) {
+
+                                                    item.financeCostId =
+                                                        "TEST-" +
+                                                        String(
+                                                            item.financeCostId
+                                                        );
+                                                }
+                                            }
+                                        );
+
+
+                                        value =
+                                            JSON.stringify(
+                                                rows
+                                            );
+                                    }
+
+                                } catch (
+                                    error
+                                ) {}
+                            }
+
+
+                            return originalSetItem.call(
+                                this,
+                                key,
+                                value
+                            );
+                        };
+
+
+                    window.__robotFinanceCostGuardInstalled =
+                        true;
+                }
+            }
+        );
+
+
+        page.on(
+            "dialog",
+            async dialog => {
+
+                await dialog.accept();
+            }
+        );
+
+
+        await page.goto(
+            "finance-cost.html",
+            {
+                waitUntil:
+                    "domcontentloaded"
+            }
+        );
+
+
+        const month =
+            await page
+                .locator(
+                    "#costMonth"
+                )
+                .inputValue();
+
+
+        if (
+            !/^\d{4}-\d{2}$/.test(
+                month
+            )
+        ) {
+
+            throw new Error(
+                "财务回归：默认月份未正确初始化，实际=" +
+                month
+            );
+        }
+
+
+        robotMessage(
+            botName,
+            "财务步骤 2/4：录入折旧费用 12345.67，并验证记录写入。"
+        );
+
+
+        await page
+            .locator(
+                "#costType"
+            )
+            .selectOption(
+                "depreciation"
+            );
+
+
+        await page
+            .locator(
+                "#costAmount"
+            )
+            .fill(
+                "12345.67"
+            );
+
+
+        await page
+            .locator(
+                "#costName"
+            )
+            .fill(
+                "TEST-设备折旧"
+            );
+
+
+        await page
+            .locator(
+                "#costDepartment"
+            )
+            .fill(
+                "TEST-生产部"
+            );
+
+
+        await page
+            .locator(
+                "#voucherNo"
+            )
+            .fill(
+                "TEST-VOUCHER-001"
+            );
+
+
+        await page
+            .locator(
+                "#costRemark"
+            )
+            .fill(
+                "TEST-财务成本完整闭环"
+            );
+
+
+        await page
+            .getByRole(
+                "button",
+                {
+                    name:
+                        /保存费用/
+                }
+            )
+            .click();
+
+
+        await page.waitForFunction(
+            () => {
+
+                try {
+
+                    const rows =
+                        JSON.parse(
+                            localStorage.getItem(
+                                "financeCostRecords"
+                            ) ||
+                            "[]"
+                        );
+
+
+                    return rows.some(
+                        item =>
+                            String(
+                                item.financeCostId ||
+                                ""
+                            )
+                            .startsWith(
+                                "TEST-"
+                            ) &&
+                            item.type ===
+                                "depreciation" &&
+                            Number(
+                                item.amount ||
+                                0
+                            ) ===
+                                12345.67 &&
+                            item.name ===
+                                "TEST-设备折旧"
+                    );
+
+                } catch (
+                    error
+                ) {
+
+                    return false;
+                }
+            },
+            null,
+            {
+                timeout:
+                    10000
+            }
+        );
+
+
+        robotMessage(
+            botName,
+            "财务步骤 3/4：验证月度汇总和列表展示。"
+        );
+
+
+        const beforeReload =
+            await page.evaluate(
+                () => {
+
+                    const rows =
+                        JSON.parse(
+                            localStorage.getItem(
+                                "financeCostRecords"
+                            ) ||
+                            "[]"
+                        );
+
+
+                    return {
+                        count:
+                            rows.length,
+
+                        row:
+                            rows[0] ||
+                            null,
+
+                        summary:
+                            document
+                                .getElementById(
+                                    "sumDepreciation"
+                                )
+                                ?.textContent ||
+                            "",
+
+                        table:
+                            document
+                                .getElementById(
+                                    "financeCostTableBody"
+                                )
+                                ?.textContent ||
+                            ""
+                    };
+                }
+            );
+
+
+        if (
+            beforeReload.count !==
+                1 ||
+            beforeReload.row?.status !==
+                "active" ||
+            !beforeReload.summary.includes(
+                "12,345.67"
+            ) ||
+            !beforeReload.table.includes(
+                "TEST-设备折旧"
+            ) ||
+            !beforeReload.table.includes(
+                "TEST-VOUCHER-001"
+            )
+        ) {
+
+            throw new Error(
+                "财务回归：保存后月度汇总或费用列表异常"
+            );
+        }
+
+
+        robotMessage(
+            botName,
+            "财务步骤 4/4：刷新页面，验证费用记录和汇总持久化。"
+        );
+
+
+        await page.reload({
+            waitUntil:
+                "domcontentloaded"
+        });
+
+
+        await page.waitForFunction(
+            () =>
+                document
+                    .getElementById(
+                        "financeCostTableBody"
+                    )
+                    ?.textContent
+                    ?.includes(
+                        "TEST-设备折旧"
+                    ),
+            null,
+            {
+                timeout:
+                    10000
+            }
+        );
+
+
+        const afterReload =
+            await page.evaluate(
+                () => {
+
+                    const rows =
+                        JSON.parse(
+                            localStorage.getItem(
+                                "financeCostRecords"
+                            ) ||
+                            "[]"
+                        );
+
+
+                    return {
+                        count:
+                            rows.length,
+
+                        financeCostId:
+                            rows[0]
+                                ?.financeCostId ||
+                            "",
+
+                        amount:
+                            Number(
+                                rows[0]
+                                    ?.amount ||
+                                0
+                            ),
+
+                        summary:
+                            document
+                                .getElementById(
+                                    "sumDepreciation"
+                                )
+                                ?.textContent ||
+                            "",
+
+                        table:
+                            document
+                                .getElementById(
+                                    "financeCostTableBody"
+                                )
+                                ?.textContent ||
+                            ""
+                    };
+                }
+            );
+
+
+        if (
+            afterReload.count !==
+                1 ||
+            !String(
+                afterReload.financeCostId
+            )
+            .startsWith(
+                "TEST-"
+            ) ||
+            afterReload.amount !==
+                12345.67 ||
+            !afterReload.summary.includes(
+                "12,345.67"
+            ) ||
+            !afterReload.table.includes(
+                "TEST-生产部"
+            )
+        ) {
+
+            throw new Error(
+                "财务回归：刷新后费用数据未正确保持"
+            );
+        }
+
+
+        robotMessage(
+            botName,
+            "财务成本统计完整闭环通过：费用录入、TEST-ID保护、月度汇总、列表展示、刷新持久化均正常。"
+        );
+
+
+        updateBot(
+            botName,
+            "pass",
+            "财务成本统计完整闭环测试通过"
+        );
+
+
+        return {
+            ok:
+                true,
+
+            action:
+                "finance-cost-closed-loop-test",
+
+            beforeReload,
+            afterReload
+        };
+
+
+    } catch (
+        error
+    ) {
+
+        const message =
+            error?.message ||
+            String(
+                error
+            );
+
+
+        updateBot(
+            botName,
+            "fail",
+            message
+        );
+
+
+        robotMessage(
+            botName,
+            "财务成本统计完整闭环测试失败：" +
+            message
+        );
+
+
+        throw error;
+
+
+    } finally {
+
+        if (
+            context
+        ) {
+
+            await context.close()
+                .catch(
+                    () => {}
+                );
+        }
+    }
+}
+
+
 async function runAllCoreRegressionTests() {
 
     const botName =
@@ -21369,6 +21924,13 @@ async function runAllCoreRegressionTests() {
         "物资申请完整闭环",
         async () =>
             await runMaterialRequestClosedLoopTest()
+    );
+
+
+    await runCase(
+        "财务成本统计完整闭环",
+        async () =>
+            await runFinanceCostClosedLoopTest()
     );
 
 
@@ -24991,6 +25553,23 @@ async function executeCommand({
     ) {
 
         return await runMaterialRequestClosedLoopTest();
+    }
+
+
+    if (
+        requestedBot ===
+            "TestManager" &&
+        (
+            /测试.*财务.*完整.*闭环/i.test(
+                command
+            ) ||
+            /财务.*完整.*闭环/i.test(
+                command
+            )
+        )
+    ) {
+
+        return await runFinanceCostClosedLoopTest();
     }
 
 
