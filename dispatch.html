@@ -2666,6 +2666,8 @@
 
 <body class="dispatch-body">
 
+<script src="js/data-service.js"></script>
+
 <header class="dispatch-header">
     <div class="dispatch-header-inner">
         <div>
@@ -8650,6 +8652,41 @@ function dispatchApplyPublishedTaskIdentity() {
         identity.taskName,
         identity.taskSequence
     );
+
+
+    /*
+     * V2.13.8A
+     * 第一批数据库迁移：正式调度任务进入统一 DataService。
+     *
+     * 必须在 taskId / dispatchTaskId 已完成稳定编号后同步，
+     * 避免把临时 legacyTaskId 当成数据库主键。
+     *
+     * 原 dispatchPublishedTasks 仍保留；
+     * DataService 负责补 client_record_id 和 pending queue。
+     * 同步失败不阻断原调度发布流程。
+     */
+    if (
+        window.MineDataService
+    ) {
+
+        Promise.resolve(
+            window.MineDataService.upsert(
+                "dispatch_tasks",
+                tasks[
+                    taskIndex
+                ]
+            )
+        )
+        .catch(
+            dataServiceError => {
+
+                console.warn(
+                    "DataService 调度任务同步失败，原本地任务已保留：",
+                    dataServiceError
+                );
+            }
+        );
+    }
 
 
     /*
