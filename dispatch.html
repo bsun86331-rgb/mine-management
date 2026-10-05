@@ -9859,6 +9859,36 @@ function generateShiftExecution(){
 
 
     /*
+     * V2.13.8B
+     * 第一批数据库迁移：班次执行进入统一 DataService。
+     *
+     * shiftId 是班次执行稳定主键；
+     * 原 dispatchShiftExecutions 继续保留；
+     * DataService 负责 pending queue 与后续 Supabase 同步。
+     */
+    if (
+        window.MineDataService
+    ) {
+
+        Promise.resolve(
+            window.MineDataService.upsert(
+                "shift_executions",
+                execution
+            )
+        )
+        .catch(
+            dataServiceError => {
+
+                console.warn(
+                    "DataService 班次执行同步失败，原本地班次记录已保留：",
+                    dataServiceError
+                );
+            }
+        );
+    }
+
+
+    /*
      * 主任务始终保留同一个 taskId。
      * 这里只更新“当前班次执行状态”，
      * 并复制本班默认绑定给现有司机/挖机页面读取。
