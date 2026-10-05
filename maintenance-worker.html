@@ -1856,40 +1856,6 @@ function saveOrders(
         records
     );
 
-
-    /*
-     * V2.10.0R
-     * 维修员端每次正式工单状态变化均并行进入 DataService。
-     * 测试工单也保留 TEST 前缀，由现有测试隔离规则约束。
-     */
-    if (
-        window.MineDataService &&
-        Array.isArray(
-            records
-        )
-    ) {
-
-        records
-            .forEach(
-                order => {
-
-                    if (
-                        !order?.orderId
-                    ) {
-
-                        return;
-                    }
-
-
-                    syncWorkerMaintenanceData(
-                        "maintenance_orders",
-                        order,
-                        "维修员工单"
-                    );
-                }
-            );
-    }
-
 }
 
 
@@ -3721,6 +3687,13 @@ function startRepair() {
     );
 
 
+    syncWorkerMaintenanceData(
+        "maintenance_orders",
+        order,
+        "开始维修工单"
+    );
+
+
     syncRequestFromOrder(
         order,
         "working",
@@ -3849,6 +3822,13 @@ function setWaitingParts() {
     );
 
 
+    syncWorkerMaintenanceData(
+        "maintenance_orders",
+        order,
+        "等待配件工单"
+    );
+
+
     syncRequestFromOrder(
         order,
         "waiting_parts",
@@ -3928,6 +3908,13 @@ function resumeRepair(
 
     saveOrders(
         orders
+    );
+
+
+    syncWorkerMaintenanceData(
+        "maintenance_orders",
+        order,
+        "恢复维修工单"
     );
 
 
@@ -4207,6 +4194,13 @@ function finishRepair() {
 
     saveOrders(
         orders
+    );
+
+
+    syncWorkerMaintenanceData(
+        "maintenance_orders",
+        order,
+        "提交验收工单"
     );
 
 
