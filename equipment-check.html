@@ -197,6 +197,7 @@ button{
 <section class="card"><h2>最近设备使用记录</h2><div id="history"></div></section>
 </main>
 
+<script src="js/data-service.js"></script>
 <script>
 "use strict";
 
@@ -430,7 +431,73 @@ function submitCheck(){
 
  if(result==="发现异常")check.maintenanceRequestId=createMaintReq(check,prev);
  const cs=arr(K.CHECKS);cs.push(check);save(K.CHECKS,cs);
- const ms=arr(K.METERS);ms.push({meterRecordId:"EMR_"+Date.now(),checkId:check.checkId,equipmentId:check.equipmentId,equipmentNumber:check.equipmentNumber,equipmentType:check.equipmentType,meterType:check.meterType,reading,unit:u,photo:meterPhoto,personId:id,personName:check.personName,taskId:check.taskId,shiftId:check.shiftId,mode,createdAt:now});save(K.METERS,ms);
+
+ const meterRecord={
+  meterRecordId:"EMR_"+Date.now(),
+  checkId:check.checkId,
+  equipmentId:check.equipmentId,
+  equipmentNumber:check.equipmentNumber,
+  equipmentType:check.equipmentType,
+  meterType:check.meterType,
+  reading,
+  unit:u,
+  photo:meterPhoto,
+  personId:id,
+  personName:check.personName,
+  taskId:check.taskId,
+  shiftId:check.shiftId,
+  mode,
+  createdAt:now
+ };
+
+ const ms=arr(K.METERS);ms.push(meterRecord);save(K.METERS,ms);
+
+ /*
+  * V2.13.8C
+  * 第一批数据库迁移：设备检查 / 仪表读数 / 异常维修申请
+  * 并行写入统一 DataService。
+  *
+  * 原 localStorage 仍然是当前页面主流程；
+  * DataService 异常不能阻断提交和锁定。
+  */
+ if(window.MineDataService){
+  Promise.resolve(
+   window.MineDataService.upsert(
+    "equipment_checks",
+    check
+   )
+  ).catch(error=>{
+   console.warn("DataService 设备检查同步失败，原本地检查已保留：",error);
+  });
+
+  Promise.resolve(
+   window.MineDataService.upsert(
+    "equipment_meter_readings",
+    meterRecord
+   )
+  ).catch(error=>{
+   console.warn("DataService 仪表读数同步失败，原本地读数已保留：",error);
+  });
+
+  if(check.maintenanceRequestId){
+   const maintenanceRequest=
+    arr(K.MAINTREQ).find(
+     item=>String(item.requestId||item.maintenanceRequestId||"")===String(check.maintenanceRequestId)
+    );
+
+   if(maintenanceRequest){
+    Promise.resolve(
+     window.MineDataService.upsert(
+      "maintenance_requests",
+      maintenanceRequest
+     )
+    ).catch(error=>{
+     console.warn("DataService 维修申请同步失败，原本地维修申请已保留：",error);
+    });
+   }
+  }
+ }
+
  createUsageRecord(check);addAlert(reading);renderHistory();showLocked();
  alert(result==="发现异常"?`检查已锁定，已自动生成维修单：${check.maintenanceRequestId}`:"检查已锁定，设备使用记录已建立。");
 }
