@@ -496,7 +496,13 @@ Purpose:
             "assignmentId",
 
             "payroll_id",
-            "payrollId"
+            "payrollId",
+
+            "lock_id",
+            "lockId",
+
+            "audit_id",
+            "auditId"
         ];
 
 
