@@ -31,6 +31,23 @@ create table if not exists system_settings (
   updated_at timestamptz not null default now()
 );
 
+
+-- 总经理经营参数：单例配置
+create table if not exists general_manager_business_settings (
+  singleton_id text primary key default 'default',
+  report_month text,
+  comprehensive_unit_price numeric not null default 0,
+  updated_at timestamptz not null default now()
+);
+
+-- 生产方量参数：单例配置
+create table if not exists production_volume_settings (
+  singleton_id text primary key default 'default',
+  default_volume_per_trip numeric not null default 0,
+  vehicle_models jsonb not null default '{}'::jsonb,
+  updated_at timestamptz not null default now()
+);
+
 -- =========================================================
 -- 人员 / 车辆
 -- =========================================================
