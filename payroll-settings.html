@@ -295,6 +295,7 @@ footer{text-align:center;padding:20px;color:#94a3b8;font-size:12px}
 
 <footer>矿山管理系统 · 工资标准与奖扣规则设置 V2.10.1J</footer>
 
+<script src="js/data-service.js"></script>
 <script>
 "use strict";
 
@@ -338,7 +339,85 @@ function getPersonId(person){
 function readArray(key){
  try{const d=JSON.parse(localStorage.getItem(key));return Array.isArray(d)?d:[];}catch(e){return [];}
 }
-function saveArray(key,data){localStorage.setItem(key,JSON.stringify(data));}
+function saveArray(key,data){
+ let previous=[];
+
+ try{
+   const parsed=JSON.parse(
+     localStorage.getItem(key)||"[]"
+   );
+
+   previous=Array.isArray(parsed)
+     ? parsed
+     : [];
+ }catch(e){
+   previous=[];
+ }
+
+ localStorage.setItem(
+   key,
+   JSON.stringify(data)
+ );
+
+ /*
+  * V2.10.1K
+  * 工资标准并行接入统一 DataService。
+  * 只同步本次新增/变化的 standardId，
+  * 不全量广播历史工资标准。
+  */
+ if(
+   key!==STORAGE.STANDARDS||
+   !window.MineDataService||
+   !Array.isArray(data)
+ ){
+   return;
+ }
+
+ const previousMap=
+   new Map(
+     previous
+       .filter(item=>item?.standardId)
+       .map(item=>[
+         String(item.standardId),
+         item
+       ])
+   );
+
+ data.forEach(item=>{
+   const id=String(
+     item?.standardId||
+     ""
+   );
+
+   if(!id){
+     return;
+   }
+
+   const oldItem=
+     previousMap.get(id);
+
+   if(
+     oldItem&&
+     JSON.stringify(oldItem)===
+       JSON.stringify(item)
+   ){
+     return;
+   }
+
+   Promise.resolve(
+     window.MineDataService.upsert(
+       "payroll_standards",
+       item
+     )
+   )
+   .catch(error=>{
+     console.warn(
+       "DataService 工资标准同步失败，原本地工资标准已保留：",
+       error
+     );
+   });
+ });
+}
 function getPersonnelRecords(){return readArray("personnelRecords");}
 
 function isApproved(person){
@@ -1731,6 +1810,22 @@ function saveRules(){
  const r={updatedAt:new Date().toISOString()};
  ids.forEach(id=>r[id]=Number(document.getElementById(id).value||0));
  localStorage.setItem(STORAGE.RULES,JSON.stringify(r));
+
+ if(window.MineDataService){
+   Promise.resolve(
+     window.MineDataService.setSingleton(
+       "payroll_rules",
+       r
+     )
+   )
+   .catch(error=>{
+     console.warn(
+       "DataService 工资奖扣规则同步失败，原本地规则已保留：",
+       error
+     );
+   });
+ }
+
  alert("绩效奖扣规则已保存。");
 }
 
