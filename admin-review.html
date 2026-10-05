@@ -2096,6 +2096,8 @@
 
 <body>
 
+<script src="js/data-service.js"></script>
+
 
 <header>
 
@@ -6671,6 +6673,35 @@ function approveCurrentPerson() {
     );
 
 
+    /*
+     * V2.10.2B
+     * 人员审核通过后同步到统一 DataService。
+     * 原 localStorage 保存仍为主流程；DataService 失败不阻断审核。
+     */
+    if (
+        window.MineDataService
+    ) {
+
+        Promise.resolve(
+            window.MineDataService.upsert(
+                "personnel",
+                records[
+                    index
+                ]
+            )
+        )
+        .catch(
+            dataServiceError => {
+
+                console.warn(
+                    "DataService 审核通过同步失败，原本地审核结果已保留：",
+                    dataServiceError
+                );
+            }
+        );
+    }
+
+
     alert(
         "审核通过。员工编号：" +
         employeeNo
@@ -6855,6 +6886,34 @@ function confirmReject() {
     savePersonnelRecords(
         records
     );
+
+
+    /*
+     * V2.10.2B
+     * 人员审核驳回后同步到统一 DataService。
+     */
+    if (
+        window.MineDataService
+    ) {
+
+        Promise.resolve(
+            window.MineDataService.upsert(
+                "personnel",
+                records[
+                    index
+                ]
+            )
+        )
+        .catch(
+            dataServiceError => {
+
+                console.warn(
+                    "DataService 审核驳回同步失败，原本地审核结果已保留：",
+                    dataServiceError
+                );
+            }
+        );
+    }
 
 
     alert(
