@@ -316,6 +316,99 @@ class EquipmentCheckBot {
         await this.installTestWriteGuard();
 
 
+        /*
+         * R0-1D 根因修复：
+         * 维修链结束后 currentPersonId 可能仍停留在 TEST 维修员，
+         * 而 workerPersonId / driverProfile 已恢复为 TEST 司机。
+         *
+         * equipment-check.html 的 resolvePerson() 优先读取 currentPersonId，
+         * 因而会把维修员识别为当前人员，随后 resolveShiftContext()
+         * 无法在司机班次中匹配，最终得到 ctx=null / taskId=""。
+         *
+         * 这里只在 TEST fixture 已启用，并确认 workerPersonId 是 TEST-
+         * 司机时，在页面业务脚本执行前恢复 currentPersonId。
+         * 正式数据绝不触碰。
+         */
+        await this.page.addInitScript(
+            () => {
+
+                try {
+
+                    const fixture =
+                        JSON.parse(
+                            localStorage.getItem(
+                                "__robotTestFixture"
+                            ) ||
+                            "null"
+                        );
+
+
+                    const workerPersonId =
+                        String(
+                            localStorage.getItem(
+                                "workerPersonId"
+                            ) ||
+                            ""
+                        );
+
+
+                    const currentPersonId =
+                        String(
+                            localStorage.getItem(
+                                "currentPersonId"
+                            ) ||
+                            ""
+                        );
+
+
+                    const profile =
+                        JSON.parse(
+                            localStorage.getItem(
+                                "driverProfile"
+                            ) ||
+                            "null"
+                        );
+
+
+                    const profileId =
+                        String(
+                            profile?.driverId ||
+                            profile?.personId ||
+                            ""
+                        );
+
+
+                    if (
+                        fixture?.enabled ===
+                            true &&
+                        workerPersonId.startsWith(
+                            "TEST-"
+                        ) &&
+                        profileId ===
+                            workerPersonId &&
+                        currentPersonId !==
+                            workerPersonId
+                    ) {
+
+                        localStorage.setItem(
+                            "currentPersonId",
+                            workerPersonId
+                        );
+
+
+                        localStorage.setItem(
+                            "selectedPosition",
+                            "汽车司机"
+                        );
+                    }
+
+                } catch (
+                    error
+                ) {}
+            }
+        );
+
+
         await this.page.goto(
             "equipment-check.html",
             {
