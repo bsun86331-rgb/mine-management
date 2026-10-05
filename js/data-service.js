@@ -412,34 +412,89 @@ Purpose:
 
         const candidates = [
             "id",
+
             "person_id",
             "personId",
+
             "vehicle_id",
             "vehicleId",
+
             "task_id",
             "taskId",
+
             "trip_id",
             "tripId",
+
             "request_id",
             "requestId",
+
             "order_id",
             "orderId",
+
             "record_id",
             "recordId",
+
             "check_id",
             "checkId",
+
             "report_id",
             "reportId",
+
+            "attendance_id",
+            "attendanceId",
+
+            "attempt_id",
+            "attemptId",
+
+            "leave_id",
+            "leaveId",
+
             "material_id",
             "materialId",
+
+            "holder_id",
+            "holderId",
+
+            "recycle_id",
+            "recycleId",
+
+            "scrap_id",
+            "scrapId",
+
+            "loss_id",
+            "lossId",
+
+            "transaction_id",
+            "transactionId",
+
+            "ledger_id",
+            "ledgerId",
+
+            "maintenance_record_id",
+            "maintenanceRecordId",
+
+            "reading_id",
+            "readingId",
+            "meterRecordId",
+
+            "alert_id",
+            "alertId",
+
+            "cost_id",
+            "costId",
+
             "fuel_id",
             "fuelId",
+
             "standard_id",
             "standardId",
+
             "finance_cost_id",
             "financeCostId",
+
             "assignment_id",
             "assignmentId",
+
             "payroll_id",
             "payrollId"
         ];
