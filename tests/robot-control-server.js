@@ -878,10 +878,66 @@ let robotStatus = {
             "idle",
 
         step:
-            "待命 · 尚未接入真实执行器"
+            "待命"
     },
 
     TruckDriverBot: {
+        status:
+            "idle",
+
+        step:
+            "待命"
+    },
+
+    EquipmentCheckBot: {
+        status:
+            "idle",
+
+        step:
+            "待命"
+    },
+
+    MaintenanceManagerBot: {
+        status:
+            "idle",
+
+        step:
+            "待命"
+    },
+
+    MaintenanceWorkerBot: {
+        status:
+            "idle",
+
+        step:
+            "待命"
+    },
+
+    WarehouseBot: {
+        status:
+            "idle",
+
+        step:
+            "待命"
+    },
+
+    ExcavatorBot: {
+        status:
+            "idle",
+
+        step:
+            "待命"
+    },
+
+    RoleEntryBot: {
+        status:
+            "idle",
+
+        step:
+            "待命"
+    },
+
+    AuxiliaryWorkBot: {
         status:
             "idle",
 
@@ -19845,15 +19901,47 @@ async function runFuelRequestClosedLoopTest() {
 
 
         await page.waitForFunction(
-            () =>
-                window.isInsideFuelRange ===
-                    true &&
-                document
-                    .getElementById(
+            () => {
+
+                const button =
+                    document.getElementById(
                         "submitRequestButton"
+                    );
+
+
+                const badge =
+                    document.getElementById(
+                        "gpsBadge"
+                    );
+
+
+                const status =
+                    document.getElementById(
+                        "locationStatus"
+                    );
+
+
+                /*
+                 * fuel-request.html 使用顶层 let isInsideFuelRange，
+                 * 它不是 window 属性。这里改为验证真实 UI 结果：
+                 * GPS 显示范围内 + 提交按钮已启用。
+                 */
+                return Boolean(
+                    button &&
+                    button.disabled ===
+                        false &&
+                    (
+                        badge?.textContent
+                            ?.includes(
+                                "范围内"
+                            ) ||
+                        status?.textContent
+                            ?.includes(
+                                "可以提交加油申请"
+                            )
                     )
-                    ?.disabled ===
-                    false,
+                );
+            },
             null,
             {
                 timeout:
