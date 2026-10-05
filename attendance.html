@@ -676,6 +676,7 @@
     矿山管理系统 · 全员定位考勤中心 V2.10.2G
 </footer>
 
+<script src="js/data-service.js"></script>
 <script>
 "use strict";
 
@@ -736,7 +737,100 @@ function readArray(key) {
 }
 
 function saveArray(key, data) {
+    let previous = [];
+
+    try {
+        const parsed = JSON.parse(localStorage.getItem(key) || "[]");
+        previous = Array.isArray(parsed) ? parsed : [];
+    } catch (error) {
+        previous = [];
+    }
+
     localStorage.setItem(key, JSON.stringify(data));
+
+    /*
+     * V2.10.2H
+     * 考勤模块并行接入统一 DataService。
+     *
+     * 只同步本次新增 / 变化的记录；
+     * 不全量广播历史考勤。
+     * 原 localStorage 仍然是当前页面主流程。
+     */
+    if (!window.MineDataService || !Array.isArray(data)) {
+        return;
+    }
+
+    const tableMap = {
+        [STORAGE.ATTENDANCE]: "attendance_records",
+        [STORAGE.ZERO_REPORTS]: "zero_production_reports",
+        [STORAGE.ATTENDANCE_ZONE_ATTEMPTS]: "attendance_geofence_attempts"
+    };
+
+    const table = tableMap[key];
+
+    if (!table) {
+        return;
+    }
+
+    const idFields = [
+        "attendanceId",
+        "reportId",
+        "attemptId",
+        "id"
+    ];
+
+    const getId = item => {
+        for (const field of idFields) {
+            const value = item?.[field];
+
+            if (
+                value !== undefined &&
+                value !== null &&
+                value !== ""
+            ) {
+                return String(value);
+            }
+        }
+
+        return "";
+    };
+
+    const previousMap = new Map(
+        previous
+            .map(item => [getId(item), item])
+            .filter(([id]) => id)
+    );
+
+    data.forEach(item => {
+        const id = getId(item);
+
+        if (!id) {
+            return;
+        }
+
+        const oldItem = previousMap.get(id);
+
+        if (
+            oldItem &&
+            JSON.stringify(oldItem) === JSON.stringify(item)
+        ) {
+            return;
+        }
+
+        Promise.resolve(
+            window.MineDataService.upsert(
+                table,
+                item
+            )
+        )
+        .catch(error => {
+            console.warn(
+                "DataService 考勤数据同步失败，原本地数据已保留：",
+                key,
+                error
+            );
+        });
+    });
 }
 
 function getPersonnelRecords() {
