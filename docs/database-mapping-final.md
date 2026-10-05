@@ -14,7 +14,7 @@
 6. 图片放对象存储，数据库保存 URL、业务 ID、上传人、上传时间。
 7. 所有客户端离线写入都必须带 client_record_id，服务端建立唯一约束避免重复同步。
 
-## 二、36 个待设计键最终归属
+## 二、36 个已复核键最终归属
 
 | 现有 Key | 最终归属 | 未来表 / 处理方式 | 说明 |
 |---|---|---|---|
@@ -89,6 +89,7 @@
 
 ## 四、本地保留，不作为正式业务主数据
 
+- auxiliaryVehicleProfile（当前辅助车辆本机缓存；正式主数据来自 vehicles）
 - currentPersonId
 - selectedPosition
 - driverProfile
@@ -106,7 +107,11 @@
 - waitingApplicantPersonId / waitingApplicantPosition
 - rolePersonIds
 
-## 五、迁移批次
+## 五、测试/演示数据
+
+- auxiliaryDemoTasks：仅用于辅助车辆演示/测试，不进入生产数据库。
+
+## 六、迁移批次
 
 ### 第一批
 人员 / 车辆 / 调度 / 班次 / 运输趟次 / GPS关键节点 / 设备检查 / 维修。
@@ -117,9 +122,9 @@
 ### 第三批
 财务成本 / 工资标准 / 月度工资 / 奖扣 / 综合报表 / 审计日志。
 
-## 六、下一步
+## 七、下一步
 
-1. 执行 database/database-schema.sql 建立 V1 数据结构。
-2. 生成 js/data-service.js，但暂不切换正式页面。
-3. 先把“人员 → 车辆 → 调度 → 运输”接到 Supabase。
-4. 每迁移一批后重新跑 37/37 + 6/6 + 19/19。
+1. 运行 tests/data-storage-audit.js，目标：待设计 = 0、数据层封口 = PASS。
+2. 保留本地身份缓存、草稿、流程镜像和测试演示数据，不再为了“清空 localStorage”而机械建表。
+3. 现有正式业务数据继续统一通过 data-service.js；以后只有新增真实业务实体时才扩展数据库表。
+4. 每次数据层变更后继续跑 37/37 + 6/6 + 19/19。
