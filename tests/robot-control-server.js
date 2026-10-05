@@ -21535,6 +21535,781 @@ async function runFinanceCostClosedLoopTest() {
 }
 
 
+async function runPayrollSettingsClosedLoopTest() {
+
+    const botName =
+        "TestManager";
+
+
+    let context =
+        null;
+
+
+    try {
+
+        await ensureBrowser();
+
+
+        updateBot(
+            botName,
+            "running",
+            "正在执行工资设置完整闭环测试"
+        );
+
+
+        robotMessage(
+            botName,
+            "工资步骤 1/4：创建 TEST 管理员身份与空工资标准/奖扣规则。"
+        );
+
+
+        context =
+            await browser.newContext({
+                baseURL:
+                    BASE_URL,
+
+                viewport: {
+                    width:
+                        1280,
+
+                    height:
+                        900
+                }
+            });
+
+
+        const page =
+            await context.newPage();
+
+
+        await page.addInitScript(
+            () => {
+
+                const adminId =
+                    "TEST-PAYROLL-ADMIN-001";
+
+
+                if (
+                    sessionStorage.getItem(
+                        "TEST-PAYROLL-SEEDED"
+                    ) !==
+                        "1"
+                ) {
+
+                    localStorage.setItem(
+                        "personnelRecords",
+                        JSON.stringify([
+                            {
+                                personId:
+                                    adminId,
+
+                                employeeNo:
+                                    adminId,
+
+                                name:
+                                    "TEST-工资管理员",
+
+                                position:
+                                    "管理员",
+
+                                department:
+                                    "TEST-管理部",
+
+                                status:
+                                    "active",
+
+                                approvalStatus:
+                                    "approved",
+
+                                personnelStatus:
+                                    "在职可用",
+
+                                enabled:
+                                    true,
+
+                                testFixture:
+                                    true
+                            }
+                        ])
+                    );
+
+
+                    localStorage.setItem(
+                        "adminPersonId",
+                        adminId
+                    );
+
+
+                    localStorage.setItem(
+                        "currentPersonId",
+                        adminId
+                    );
+
+
+                    localStorage.setItem(
+                        "selectedPosition",
+                        "管理员"
+                    );
+
+
+                    localStorage.setItem(
+                        "payrollStandards",
+                        JSON.stringify([])
+                    );
+
+
+                    localStorage.setItem(
+                        "payrollRules",
+                        JSON.stringify({})
+                    );
+
+
+                    sessionStorage.setItem(
+                        "managementSession",
+                        JSON.stringify({
+                            verified:
+                                true,
+
+                            personId:
+                                adminId,
+
+                            position:
+                                "管理员",
+
+                            expiresAt:
+                                Date.now() +
+                                60 *
+                                60 *
+                                1000
+                        })
+                    );
+
+
+                    sessionStorage.setItem(
+                        "TEST-PAYROLL-SEEDED",
+                        "1"
+                    );
+                }
+
+
+                if (
+                    !window.__robotPayrollWriteGuardInstalled
+                ) {
+
+                    const originalSetItem =
+                        Storage.prototype.setItem;
+
+
+                    Storage.prototype.setItem =
+                        function (
+                            key,
+                            value
+                        ) {
+
+                            if (
+                                this ===
+                                    window.localStorage &&
+                                key ===
+                                    "payrollStandards"
+                            ) {
+
+                                try {
+
+                                    const rows =
+                                        JSON.parse(
+                                            value
+                                        );
+
+
+                                    if (
+                                        Array.isArray(
+                                            rows
+                                        )
+                                    ) {
+
+                                        rows.forEach(
+                                            item => {
+
+                                                if (
+                                                    item?.standardId &&
+                                                    !String(
+                                                        item.standardId
+                                                    )
+                                                    .startsWith(
+                                                        "TEST-"
+                                                    )
+                                                ) {
+
+                                                    item.standardId =
+                                                        "TEST-" +
+                                                        String(
+                                                            item.standardId
+                                                        );
+                                                }
+                                            }
+                                        );
+
+
+                                        value =
+                                            JSON.stringify(
+                                                rows
+                                            );
+                                    }
+
+                                } catch (
+                                    error
+                                ) {}
+                            }
+
+
+                            return originalSetItem.call(
+                                this,
+                                key,
+                                value
+                            );
+                        };
+
+
+                    window.__robotPayrollWriteGuardInstalled =
+                        true;
+                }
+            }
+        );
+
+
+        page.on(
+            "dialog",
+            async dialog => {
+
+                await dialog.accept();
+            }
+        );
+
+
+        await page.goto(
+            "payroll-settings.html",
+            {
+                waitUntil:
+                    "domcontentloaded"
+            }
+        );
+
+
+        await page.waitForFunction(
+            () =>
+                document
+                    .getElementById(
+                        "accessBadge"
+                    )
+                    ?.textContent
+                    ?.includes(
+                        "已授权"
+                    ),
+            null,
+            {
+                timeout:
+                    10000
+            }
+        );
+
+
+        const identity =
+            await page.evaluate(
+                () => ({
+                    personId:
+                        document
+                            .getElementById(
+                                "personId"
+                            )
+                            ?.textContent ||
+                        "",
+
+                    position:
+                        document
+                            .getElementById(
+                                "personPosition"
+                            )
+                            ?.textContent ||
+                        ""
+                })
+            );
+
+
+        if (
+            identity.personId !==
+                "TEST-PAYROLL-ADMIN-001" ||
+            identity.position !==
+                "管理员"
+        ) {
+
+            throw new Error(
+                "工资设置回归：高权限身份识别失败"
+            );
+        }
+
+
+        robotMessage(
+            botName,
+            "工资步骤 2/4：保存汽车司机岗位工资标准。"
+        );
+
+
+        await page
+            .locator(
+                "#frontlinePosition"
+            )
+            .selectOption(
+                {
+                    label:
+                        "汽车司机"
+                }
+            );
+
+
+        await page
+            .locator(
+                "#frontlineBaseSalary"
+            )
+            .fill(
+                "8000"
+            );
+
+
+        await page
+            .locator(
+                "#frontlinePerformanceUnitPrice"
+            )
+            .fill(
+                "25"
+            );
+
+
+        await page
+            .locator(
+                "#frontlineEffectiveDate"
+            )
+            .fill(
+                "2026-10-01"
+            );
+
+
+        const frontlineRemark =
+            page.locator(
+                "#frontlineRemark"
+            );
+
+
+        if (
+            await frontlineRemark.count()
+        ) {
+
+            await frontlineRemark.fill(
+                "TEST-工资设置完整闭环"
+            );
+        }
+
+
+        await page
+            .getByRole(
+                "button",
+                {
+                    name:
+                        /保存.*岗位|保存.*工资|保存标准/
+                }
+            )
+            .first()
+            .click();
+
+
+        await page.waitForFunction(
+            () => {
+
+                try {
+
+                    const rows =
+                        JSON.parse(
+                            localStorage.getItem(
+                                "payrollStandards"
+                            ) ||
+                            "[]"
+                        );
+
+
+                    return rows.some(
+                        item =>
+                            item.scope ===
+                                "position" &&
+                            item.position ===
+                                "汽车司机" &&
+                            Number(
+                                item.baseSalary ||
+                                0
+                            ) ===
+                                8000 &&
+                            Number(
+                                item.performanceUnitPrice ||
+                                item.unitAmount ||
+                                0
+                            ) ===
+                                25 &&
+                            String(
+                                item.standardId ||
+                                ""
+                            )
+                            .startsWith(
+                                "TEST-"
+                            )
+                    );
+
+                } catch (
+                    error
+                ) {
+
+                    return false;
+                }
+            },
+            null,
+            {
+                timeout:
+                    10000
+            }
+        );
+
+
+        robotMessage(
+            botName,
+            "工资步骤 3/4：保存绩效排名奖扣规则并验证表格展示。"
+        );
+
+
+        await page
+            .locator(
+                "#rank1Reward"
+            )
+            .fill(
+                "1000"
+            );
+
+
+        await page
+            .locator(
+                "#rank2Reward"
+            )
+            .fill(
+                "600"
+            );
+
+
+        await page
+            .locator(
+                "#rank3Reward"
+            )
+            .fill(
+                "300"
+            );
+
+
+        await page
+            .locator(
+                "#bottom1Deduction"
+            )
+            .fill(
+                "500"
+            );
+
+
+        await page
+            .locator(
+                "#bottom2Deduction"
+            )
+            .fill(
+                "300"
+            );
+
+
+        await page
+            .locator(
+                "#bottom3Deduction"
+            )
+            .fill(
+                "100"
+            );
+
+
+        await page
+            .getByRole(
+                "button",
+                {
+                    name:
+                        /保存奖扣规则/
+                }
+            )
+            .click();
+
+
+        const beforeReload =
+            await page.evaluate(
+                () => {
+
+                    const standards =
+                        JSON.parse(
+                            localStorage.getItem(
+                                "payrollStandards"
+                            ) ||
+                            "[]"
+                        );
+
+
+                    const rules =
+                        JSON.parse(
+                            localStorage.getItem(
+                                "payrollRules"
+                            ) ||
+                            "{}"
+                        );
+
+
+                    return {
+                        standards,
+                        rules,
+                        table:
+                            document
+                                .getElementById(
+                                    "standardTableBody"
+                                )
+                                ?.textContent ||
+                            ""
+                    };
+                }
+            );
+
+
+        if (
+            beforeReload.standards.length !==
+                1 ||
+            Number(
+                beforeReload.rules
+                    ?.rank1Reward ||
+                0
+            ) !==
+                1000 ||
+            Number(
+                beforeReload.rules
+                    ?.bottom1Deduction ||
+                0
+            ) !==
+                500 ||
+            !beforeReload.table.includes(
+                "汽车司机"
+            ) ||
+            !beforeReload.table.includes(
+                "8000.00"
+            )
+        ) {
+
+            throw new Error(
+                "工资设置回归：工资标准或奖扣规则保存后展示异常"
+            );
+        }
+
+
+        robotMessage(
+            botName,
+            "工资步骤 4/4：刷新页面，验证工资标准与奖扣规则持久化。"
+        );
+
+
+        await page.reload({
+            waitUntil:
+                "domcontentloaded"
+        });
+
+
+        await page.waitForFunction(
+            () =>
+                document
+                    .getElementById(
+                        "standardTableBody"
+                    )
+                    ?.textContent
+                    ?.includes(
+                        "汽车司机"
+                    ),
+            null,
+            {
+                timeout:
+                    10000
+            }
+        );
+
+
+        const afterReload =
+            await page.evaluate(
+                () => {
+
+                    const standards =
+                        JSON.parse(
+                            localStorage.getItem(
+                                "payrollStandards"
+                            ) ||
+                            "[]"
+                        );
+
+
+                    const rules =
+                        JSON.parse(
+                            localStorage.getItem(
+                                "payrollRules"
+                            ) ||
+                            "{}"
+                        );
+
+
+                    return {
+                        count:
+                            standards.length,
+
+                        standardId:
+                            standards[0]
+                                ?.standardId ||
+                            "",
+
+                        baseSalary:
+                            Number(
+                                standards[0]
+                                    ?.baseSalary ||
+                                0
+                            ),
+
+                        unitPrice:
+                            Number(
+                                standards[0]
+                                    ?.performanceUnitPrice ||
+                                standards[0]
+                                    ?.unitAmount ||
+                                0
+                            ),
+
+                        rank1Reward:
+                            Number(
+                                rules.rank1Reward ||
+                                0
+                            ),
+
+                        bottom1Deduction:
+                            Number(
+                                rules.bottom1Deduction ||
+                                0
+                            ),
+
+                        table:
+                            document
+                                .getElementById(
+                                    "standardTableBody"
+                                )
+                                ?.textContent ||
+                            ""
+                    };
+                }
+            );
+
+
+        if (
+            afterReload.count !==
+                1 ||
+            !String(
+                afterReload.standardId
+            )
+            .startsWith(
+                "TEST-"
+            ) ||
+            afterReload.baseSalary !==
+                8000 ||
+            afterReload.unitPrice !==
+                25 ||
+            afterReload.rank1Reward !==
+                1000 ||
+            afterReload.bottom1Deduction !==
+                500 ||
+            !afterReload.table.includes(
+                "岗位绩效"
+            )
+        ) {
+
+            throw new Error(
+                "工资设置回归：刷新后工资数据未正确保持"
+            );
+        }
+
+
+        robotMessage(
+            botName,
+            "工资设置完整闭环通过：高权限身份、岗位工资、绩效单价、奖扣规则、刷新持久化均正常。"
+        );
+
+
+        updateBot(
+            botName,
+            "pass",
+            "工资设置完整闭环测试通过"
+        );
+
+
+        return {
+            ok:
+                true,
+
+            action:
+                "payroll-settings-closed-loop-test",
+
+            beforeReload,
+            afterReload
+        };
+
+
+    } catch (
+        error
+    ) {
+
+        const message =
+            error?.message ||
+            String(
+                error
+            );
+
+
+        updateBot(
+            botName,
+            "fail",
+            message
+        );
+
+
+        robotMessage(
+            botName,
+            "工资设置完整闭环测试失败：" +
+            message
+        );
+
+
+        throw error;
+
+
+    } finally {
+
+        if (
+            context
+        ) {
+
+            await context.close()
+                .catch(
+                    () => {}
+                );
+        }
+    }
+}
+
+
 async function runAllCoreRegressionTests() {
 
     const botName =
@@ -21931,6 +22706,13 @@ async function runAllCoreRegressionTests() {
         "财务成本统计完整闭环",
         async () =>
             await runFinanceCostClosedLoopTest()
+    );
+
+
+    await runCase(
+        "工资设置完整闭环",
+        async () =>
+            await runPayrollSettingsClosedLoopTest()
     );
 
 
@@ -25570,6 +26352,23 @@ async function executeCommand({
     ) {
 
         return await runFinanceCostClosedLoopTest();
+    }
+
+
+    if (
+        requestedBot ===
+            "TestManager" &&
+        (
+            /测试.*工资.*完整.*闭环/i.test(
+                command
+            ) ||
+            /工资.*完整.*闭环/i.test(
+                command
+            )
+        )
+    ) {
+
+        return await runPayrollSettingsClosedLoopTest();
     }
 
 
