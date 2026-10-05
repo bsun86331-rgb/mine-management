@@ -54,6 +54,9 @@ Purpose:
         transport_zones:
             "transportZones",
 
+        gps_events:
+            "gpsEvents",
+
         equipment:
             "equipmentRecords",
 
