@@ -4623,6 +4623,143 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
 
+    function syncGpsEventToDataService(
+        eventType,
+        gps,
+        zone,
+        extra =
+            {}
+    ) {
+
+        if (
+            !window.MineDataService ||
+            !gps
+        ) {
+
+            return;
+        }
+
+
+        const vehicleId =
+            currentTask?.vehicleId ||
+            getVehicleNumber(
+                currentTask
+            ) ||
+            "";
+
+
+        const personId =
+            profile?.driverId ||
+            profile?.personId ||
+            "";
+
+
+        const taskId =
+            currentTask?.taskId ||
+            currentTask?.dispatchTaskId ||
+            "";
+
+
+        const eventId =
+            "GPS-" +
+            String(
+                eventType ||
+                "event"
+            )
+            .toUpperCase() +
+            "-" +
+            String(
+                taskId ||
+                "NO_TASK"
+            ) +
+            "-" +
+            Date.now();
+
+
+        const record = {
+
+            id:
+                eventId,
+
+            eventId,
+
+            eventType:
+                String(
+                    eventType ||
+                    ""
+                ),
+
+            personId:
+                personId,
+
+            driverId:
+                personId,
+
+            vehicleId:
+                vehicleId,
+
+            vehicleNumber:
+                vehicleId,
+
+            taskId:
+                taskId,
+
+            dispatchTaskId:
+                currentTask?.dispatchTaskId ||
+                currentTask?.taskId ||
+                "",
+
+            shiftId:
+                currentTask?.shiftId ||
+                "",
+
+            zoneId:
+                zone?.zoneId ||
+                "",
+
+            zoneName:
+                zone?.name ||
+                "",
+
+            latitude:
+                gps.latitude,
+
+            longitude:
+                gps.longitude,
+
+            accuracy:
+                gps.accuracy,
+
+            recordedAt:
+                gps.timestamp ||
+                new Date()
+                    .toISOString(),
+
+            source:
+                "driver_gps_transport_cycle",
+
+            ...extra
+        };
+
+
+        Promise.resolve(
+            window.MineDataService.upsert(
+                "gps_events",
+                record
+            )
+        )
+        .catch(
+            dataServiceError => {
+
+                console.warn(
+                    "DataService GPS关键事件同步失败，原GPS运输闭环不受影响：",
+                    dataServiceError
+                );
+            }
+        );
+    }
+
+
     function updateTransportCycleState(
         gps
     ) {
@@ -4774,6 +4911,20 @@ document.addEventListener("DOMContentLoaded", function () {
                     saveTransportCycle(
                         cycle
                     );
+
+
+                    syncGpsEventToDataService(
+                        "loading_confirmed",
+                        gps,
+                        config.loadingZone,
+                        {
+                            cyclePhase:
+                                cycle.phase,
+
+                            loadedAt:
+                                cycle.loadedAt
+                        }
+                    );
                 }
 
 
@@ -4787,6 +4938,24 @@ document.addEventListener("DOMContentLoaded", function () {
 
                 saveTransportCycle(
                     cycle
+                );
+
+
+                syncGpsEventToDataService(
+                    "arrived_unloading",
+                    gps,
+                    unloadZone,
+                    {
+                        cyclePhase:
+                            cycle.phase,
+
+                        arrivedUnloadAt:
+                            cycle.arrivedUnloadAt,
+
+                        materialType:
+                            cycle.materialType ||
+                            ""
+                    }
                 );
             }
 
@@ -4858,6 +5027,20 @@ document.addEventListener("DOMContentLoaded", function () {
 
                     saveTransportCycle(
                         cycle
+                    );
+
+
+                    syncGpsEventToDataService(
+                        "departed_loading",
+                        gps,
+                        config.loadingZone,
+                        {
+                            cyclePhase:
+                                cycle.phase,
+
+                            departedLoadingAt:
+                                cycle.departedLoadingAt
+                        }
                     );
                 }
 
@@ -6346,6 +6529,27 @@ document.addEventListener("DOMContentLoaded", function () {
                 }
             );
         }
+
+
+        syncGpsEventToDataService(
+            "trip_completed",
+            gps,
+            expectedUnloadZone,
+            {
+                tripId:
+                    tripId,
+
+                cyclePhase:
+                    "completed",
+
+                completedAt:
+                    now,
+
+                materialType:
+                    record.materialType ||
+                    ""
+            }
+        );
 
 
         latestGps =
