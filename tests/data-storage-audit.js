@@ -88,6 +88,10 @@ const TABLE_MAP = {
   driverVehicleChangeRequests: "vehicle_change_requests"
 };
 
+const TEST_ONLY_KEYS = new Set([
+  "auxiliaryDemoTasks"
+]);
+
 const CLIENT_ONLY_KEYS = new Set([
   "currentPersonId",
   "selectedPosition",
@@ -111,7 +115,8 @@ const CLIENT_ONLY_KEYS = new Set([
   "driverCurrentTask",
   "driverTransportCycleState",
   "pendingTransportZoneSelection",
-  "driverLastGpsPosition"
+  "driverLastGpsPosition",
+  "auxiliaryVehicleProfile"
 ]);
 
 function walk(dir, out = []) {
@@ -135,6 +140,10 @@ function walk(dir, out = []) {
 }
 
 function classify(key) {
+  if (TEST_ONLY_KEYS.has(key)) {
+    return "测试/演示";
+  }
+
   if (CLIENT_ONLY_KEYS.has(key)) {
     return "身份/本地会话";
   }
@@ -421,9 +430,15 @@ md.push("第二批：库房/物资 → 考勤/请假 → 油料/加油申请。"
 md.push("");
 md.push("第三批：财务成本 → 工资标准/奖扣 → 综合报表。");
 md.push("");
-md.push("## 下一步");
+md.push("## 最终判定");
 md.push("");
-md.push("先人工复核本报告中的“待设计”和“跨多个页面读写”项，再建立 database-schema.sql 与 data-service.js，不直接改生产页面。");
+if (stats.unmappedBusinessKeys === 0) {
+  md.push("✅ 正式业务存储键已全部完成归属判定，待设计 = 0。");
+  md.push("");
+  md.push("后续新增业务数据时再扩展数据库映射；现有本地身份缓存、草稿、流程镜像和测试数据继续保留本地。");
+} else {
+  md.push("⚠️ 仍有 " + stats.unmappedBusinessKeys + " 个业务键待设计，请继续人工复核。");
+}
 
 const mdPath = path.join(REPORT_DIR, "data-storage-audit.md");
 fs.writeFileSync(mdPath, md.join("\n"), "utf8");
@@ -435,6 +450,7 @@ console.log("存储键:", stats.totalKeys);
 console.log("业务类键:", stats.businessKeys);
 console.log("已映射:", stats.mappedKeys);
 console.log("待设计:", stats.unmappedBusinessKeys);
+console.log("数据层封口:", stats.unmappedBusinessKeys === 0 ? "PASS" : "NEEDS REVIEW");
 console.log("");
 console.log("Markdown:", path.relative(ROOT, mdPath));
 console.log("JSON:", path.relative(ROOT, jsonPath));
