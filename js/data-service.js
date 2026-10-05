@@ -30,6 +30,9 @@ Purpose:
         clientIdKey:
             "mineDataClientId",
 
+        supabaseConfigKey:
+            "mineDataSupabaseConfig",
+
         debug:
             false
     };
@@ -191,7 +194,57 @@ Purpose:
     };
 
 
-    function log() {
+    function loadSavedSupabaseConfig() {
+
+        const saved =
+            safeParse(
+                localStorage.getItem(
+                    CONFIG.supabaseConfigKey
+                ),
+                {}
+            );
+
+
+        if (
+            saved &&
+            typeof saved ===
+                "object"
+        ) {
+
+            CONFIG.supabaseUrl =
+                String(
+                    saved.url ||
+                    ""
+                )
+                    .trim();
+
+
+            CONFIG.supabaseAnonKey =
+                String(
+                    saved.anonKey ||
+                    ""
+                )
+                    .trim();
+        }
+    }
+
+
+    function saveSupabaseConfig() {
+
+        localStorage.setItem(
+            CONFIG.supabaseConfigKey,
+            JSON.stringify({
+                url:
+                    CONFIG.supabaseUrl,
+
+                anonKey:
+                    CONFIG.supabaseAnonKey
+            })
+        );
+    }
+
+
+        function log() {
 
         if (
             !CONFIG.debug
@@ -1561,7 +1614,9 @@ Purpose:
 
     function configureSupabase({
         url,
-        anonKey
+        anonKey,
+        persist =
+            true
     }) {
 
         CONFIG.supabaseUrl =
@@ -1569,7 +1624,11 @@ Purpose:
                 url ||
                 ""
             )
-                .trim();
+                .trim()
+                .replace(
+                    /\/$/,
+                    ""
+                );
 
 
         CONFIG.supabaseAnonKey =
@@ -1580,10 +1639,140 @@ Purpose:
                 .trim();
 
 
+        if (
+            persist
+        ) {
+
+            saveSupabaseConfig();
+        }
+
+
         return {
             configured:
-                SupabaseAdapter.isConfigured()
+                SupabaseAdapter.isConfigured(),
+
+            url:
+                CONFIG.supabaseUrl
         };
+    }
+
+
+    function clearSupabaseConfig() {
+
+        CONFIG.supabaseUrl =
+            "";
+
+
+        CONFIG.supabaseAnonKey =
+            "";
+
+
+        localStorage.removeItem(
+            CONFIG.supabaseConfigKey
+        );
+
+
+        CONFIG.mode =
+            "local";
+
+
+        return {
+            configured:
+                false,
+
+            mode:
+                CONFIG.mode
+        };
+    }
+
+
+    function getConnectionInfo() {
+
+        return {
+            mode:
+                CONFIG.mode,
+
+            configured:
+                SupabaseAdapter.isConfigured(),
+
+            url:
+                CONFIG.supabaseUrl,
+
+            anonKeyPresent:
+                Boolean(
+                    CONFIG.supabaseAnonKey
+                ),
+
+            pending:
+                listPendingQueue()
+                    .length
+        };
+    }
+
+
+    async function testConnection() {
+
+        if (
+            !SupabaseAdapter.isConfigured()
+        ) {
+
+            return {
+                ok:
+                    false,
+
+                configured:
+                    false,
+
+                message:
+                    "Supabase 尚未配置"
+            };
+        }
+
+
+        try {
+
+            const result =
+                await SupabaseAdapter.request(
+                    "system_settings",
+                    {
+                        query:
+                            "select=setting_key&limit=1"
+                    }
+                );
+
+
+            return {
+                ok:
+                    true,
+
+                configured:
+                    true,
+
+                message:
+                    "Supabase REST 连接正常，system_settings 表可访问",
+
+                sample:
+                    result
+            };
+
+        } catch (
+            error
+        ) {
+
+            return {
+                ok:
+                    false,
+
+                configured:
+                    true,
+
+                message:
+                    error?.message ||
+                    String(
+                        error
+                    )
+            };
+        }
     }
 
 
@@ -1687,6 +1876,12 @@ Purpose:
 
         configureSupabase,
 
+        clearSupabaseConfig,
+
+        getConnectionInfo,
+
+        testConnection,
+
         list,
 
         get:
@@ -1726,7 +1921,10 @@ Purpose:
     };
 
 
-    global.MineDataService =
+    loadSavedSupabaseConfig();
+
+
+        global.MineDataService =
         DataService;
 
 
