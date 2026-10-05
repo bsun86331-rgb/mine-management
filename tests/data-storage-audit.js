@@ -35,8 +35,10 @@ const CATEGORY_RULES = [
 const TABLE_MAP = {
   personnelRecords: "personnel",
   dispatchPublishedTasks: "dispatch_tasks",
+  publishedDispatchTask: "dispatch_tasks",
   dispatchShiftExecutions: "shift_executions",
   tripRecords: "trip_records",
+  driverTripRecords: "trip_records",
   transportZones: "transport_zones",
   equipmentRecords: "equipment",
   equipmentUsageChecks: "equipment_checks",
@@ -48,7 +50,7 @@ const TABLE_MAP = {
   materialRequests: "material_requests",
   attendanceRecords: "attendance_records",
   leaveRequests: "leave_requests",
-  leaveRecords: "leave_records",
+  leaveRecords: "leave_requests",
   driverLeaveRequests: "leave_requests",
   zeroProductionReports: "zero_production_reports",
   fuelRequests: "fuel_requests",
@@ -57,9 +59,33 @@ const TABLE_MAP = {
   fuelStockAdjustments: "fuel_stock_adjustments",
   fuelStationConfig: "fuel_station_config",
   financeCostRecords: "finance_costs",
+  generalManagerCostInputs: "finance_costs",
   payrollStandards: "payroll_standards",
   payrollRules: "payroll_rules",
-  teamTransferRequests: "team_transfer_requests"
+  teamTransferRequests: "team_transfer_requests",
+  generalManagerBusinessSettings: "general_manager_business_settings",
+  productionVolumeSettings: "production_volume_settings",
+  penaltyRecords: "penalty_records",
+  temporaryUnloadRequests: "temporary_unload_requests",
+  auxiliaryWorkRecords: "auxiliary_work_records",
+  payrollAuditLogs: "payroll_audit_logs",
+  payrollMonthlyLocks: "payroll_monthly_locks",
+  payrollMonthlyRecords: "payroll_monthly_records",
+  attendanceGeofenceAttempts: "attendance_geofence_attempts",
+  attendanceGeofenceConfig: "attendance_geofence_config",
+  materialHolders: "material_holders",
+  materialLedger: "warehouse_transactions",
+  materialLostRecords: "material_loss_records",
+  materialRecycleRecords: "material_recycle_records",
+  materialScrapRecords: "material_scrap_records",
+  equipmentMaintenanceRecords: "equipment_maintenance_records",
+  equipmentMaintenanceSettings: "equipment_maintenance_settings",
+  equipmentMeterReadings: "equipment_meter_readings",
+  maintenanceAlerts: "maintenance_alerts",
+  maintenanceCosts: "maintenance_costs",
+  maintenanceReports: "maintenance_reports",
+  driverTemporaryLoadingAssignment: "temporary_loading_assignments",
+  driverVehicleChangeRequests: "vehicle_change_requests"
 };
 
 const CLIENT_ONLY_KEYS = new Set([
@@ -77,7 +103,15 @@ const CLIENT_ONLY_KEYS = new Set([
   "rolePersonIds",
   "managementSession",
   "fuelRequestDraft",
-  "fuelRequestManualPerson"
+  "fuelRequestManualPerson",
+  "maintenanceReportDraft",
+  "maintenanceWorkerDrafts",
+  "driverProfile",
+  "dispatchUserProfile",
+  "driverCurrentTask",
+  "driverTransportCycleState",
+  "pendingTransportZoneSelection",
+  "driverLastGpsPosition"
 ]);
 
 function walk(dir, out = []) {
