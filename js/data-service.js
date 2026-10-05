@@ -244,7 +244,24 @@ Purpose:
     }
 
 
-        function log() {
+        const CLIENT_RECORD_ID_TABLES =
+        new Set([
+            "audit_logs",
+            "dispatch_tasks",
+            "trip_records",
+            "gps_events",
+            "auxiliary_work_records",
+            "equipment_checks",
+            "equipment_meter_readings",
+            "warehouse_transactions",
+            "attendance_records",
+            "fuel_intakes",
+            "fuel_requests",
+            "fuel_records"
+        ]);
+
+
+    function log() {
 
         if (
             !CONFIG.debug
@@ -1482,6 +1499,9 @@ Purpose:
 
 
                 if (
+                    CLIENT_RECORD_ID_TABLES.has(
+                        item.table
+                    ) &&
                     payload &&
                     typeof payload ===
                         "object" &&
@@ -1582,6 +1602,288 @@ Purpose:
                 listPendingQueue()
                     .length
         };
+    }
+
+
+    async function testPendingQueueRoundTrip() {
+
+        if (
+            !SupabaseAdapter.isConfigured()
+        ) {
+
+            return {
+                ok:
+                    false,
+
+                message:
+                    "Supabase 尚未配置"
+            };
+        }
+
+
+        const existingPending =
+            listPendingQueue();
+
+
+        if (
+            existingPending.length >
+                0
+        ) {
+
+            return {
+                ok:
+                    false,
+
+                message:
+                    "当前存在 " +
+                    existingPending.length +
+                    " 条真实待同步队列，为避免误同步，本测试已停止"
+            };
+        }
+
+
+        const settingKey =
+            "TEST-DATASERVICE-CONNECTION";
+
+
+        const testedAt =
+            new Date()
+                .toISOString();
+
+
+        const originalMode =
+            CONFIG.mode;
+
+
+        const queue =
+            queueRead();
+
+
+        const testItem = {
+            queue_id:
+                createId(
+                    "QUEUE-TEST"
+                ),
+
+            client_record_id:
+                createId(
+                    "CLIENTREC-TEST"
+                ),
+
+            client_id:
+                getClientId(),
+
+            table:
+                "system_settings",
+
+            action:
+                "upsert",
+
+            payload: {
+                setting_key:
+                    settingKey,
+
+                setting_value: {
+                    source:
+                        "pending-queue-test",
+
+                    marker:
+                        "TEST-ONLY",
+
+                    tested_at:
+                        testedAt
+                },
+
+                updated_by:
+                    "TEST-DATASERVICE-QUEUE",
+
+                updated_at:
+                    testedAt
+            },
+
+            status:
+                "pending",
+
+            attempts:
+                0,
+
+            created_at:
+                testedAt,
+
+            last_error:
+                ""
+        };
+
+
+        queue.push(
+            testItem
+        );
+
+
+        queueWrite(
+            queue
+        );
+
+
+        try {
+
+            CONFIG.mode =
+                "supabase";
+
+
+            const syncResult =
+                await syncPendingQueue();
+
+
+            const readBack =
+                await SupabaseAdapter.request(
+                    "system_settings",
+                    {
+                        query:
+                            "select=setting_key,setting_value,updated_by,updated_at&setting_key=eq." +
+                            encodeURIComponent(
+                                settingKey
+                            ) +
+                            "&limit=1"
+                    }
+                );
+
+
+            const matched =
+                syncResult.ok &&
+                Array.isArray(
+                    readBack
+                ) &&
+                readBack.length ===
+                    1 &&
+                readBack[
+                    0
+                ]?.setting_key ===
+                    settingKey &&
+                readBack[
+                    0
+                ]?.setting_value?.source ===
+                    "pending-queue-test";
+
+
+            await SupabaseAdapter.request(
+                "system_settings",
+                {
+                    method:
+                        "DELETE",
+
+                    query:
+                        "setting_key=eq." +
+                        encodeURIComponent(
+                            settingKey
+                        ),
+
+                    prefer:
+                        "return=minimal"
+                }
+            );
+
+
+            const cleanedQueue =
+                queueRead()
+                    .filter(
+                        item =>
+                            item.queue_id !==
+                            testItem.queue_id
+                    );
+
+
+            queueWrite(
+                cleanedQueue
+            );
+
+
+            if (
+                !matched
+            ) {
+
+                return {
+                    ok:
+                        false,
+
+                    message:
+                        "TEST 队列已执行，但远端回读校验未通过",
+
+                    syncResult
+                };
+            }
+
+
+            return {
+                ok:
+                    true,
+
+                message:
+                    "pending queue → Supabase 同步、回读、清理全部通过",
+
+                settingKey,
+
+                syncResult
+            };
+
+        } catch (
+            error
+        ) {
+
+            try {
+
+                await SupabaseAdapter.request(
+                    "system_settings",
+                    {
+                        method:
+                            "DELETE",
+
+                        query:
+                            "setting_key=eq." +
+                            encodeURIComponent(
+                                settingKey
+                            ),
+
+                        prefer:
+                            "return=minimal"
+                    }
+                );
+
+            } catch (
+                cleanupError
+            ) {}
+
+
+            const cleanedQueue =
+                queueRead()
+                    .filter(
+                        item =>
+                            item.queue_id !==
+                            testItem.queue_id
+                    );
+
+
+            queueWrite(
+                cleanedQueue
+            );
+
+
+            return {
+                ok:
+                    false,
+
+                message:
+                    error?.message ||
+                    String(
+                        error
+                    )
+            };
+
+        } finally {
+
+            CONFIG.mode =
+                originalMode;
+        }
     }
 
 
@@ -2058,6 +2360,8 @@ Purpose:
         testConnection,
 
         testRemoteRoundTrip,
+
+        testPendingQueueRoundTrip,
 
         list,
 
