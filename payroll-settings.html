@@ -360,7 +360,26 @@ function saveArray(key,data){
  );
 
  /*
-  * V2.10.1K
+  * V2.10.1L
+  * 注意：测试安全层可能在 Storage.setItem 时把 standardId
+  * 改写为 TEST- 前缀。因此 DataService 必须读取“真正已落盘”的
+  * payrollStandards，而不能继续使用 setItem 前的内存 data。
+  *
+  * 正式环境没有改写时，persistedData 与 data 完全一致。
+  */
+ let persistedData=data;
+
+ try{
+   const parsed=JSON.parse(
+     localStorage.getItem(key)||"[]"
+   );
+
+   if(Array.isArray(parsed)){
+     persistedData=parsed;
+   }
+ }catch(e){}
+
+ /*
   * 工资标准并行接入统一 DataService。
   * 只同步本次新增/变化的 standardId，
   * 不全量广播历史工资标准。
@@ -368,7 +387,7 @@ function saveArray(key,data){
  if(
    key!==STORAGE.STANDARDS||
    !window.MineDataService||
-   !Array.isArray(data)
+   !Array.isArray(persistedData)
  ){
    return;
  }
@@ -383,7 +402,7 @@ function saveArray(key,data){
        ])
    );
 
- data.forEach(item=>{
+ persistedData.forEach(item=>{
    const id=String(
      item?.standardId||
      ""
