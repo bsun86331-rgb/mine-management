@@ -1529,6 +1529,8 @@
 
 
 
+<script src="js/data-service.js"></script>
+
 <script>
 
 "use strict";
@@ -1617,6 +1619,30 @@ function initialize() {
 
 
     restoreVehicleProfile();
+
+
+    /*
+     * 车辆正式主数据只在用户完成选择/输入后同步。
+     * 不在每个 oninput 字符上写 DataService，避免产生半成品车辆记录。
+     */
+    document
+        .getElementById(
+            "vehicleType"
+        )
+        ?.addEventListener(
+            "change",
+            syncVehicleProfileToDataService
+        );
+
+
+    document
+        .getElementById(
+            "vehicleNumber"
+        )
+        ?.addEventListener(
+            "blur",
+            syncVehicleProfileToDataService
+        );
 
 
     renderAll();
@@ -2116,6 +2142,97 @@ function saveVehicleProfile() {
 
 
     renderAll();
+}
+
+
+
+function syncVehicleProfileToDataService() {
+
+    if (
+        !window.MineDataService
+    ) {
+
+        return;
+    }
+
+
+    const vehicleType =
+        document
+            .getElementById(
+                "vehicleType"
+            )
+            .value
+            .trim();
+
+
+    const vehicleNumber =
+        document
+            .getElementById(
+                "vehicleNumber"
+            )
+            .value
+            .trim();
+
+
+    if (
+        !vehicleType ||
+        !vehicleNumber
+    ) {
+
+        return;
+    }
+
+
+    const personId =
+        getPersonId(
+            currentPerson
+        );
+
+
+    /*
+     * V2.12.1A
+     * auxiliaryVehicleProfile 仍保留为本机当前车辆缓存；
+     * 正式车辆主数据同步到 DataService vehicles。
+     */
+    Promise.resolve(
+        window.MineDataService.upsert(
+            "vehicles",
+            {
+                vehicleId:
+                    vehicleNumber,
+
+                vehicleNumber:
+                    vehicleNumber,
+
+                vehicleType:
+                    vehicleType,
+
+                currentDriverId:
+                    personId ||
+                    "",
+
+                team:
+                    currentPerson?.team ||
+                    currentPerson?.department ||
+                    "",
+
+                status:
+                    "active",
+
+                source:
+                    "auxiliaryVehicleProfile"
+            }
+        )
+    )
+    .catch(
+        dataServiceError => {
+
+            console.warn(
+                "DataService 车辆同步失败，原本地车辆资料已保留：",
+                dataServiceError
+            );
+        }
+    );
 }
 
 
