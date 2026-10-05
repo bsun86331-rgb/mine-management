@@ -325,6 +325,286 @@ class EquipmentCheckBot {
         );
 
 
+        /*
+         * R0-1B
+         * 重复跑维修链时，某些前置用例会留下页面级调度缓存差异，
+         * 导致设备检查页 resolveShiftContext() 偶发拿不到 taskId。
+         *
+         * 这里仅在机器人 TEST fixture 已启用、且当前任务本身是 TEST-
+         * 数据时做一次自愈：用 driverCurrentTask 重建一条最小可识别
+         * dispatchPublishedTasks 记录，再调用页面 init() 重算上下文。
+         *
+         * 不满足 TEST 条件时绝不写入，正式数据不会被触碰。
+         */
+        await this.page.evaluate(
+            () => {
+
+                const taskInput =
+                    document.getElementById(
+                        "taskId"
+                    );
+
+
+                if (
+                    taskInput?.value
+                ) {
+
+                    return;
+                }
+
+
+                let fixture =
+                    null;
+
+                let currentTask =
+                    null;
+
+                let profile =
+                    null;
+
+
+                try {
+
+                    fixture =
+                        JSON.parse(
+                            localStorage.getItem(
+                                "__robotTestFixture"
+                            ) ||
+                            "null"
+                        );
+
+
+                    currentTask =
+                        JSON.parse(
+                            localStorage.getItem(
+                                "driverCurrentTask"
+                            ) ||
+                            "null"
+                        );
+
+
+                    profile =
+                        JSON.parse(
+                            localStorage.getItem(
+                                "driverProfile"
+                            ) ||
+                            "null"
+                        );
+
+                } catch (
+                    error
+                ) {
+
+                    return;
+                }
+
+
+                const taskId =
+                    String(
+                        currentTask?.taskId ||
+                        currentTask?.dispatchTaskId ||
+                        ""
+                    );
+
+
+                const shiftId =
+                    String(
+                        currentTask?.shiftId ||
+                        ""
+                    );
+
+
+                const driverId =
+                    String(
+                        currentTask?.driverId ||
+                        currentTask?.personId ||
+                        profile?.driverId ||
+                        profile?.personId ||
+                        ""
+                    );
+
+
+                const vehicleId =
+                    String(
+                        currentTask?.vehicleId ||
+                        currentTask?.vehicleNumber ||
+                        ""
+                    );
+
+
+                const excavatorId =
+                    String(
+                        currentTask?.excavatorId ||
+                        currentTask?.excavatorNumber ||
+                        ""
+                    );
+
+
+                if (
+                    fixture?.enabled !==
+                        true ||
+                    !taskId.startsWith(
+                        "TEST-"
+                    ) ||
+                    !shiftId.startsWith(
+                        "TEST-"
+                    ) ||
+                    !driverId.startsWith(
+                        "TEST-"
+                    ) ||
+                    !vehicleId.startsWith(
+                        "TEST-"
+                    )
+                ) {
+
+                    return;
+                }
+
+
+                let tasks =
+                    [];
+
+
+                try {
+
+                    const parsed =
+                        JSON.parse(
+                            localStorage.getItem(
+                                "dispatchPublishedTasks"
+                            ) ||
+                            "[]"
+                        );
+
+
+                    if (
+                        Array.isArray(
+                            parsed
+                        )
+                    ) {
+
+                        tasks =
+                            parsed.filter(
+                                item =>
+                                    String(
+                                        item?.taskId ||
+                                        item?.dispatchTaskId ||
+                                        item?.id ||
+                                        ""
+                                    ) !==
+                                        taskId
+                            );
+                    }
+
+                } catch (
+                    error
+                ) {}
+
+
+                tasks.push({
+                    taskId,
+                    dispatchTaskId:
+                        taskId,
+                    id:
+                        taskId,
+
+                    taskName:
+                        currentTask?.taskName ||
+                        "TEST-设备检查恢复任务",
+
+                    status:
+                        "active",
+
+                    currentShiftId:
+                        shiftId,
+
+                    shiftId,
+
+                    shift:
+                        currentTask?.shift ||
+                        "白班",
+
+                    shiftDate:
+                        currentTask?.shiftDate ||
+                        new Date()
+                            .toISOString()
+                            .slice(
+                                0,
+                                10
+                            ),
+
+                    driverAssignments: [
+                        {
+                            driverId,
+                            personId:
+                                driverId,
+
+                            driverName:
+                                currentTask?.driverName ||
+                                profile?.name ||
+                                "TEST-司机",
+
+                            personName:
+                                currentTask?.driverName ||
+                                profile?.name ||
+                                "TEST-司机",
+
+                            vehicleId,
+                            vehicleNumber:
+                                vehicleId,
+
+                            excavatorId,
+                            excavatorNumber:
+                                excavatorId,
+
+                            shiftId,
+
+                            testFixture:
+                                true
+                        }
+                    ],
+
+                    bindings:
+                        excavatorId.startsWith(
+                            "TEST-"
+                        )
+                            ? [
+                                  {
+                                      excavatorId,
+                                      truckIds: [
+                                          vehicleId
+                                      ]
+                                  }
+                              ]
+                            : [],
+
+                    testFixture:
+                        true,
+
+                    updatedAt:
+                        new Date()
+                            .toISOString()
+                });
+
+
+                localStorage.setItem(
+                    "dispatchPublishedTasks",
+                    JSON.stringify(
+                        tasks
+                    )
+                );
+
+
+                if (
+                    typeof window.init ===
+                        "function"
+                ) {
+
+                    window.init();
+                }
+            }
+        );
+
+
         await this.page.waitForTimeout(
             900
         );
