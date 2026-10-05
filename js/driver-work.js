@@ -6315,6 +6315,39 @@ document.addEventListener("DOMContentLoaded", function () {
         );
 
 
+        /*
+         * V2.12.1B
+         * 第一批数据库迁移：正式运输趟次进入统一 DataService。
+         *
+         * 原 driverTripRecords 继续保留，保证现有司机端兼容；
+         * DataService 同时写 canonical tripRecords，并生成
+         * client_record_id + pending queue，供后续 Supabase 同步。
+         *
+         * 只有已经通过 GPS 装载区/卸载区闭环校验并生成稳定 tripId
+         * 的正式趟次才进入这里。
+         */
+        if (
+            window.MineDataService
+        ) {
+
+            Promise.resolve(
+                window.MineDataService.upsert(
+                    "trip_records",
+                    record
+                )
+            )
+            .catch(
+                dataServiceError => {
+
+                    console.warn(
+                        "DataService 运输趟次同步失败，原司机端趟次记录已保留：",
+                        dataServiceError
+                    );
+                }
+            );
+        }
+
+
         latestGps =
             gps;
 
