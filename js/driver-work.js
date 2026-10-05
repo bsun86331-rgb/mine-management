@@ -8131,6 +8131,16 @@ document.addEventListener("DOMContentLoaded", function () {
 
         saveLeaveRequests(records);
 
+
+        syncLeaveRequestToDataService(
+            records[
+                records.length -
+                1
+            ],
+            "司机请假申请"
+        );
+
+
         hideModal("leaveModal");
 
         $("leaveStart").value = "";
@@ -8164,6 +8174,40 @@ document.addEventListener("DOMContentLoaded", function () {
         localStorage.setItem(
             STORAGE.LEAVE_REQUESTS,
             JSON.stringify(records)
+        );
+    }
+
+
+    function syncLeaveRequestToDataService(
+        record,
+        label
+    ) {
+
+        if (
+            !window.MineDataService ||
+            !record?.leaveId
+        ) {
+
+            return;
+        }
+
+
+        Promise.resolve(
+            window.MineDataService.upsert(
+                "leave_requests",
+                record
+            )
+        )
+        .catch(
+            error => {
+
+                console.warn(
+                    "DataService " +
+                    (label || "请假记录") +
+                    " 同步失败，原本地请假流程已保留：",
+                    error
+                );
+            }
         );
     }
 
@@ -8403,6 +8447,15 @@ document.addEventListener("DOMContentLoaded", function () {
             new Date().toISOString();
 
         saveLeaveRequests(records);
+
+
+        syncLeaveRequestToDataService(
+            records[
+                index
+            ],
+            "司机撤回请假"
+        );
+
 
         refreshAll();
     }
