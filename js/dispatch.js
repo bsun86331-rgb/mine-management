@@ -7242,6 +7242,14 @@ document.addEventListener(
             );
 
 
+            syncLeaveRequestToDataService(
+                item,
+                approved
+                    ? "调度批准请假"
+                    : "调度驳回请假"
+            );
+
+
             renderLeaveReview();
 
             refreshAll();
@@ -8428,6 +8436,40 @@ document.addEventListener(
                 JSON.stringify(
                     records
                 )
+            );
+        }
+
+
+        function syncLeaveRequestToDataService(
+            record,
+            label
+        ) {
+
+            if (
+                !window.MineDataService ||
+                !record?.leaveId
+            ) {
+
+                return;
+            }
+
+
+            Promise.resolve(
+                window.MineDataService.upsert(
+                    "leave_requests",
+                    record
+                )
+            )
+            .catch(
+                error => {
+
+                    console.warn(
+                        "DataService " +
+                        (label || "请假记录") +
+                        " 同步失败，原调度请假流程已保留：",
+                        error
+                    );
+                }
             );
         }
 
