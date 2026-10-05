@@ -33,6 +33,9 @@ Purpose:
         supabaseConfigKey:
             "mineDataSupabaseConfig",
 
+        supabaseAuthKey:
+            "mineDataSupabaseAuthSession",
+
         debug:
             false
     };
@@ -259,6 +262,230 @@ Purpose:
             "fuel_requests",
             "fuel_records"
         ]);
+
+
+    function readAuthSession() {
+
+        return safeParse(
+            localStorage.getItem(
+                CONFIG.supabaseAuthKey
+            ),
+            null
+        );
+    }
+
+
+    function writeAuthSession(
+        session
+    ) {
+
+        if (
+            session
+        ) {
+
+            localStorage.setItem(
+                CONFIG.supabaseAuthKey,
+                JSON.stringify(
+                    session
+                )
+            );
+
+        } else {
+
+            localStorage.removeItem(
+                CONFIG.supabaseAuthKey
+            );
+        }
+    }
+
+
+    function getAuthInfo() {
+
+        const session =
+            readAuthSession();
+
+
+        return {
+            signedIn:
+                Boolean(
+                    session?.access_token
+                ),
+
+            userId:
+                session?.user?.id ||
+                "",
+
+            email:
+                session?.user?.email ||
+                "",
+
+            expiresAt:
+                session?.expires_at ||
+                null
+        };
+    }
+
+
+    async function signInWithPassword({
+        email,
+        password
+    }) {
+
+        if (
+            !SupabaseAdapter.isConfigured()
+        ) {
+
+            throw new Error(
+                "Supabase 尚未配置"
+            );
+        }
+
+
+        const url =
+            CONFIG.supabaseUrl
+                .replace(
+                    /\/$/,
+                    ""
+                ) +
+            "/auth/v1/token?grant_type=password";
+
+
+        const response =
+            await fetch(
+                url,
+                {
+                    method:
+                        "POST",
+
+                    headers: {
+                        apikey:
+                            CONFIG.supabaseAnonKey,
+
+                        "Content-Type":
+                            "application/json"
+                    },
+
+                    body:
+                        JSON.stringify({
+                            email:
+                                String(
+                                    email ||
+                                    ""
+                                )
+                                    .trim(),
+
+                            password:
+                                String(
+                                    password ||
+                                    ""
+                                )
+                        })
+                }
+            );
+
+
+        const text =
+            await response.text();
+
+
+        const data =
+            safeParse(
+                text,
+                {}
+            );
+
+
+        if (
+            !response.ok
+        ) {
+
+            throw new Error(
+                data?.msg ||
+                data?.error_description ||
+                data?.message ||
+                (
+                    "Supabase Auth 登录失败 " +
+                    response.status
+                )
+            );
+        }
+
+
+        writeAuthSession(
+            data
+        );
+
+
+        return {
+            ok:
+                true,
+
+            user:
+                clone(
+                    data.user
+                ),
+
+            auth:
+                getAuthInfo()
+        };
+    }
+
+
+    async function signOutAuth() {
+
+        const session =
+            readAuthSession();
+
+
+        if (
+            session?.access_token &&
+            SupabaseAdapter.isConfigured()
+        ) {
+
+            try {
+
+                await fetch(
+                    CONFIG.supabaseUrl
+                        .replace(
+                            /\/$/,
+                            ""
+                        ) +
+                    "/auth/v1/logout",
+
+                    {
+                        method:
+                            "POST",
+
+                        headers: {
+                            apikey:
+                                CONFIG.supabaseAnonKey,
+
+                            Authorization:
+                                "Bearer " +
+                                session.access_token
+                        }
+                    }
+                );
+
+            } catch (
+                error
+            ) {}
+        }
+
+
+        writeAuthSession(
+            null
+        );
+
+
+        return {
+            ok:
+                true,
+
+            auth:
+                getAuthInfo()
+        };
+    }
 
 
     function log() {
@@ -1402,13 +1629,20 @@ Purpose:
                 );
 
 
+            const authSession =
+                readAuthSession();
+
+
             const headers = {
                 apikey:
                     CONFIG.supabaseAnonKey,
 
                 Authorization:
                     "Bearer " +
-                    CONFIG.supabaseAnonKey,
+                    (
+                        authSession?.access_token ||
+                        CONFIG.supabaseAnonKey
+                    ),
 
                 "Content-Type":
                     "application/json",
@@ -2737,6 +2971,12 @@ Purpose:
         testPendingQueueRoundTrip,
 
         testBusinessConfigMappings,
+
+        getAuthInfo,
+
+        signInWithPassword,
+
+        signOutAuth,
 
         list,
 
