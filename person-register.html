@@ -458,6 +458,32 @@
             <div class="form-group">
 
                 <label>
+                    本人自拍照片 *
+                </label>
+
+                <input
+                    id="selfiePhoto"
+                    type="file"
+                    accept="image/*"
+                    capture="user"
+                >
+
+                <div class="tip">
+                    请上传本人正面自拍，用于管理员审核及后续人员信息核对。
+                </div>
+
+                <img
+                    id="selfiePreview"
+                    class="photo-preview"
+                    alt="本人自拍照片"
+                >
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label>
                     身份证照片
                 </label>
 
@@ -976,6 +1002,9 @@ const DRIVER_POSITIONS = [
 ========================================================= */
 
 const photoData = {
+
+    selfiePhoto:
+        "",
 
     idCardPhoto:
         "",
@@ -2050,6 +2079,13 @@ function loadExistingProfile() {
         "";
 
 
+    photoData.selfiePhoto =
+        person.selfiePhoto ||
+        person.profilePhoto ||
+        person.avatarPhoto ||
+        "";
+
+
     photoData.idCardPhoto =
         person.idCardPhoto ||
         "";
@@ -2069,6 +2105,12 @@ function loadExistingProfile() {
     photoData.bankCardPhoto =
         person.bankCardPhoto ||
         "";
+
+
+    showPreview(
+        "selfiePreview",
+        photoData.selfiePhoto
+    );
 
 
     showPreview(
@@ -2783,6 +2825,19 @@ function validateForm() {
 
 
     if (
+        !photoData.selfiePhoto
+    ) {
+
+        alert(
+            "请上传本人正面自拍照片，便于审核和人员信息核对。"
+        );
+
+        return false;
+
+    }
+
+
+    if (
         !getValue(
             "emergencyContact"
         )
@@ -2941,6 +2996,13 @@ async function submitRegistration() {
                 getValue(
                     "passportNumber"
                 ),
+
+
+            selfiePhoto:
+                photoData.selfiePhoto,
+
+            profilePhoto:
+                photoData.selfiePhoto,
 
 
             idCardPhoto:
@@ -3368,6 +3430,27 @@ function initializePage() {
 /* =========================================================
    图片事件
 ========================================================= */
+
+document.getElementById(
+    "selfiePhoto"
+).addEventListener(
+    "change",
+    function () {
+
+        handlePhotoChange(
+
+            "selfiePhoto",
+
+            "selfiePhoto",
+
+            "selfiePreview"
+
+        );
+
+    }
+);
+
+
 
 document.getElementById(
     "idCardPhoto"
