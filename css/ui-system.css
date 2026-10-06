@@ -1145,3 +1145,483 @@ body > main > .card {
     grid-column: auto;
   }
 }
+
+
+/* =========================================================
+   V1.2 第三轮细节收尾
+   目标：高频页面视觉统一、信息密度优化、移动端易用性提升
+========================================================= */
+
+/* ---------- 通用头部精修 ---------- */
+
+.header-inner,
+.top-header,
+.dispatch-header-inner,
+.site-header .header-inner {
+  min-height: 72px;
+}
+
+.header-top,
+.header-row,
+.top-header,
+.dispatch-header-inner {
+  align-items: center;
+}
+
+.header-top > :first-child,
+.header-row > :first-child,
+.top-header > :first-child,
+.dispatch-header-inner > :first-child {
+  min-width: 0;
+}
+
+.header-button,
+.header-btn,
+.top-header .btn,
+.dispatch-header button {
+  min-height: 40px;
+  border-radius: 10px;
+  white-space: nowrap;
+}
+
+/* ---------- 标题与卡片节奏 ---------- */
+
+.section-title,
+.section-header,
+.dispatch-section-title,
+.card-header {
+  margin-bottom: 12px;
+}
+
+.section-title > div:first-child,
+.section-header > div:first-child,
+.dispatch-section-title > div:first-child {
+  min-width: 0;
+}
+
+.section-title h2,
+.section-header h2,
+.dispatch-section-title h2 {
+  font-size: clamp(17px, 1.45vw, 21px);
+}
+
+.section-title p,
+.section-header p,
+.dispatch-section-title p {
+  max-width: 900px;
+}
+
+.card,
+.driver-card,
+.dispatch-section,
+.table-card,
+.form-panel,
+.attendance-zone-card,
+.final-attendance-card,
+.admin-rpo-card,
+.frontline-team-fix-card,
+.team-transfer-review-card {
+  margin-bottom: 14px;
+}
+
+/* ---------- 司机 / 挖机当前人员信息 ---------- */
+
+.info-grid {
+  align-items: stretch;
+}
+
+.info-box {
+  min-height: 88px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.info-box span {
+  margin-bottom: 5px;
+  line-height: 1.35;
+}
+
+.info-box strong {
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+/* ---------- 实时看板 ---------- */
+
+.shift-kpi-grid {
+  align-items: stretch;
+}
+
+.shift-kpi-item {
+  height: 100%;
+  border-width: 1px;
+}
+
+.shift-kpi-label {
+  line-height: 1.35;
+}
+
+.shift-kpi-sub {
+  min-height: 16px;
+  line-height: 1.35;
+}
+
+.shift-kpi-item.kpi-clickable {
+  position: relative;
+}
+
+.shift-kpi-item.kpi-clickable::after {
+  content: "查看明细";
+  position: absolute;
+  right: 9px;
+  bottom: 7px;
+  color: #94a3b8;
+  font-size: 9px;
+  font-weight: 600;
+  opacity: .8;
+}
+
+.shift-kpi-item.kpi-clickable:hover::after {
+  color: #2563eb;
+}
+
+/* ---------- 操作按钮区 ---------- */
+
+.action-grid > button,
+.work-button-grid > button,
+.todo-grid > button,
+.nav-grid > button {
+  min-height: 46px;
+}
+
+.action-grid > button,
+.work-button-grid > button {
+  border-radius: 10px !important;
+}
+
+.record-actions {
+  align-items: center;
+}
+
+/* ---------- 工具栏 / 筛选 ---------- */
+
+.toolbar {
+  margin-bottom: 12px;
+}
+
+.toolbar input[type="search"],
+.toolbar input[type="text"] {
+  flex: 1 1 220px;
+}
+
+.toolbar select {
+  flex: 0 1 190px;
+}
+
+.toolbar .btn,
+.toolbar button {
+  flex: 0 0 auto;
+}
+
+/* ---------- 表格 ---------- */
+
+.table-wrap {
+  border: 1px solid var(--ui-border);
+  background: var(--ui-surface);
+}
+
+.table-wrap table {
+  width: 100%;
+}
+
+.table-wrap thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: #f8fafc;
+  color: #334155;
+}
+
+.table-wrap th,
+.table-wrap td {
+  padding-top: 9px;
+  padding-bottom: 9px;
+}
+
+.table-wrap tbody tr:nth-child(even) {
+  background: rgba(248, 250, 252, .55);
+}
+
+.table-wrap tbody tr:hover {
+  background: #f8fbff;
+}
+
+/* ---------- 管理员审核详情 ---------- */
+
+.detail-item {
+  min-width: 0;
+}
+
+.detail-label {
+  color: #64748b;
+  font-size: 12px;
+}
+
+.detail-value {
+  margin-top: 4px;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.photo-grid {
+  align-items: stretch;
+}
+
+.photo-box {
+  display: flex;
+  flex-direction: column;
+  min-height: 220px;
+}
+
+.photo-box img {
+  width: 100%;
+  height: 180px;
+  object-fit: contain;
+  background: #f8fafc;
+}
+
+/* ---------- 库房 / 报表统计 ---------- */
+
+.summary-box,
+.summary-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.summary-box span,
+.summary-card span,
+.summary-label {
+  color: #64748b;
+  line-height: 1.35;
+}
+
+.summary-box strong,
+.summary-card strong,
+.summary-value {
+  margin-top: 5px;
+  line-height: 1.12;
+}
+
+.state-grid > *,
+.report-grid > * {
+  min-width: 0;
+}
+
+/* ---------- 维修记录 ---------- */
+
+.record-card {
+  overflow: hidden;
+}
+
+.record-top {
+  align-items: center;
+}
+
+.record-info {
+  line-height: 1.6;
+}
+
+/* ---------- 弹窗 ---------- */
+
+.modal-header,
+.final-attendance-modal-header,
+.dispatch-modal-card > .dispatch-section-title {
+  padding-bottom: 10px;
+  border-bottom: 1px solid #eef2f7;
+}
+
+.modal-actions,
+.final-attendance-modal-actions,
+.modal-action-row {
+  padding-top: 12px;
+  border-top: 1px solid #eef2f7;
+}
+
+/* ---------- 首页 ---------- */
+
+.portal-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.portal-card .portal-title,
+.portal-card h3 {
+  line-height: 1.25;
+}
+
+.portal-card p {
+  line-height: 1.55;
+}
+
+/* ---------- 桌面端细化 ---------- */
+
+@media (min-width: 1100px) {
+  .header-inner,
+  .dispatch-header-inner,
+  .site-header .header-inner {
+    padding-left: 22px;
+    padding-right: 22px;
+  }
+
+  .info-grid {
+    grid-auto-rows: 1fr;
+  }
+
+  .photo-grid {
+    grid-auto-rows: 1fr;
+  }
+}
+
+/* ---------- 平板细化 ---------- */
+
+@media (max-width: 900px) {
+  .header-top,
+  .header-row,
+  .top-header,
+  .dispatch-header-inner {
+    flex-wrap: wrap;
+  }
+
+  .header-actions {
+    margin-left: auto;
+  }
+
+  .toolbar input[type="search"],
+  .toolbar input[type="text"],
+  .toolbar select {
+    flex: 1 1 180px;
+  }
+}
+
+/* ---------- 手机细化 ---------- */
+
+@media (max-width: 640px) {
+  .header-inner,
+  .top-header,
+  .dispatch-header-inner,
+  .site-header .header-inner {
+    min-height: 0;
+    padding-top: 12px;
+    padding-bottom: 12px;
+  }
+
+  .header-top,
+  .header-row,
+  .top-header,
+  .dispatch-header-inner {
+    align-items: stretch;
+  }
+
+  .header-actions,
+  .header-top > button,
+  .header-row > button,
+  .top-header > button {
+    width: 100%;
+  }
+
+  .header-button,
+  .header-btn,
+  .top-header .btn {
+    width: 100%;
+  }
+
+  .section-title,
+  .section-header,
+  .dispatch-section-title {
+    margin-bottom: 10px;
+  }
+
+  .info-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .info-box {
+    min-height: 78px;
+    padding: 10px !important;
+  }
+
+  .photo-box {
+    min-height: 0;
+  }
+
+  .photo-box img {
+    height: auto;
+    max-height: 320px;
+  }
+
+  .shift-kpi-item.kpi-clickable::after {
+    right: 7px;
+    bottom: 5px;
+    font-size: 8px;
+  }
+
+  .toolbar {
+    margin-bottom: 10px;
+  }
+
+  .table-wrap {
+    border-radius: 10px;
+  }
+
+  .table-wrap th,
+  .table-wrap td {
+    white-space: nowrap;
+  }
+
+  .modal-header,
+  .final-attendance-modal-header,
+  .dispatch-modal-card > .dispatch-section-title {
+    position: sticky;
+    top: 0;
+    background: #fff;
+    z-index: 3;
+  }
+
+  .modal-actions,
+  .final-attendance-modal-actions,
+  .modal-action-row {
+    position: sticky;
+    bottom: 0;
+    background: #fff;
+    z-index: 3;
+  }
+
+  .record-actions {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .record-actions > * {
+    width: 100%;
+  }
+}
+
+/* ---------- 小手机 ---------- */
+
+@media (max-width: 420px) {
+  .info-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .record-actions {
+    grid-template-columns: 1fr !important;
+  }
+
+  .table-wrap {
+    margin-left: -2px;
+    margin-right: -2px;
+  }
+}
