@@ -1386,12 +1386,35 @@ function savePersonnelRecords(
     records
 ) {
 
-    localStorage.setItem(
-        "personnelRecords",
-        JSON.stringify(
-            records
-        )
-    );
+    try {
+
+        localStorage.setItem(
+            "personnelRecords",
+            JSON.stringify(
+                records
+            )
+        );
+
+
+    } catch (
+        error
+    ) {
+
+        if (
+            error?.name ===
+                "QuotaExceededError" ||
+            error?.code ===
+                22
+        ) {
+
+            throw new Error(
+                "浏览器本地存储空间已满。照片已经自动压缩，但当前浏览器中已有较多历史图片或聊天照片。请先在管理员端备份后清理旧测试数据，再重新提交。"
+            );
+        }
+
+
+        throw error;
+    }
 
 }
 
@@ -1657,6 +1680,139 @@ function createPersonId() {
    图片压缩
 ========================================================= */
 
+function dataUrlApproxBytes(
+    dataUrl
+) {
+
+    if (
+        !dataUrl
+    ) {
+        return 0;
+    }
+
+
+    const commaIndex =
+        dataUrl.indexOf(
+            ","
+        );
+
+
+    const base64 =
+        commaIndex >= 0
+            ? dataUrl.slice(
+                commaIndex + 1
+              )
+            : dataUrl;
+
+
+    return Math.ceil(
+        base64.length *
+        0.75
+    );
+}
+
+
+
+function canvasToCompressedJpeg(
+    image,
+    maxSide,
+    quality
+) {
+
+    let width =
+        image.width;
+
+
+    let height =
+        image.height;
+
+
+    if (
+        width > maxSide ||
+        height > maxSide
+    ) {
+
+        const ratio =
+            Math.min(
+                maxSide / width,
+                maxSide / height
+            );
+
+
+        width =
+            Math.max(
+                1,
+                Math.round(
+                    width *
+                    ratio
+                )
+            );
+
+
+        height =
+            Math.max(
+                1,
+                Math.round(
+                    height *
+                    ratio
+                )
+            );
+    }
+
+
+    const canvas =
+        document.createElement(
+            "canvas"
+        );
+
+
+    canvas.width =
+        width;
+
+
+    canvas.height =
+        height;
+
+
+    const context =
+        canvas.getContext(
+            "2d"
+        );
+
+
+    /*
+     * JPEG 没有透明通道。
+     * 先铺白底，避免 PNG 透明区域转成黑色。
+     */
+    context.fillStyle =
+        "#ffffff";
+
+
+    context.fillRect(
+        0,
+        0,
+        width,
+        height
+    );
+
+
+    context.drawImage(
+        image,
+        0,
+        0,
+        width,
+        height
+    );
+
+
+    return canvas.toDataURL(
+        "image/jpeg",
+        quality
+    );
+}
+
+
+
 function compressImage(
     file
 ) {
@@ -1677,7 +1833,6 @@ function compressImage(
                 );
 
                 return;
-
             }
 
 
@@ -1694,7 +1849,6 @@ function compressImage(
                 );
 
                 return;
-
             }
 
 
@@ -1714,105 +1868,80 @@ function compressImage(
                     image.onload =
                         function () {
 
-                            const maxSize =
-                                1000;
+                            /*
+                             * LOCAL 阶段需要将多张证件照存入浏览器。
+                             * 目标是把每张照片尽量控制在 160KB 左右，
+                             * 兼顾人员识别和证件文字可读性。
+                             */
+                            const targetBytes =
+                                160 *
+                                1024;
 
 
-                            let width =
-                                image.width;
+                            const attempts = [
+                                {
+                                    maxSide:
+                                        720,
+                                    quality:
+                                        0.48
+                                },
+                                {
+                                    maxSide:
+                                        680,
+                                    quality:
+                                        0.42
+                                },
+                                {
+                                    maxSide:
+                                        620,
+                                    quality:
+                                        0.38
+                                },
+                                {
+                                    maxSide:
+                                        560,
+                                    quality:
+                                        0.34
+                                }
+                            ];
 
 
-                            let height =
-                                image.height;
+                            let best =
+                                "";
 
 
-                            if (
-
-                                width >
-                                maxSize
-
-                                ||
-
-                                height >
-                                maxSize
-
+                            for (
+                                const attempt
+                                of attempts
                             ) {
 
-                                const ratio =
-                                    Math.min(
-
-                                        maxSize /
-                                        width,
-
-                                        maxSize /
-                                        height
-
+                                const data =
+                                    canvasToCompressedJpeg(
+                                        image,
+                                        attempt.maxSide,
+                                        attempt.quality
                                     );
 
 
-                                width =
-                                    Math.round(
-                                        width *
-                                        ratio
-                                    );
+                                best =
+                                    data;
 
 
-                                height =
-                                    Math.round(
-                                        height *
-                                        ratio
-                                    );
+                                if (
+                                    dataUrlApproxBytes(
+                                        data
+                                    ) <=
+                                    targetBytes
+                                ) {
 
+                                    break;
+                                }
                             }
 
 
-                            const canvas =
-                                document.createElement(
-                                    "canvas"
-                                );
-
-
-                            canvas.width =
-                                width;
-
-
-                            canvas.height =
-                                height;
-
-
-                            const context =
-                                canvas.getContext(
-                                    "2d"
-                                );
-
-
-                            context.drawImage(
-
-                                image,
-
-                                0,
-
-                                0,
-
-                                width,
-
-                                height
-
-                            );
-
-
                             resolve(
-
-                                canvas.toDataURL(
-
-                                    "image/jpeg",
-
-                                    0.6
-
-                                )
-
+                                best
                             );
-
                         };
 
 
@@ -1824,13 +1953,11 @@ function compressImage(
                                     "图片读取失败。"
                                 )
                             );
-
                         };
 
 
                     image.src =
                         event.target.result;
-
                 };
 
 
@@ -1842,69 +1969,83 @@ function compressImage(
                             "文件读取失败。"
                         )
                     );
-
                 };
 
 
             reader.readAsDataURL(
                 file
             );
-
         }
     );
-
 }
 
 
 
-/* =========================================================
-   图片预览
-========================================================= */
+function getPhotoStorageSummary() {
 
-function showPreview(
-    previewId,
-    dataUrl
-) {
+    const rows = [
+        {
+            label:
+                "本人自拍",
+            key:
+                "selfiePhoto"
+        },
+        {
+            label:
+                "身份证照片",
+            key:
+                "idCardPhoto"
+        },
+        {
+            label:
+                "护照照片",
+            key:
+                "passportPhoto"
+        },
+        {
+            label:
+                "驾驶证 / 操作证",
+            key:
+                "driverLicensePhoto"
+        },
+        {
+            label:
+                "银行卡照片",
+            key:
+                "bankCardPhoto"
+        }
+    ];
 
-    const image =
-        document.getElementById(
-            previewId
+
+    const details =
+        rows.map(
+            row => ({
+                ...row,
+
+                bytes:
+                    dataUrlApproxBytes(
+                        photoData[
+                            row.key
+                        ]
+                    )
+            })
         );
 
 
-    if (
-        !image
-    ) {
+    return {
+        details,
 
-        return;
-
-    }
-
-
-    if (
-        dataUrl
-    ) {
-
-        image.src =
-            dataUrl;
-
-
-        image.style.display =
-            "block";
-
-
-    } else {
-
-        image.removeAttribute(
-            "src"
-        );
-
-
-        image.style.display =
-            "none";
-
-    }
-
+        totalBytes:
+            details.reduce(
+                (
+                    sum,
+                    item
+                ) =>
+                    sum +
+                    item.bytes,
+                0
+            )
+    };
 }
 
 
@@ -3002,8 +3143,12 @@ async function submitRegistration() {
             selfiePhoto:
                 photoData.selfiePhoto,
 
+            /*
+             * 自拍图片只保存一份，避免同一 base64 重复占用 localStorage。
+             * 所有新页面优先读取 selfiePhoto；旧数据的 profilePhoto 仍兼容。
+             */
             profilePhoto:
-                photoData.selfiePhoto,
+                "",
 
 
             idCardPhoto:
@@ -3115,6 +3260,67 @@ async function submitRegistration() {
 
         delete person.reviewedBy;
 
+
+
+        const photoStorage =
+            getPhotoStorageSummary();
+
+
+        /*
+         * 一般 5 张压缩照片应明显低于 1MB。
+         * 若仍超过 1.2MB，提前阻止提交，避免到 localStorage.setItem
+         * 才抛出 QuotaExceededError。
+         */
+        if (
+            photoStorage.totalBytes >
+            1.2 *
+            1024 *
+            1024
+        ) {
+
+            const largest =
+                photoStorage.details
+                    .slice()
+                    .sort(
+                        (
+                            a,
+                            b
+                        ) =>
+                            b.bytes -
+                            a.bytes
+                    )[0];
+
+
+            alert(
+                "本次照片压缩后仍然过大，请重新选择或拍摄较清晰但尺寸较小的照片。\n\n" +
+                "当前照片总大小约：" +
+                (
+                    photoStorage.totalBytes /
+                    1024 /
+                    1024
+                ).toFixed(
+                    2
+                ) +
+                " MB\n" +
+                (
+                    largest?.bytes
+                        ? "占用最大：" +
+                          largest.label +
+                          "（约 " +
+                          (
+                              largest.bytes /
+                              1024
+                          ).toFixed(
+                              0
+                          ) +
+                          " KB）"
+                        : ""
+                )
+            );
+
+
+            return;
+        }
 
 
         const index =
