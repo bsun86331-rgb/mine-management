@@ -346,6 +346,518 @@ function verifyAdminMasterAccess() {
 
 
 /* =========================================================
+   完全归零 / JSON 备份
+========================================================= */
+
+function collectStorageSnapshot(storage) {
+
+  const result = {};
+
+
+  for (
+    let index = 0;
+    index < storage.length;
+    index++
+  ) {
+
+    const key =
+      storage.key(index);
+
+
+    if (!key) {
+      continue;
+    }
+
+
+    result[key] =
+      storage.getItem(key);
+  }
+
+
+  return result;
+}
+
+
+function buildFullSystemBackup() {
+
+  return {
+    meta: {
+      product:
+        "mine-management",
+
+      backupType:
+        "FULL_LOCAL_RESET_BACKUP",
+
+      schemaVersion:
+        "1.0",
+
+      createdAt:
+        nowISO(),
+
+      page:
+        location.href,
+
+      localStorageKeyCount:
+        localStorage.length,
+
+      sessionStorageKeyCount:
+        sessionStorage.length
+    },
+
+    localStorage:
+      collectStorageSnapshot(
+        localStorage
+      ),
+
+    sessionStorage:
+      collectStorageSnapshot(
+        sessionStorage
+      )
+  };
+}
+
+
+function backupFileName() {
+
+  const now =
+    new Date();
+
+
+  const stamp = [
+    now.getFullYear(),
+    String(
+      now.getMonth() + 1
+    ).padStart(2, "0"),
+    String(
+      now.getDate()
+    ).padStart(2, "0")
+  ].join("") +
+  "-" +
+  [
+    String(
+      now.getHours()
+    ).padStart(2, "0"),
+    String(
+      now.getMinutes()
+    ).padStart(2, "0"),
+    String(
+      now.getSeconds()
+    ).padStart(2, "0")
+  ].join("");
+
+
+  return (
+    "mine-management-full-backup-" +
+    stamp +
+    ".json"
+  );
+}
+
+
+function downloadBackupObject(
+  backup
+) {
+
+  const text =
+    JSON.stringify(
+      backup,
+      null,
+      2
+    );
+
+
+  const blob =
+    new Blob(
+      [
+        text
+      ],
+      {
+        type:
+          "application/json;charset=utf-8"
+      }
+    );
+
+
+  const url =
+    URL.createObjectURL(
+      blob
+    );
+
+
+  const link =
+    document.createElement(
+      "a"
+    );
+
+
+  link.href =
+    url;
+
+
+  link.download =
+    backupFileName();
+
+
+  document.body.appendChild(
+    link
+  );
+
+
+  link.click();
+
+
+  link.remove();
+
+
+  setTimeout(
+    () =>
+      URL.revokeObjectURL(
+        url
+      ),
+    1500
+  );
+}
+
+
+function exportFullSystemBackup() {
+
+  try {
+
+    const backup =
+      buildFullSystemBackup();
+
+
+    downloadBackupObject(
+      backup
+    );
+
+
+    showToast(
+      "JSON 全量备份已开始下载。"
+    );
+
+
+    return backup;
+
+  } catch (
+    error
+  ) {
+
+    console.error(
+      "系统备份失败：",
+      error
+    );
+
+
+    alert(
+      "系统备份失败，已取消操作。\n\n" +
+      (
+        error?.message ||
+        String(error)
+      )
+    );
+
+
+    return null;
+  }
+}
+
+
+function classifyResetStorageKeys() {
+
+  const keys =
+    [];
+
+
+  for (
+    let index = 0;
+    index < localStorage.length;
+    index++
+  ) {
+
+    const key =
+      localStorage.key(index);
+
+
+    if (key) {
+      keys.push(key);
+    }
+  }
+
+
+  const counts = {
+    personnel: 0,
+    equipment: 0,
+    production: 0,
+    maintenance: 0,
+    warehouse: 0,
+    fuel: 0,
+    attendance: 0,
+    finance: 0,
+    chat: 0,
+    settings: 0,
+    tests: 0,
+    other: 0
+  };
+
+
+  keys.forEach(
+    key => {
+
+      const value =
+        key.toLowerCase();
+
+
+      if (
+        /person|driverprofile|roleperson|employee|人员/.test(value)
+      ) {
+        counts.personnel++;
+        return;
+      }
+
+
+      if (
+        /equipment|vehicle|excavator|auxiliary|设备|车辆/.test(value)
+      ) {
+        counts.equipment++;
+        return;
+      }
+
+
+      if (
+        /dispatch|trip|transport|task|shift|gps|loading|unload|生产|运输/.test(value)
+      ) {
+        counts.production++;
+        return;
+      }
+
+
+      if (
+        /maintenance|repair|fault|维修|保养/.test(value)
+      ) {
+        counts.maintenance++;
+        return;
+      }
+
+
+      if (
+        /warehouse|material|stock|holder|库房|物资/.test(value)
+      ) {
+        counts.warehouse++;
+        return;
+      }
+
+
+      if (
+        /fuel|油/.test(value)
+      ) {
+        counts.fuel++;
+        return;
+      }
+
+
+      if (
+        /attendance|leave|考勤|请假/.test(value)
+      ) {
+        counts.attendance++;
+        return;
+      }
+
+
+      if (
+        /payroll|salary|finance|cost|penalty|reward|工资|财务|成本/.test(value)
+      ) {
+        counts.finance++;
+        return;
+      }
+
+
+      if (
+        /chat|message|聊天/.test(value)
+      ) {
+        counts.chat++;
+        return;
+      }
+
+
+      if (
+        /setting|config|zone|price|volume|设置|配置/.test(value)
+      ) {
+        counts.settings++;
+        return;
+      }
+
+
+      if (
+        /test|robot|fixture/i.test(key)
+      ) {
+        counts.tests++;
+        return;
+      }
+
+
+      counts.other++;
+    }
+  );
+
+
+  return {
+    total:
+      keys.length,
+
+    sessionTotal:
+      sessionStorage.length,
+
+    keys,
+
+    counts
+  };
+}
+
+
+function resetSummaryText() {
+
+  const summary =
+    classifyResetStorageKeys();
+
+
+  const lines = [
+    "⚠️ 这是完全归零操作。",
+    "",
+    "将清空当前浏览器中的全部 mine-management 本地数据，包括：",
+    "• 人员登记、审核、人员照片和当前人员身份",
+    "• 车辆、挖机、辅助车辆及设备档案/状态",
+    "• 调度任务、班次、运输趟次、GPS、临时装车/卸料",
+    "• 设备检查、维修、保养及故障记录",
+    "• 库房、物资、库存、领用、退还、报废记录",
+    "• 加油申请、加油记录",
+    "• 考勤、请假、奖罚、工资、成本、报表数据",
+    "• 工作聊天消息和照片",
+    "• 本地系统设置、页面配置和测试记录",
+    "• 当前登录状态和管理员会话",
+    "",
+    "当前 localStorage 键：" +
+      summary.total +
+      " 个",
+    "当前 sessionStorage 键：" +
+      summary.sessionTotal +
+      " 个",
+    "",
+    "执行前会自动下载完整 JSON 备份。",
+    "",
+    "不会删除：",
+    "• GitHub 仓库代码",
+    "• GitHub Pages 页面文件",
+    "• Supabase 项目 / 数据库表 / Auth 用户",
+    "",
+    "确定进入第二次确认吗？"
+  ];
+
+
+  return lines.join(
+    "\n"
+  );
+}
+
+
+function startFullSystemReset() {
+
+  const firstConfirmed =
+    window.confirm(
+      resetSummaryText()
+    );
+
+
+  if (
+    !firstConfirmed
+  ) {
+
+    showToast(
+      "已取消系统归零。",
+      "warning"
+    );
+
+    return;
+  }
+
+
+  const typed =
+    window.prompt(
+      "第二次确认：\n\n请输入 RESET（必须完全一致）才能执行系统数据归零。"
+    );
+
+
+  if (
+    typed !==
+      "RESET"
+  ) {
+
+    alert(
+      "输入内容不是 RESET，系统归零已取消。"
+    );
+
+    return;
+  }
+
+
+  const finalBackup =
+    exportFullSystemBackup();
+
+
+  if (
+    !finalBackup
+  ) {
+
+    alert(
+      "由于 JSON 备份未成功生成，本次归零已自动取消。"
+    );
+
+    return;
+  }
+
+
+  const resetButton =
+    document.getElementById(
+      "adminSystemResetButton"
+    );
+
+
+  if (
+    resetButton
+  ) {
+
+    resetButton.disabled =
+      true;
+
+    resetButton.textContent =
+      "正在归零...";
+  }
+
+
+  /*
+   * 完全归零：
+   * 不保留任何浏览器本地业务/身份/设置键。
+   *
+   * GitHub 代码和远端 Supabase 项目不在浏览器 localStorage 内，
+   * 因此不会被此操作删除。
+   */
+  localStorage.clear();
+
+  sessionStorage.clear();
+
+
+  alert(
+    "系统本地数据已完全归零。\n\nJSON 备份已在执行前自动下载。\n现在将返回系统首页。"
+  );
+
+
+  location.replace(
+    "index.html"
+  );
+}
+
+
+/* =========================================================
    状态文字
 ========================================================= */
 
