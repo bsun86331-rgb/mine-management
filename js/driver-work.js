@@ -6326,6 +6326,53 @@ document.addEventListener("DOMContentLoaded", function () {
                 currentTask.excavatorId ||
                 "",
 
+            /*
+             * 临时装车归属固化：
+             * 临时装车期间，最终运输记录明确保存目标挖机，
+             * 后续挖机车数 / 排名 / 报表不再依赖“当前绑定”反推。
+             */
+            temporaryLoading:
+                currentTask.temporaryLoading ===
+                true,
+
+            temporaryExcavatorId:
+                currentTask.temporaryLoading ===
+                    true
+                    ? (
+                        currentTask.excavatorId ||
+                        currentTask.excavatorNumber ||
+                        ""
+                    )
+                    : "",
+
+            temporaryExcavatorNumber:
+                currentTask.temporaryLoading ===
+                    true
+                    ? (
+                        currentTask.excavatorNumber ||
+                        currentTask.excavatorId ||
+                        ""
+                    )
+                    : "",
+
+            temporaryOriginalExcavator:
+                currentTask.temporaryOriginalExcavator ||
+                "",
+
+            temporaryOriginalTaskId:
+                currentTask.temporaryOriginalTaskId ||
+                "",
+
+            temporaryLoadingStartedAt:
+                currentTask.temporaryLoadingStartedAt ||
+                "",
+
+            excavatorSource:
+                currentTask.temporaryLoading ===
+                    true
+                    ? "temporary"
+                    : "normal",
+
             workArea:
                 currentTask.workArea ||
                 currentTask.area ||
