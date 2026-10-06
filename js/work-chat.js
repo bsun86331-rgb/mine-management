@@ -1,13 +1,15 @@
 /*
 ====================================================
-mine-management 全端工作聊天 V1.0
+mine-management 全端工作聊天 V1.1
 ----------------------------------------------------
 当前阶段：
 1. 所有正式端口加载同一个聊天组件；
 2. 自动识别已审核人员身份；
 3. 同一浏览器 / 同一 GitHub Pages 来源可跨页面、跨标签实时同步；
 4. 消息结构预留未来 Supabase Realtime；
-5. 当前未切正式数据库，因此不同设备之间暂不能真正互通。
+5. 支持文字、照片、文字+照片消息；
+6. 照片发送前自动压缩，避免 LOCAL 阶段存储过大；
+7. 当前未切正式数据库，因此不同设备之间暂不能真正互通。
 ====================================================
 */
 
@@ -28,6 +30,18 @@ mine-management 全端工作聊天 V1.0
 
     const MAX_TEXT_LENGTH =
         500;
+
+    const MAX_IMAGE_SIDE =
+        900;
+
+    const IMAGE_QUALITY =
+        0.62;
+
+    let pendingImageData =
+        "";
+
+    let pendingImageName =
+        "";
 
     let identity =
         null;
@@ -340,6 +354,321 @@ mine-management 全端工作聊天 V1.0
     }
 
 
+    function compressChatImage(
+        file
+    ) {
+        return new Promise(
+            (
+                resolve,
+                reject
+            ) => {
+                if (
+                    !file ||
+                    !file.type?.startsWith(
+                        "image/"
+                    )
+                ) {
+                    reject(
+                        new Error(
+                            "请选择图片文件。"
+                        )
+                    );
+
+                    return;
+                }
+
+                const reader =
+                    new FileReader();
+
+                reader.onload =
+                    event => {
+                        const image =
+                            new Image();
+
+                        image.onload =
+                            () => {
+                                let width =
+                                    image.width;
+
+                                let height =
+                                    image.height;
+
+                                if (
+                                    width >
+                                        MAX_IMAGE_SIDE ||
+                                    height >
+                                        MAX_IMAGE_SIDE
+                                ) {
+                                    const ratio =
+                                        Math.min(
+                                            MAX_IMAGE_SIDE /
+                                                width,
+                                            MAX_IMAGE_SIDE /
+                                                height
+                                        );
+
+                                    width =
+                                        Math.max(
+                                            1,
+                                            Math.round(
+                                                width *
+                                                    ratio
+                                            )
+                                        );
+
+                                    height =
+                                        Math.max(
+                                            1,
+                                            Math.round(
+                                                height *
+                                                    ratio
+                                            )
+                                        );
+                                }
+
+                                const canvas =
+                                    document.createElement(
+                                        "canvas"
+                                    );
+
+                                canvas.width =
+                                    width;
+
+                                canvas.height =
+                                    height;
+
+                                const context =
+                                    canvas.getContext(
+                                        "2d"
+                                    );
+
+                                context.drawImage(
+                                    image,
+                                    0,
+                                    0,
+                                    width,
+                                    height
+                                );
+
+                                resolve(
+                                    canvas.toDataURL(
+                                        "image/jpeg",
+                                        IMAGE_QUALITY
+                                    )
+                                );
+                            };
+
+                        image.onerror =
+                            () =>
+                                reject(
+                                    new Error(
+                                        "图片读取失败。"
+                                    )
+                                );
+
+                        image.src =
+                            event.target.result;
+                    };
+
+                reader.onerror =
+                    () =>
+                        reject(
+                            new Error(
+                                "图片文件读取失败。"
+                            )
+                        );
+
+                reader.readAsDataURL(
+                    file
+                );
+            }
+        );
+    }
+
+
+    function renderPendingImage() {
+        const wrap =
+            document.getElementById(
+                "mineChatImagePreviewWrap"
+            );
+
+        const image =
+            document.getElementById(
+                "mineChatImagePreview"
+            );
+
+        const name =
+            document.getElementById(
+                "mineChatImageName"
+            );
+
+        if (
+            !wrap ||
+            !image ||
+            !name
+        ) {
+            return;
+        }
+
+        if (
+            pendingImageData
+        ) {
+            image.src =
+                pendingImageData;
+
+            name.textContent =
+                pendingImageName ||
+                "现场照片";
+
+            wrap.classList.remove(
+                "hidden"
+            );
+
+        } else {
+            image.removeAttribute(
+                "src"
+            );
+
+            name.textContent =
+                "";
+
+            wrap.classList.add(
+                "hidden"
+            );
+        }
+    }
+
+
+    function clearPendingImage() {
+        pendingImageData =
+            "";
+
+        pendingImageName =
+            "";
+
+        const input =
+            document.getElementById(
+                "mineChatPhotoInput"
+            );
+
+        if (
+            input
+        ) {
+            input.value =
+                "";
+        }
+
+        renderPendingImage();
+    }
+
+
+    async function handlePhotoSelection(
+        event
+    ) {
+        const file =
+            event.target?.files?.[0];
+
+        if (
+            !file
+        ) {
+            return;
+        }
+
+        const sendButton =
+            document.getElementById(
+                "mineChatSend"
+            );
+
+        try {
+            if (
+                sendButton
+            ) {
+                sendButton.disabled =
+                    true;
+
+                sendButton.textContent =
+                    "处理中...";
+            }
+
+            pendingImageData =
+                await compressChatImage(
+                    file
+                );
+
+            pendingImageName =
+                file.name ||
+                "现场照片";
+
+            renderPendingImage();
+
+        } catch (
+            error
+        ) {
+            clearPendingImage();
+
+            alert(
+                error?.message ||
+                "照片处理失败。"
+            );
+
+        } finally {
+            if (
+                sendButton
+            ) {
+                sendButton.disabled =
+                    false;
+
+                sendButton.textContent =
+                    "发送";
+            }
+        }
+    }
+
+
+    function openChatImage(
+        dataUrl
+    ) {
+        if (
+            !dataUrl
+        ) {
+            return;
+        }
+
+        const overlay =
+            document.createElement(
+                "div"
+            );
+
+        overlay.className =
+            "mine-chat-image-lightbox";
+
+        const img =
+            document.createElement(
+                "img"
+            );
+
+        img.src =
+            dataUrl;
+
+        img.alt =
+            "聊天照片大图";
+
+        overlay.appendChild(
+            img
+        );
+
+        overlay.addEventListener(
+            "click",
+            () =>
+                overlay.remove()
+        );
+
+        document.body.appendChild(
+            overlay
+        );
+    }
+
+
     function renderMessages() {
         const box =
             document.getElementById(
@@ -430,11 +759,60 @@ mine-management 全端工作聊天 V1.0
                 bubble.className =
                     "mine-chat-bubble";
 
-                bubble.textContent =
-                    String(
-                        message.text ||
-                        ""
+                if (
+                    message.text
+                ) {
+                    const textNode =
+                        document.createElement(
+                            "div"
+                        );
+
+                    textNode.className =
+                        "mine-chat-text";
+
+                    textNode.textContent =
+                        String(
+                            message.text
+                        );
+
+                    bubble.appendChild(
+                        textNode
                     );
+                }
+
+                if (
+                    message.imageData
+                ) {
+                    const photo =
+                        document.createElement(
+                            "img"
+                        );
+
+                    photo.className =
+                        "mine-chat-photo";
+
+                    photo.src =
+                        message.imageData;
+
+                    photo.alt =
+                        message.imageName ||
+                        "工作照片";
+
+                    photo.loading =
+                        "lazy";
+
+                    photo.addEventListener(
+                        "click",
+                        () =>
+                            openChatImage(
+                                message.imageData
+                            )
+                    );
+
+                    bubble.appendChild(
+                        photo
+                    );
+                }
 
                 row.appendChild(
                     meta
@@ -534,7 +912,8 @@ mine-management 全端工作聊天 V1.0
                 );
 
         if (
-            !text
+            !text &&
+            !pendingImageData
         ) {
             return;
         }
@@ -574,6 +953,23 @@ mine-management 全端工作聊天 V1.0
 
             text,
 
+            imageData:
+                pendingImageData ||
+                "",
+
+            imageName:
+                pendingImageName ||
+                "",
+
+            messageType:
+                pendingImageData
+                    ? (
+                        text
+                            ? "text_image"
+                            : "image"
+                    )
+                    : "text",
+
             createdAt:
                 new Date()
                     .toISOString(),
@@ -589,12 +985,25 @@ mine-management 全端工作聊天 V1.0
             message
         );
 
-        saveMessages(
-            messages
-        );
+        try {
+            saveMessages(
+                messages
+            );
+
+        } catch (
+            error
+        ) {
+            alert(
+                "聊天本地存储空间不足。请减少连续发送照片，或等待后续接入服务器存储。"
+            );
+
+            return;
+        }
 
         input.value =
             "";
+
+        clearPendingImage();
 
         renderMessages();
 
@@ -745,7 +1154,42 @@ mine-management 全端工作聊天 V1.0
                         placeholder="输入工作消息……"
                     ></textarea>
 
+                    <div
+                        class="mine-chat-image-preview hidden"
+                        id="mineChatImagePreviewWrap"
+                    >
+                        <img
+                            id="mineChatImagePreview"
+                            alt="待发送照片"
+                        >
+                        <div class="mine-chat-image-preview-info">
+                            <strong id="mineChatImageName">现场照片</strong>
+                            <button
+                                type="button"
+                                id="mineChatImageRemove"
+                            >
+                                取消照片
+                            </button>
+                        </div>
+                    </div>
+
+                    <input
+                        id="mineChatPhotoInput"
+                        class="mine-chat-photo-input"
+                        type="file"
+                        accept="image/*"
+                        capture="environment"
+                    >
+
                     <div class="mine-chat-actions">
+                        <button
+                            type="button"
+                            class="mine-chat-photo-button"
+                            id="mineChatPhotoButton"
+                        >
+                            📷 照片
+                        </button>
+
                         <span class="mine-chat-hint">
                             Enter 发送 · Shift+Enter 换行
                         </span>
@@ -792,6 +1236,34 @@ mine-management 全端工作聊天 V1.0
             ?.addEventListener(
                 "click",
                 sendMessage
+            );
+
+        document.getElementById(
+            "mineChatPhotoButton"
+        )
+            ?.addEventListener(
+                "click",
+                () =>
+                    document.getElementById(
+                        "mineChatPhotoInput"
+                    )
+                    ?.click()
+            );
+
+        document.getElementById(
+            "mineChatPhotoInput"
+        )
+            ?.addEventListener(
+                "change",
+                handlePhotoSelection
+            );
+
+        document.getElementById(
+            "mineChatImageRemove"
+        )
+            ?.addEventListener(
+                "click",
+                clearPendingImage
             );
 
         document.getElementById(
