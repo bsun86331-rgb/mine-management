@@ -361,7 +361,7 @@
             </div>
 
             <div class="info-box">
-                <span>人员编号</span>
+                <span>工号</span>
                 <strong id="personId">-</strong>
             </div>
         </div>
@@ -591,7 +591,7 @@ function renderProfile() {
     document.getElementById("personName").textContent = currentPerson.name || "-";
     document.getElementById("personPosition").textContent = normalizePosition(currentPerson.position) || "-";
     document.getElementById("personDepartment").textContent = currentPerson.department || currentPerson.team || "-";
-    document.getElementById("personId").textContent = getPersonId(currentPerson) || "-";
+    document.getElementById("personId").textContent = currentPerson.employeeNo || currentPerson.employeeId || getPersonId(currentPerson) || "-";
 
     const badge = document.getElementById("approvalBadge");
     badge.textContent = "已审核";
