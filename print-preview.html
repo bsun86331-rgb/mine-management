@@ -58,6 +58,47 @@
     .photo h2{font-size:17px;margin:0 0 10px}
     .photo img{display:block;max-width:100%;max-height:780px;margin:0 auto;border-radius:8px}
     .photo-empty{padding:30px;text-align:center;color:#64748b;background:#f8fafc;border-radius:10px}
+    .photo-select-tools{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      margin:0 0 16px;
+      padding:10px;
+      border:1px solid #e2e8f0;
+      border-radius:10px;
+      background:#f8fafc;
+    }
+    .photo-select-tools button{
+      min-height:34px;
+      padding:0 12px;
+      border:1px solid #cbd5e1;
+      border-radius:8px;
+      background:#fff;
+      color:#0f172a;
+      font-weight:700;
+      cursor:pointer;
+    }
+    .photo-print-toggle{
+      margin-top:10px;
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      gap:8px;
+      padding:8px 10px;
+      border:1px solid #dbeafe;
+      border-radius:9px;
+      background:#eff6ff;
+      color:#1e3a8a;
+      font-size:13px;
+      font-weight:700;
+    }
+    .photo-print-toggle input{
+      width:18px;
+      height:18px;
+    }
+    .photo.skip-print{
+      display:none!important;
+    }
     @media print{
       body{background:#fff}
       .topbar{display:none!important}
@@ -68,6 +109,13 @@
         border-radius:0;
         box-shadow:none;
       }
+      .photo-select-tools,
+      .photo-print-toggle{
+        display:none!important;
+      }
+      .photo.skip-print{
+        display:none!important;
+      }
     }
   </style>
 </head>
@@ -76,7 +124,7 @@
     <strong>🖨 打印预览</strong>
     <div class="actions">
       <button class="back" type="button" onclick="goBack()">← 返回审核页</button>
-      <button class="print" type="button" onclick="window.print()">打印</button>
+      <button class="print" type="button" onclick="printSelected()">打印</button>
     </div>
   </header>
 
@@ -170,6 +218,55 @@
       `;
     }
 
+    function togglePhotoPrint(
+      checkbox
+    ){
+      const section=
+        checkbox?.closest(".photo");
+
+      if(!section){
+        return;
+      }
+
+      section.classList.toggle(
+        "skip-print",
+        !checkbox.checked
+      );
+    }
+
+    function setAllPhotos(
+      checked
+    ){
+      document
+        .querySelectorAll(".photo-print-checkbox")
+        .forEach(
+          checkbox=>{
+            checkbox.checked=checked;
+            togglePhotoPrint(checkbox);
+          }
+        );
+    }
+
+    function printSelected(){
+      const payload=readPayload();
+
+      if(
+        payload?.type==="photos"
+      ){
+        const checkedCount=
+          document.querySelectorAll(
+            ".photo-print-checkbox:checked"
+          ).length;
+
+        if(!checkedCount){
+          alert("请至少勾选一张需要打印的照片。");
+          return;
+        }
+      }
+
+      window.print();
+    }
+
     function renderPhotos(person){
       const photos=[
         ["本人自拍 / 人员头像",person.selfiePhoto||person.profilePhoto||person.avatarPhoto],
@@ -188,10 +285,27 @@
 
       return `
         <h1>${escapeHtml(person.name||"人员")} · 证件照片</h1>
-        ${photos.map(item=>`
+
+        <div class="photo-select-tools">
+          <strong>选择需要打印的照片：</strong>
+          <button type="button" onclick="setAllPhotos(true)">全选</button>
+          <button type="button" onclick="setAllPhotos(false)">全不选</button>
+        </div>
+
+        ${photos.map((item,index)=>`
           <section class="photo">
             <h2>${escapeHtml(item[0])}</h2>
             <img src="${item[1]}" alt="${escapeHtml(item[0])}">
+
+            <label class="photo-print-toggle">
+              <input
+                class="photo-print-checkbox"
+                type="checkbox"
+                checked
+                onchange="togglePhotoPrint(this)"
+              >
+              打印此照片
+            </label>
           </section>
         `).join("")}
       `;
