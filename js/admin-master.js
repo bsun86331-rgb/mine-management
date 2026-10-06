@@ -1432,6 +1432,8 @@ function exportPersonnelExcel() {
     "入职日期",
     "紧急联系人",
     "紧急联系电话",
+    "银行卡号",
+    "开户行",
     "备注"
   ];
 
@@ -1482,6 +1484,12 @@ function exportPersonnelExcel() {
           "",
 
         person.emergencyPhone ||
+          "",
+
+        person.bankCardNumber ||
+          "",
+
+        person.bankName ||
           "",
 
         person.remark ||
