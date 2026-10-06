@@ -1198,6 +1198,610 @@ async function executeFullSystemReset() {
 
 
 /* =========================================================
+   Excel 导出
+========================================================= */
+
+function excelCellText(
+  value
+) {
+
+  return String(
+    value ??
+    ""
+  )
+    .replaceAll(
+      "&",
+      "&amp;"
+    )
+    .replaceAll(
+      "<",
+      "&lt;"
+    )
+    .replaceAll(
+      ">",
+      "&gt;"
+    )
+    .replaceAll(
+      '"',
+      "&quot;"
+    );
+}
+
+
+function excelFileStamp() {
+
+  const now =
+    new Date();
+
+
+  return [
+    now.getFullYear(),
+    String(
+      now.getMonth() + 1
+    ).padStart(
+      2,
+      "0"
+    ),
+    String(
+      now.getDate()
+    ).padStart(
+      2,
+      "0"
+    )
+  ].join(
+    ""
+  );
+}
+
+
+function downloadExcelTable({
+  title,
+  fileName,
+  headers,
+  rows
+}) {
+
+  if (
+    !Array.isArray(
+      rows
+    ) ||
+    !rows.length
+  ) {
+
+    showToast(
+      "当前没有可导出的数据。",
+      "warning"
+    );
+
+    return;
+  }
+
+
+  const tableHead =
+    "<tr>" +
+    headers.map(
+      header =>
+        "<th>" +
+        excelCellText(
+          header
+        ) +
+        "</th>"
+    )
+    .join(
+      ""
+    ) +
+    "</tr>";
+
+
+  const tableBody =
+    rows.map(
+      row =>
+        "<tr>" +
+        row.map(
+          cell =>
+            '<td style="mso-number-format:\'\\@\';">' +
+            excelCellText(
+              cell
+            ) +
+            "</td>"
+        )
+        .join(
+          ""
+        ) +
+        "</tr>"
+    )
+    .join(
+      ""
+    );
+
+
+  const html =
+    `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+body{font-family:"Microsoft YaHei",Arial,sans-serif;}
+h2{margin:0 0 12px;}
+table{border-collapse:collapse;}
+th,td{border:1px solid #999;padding:6px 8px;white-space:nowrap;}
+th{background:#f1f5f9;font-weight:700;}
+</style>
+</head>
+<body>
+<h2>${excelCellText(title)}</h2>
+<table>
+<thead>${tableHead}</thead>
+<tbody>${tableBody}</tbody>
+</table>
+</body>
+</html>`;
+
+
+  const blob =
+    new Blob(
+      [
+        "\ufeff",
+        html
+      ],
+      {
+        type:
+          "application/vnd.ms-excel;charset=utf-8"
+      }
+    );
+
+
+  const url =
+    URL.createObjectURL(
+      blob
+    );
+
+
+  const link =
+    document.createElement(
+      "a"
+    );
+
+
+  link.href =
+    url;
+
+
+  link.download =
+    fileName;
+
+
+  document.body.appendChild(
+    link
+  );
+
+
+  link.click();
+
+
+  link.remove();
+
+
+  setTimeout(
+    () =>
+      URL.revokeObjectURL(
+        url
+      ),
+    1500
+  );
+
+
+  showToast(
+    "Excel 已开始下载。"
+  );
+}
+
+
+function exportPersonnelExcel() {
+
+  const records =
+    getPersonnel()
+      .slice()
+      .sort(
+        (a, b) =>
+          String(
+            a.name ||
+            ""
+          )
+          .localeCompare(
+            String(
+              b.name ||
+              ""
+            ),
+            "zh-CN"
+          )
+      );
+
+
+  const headers = [
+    "人员编号",
+    "员工编号",
+    "姓名",
+    "手机号",
+    "岗位",
+    "所属班组/部门",
+    "人员状态",
+    "审核状态",
+    "身份证号",
+    "护照号",
+    "入职日期",
+    "紧急联系人",
+    "紧急联系电话",
+    "备注"
+  ];
+
+
+  const rows =
+    records.map(
+      person => [
+        person.personId ||
+          "",
+
+        person.employeeNo ||
+        person.employeeId ||
+          "",
+
+        person.name ||
+          "",
+
+        person.phone ||
+          "",
+
+        normalizePersonnelPosition(
+          person.position ||
+          ""
+        ),
+
+        person.team ||
+        person.department ||
+          "",
+
+        person.personnelStatus ||
+        personnelStatusText(
+          person.status
+        ),
+
+        person.approvalStatus ||
+          "",
+
+        person.idCardNumber ||
+          "",
+
+        person.passportNumber ||
+          "",
+
+        person.entryDate ||
+          "",
+
+        person.emergencyContact ||
+          "",
+
+        person.emergencyPhone ||
+          "",
+
+        person.remark ||
+          ""
+      ]
+    );
+
+
+  downloadExcelTable({
+    title:
+      "矿山管理系统 - 人员资料",
+
+    fileName:
+      "人员资料-" +
+      excelFileStamp() +
+      ".xls",
+
+    headers,
+
+    rows
+  });
+}
+
+
+function exportEquipmentExcel() {
+
+  const records =
+    getEquipment()
+      .slice()
+      .sort(
+        (a, b) =>
+          String(
+            a.equipmentNumber ||
+            ""
+          )
+          .localeCompare(
+            String(
+              b.equipmentNumber ||
+              ""
+            ),
+            undefined,
+            {
+              numeric:
+                true
+            }
+          )
+      );
+
+
+  const headers = [
+    "设备编号",
+    "设备名称",
+    "设备类别",
+    "品牌",
+    "型号",
+    "车牌号",
+    "所属公司/车队",
+    "载重/斗容",
+    "燃油类型",
+    "当前状态",
+    "入场日期",
+    "备注"
+  ];
+
+
+  const rows =
+    records.map(
+      item => [
+        item.equipmentNumber ||
+          "",
+
+        item.equipmentName ||
+          "",
+
+        item.type ||
+          "",
+
+        item.brand ||
+          "",
+
+        item.model ||
+          "",
+
+        item.plateNumber ||
+          "",
+
+        item.team ||
+          "",
+
+        item.capacity ||
+          "",
+
+        item.fuelType ||
+          "",
+
+        equipmentStatusText(
+          item.status
+        ),
+
+        item.entryDate ||
+          "",
+
+        item.remark ||
+          ""
+      ]
+    );
+
+
+  downloadExcelTable({
+    title:
+      "矿山管理系统 - 设备资料",
+
+    fileName:
+      "设备资料-" +
+      excelFileStamp() +
+      ".xls",
+
+    headers,
+
+    rows
+  });
+}
+
+
+function exportMaterialInventoryExcel() {
+
+  const materials =
+    getMaterials()
+      .slice()
+      .sort(
+        (a, b) =>
+          String(
+            a.name ||
+            ""
+          )
+          .localeCompare(
+            String(
+              b.name ||
+              ""
+            ),
+            "zh-CN"
+          )
+      );
+
+
+  const outstandingRows =
+    getAllOutstandingMaterials();
+
+
+  const headers = [
+    "物资编号",
+    "物资编码",
+    "物资名称",
+    "分类",
+    "规格型号",
+    "单位",
+    "物资属性",
+    "当前可用库存",
+    "员工未归还",
+    "最低库存",
+    "库存状态",
+    "参考单价",
+    "当前库存参考金额",
+    "丢失扣款/单位",
+    "损坏扣款/单位",
+    "备注"
+  ];
+
+
+  const rows =
+    materials.map(
+      item => {
+
+        const stock =
+          numberValue(
+            item.stock ??
+            item.availableQty
+          );
+
+
+        const outstanding =
+          outstandingRows
+            .filter(
+              record =>
+                record.materialId ===
+                  item.materialId
+            )
+            .reduce(
+              (
+                sum,
+                record
+              ) =>
+                sum +
+                numberValue(
+                  record.outstandingQuantity
+                ),
+              0
+            );
+
+
+        const minimumStock =
+          numberValue(
+            item.minimumStock
+          );
+
+
+        const referencePrice =
+          numberValue(
+            item.referencePrice
+          );
+
+
+        let stockState =
+          "正常";
+
+
+        if (
+          stock <=
+            0
+        ) {
+
+          stockState =
+            "无库存";
+
+        } else if (
+          minimumStock >
+            0 &&
+          stock <=
+            minimumStock
+        ) {
+
+          stockState =
+            "低库存";
+        }
+
+
+        return [
+          item.materialId ||
+            "",
+
+          item.code ||
+            "",
+
+          item.name ||
+            "",
+
+          item.category ||
+            "",
+
+          item.spec ||
+            "",
+
+          item.unit ||
+            "",
+
+          item.type ===
+            "returnable"
+              ? "可回收物资"
+              : (
+                  item.type ===
+                    "recyclable"
+                    ? "可回收物资"
+                    : "消耗品"
+                ),
+
+          stock,
+
+          outstanding,
+
+          minimumStock ||
+            "",
+
+          stockState,
+
+          referencePrice ||
+            "",
+
+          referencePrice
+            ? (
+                stock *
+                referencePrice
+              ).toFixed(
+                2
+              )
+            : "",
+
+          numberValue(
+            item.lostDeduction
+          ) ||
+            "",
+
+          numberValue(
+            item.damageDeduction
+          ) ||
+            "",
+
+          item.remark ||
+            ""
+        ];
+      }
+    );
+
+
+  downloadExcelTable({
+    title:
+      "矿山管理系统 - 后勤物资库存",
+
+    fileName:
+      "后勤物资库存-" +
+      excelFileStamp() +
+      ".xls",
+
+    headers,
+
+    rows
+  });
+}
+
+
+/* =========================================================
    状态文字
 ========================================================= */
 
