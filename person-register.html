@@ -2050,6 +2050,51 @@ function getPhotoStorageSummary() {
 
 
 
+function showPreview(
+    previewId,
+    data
+) {
+
+    const image =
+        document.getElementById(
+            previewId
+        );
+
+
+    if (
+        !image
+    ) {
+
+        return;
+    }
+
+
+    if (
+        data
+    ) {
+
+        image.src =
+            data;
+
+
+        image.style.display =
+            "block";
+
+    } else {
+
+        image.removeAttribute(
+            "src"
+        );
+
+
+        image.style.display =
+            "none";
+    }
+
+}
+
+
+
 /* =========================================================
    图片选择
 ========================================================= */
