@@ -601,7 +601,7 @@ footer {
         <div class="info-box">
 
             <span>
-                人员编号
+                工号
             </span>
 
             <strong id="workerId">
@@ -1816,6 +1816,8 @@ function renderWorker() {
 
     setText(
         "workerId",
+        currentWorker.employeeNo ||
+        currentWorker.employeeId ||
         getPersonId(
             currentWorker
         ) ||
