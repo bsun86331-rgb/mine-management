@@ -5973,17 +5973,21 @@ function loadRotationLeaveRule(person) {
 
 
     cycleInput.value =
-        Number(
-            person.rotationLeaveCycleMonths ||
-            1
-        );
+        enabled
+            ? Number(
+                person.rotationLeaveCycleMonths ||
+                1
+              )
+            : "";
 
 
     quotaInput.value =
-        Number(
-            person.rotationLeaveQuotaDays ||
-            0.5
-        );
+        enabled
+            ? Number(
+                person.rotationLeaveQuotaDays ||
+                0.5
+              )
+            : "";
 
 
     toggleRotationLeaveFields();
@@ -6027,10 +6031,34 @@ function toggleRotationLeaveFields() {
 
     if (!enabled) {
 
+        cycleInput.value =
+            "";
+
+        quotaInput.value =
+            "";
+
         summary.textContent =
             "当前员工未启用轮休假。";
 
         return;
+    }
+
+
+    if (
+        !cycleInput.value
+    ) {
+
+        cycleInput.value =
+            "1";
+    }
+
+
+    if (
+        !quotaInput.value
+    ) {
+
+        quotaInput.value =
+            "0.5";
     }
 
 
