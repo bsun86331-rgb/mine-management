@@ -593,3 +593,555 @@ img {
     animation: none !important;
   }
 }
+
+
+/* =========================================================
+   V1.1 第二轮精细排版
+   代表页面：主页 / 调度 / 司机 / 挖机 / 管理 / 库房 / 维修 / 报表
+========================================================= */
+
+/* ---------- 首页入口 ---------- */
+
+.site-header .header-inner,
+.portal-section,
+.portal-grid {
+  max-width: var(--ui-page-max);
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.portal-grid {
+  gap: 14px !important;
+}
+
+.portal-card {
+  min-height: 156px;
+  border-radius: 15px !important;
+  border-color: var(--ui-border) !important;
+  box-shadow: var(--ui-shadow-sm);
+  transition:
+    transform .14s ease,
+    box-shadow .14s ease,
+    border-color .14s ease;
+}
+
+.portal-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--ui-shadow);
+  border-color: #bfdbfe !important;
+}
+
+.section-heading {
+  margin-bottom: 14px;
+}
+
+/* ---------- 调度端 ---------- */
+
+.dispatch-header-inner,
+.dispatch-main,
+.dispatch-container {
+  max-width: var(--ui-page-max);
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.dispatch-section {
+  border-radius: 15px !important;
+  border-color: var(--ui-border) !important;
+  box-shadow: var(--ui-shadow-sm);
+}
+
+.dispatch-section-title {
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.todo-grid,
+.shift-workbench-grid,
+.auxiliary-config-grid,
+.task-summary-grid,
+.driver-role-flat-grid {
+  gap: 12px !important;
+}
+
+.todo-card,
+.shift-workbench-card,
+.driver-role-panel,
+.core-detail-panel,
+.dispatch-rpo-summary-card,
+.attendance-review-summary-card {
+  border-radius: 12px !important;
+  border-color: var(--ui-border) !important;
+}
+
+.todo-card {
+  min-height: 104px;
+}
+
+.dispatch-modal {
+  padding: 14px !important;
+}
+
+.dispatch-modal-card {
+  width: min(760px, calc(100vw - 28px)) !important;
+  max-height: calc(100vh - 30px);
+  overflow-y: auto;
+  border-radius: 16px !important;
+  box-shadow: 0 24px 70px rgba(15, 23, 42, .24) !important;
+}
+
+.dispatch-modal-card.large-modal,
+.dispatch-modal-card.core-dispatch-card,
+.dispatch-modal-card.core-detail-card {
+  width: min(1180px, calc(100vw - 28px)) !important;
+}
+
+.modal-action-row {
+  gap: 8px !important;
+  flex-wrap: wrap;
+}
+
+/* ---------- 司机 / 挖机 ---------- */
+
+.driver-header,
+.excavator-header,
+header .header-inner {
+  box-sizing: border-box;
+}
+
+.driver-card,
+.excavator-page .card,
+body > main > .card {
+  border-radius: 15px;
+}
+
+.driver-card,
+.driver-work-card {
+  box-shadow: var(--ui-shadow-sm);
+}
+
+.shift-kpi-grid {
+  gap: 10px !important;
+}
+
+.shift-kpi-item {
+  min-height: 112px;
+  border-radius: 13px !important;
+}
+
+.shift-kpi-item.primary {
+  min-height: 128px;
+}
+
+.shift-kpi-value {
+  line-height: 1.08 !important;
+}
+
+.todo-grid,
+.gps-grid,
+.task-grid,
+.work-button-grid,
+.action-grid,
+.info-grid {
+  gap: 10px !important;
+}
+
+.driver-card .section-title,
+.card .section-title {
+  margin-bottom: 12px;
+}
+
+.driver-card .section-title h2,
+.card .section-title h2 {
+  margin-bottom: 4px;
+}
+
+/* ---------- 管理员审核 ---------- */
+
+.admin-review-page,
+.admin-page,
+.header-inner {
+  box-sizing: border-box;
+}
+
+.summary-grid {
+  gap: 10px;
+}
+
+.summary-card,
+.summary-box {
+  min-height: 92px;
+}
+
+.attendance-zone-card,
+.final-attendance-card,
+.admin-rpo-card,
+.table-card,
+.frontline-team-fix-card,
+.team-transfer-review-card {
+  border-radius: 15px !important;
+  border-color: var(--ui-border) !important;
+  box-shadow: var(--ui-shadow-sm);
+}
+
+.attendance-zone-header,
+.final-attendance-card-header,
+.admin-rpo-card-header {
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.final-attendance-header-actions,
+.admin-rpo-card-actions {
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.final-attendance-mini-grid,
+.admin-rpo-mini-grid,
+.final-attendance-summary,
+.admin-rpo-summary,
+.monthly-report-summary {
+  gap: 9px !important;
+}
+
+.final-attendance-table-wrap,
+.frontline-team-fix-table-wrap,
+.team-transfer-table-wrap,
+.attendance-review-table-wrap {
+  overflow-x: auto;
+  border-radius: 12px;
+}
+
+.detail-grid,
+.photo-grid,
+.rotation-leave-grid {
+  gap: 12px !important;
+}
+
+.photo-box {
+  border-radius: 12px !important;
+  overflow: hidden;
+}
+
+/* ---------- 管理员基础资料 ---------- */
+
+.admin-quick-entry-grid {
+  gap: 12px !important;
+}
+
+.admin-quick-entry-card {
+  min-height: 122px;
+}
+
+.admin-danger-zone {
+  margin-top: 4px;
+}
+
+.module-section {
+  padding-top: 2px;
+}
+
+.module-tabs {
+  margin-bottom: 14px;
+}
+
+.admin-section-actions {
+  gap: 8px !important;
+}
+
+/* ---------- 库房 ---------- */
+
+.nav-tabs {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.nav-tabs > button,
+.nav-tabs .nav-tab {
+  flex: 0 0 auto;
+  min-height: 40px;
+  white-space: nowrap;
+  border-radius: 9px;
+}
+
+.state-grid,
+.report-grid {
+  gap: 10px !important;
+}
+
+.summary-box {
+  border-radius: 12px !important;
+  border-color: var(--ui-border) !important;
+}
+
+.header-actions {
+  gap: 8px !important;
+  flex-wrap: wrap;
+}
+
+/* ---------- 维修 ---------- */
+
+.nav-grid {
+  gap: 8px !important;
+}
+
+.nav-grid > button,
+.nav-grid .nav-item {
+  min-height: 44px;
+  border-radius: 10px !important;
+}
+
+.workshop-grid {
+  gap: 12px !important;
+}
+
+.bay-card {
+  border-radius: 12px !important;
+}
+
+.maintenance-page .record-card,
+.page-section .record-card {
+  border-color: var(--ui-border);
+}
+
+/* ---------- 报表中心 ---------- */
+
+.profile-grid,
+.summary-grid {
+  gap: 10px !important;
+}
+
+.report-grid,
+.grid-2 {
+  gap: 12px !important;
+}
+
+.report-center .card,
+.report-page .card {
+  margin-bottom: 14px;
+}
+
+.report-center .table-wrap,
+.report-page .table-wrap {
+  margin-top: 10px;
+}
+
+/* ---------- 长文本 / 数值防溢出 ---------- */
+
+.record-info,
+.record-meta,
+.detail-value,
+.summary-box strong,
+.summary-card strong,
+.shift-kpi-sub,
+.section-title p {
+  overflow-wrap: anywhere;
+}
+
+.record-title-row,
+.record-top {
+  gap: 10px;
+}
+
+/* ---------- 大屏增强 ---------- */
+
+@media (min-width: 1280px) {
+  .portal-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  }
+
+  .dispatch-section,
+  .card,
+  .driver-card,
+  .attendance-zone-card,
+  .final-attendance-card,
+  .admin-rpo-card,
+  .table-card {
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+}
+
+/* ---------- 平板精细适配 ---------- */
+
+@media (max-width: 960px) {
+  .portal-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .todo-grid,
+  .driver-role-flat-grid,
+  .shift-workbench-grid,
+  .workshop-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .final-attendance-mini-grid,
+  .admin-rpo-mini-grid,
+  .attendance-review-summary,
+  .final-attendance-summary,
+  .admin-rpo-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+/* ---------- 手机精细适配 ---------- */
+
+@media (max-width: 640px) {
+  .site-header .header-inner,
+  .dispatch-header-inner,
+  .header-inner {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+  .portal-grid {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+
+  .portal-card {
+    min-height: 0;
+  }
+
+  .dispatch-section,
+  .driver-card,
+  main > .card,
+  .attendance-zone-card,
+  .final-attendance-card,
+  .admin-rpo-card,
+  .table-card,
+  .frontline-team-fix-card,
+  .team-transfer-review-card {
+    padding: 13px !important;
+    border-radius: 13px !important;
+  }
+
+  .todo-grid,
+  .driver-role-flat-grid,
+  .shift-workbench-grid,
+  .workshop-grid,
+  .state-grid,
+  .report-grid,
+  .detail-grid,
+  .photo-grid,
+  .rotation-leave-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .shift-kpi-grid {
+    grid-template-columns: 1fr 1fr !important;
+  }
+
+  .shift-kpi-item.primary {
+    grid-column: 1 / -1;
+  }
+
+  .shift-kpi-item {
+    min-height: 100px;
+    padding: 12px 8px !important;
+  }
+
+  .shift-kpi-item.primary {
+    min-height: 112px;
+  }
+
+  .shift-kpi-item.primary .shift-kpi-value {
+    font-size: clamp(38px, 13vw, 48px) !important;
+  }
+
+  .shift-kpi-item:not(.primary) .shift-kpi-value {
+    font-size: clamp(22px, 7vw, 30px) !important;
+  }
+
+  .todo-card {
+    min-height: 86px;
+  }
+
+  .dispatch-modal,
+  .final-attendance-modal {
+    padding: 7px !important;
+  }
+
+  .dispatch-modal-card,
+  .dispatch-modal-card.large-modal,
+  .dispatch-modal-card.core-dispatch-card,
+  .dispatch-modal-card.core-detail-card,
+  .final-attendance-modal-card {
+    width: calc(100vw - 14px) !important;
+    max-width: none !important;
+    max-height: calc(100vh - 14px) !important;
+    border-radius: 12px !important;
+  }
+
+  .final-attendance-header-actions,
+  .admin-rpo-card-actions,
+  .header-actions,
+  .admin-section-actions,
+  .modal-action-row {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    width: 100%;
+  }
+
+  .final-attendance-header-actions > *,
+  .admin-rpo-card-actions > *,
+  .header-actions > *,
+  .admin-section-actions > *,
+  .modal-action-row > * {
+    width: 100% !important;
+  }
+
+  .summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .summary-card,
+  .summary-box {
+    min-height: 82px;
+    padding: 10px !important;
+  }
+
+  .summary-card strong,
+  .summary-box strong {
+    font-size: clamp(18px, 6vw, 24px);
+  }
+
+  .nav-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .nav-tabs {
+    margin-left: -2px;
+    margin-right: -2px;
+  }
+
+  .record-top,
+  .record-title-row {
+    align-items: flex-start !important;
+    flex-wrap: wrap;
+  }
+
+  .record-info,
+  .record-meta {
+    row-gap: 5px;
+  }
+}
+
+/* ---------- 极窄屏 ---------- */
+
+@media (max-width: 380px) {
+  .shift-kpi-grid,
+  .summary-grid,
+  .nav-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .shift-kpi-item.primary {
+    grid-column: auto;
+  }
+}
