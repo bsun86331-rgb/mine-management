@@ -125,6 +125,66 @@
         }
 
 
+        .shift-kpi-grid {
+            display: grid;
+            grid-template-columns: 1.35fr 1fr 1fr;
+            gap: 10px;
+        }
+
+        .shift-kpi-item {
+            min-height: 106px;
+            padding: 14px 12px;
+            border: 1px solid #dbeafe;
+            border-radius: 14px;
+            background: #f8fafc;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
+
+        .shift-kpi-item.primary {
+            background: #eff6ff;
+            border-color: #bfdbfe;
+        }
+
+        .shift-kpi-label {
+            color: #64748b;
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+        .shift-kpi-value {
+            margin-top: 5px;
+            color: #0f172a;
+            font-size: 30px;
+            line-height: 1.05;
+            font-weight: 900;
+        }
+
+        .shift-kpi-item.primary .shift-kpi-value {
+            color: #1d4ed8;
+            font-size: 48px;
+        }
+
+        .shift-kpi-sub {
+            margin-top: 5px;
+            color: #94a3b8;
+            font-size: 11px;
+        }
+
+        @media (max-width: 700px) {
+            .shift-kpi-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .shift-kpi-item.primary {
+                grid-column: 1 / -1;
+            }
+        }
+
+
         .section-title {
             display: flex;
             align-items: flex-start;
@@ -607,6 +667,74 @@
 
 
     <!-- =====================================================
+         本班实时数据
+    ====================================================== -->
+
+    <section class="card">
+
+        <div class="section-title">
+
+            <div>
+                <h2>📈 本班实时数据</h2>
+                <p>装车趟数、趟数排名、绩效排名实时显示</p>
+            </div>
+
+        </div>
+
+        <div class="shift-kpi-grid">
+
+            <div class="shift-kpi-item primary">
+                <span class="shift-kpi-label">本班装车趟数</span>
+                <strong
+                    id="excavatorShiftTripCount"
+                    class="shift-kpi-value"
+                >
+                    0
+                </strong>
+                <span class="shift-kpi-sub">
+                    当前班次累计
+                </span>
+            </div>
+
+            <div class="shift-kpi-item">
+                <span class="shift-kpi-label">本班装车趟数排名</span>
+                <strong
+                    id="excavatorTripRankValue"
+                    class="shift-kpi-value"
+                >
+                    --
+                </strong>
+                <span
+                    id="excavatorTripRankScope"
+                    class="shift-kpi-sub"
+                >
+                    当前班次挖机
+                </span>
+            </div>
+
+            <div class="shift-kpi-item">
+                <span class="shift-kpi-label">本班绩效排名</span>
+                <strong
+                    id="excavatorPerformanceRankValue"
+                    class="shift-kpi-value"
+                >
+                    --
+                </strong>
+                <span
+                    id="excavatorPerformanceRankScope"
+                    class="shift-kpi-sub"
+                >
+                    当前班次挖机司机
+                </span>
+            </div>
+
+        </div>
+
+    </section>
+
+
+
+    <!-- =====================================================
          当前任务
     ====================================================== -->
 
@@ -828,7 +956,10 @@ const STORAGE = {
         "driverTripRecords",
 
     TEAM_TRANSFER_REQUESTS:
-        "teamTransferRequests"
+        "teamTransferRequests",
+
+    PERFORMANCE_RANKING:
+        "performanceRankingRecords"
 };
 
 
@@ -935,6 +1066,9 @@ function refreshAll() {
 
 
     renderTripStatistics();
+
+
+    refreshShiftDashboard();
 
 
     renderHistory();
@@ -2603,6 +2737,406 @@ function getExcavatorTripStats(
                             )
                 )
     };
+}
+
+
+
+/* =========================================================
+   本班实时数据看板
+========================================================= */
+
+function refreshShiftDashboard() {
+
+    if (
+        !currentTask ||
+        !currentExcavatorAssignment
+    ) {
+
+        setText(
+            "excavatorShiftTripCount",
+            0
+        );
+
+        setText(
+            "excavatorTripRankValue",
+            "--"
+        );
+
+        setText(
+            "excavatorTripRankScope",
+            "等待班次任务"
+        );
+
+        setText(
+            "excavatorPerformanceRankValue",
+            "--"
+        );
+
+        setText(
+            "excavatorPerformanceRankScope",
+            "等待班次任务"
+        );
+
+
+        return;
+    }
+
+
+    const currentExcavatorId =
+        String(
+            currentExcavatorAssignment.excavatorId ||
+            currentExcavatorAssignment.excavatorNumber ||
+            ""
+        )
+        .trim();
+
+
+    const currentStats =
+        getExcavatorTripStats(
+            currentTask,
+            currentExcavatorId
+        );
+
+
+    setText(
+        "excavatorShiftTripCount",
+        currentStats.total
+    );
+
+
+    /*
+     * 当前班次全部挖机按有效运输趟数排名。
+     */
+    const assignments =
+        Array.isArray(
+            currentTask.excavatorDriverAssignments
+        )
+            ? currentTask.excavatorDriverAssignments
+            : [];
+
+
+    const rankingMap =
+        new Map();
+
+
+    assignments.forEach(
+        item => {
+
+            const excavatorId =
+                String(
+                    item.excavatorId ||
+                    item.excavatorNumber ||
+                    ""
+                )
+                .trim();
+
+
+            if (
+                !excavatorId ||
+                rankingMap.has(
+                    excavatorId
+                )
+            ) {
+
+                return;
+            }
+
+
+            const stats =
+                getExcavatorTripStats(
+                    currentTask,
+                    excavatorId
+                );
+
+
+            rankingMap.set(
+                excavatorId,
+                stats.total
+            );
+        }
+    );
+
+
+    if (
+        currentExcavatorId &&
+        !rankingMap.has(
+            currentExcavatorId
+        )
+    ) {
+
+        rankingMap.set(
+            currentExcavatorId,
+            currentStats.total
+        );
+    }
+
+
+    const ranking =
+        Array.from(
+            rankingMap.entries()
+        )
+        .map(
+            ([excavatorId, count]) => ({
+                excavatorId,
+                count
+            })
+        )
+        .sort(
+            (a, b) =>
+                b.count -
+                    a.count ||
+                a.excavatorId.localeCompare(
+                    b.excavatorId,
+                    "zh-CN"
+                )
+        );
+
+
+    const rankIndex =
+        ranking.findIndex(
+            item =>
+                item.excavatorId ===
+                currentExcavatorId
+        );
+
+
+    setText(
+        "excavatorTripRankValue",
+        rankIndex >=
+            0
+            ? "第" +
+              (
+                  rankIndex +
+                  1
+              ) +
+              " / " +
+              ranking.length +
+              "名"
+            : "--"
+    );
+
+
+    setText(
+        "excavatorTripRankScope",
+        (
+            currentTask.shift ||
+            "本班"
+        ) +
+        (
+            currentExcavatorId
+                ? " · " +
+                  currentExcavatorId
+                : ""
+        )
+    );
+
+
+    refreshExcavatorPerformanceRanking();
+}
+
+
+
+function getExcavatorPerformanceMonth() {
+
+    const shiftDate =
+        String(
+            currentTask?.shiftDate ||
+            ""
+        )
+        .trim();
+
+
+    if (
+        /^\d{4}-\d{2}/.test(
+            shiftDate
+        )
+    ) {
+
+        return shiftDate.slice(
+            0,
+            7
+        );
+    }
+
+
+    const now =
+        new Date();
+
+
+    return (
+        now.getFullYear() +
+        "-" +
+        String(
+            now.getMonth() +
+            1
+        )
+        .padStart(
+            2,
+            "0"
+        )
+    );
+}
+
+
+
+function refreshExcavatorPerformanceRanking() {
+
+    const performanceMonth =
+        getExcavatorPerformanceMonth();
+
+
+    const performanceRecords =
+        readJson(
+            STORAGE.PERFORMANCE_RANKING,
+            []
+        );
+
+
+    const monthRecords =
+        Array.isArray(
+            performanceRecords
+        )
+            ? performanceRecords
+                .filter(
+                    item =>
+                        String(
+                            item.month ||
+                            ""
+                        ) ===
+                            performanceMonth
+                )
+            : [];
+
+
+    const personId =
+        String(
+            getPersonId(
+                currentPerson
+            ) ||
+            ""
+        )
+        .trim();
+
+
+    const personName =
+        String(
+            currentPerson?.name ||
+            ""
+        )
+        .trim();
+
+
+    const myPerformance =
+        monthRecords.find(
+            item => {
+
+                const itemPersonId =
+                    String(
+                        item.personId ||
+                        item.driverId ||
+                        item.employeeId ||
+                        ""
+                    )
+                    .trim();
+
+
+                const itemName =
+                    String(
+                        item.personName ||
+                        item.driverName ||
+                        item.name ||
+                        ""
+                    )
+                    .trim();
+
+
+                if (
+                    personId &&
+                    itemPersonId
+                ) {
+
+                    return (
+                        personId ===
+                        itemPersonId
+                    );
+                }
+
+
+                return Boolean(
+                    personName &&
+                    itemName &&
+                    personName ===
+                        itemName
+                );
+            }
+        ) ||
+        null;
+
+
+    if (
+        !myPerformance
+    ) {
+
+        setText(
+            "excavatorPerformanceRankValue",
+            "--"
+        );
+
+
+        setText(
+            "excavatorPerformanceRankScope",
+            performanceMonth +
+            " · 本月绩效排名待生成"
+        );
+
+
+        return;
+    }
+
+
+    const rank =
+        Number(
+            myPerformance.rank ||
+            0
+        );
+
+
+    const totalPeople =
+        Number(
+            myPerformance.totalPeople ||
+            monthRecords.length ||
+            0
+        );
+
+
+    const score =
+        Number(
+            myPerformance.comprehensiveScore ||
+            0
+        );
+
+
+    setText(
+        "excavatorPerformanceRankValue",
+        rank >
+            0
+            ? "第" +
+              rank +
+              " / " +
+              totalPeople +
+              "名"
+            : "--"
+    );
+
+
+    setText(
+        "excavatorPerformanceRankScope",
+        performanceMonth +
+        " · 综合分 " +
+        score.toFixed(
+            1
+        )
+    );
 }
 
 
