@@ -216,6 +216,155 @@
       }
     }
 
+    .system-reset-modal {
+      position: fixed;
+      inset: 0;
+      z-index: 99999;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 18px;
+      background: rgba(15, 23, 42, .62);
+    }
+
+    .system-reset-modal.show {
+      display: flex;
+    }
+
+    .system-reset-dialog {
+      width: min(680px, 100%);
+      max-height: 88vh;
+      overflow: auto;
+      border-radius: 16px;
+      background: #fff;
+      box-shadow: 0 28px 80px rgba(15, 23, 42, .34);
+      padding: 20px;
+    }
+
+    .system-reset-dialog h2 {
+      margin: 0 0 8px;
+      color: #991b1b;
+      font-size: 22px;
+    }
+
+    .system-reset-dialog p {
+      margin: 0;
+      color: #475569;
+      font-size: 13px;
+      line-height: 1.7;
+    }
+
+    .system-reset-summary {
+      margin-top: 14px;
+      padding: 14px;
+      border: 1px solid #fecaca;
+      border-radius: 12px;
+      background: #fff7f7;
+      color: #7f1d1d;
+      font-size: 12px;
+      line-height: 1.75;
+      white-space: pre-line;
+    }
+
+    .system-reset-confirm-box {
+      display: none;
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 1px solid #e2e8f0;
+    }
+
+    .system-reset-confirm-box.show {
+      display: block;
+    }
+
+    .system-reset-confirm-box label {
+      display: block;
+      margin-bottom: 7px;
+      color: #991b1b;
+      font-weight: 800;
+    }
+
+    .system-reset-confirm-box input {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 11px 12px;
+      border: 2px solid #fecaca;
+      border-radius: 10px;
+      font-size: 16px;
+      font-weight: 800;
+      letter-spacing: 1px;
+    }
+
+    .system-reset-confirm-box input:focus {
+      outline: none;
+      border-color: #dc2626;
+      box-shadow: 0 0 0 3px rgba(220, 38, 38, .10);
+    }
+
+    .system-reset-modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 18px;
+      flex-wrap: wrap;
+    }
+
+    .system-reset-modal-actions button {
+      min-height: 40px;
+      padding: 0 14px;
+      border-radius: 9px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .system-reset-cancel {
+      border: 1px solid #cbd5e1;
+      background: #fff;
+      color: #334155;
+    }
+
+    .system-reset-next {
+      border: 1px solid #f59e0b;
+      background: #f59e0b;
+      color: #fff;
+    }
+
+    .system-reset-execute {
+      display: none;
+      border: 1px solid #b91c1c;
+      background: #b91c1c;
+      color: #fff;
+    }
+
+    .system-reset-execute.show {
+      display: inline-block;
+    }
+
+    .system-reset-status {
+      display: none;
+      margin-top: 12px;
+      padding: 10px 12px;
+      border-radius: 9px;
+      font-size: 12px;
+      line-height: 1.6;
+    }
+
+    .system-reset-status.show {
+      display: block;
+    }
+
+    .system-reset-status.error {
+      background: #fef2f2;
+      color: #991b1b;
+      border: 1px solid #fecaca;
+    }
+
+    .system-reset-status.success {
+      background: #ecfdf5;
+      color: #166534;
+      border: 1px solid #86efac;
+    }
+
 </style>
     <link rel="stylesheet" href="css/work-chat.css?v=1.0.0">
 </head>
@@ -1604,7 +1753,7 @@
   }
 </script>
 
-<script src="js/admin-master.js?v=2.11.1-reset"></script>
+<script src="js/admin-master.js?v=2.11.2-reset-modal"></script>
 
 <script>
 "use strict";
@@ -2741,5 +2890,77 @@ setInterval(
 </script>
 
 <script src="js/work-chat.js?v=1.0.0"></script>
+
+<div
+  id="systemResetModal"
+  class="system-reset-modal"
+  aria-hidden="true">
+
+  <div class="system-reset-dialog">
+
+    <h2>⚠️ 系统数据完全归零</h2>
+
+    <p>
+      此操作不可撤销。系统会在真正删除前自动下载一份 JSON 全量备份。
+    </p>
+
+    <div
+      id="systemResetSummary"
+      class="system-reset-summary">
+    </div>
+
+    <div
+      id="systemResetConfirmBox"
+      class="system-reset-confirm-box">
+
+      <label for="systemResetConfirmInput">
+        第二次确认：请输入 RESET
+      </label>
+
+      <input
+        id="systemResetConfirmInput"
+        type="text"
+        autocomplete="off"
+        spellcheck="false"
+        placeholder="RESET">
+
+    </div>
+
+    <div
+      id="systemResetStatus"
+      class="system-reset-status">
+    </div>
+
+    <div class="system-reset-modal-actions">
+
+      <button
+        type="button"
+        class="system-reset-cancel"
+        onclick="closeSystemResetModal()">
+        取消
+      </button>
+
+      <button
+        id="systemResetNextButton"
+        type="button"
+        class="system-reset-next"
+        onclick="showSystemResetSecondStep()">
+        我已了解，继续
+      </button>
+
+      <button
+        id="systemResetExecuteButton"
+        type="button"
+        class="system-reset-execute"
+        onclick="executeFullSystemReset()">
+        下载备份并归零
+      </button>
+
+    </div>
+
+  </div>
+
+</div>
+
 </body>
 </html>
