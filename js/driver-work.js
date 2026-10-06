@@ -1881,6 +1881,9 @@ document.addEventListener("DOMContentLoaded", function () {
                 }
             );
 
+        bindShiftKpiDetailEvents();
+
+
         $("gpsReviewShortcut")
             ?.addEventListener(
                 "click",
@@ -6665,6 +6668,694 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
         renderTransportCycleStatus();
+    }
+
+
+    /*
+    ===============================================
+    本班实时数据卡片明细
+    ===============================================
+    */
+
+    function bindShiftKpiDetailEvents() {
+
+        const bindings = [
+            [
+                "driverShiftTripsKpi",
+                function () {
+                    openDriverShiftTripsDetail();
+                }
+            ],
+            [
+                "driverShiftTripRankKpi",
+                function () {
+                    openDriverShiftTripRankingDetail();
+                }
+            ],
+            [
+                "driverPerformanceRankKpi",
+                function () {
+                    openDriverPerformanceRankingDetail();
+                }
+            ]
+        ];
+
+
+        bindings.forEach(
+            function (entry) {
+
+                const element =
+                    $(
+                        entry[0]
+                    );
+
+
+                if (!element) {
+
+                    return;
+                }
+
+
+                const handler =
+                    entry[1];
+
+
+                element.addEventListener(
+                    "click",
+                    handler
+                );
+
+
+                element.addEventListener(
+                    "keydown",
+                    function (event) {
+
+                        if (
+                            event.key ===
+                                "Enter" ||
+                            event.key ===
+                                " "
+                        ) {
+
+                            event.preventDefault();
+
+                            handler();
+                        }
+                    }
+                );
+            }
+        );
+    }
+
+
+    function ensureDriverKpiDetailModal() {
+
+        let modal =
+            $(
+                "driverKpiDetailModal"
+            );
+
+
+        if (modal) {
+
+            return modal;
+        }
+
+
+        modal =
+            document.createElement(
+                "div"
+            );
+
+
+        modal.id =
+            "driverKpiDetailModal";
+
+
+        modal.innerHTML = `
+            <div class="driver-kpi-detail-backdrop"></div>
+            <div class="driver-kpi-detail-panel">
+                <div class="driver-kpi-detail-head">
+                    <div>
+                        <h2 id="driverKpiDetailTitle">明细</h2>
+                        <p id="driverKpiDetailSubtitle"></p>
+                    </div>
+                    <button type="button" id="driverKpiDetailClose">关闭</button>
+                </div>
+                <div id="driverKpiDetailBody"></div>
+            </div>
+        `;
+
+
+        const style =
+            document.createElement(
+                "style"
+            );
+
+
+        style.textContent = `
+            #driverKpiDetailModal {
+                position: fixed;
+                inset: 0;
+                z-index: 10000;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                padding: 18px;
+            }
+            #driverKpiDetailModal.hidden {
+                display: none;
+            }
+            .driver-kpi-detail-backdrop {
+                position: absolute;
+                inset: 0;
+                background: rgba(15, 23, 42, .55);
+            }
+            .driver-kpi-detail-panel {
+                position: relative;
+                width: min(760px, 100%);
+                max-height: 84vh;
+                overflow: auto;
+                border-radius: 16px;
+                background: #fff;
+                box-shadow: 0 24px 60px rgba(15, 23, 42, .25);
+                padding: 18px;
+            }
+            .driver-kpi-detail-head {
+                display: flex;
+                align-items: flex-start;
+                justify-content: space-between;
+                gap: 12px;
+                margin-bottom: 14px;
+            }
+            .driver-kpi-detail-head h2 {
+                margin: 0;
+                font-size: 20px;
+            }
+            .driver-kpi-detail-head p {
+                margin: 5px 0 0;
+                color: #64748b;
+                font-size: 12px;
+            }
+            #driverKpiDetailClose {
+                border: 0;
+                border-radius: 9px;
+                padding: 8px 12px;
+                background: #e2e8f0;
+                color: #0f172a;
+                font-weight: 700;
+                cursor: pointer;
+            }
+            .driver-kpi-detail-row {
+                display: grid;
+                grid-template-columns: 56px 1fr auto;
+                gap: 10px;
+                align-items: center;
+                padding: 11px 10px;
+                border-bottom: 1px solid #e2e8f0;
+            }
+            .driver-kpi-detail-row.current {
+                border-radius: 10px;
+                background: #eff6ff;
+            }
+            .driver-kpi-detail-rank {
+                font-weight: 900;
+                color: #1d4ed8;
+            }
+            .driver-kpi-detail-main strong,
+            .driver-kpi-detail-main span {
+                display: block;
+            }
+            .driver-kpi-detail-main span {
+                margin-top: 3px;
+                color: #64748b;
+                font-size: 12px;
+            }
+            .driver-kpi-detail-value {
+                text-align: right;
+                font-weight: 900;
+            }
+            .driver-kpi-trip-row {
+                padding: 12px 10px;
+                border-bottom: 1px solid #e2e8f0;
+            }
+            .driver-kpi-trip-top {
+                display: flex;
+                justify-content: space-between;
+                gap: 10px;
+                font-weight: 800;
+            }
+            .driver-kpi-trip-meta {
+                margin-top: 5px;
+                color: #64748b;
+                font-size: 12px;
+                line-height: 1.6;
+            }
+            .driver-kpi-empty {
+                padding: 28px 12px;
+                text-align: center;
+                color: #94a3b8;
+            }
+        `;
+
+
+        document.head.appendChild(
+            style
+        );
+
+
+        document.body.appendChild(
+            modal
+        );
+
+
+        function close() {
+
+            modal.classList.add(
+                "hidden"
+            );
+        }
+
+
+        $(
+            "driverKpiDetailClose"
+        )
+            ?.addEventListener(
+                "click",
+                close
+            );
+
+
+        modal.querySelector(
+            ".driver-kpi-detail-backdrop"
+        )
+            ?.addEventListener(
+                "click",
+                close
+            );
+
+
+        modal.classList.add(
+            "hidden"
+        );
+
+
+        return modal;
+    }
+
+
+    function showDriverKpiDetail(
+        title,
+        subtitle,
+        html
+    ) {
+
+        const modal =
+            ensureDriverKpiDetailModal();
+
+
+        setText(
+            "driverKpiDetailTitle",
+            title
+        );
+
+
+        setText(
+            "driverKpiDetailSubtitle",
+            subtitle
+        );
+
+
+        const body =
+            $(
+                "driverKpiDetailBody"
+            );
+
+
+        if (body) {
+
+            body.innerHTML =
+                html;
+        }
+
+
+        modal.classList.remove(
+            "hidden"
+        );
+    }
+
+
+    function openDriverShiftTripsDetail() {
+
+        const trips =
+            getMyCurrentShiftTrips()
+                .filter(
+                    isOfficialTrip
+                )
+                .sort(
+                    (a, b) =>
+                        new Date(
+                            a.completedAt ||
+                            a.createdAt ||
+                            0
+                        ) -
+                        new Date(
+                            b.completedAt ||
+                            b.createdAt ||
+                            0
+                        )
+                );
+
+
+        const html =
+            trips.length
+                ? trips.map(
+                    function (
+                        record,
+                        index
+                    ) {
+
+                        const temporary =
+                            record.temporaryLoading ===
+                                true;
+
+
+                        const excavator =
+                            (
+                                temporary
+                                    ? (
+                                        record.temporaryExcavatorId ||
+                                        record.temporaryExcavatorNumber
+                                    )
+                                    : ""
+                            ) ||
+                            record.excavatorId ||
+                            record.excavatorNumber ||
+                            "-";
+
+
+                        return `
+                            <div class="driver-kpi-trip-row">
+                                <div class="driver-kpi-trip-top">
+                                    <span>第 ${index + 1} 趟</span>
+                                    <span>${escapeHtml(formatDateTime(record.completedAt || record.createdAt))}</span>
+                                </div>
+                                <div class="driver-kpi-trip-meta">
+                                    车辆：${escapeHtml(record.vehicleNumber || record.vehicleId || "-")}
+                                    · 挖机：${escapeHtml(excavator)}
+                                    ${temporary ? " · 临时装车" : ""}
+                                    <br>
+                                    路线：${escapeHtml(record.loadingZoneName || record.loadingPoint || "-")}
+                                    → ${escapeHtml(record.unloadingZoneName || record.unloadingPoint || "-")}
+                                </div>
+                            </div>
+                        `;
+                    }
+                )
+                .join(
+                    ""
+                )
+                : '<div class="driver-kpi-empty">本班暂无有效运输趟次</div>';
+
+
+        showDriverKpiDetail(
+            "本班趟数明细",
+            (
+                currentTask?.shift ||
+                "本班"
+            ) +
+            " · 共 " +
+            trips.length +
+            " 趟",
+            html
+        );
+    }
+
+
+    function buildDriverShiftVehicleRanking() {
+
+        const vehicleStats =
+            new Map();
+
+
+        getCurrentShiftAssignments()
+            .forEach(
+                function (item) {
+
+                    if (
+                        item.vehicleNumber
+                    ) {
+
+                        vehicleStats.set(
+                            item.vehicleNumber,
+                            0
+                        );
+                    }
+                }
+            );
+
+
+        getCurrentShiftTrips()
+            .filter(
+                isOfficialTrip
+            )
+            .forEach(
+                function (record) {
+
+                    const vehicle =
+                        String(
+                            record.vehicleNumber ||
+                            record.vehicleId ||
+                            ""
+                        )
+                        .trim();
+
+
+                    if (!vehicle) {
+
+                        return;
+                    }
+
+
+                    vehicleStats.set(
+                        vehicle,
+                        (
+                            vehicleStats.get(
+                                vehicle
+                            ) ||
+                            0
+                        ) +
+                        1
+                    );
+                }
+            );
+
+
+        return Array.from(
+            vehicleStats.entries()
+        )
+        .map(
+            function (entry) {
+
+                return {
+                    vehicle:
+                        entry[0],
+
+                    count:
+                        entry[1]
+                };
+            }
+        )
+        .sort(
+            function (a, b) {
+
+                return (
+                    b.count -
+                        a.count ||
+                    a.vehicle.localeCompare(
+                        b.vehicle,
+                        "zh-CN"
+                    )
+                );
+            }
+        );
+    }
+
+
+    function openDriverShiftTripRankingDetail() {
+
+        const ranking =
+            buildDriverShiftVehicleRanking();
+
+
+        const currentVehicle =
+            String(
+                getVehicleNumber(
+                    currentTask
+                ) ||
+                ""
+            )
+            .trim();
+
+
+        const html =
+            ranking.length
+                ? ranking.map(
+                    function (
+                        item,
+                        index
+                    ) {
+
+                        return `
+                            <div class="driver-kpi-detail-row ${item.vehicle === currentVehicle ? "current" : ""}">
+                                <div class="driver-kpi-detail-rank">#${index + 1}</div>
+                                <div class="driver-kpi-detail-main">
+                                    <strong>${escapeHtml(item.vehicle)}</strong>
+                                    <span>${item.vehicle === currentVehicle ? "当前车辆" : "本班车辆"}</span>
+                                </div>
+                                <div class="driver-kpi-detail-value">${item.count} 趟</div>
+                            </div>
+                        `;
+                    }
+                )
+                .join(
+                    ""
+                )
+                : '<div class="driver-kpi-empty">本班暂无车辆排名数据</div>';
+
+
+        showDriverKpiDetail(
+            "本班趟数排名",
+            (
+                currentTask?.shift ||
+                "本班"
+            ) +
+            " · 共 " +
+            ranking.length +
+            " 台车辆",
+            html
+        );
+    }
+
+
+    function openDriverPerformanceRankingDetail() {
+
+        const month =
+            getPerformanceMonth();
+
+
+        const records =
+            readJson(
+                STORAGE.PERFORMANCE_RANKING,
+                []
+            );
+
+
+        const ranking =
+            (
+                Array.isArray(
+                    records
+                )
+                    ? records.filter(
+                        function (item) {
+
+                            return String(
+                                item.month ||
+                                ""
+                            ) ===
+                                month;
+                        }
+                    )
+                    : []
+            )
+            .slice()
+            .sort(
+                function (a, b) {
+
+                    const aRank =
+                        Number(
+                            a.rank ||
+                            999999
+                        );
+
+                    const bRank =
+                        Number(
+                            b.rank ||
+                            999999
+                        );
+
+
+                    return (
+                        aRank -
+                            bRank ||
+                        Number(
+                            b.comprehensiveScore ||
+                            0
+                        ) -
+                        Number(
+                            a.comprehensiveScore ||
+                            0
+                        )
+                    );
+                }
+            );
+
+
+        const myId =
+            String(
+                profile?.personId ||
+                profile?.driverId ||
+                profile?.employeeId ||
+                ""
+            )
+            .trim();
+
+
+        const html =
+            ranking.length
+                ? ranking.map(
+                    function (
+                        item,
+                        index
+                    ) {
+
+                        const itemId =
+                            String(
+                                item.personId ||
+                                item.driverId ||
+                                item.employeeId ||
+                                ""
+                            )
+                            .trim();
+
+
+                        const name =
+                            item.personName ||
+                            item.driverName ||
+                            item.name ||
+                            itemId ||
+                            "-";
+
+
+                        const rank =
+                            Number(
+                                item.rank ||
+                                index +
+                                1
+                            );
+
+
+                        const score =
+                            Number(
+                                item.comprehensiveScore ||
+                                0
+                            );
+
+
+                        return `
+                            <div class="driver-kpi-detail-row ${myId && itemId === myId ? "current" : ""}">
+                                <div class="driver-kpi-detail-rank">#${rank}</div>
+                                <div class="driver-kpi-detail-main">
+                                    <strong>${escapeHtml(name)}</strong>
+                                    <span>${escapeHtml(item.employeeNo || itemId || "-")}</span>
+                                </div>
+                                <div class="driver-kpi-detail-value">${score.toFixed(1)} 分</div>
+                            </div>
+                        `;
+                    }
+                )
+                .join(
+                    ""
+                )
+                : '<div class="driver-kpi-empty">本月绩效排名尚未生成</div>';
+
+
+        showDriverKpiDetail(
+            "本班绩效排名明细",
+            month +
+            " · 综合绩效",
+            html
+        );
     }
 
 
