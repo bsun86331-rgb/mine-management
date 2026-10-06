@@ -68,6 +68,22 @@
             font-size: 48px;
         }
 
+        .shift-kpi-item.kpi-clickable {
+            cursor: pointer;
+            transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease;
+        }
+
+        .shift-kpi-item.kpi-clickable:hover {
+            transform: translateY(-2px);
+            border-color: #93c5fd;
+            box-shadow: 0 8px 18px rgba(37, 99, 235, .10);
+        }
+
+        .shift-kpi-item.kpi-clickable:focus-visible {
+            outline: 3px solid rgba(37, 99, 235, .25);
+            outline-offset: 2px;
+        }
+
         .shift-kpi-sub {
             margin-top: 5px;
             color: #94a3b8;
@@ -326,7 +342,13 @@
 
         <div class="shift-kpi-grid">
 
-            <div class="shift-kpi-item primary">
+            <div
+                id="driverShiftTripsKpi"
+                class="shift-kpi-item primary kpi-clickable"
+                role="button"
+                tabindex="0"
+                aria-label="查看本班每趟运输明细"
+            >
                 <span class="shift-kpi-label">本班趟数</span>
                 <strong
                     id="todayTripCount"
@@ -339,7 +361,13 @@
                 </span>
             </div>
 
-            <div class="shift-kpi-item">
+            <div
+                id="driverShiftTripRankKpi"
+                class="shift-kpi-item kpi-clickable"
+                role="button"
+                tabindex="0"
+                aria-label="查看本班趟数排名明细"
+            >
                 <span class="shift-kpi-label">本班趟数排名</span>
                 <strong
                     id="tripRankValue"
@@ -355,7 +383,13 @@
                 </span>
             </div>
 
-            <div class="shift-kpi-item">
+            <div
+                id="driverPerformanceRankKpi"
+                class="shift-kpi-item kpi-clickable"
+                role="button"
+                tabindex="0"
+                aria-label="查看本班绩效排名明细"
+            >
                 <span class="shift-kpi-label">本班绩效排名</span>
                 <strong
                     id="performanceRankValue"
