@@ -779,7 +779,7 @@
                 <div class="info-box">
 
                     <span>
-                        人员编号
+                        工号
                     </span>
 
                     <strong id="personId">
@@ -2094,6 +2094,8 @@ function renderPerson() {
 
     setText(
         "personId",
+        currentPerson.employeeNo ||
+        currentPerson.employeeId ||
         getPersonId(
             currentPerson
         ) ||
@@ -5582,7 +5584,7 @@ function submitTeamTransferRequest() {
     ) {
 
         alert(
-            "没有找到当前人员编号。"
+            "没有找到当前工号。"
         );
 
         return;
