@@ -133,6 +133,89 @@
       }
     }
 
+    .admin-danger-zone {
+      margin: 0 0 18px;
+      padding: 16px;
+      border: 1px solid #fecaca;
+      border-radius: 14px;
+      background: #fff7f7;
+      box-shadow: 0 4px 14px rgba(127, 29, 29, .05);
+    }
+
+    .admin-danger-zone-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 14px;
+    }
+
+    .admin-danger-zone h3 {
+      margin: 0 0 6px;
+      color: #991b1b;
+      font-size: 16px;
+    }
+
+    .admin-danger-zone p {
+      margin: 0;
+      color: #7f1d1d;
+      font-size: 12px;
+      line-height: 1.7;
+    }
+
+    .admin-danger-zone .danger-note {
+      margin-top: 10px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      background: #fee2e2;
+      color: #7f1d1d;
+      font-size: 11px;
+      line-height: 1.65;
+    }
+
+    .admin-danger-actions {
+      flex: 0 0 auto;
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .btn-danger-reset {
+      min-height: 40px;
+      padding: 0 14px;
+      border: 1px solid #b91c1c;
+      border-radius: 9px;
+      background: #b91c1c;
+      color: #fff;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .btn-danger-reset:hover {
+      background: #991b1b;
+    }
+
+    .btn-backup-only {
+      min-height: 40px;
+      padding: 0 14px;
+      border: 1px solid #fecaca;
+      border-radius: 9px;
+      background: #fff;
+      color: #991b1b;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    @media (max-width: 760px) {
+      .admin-danger-zone-head {
+        flex-direction: column;
+      }
+
+      .admin-danger-actions,
+      .admin-danger-actions button {
+        width: 100%;
+      }
+    }
+
 </style>
     <link rel="stylesheet" href="css/work-chat.css?v=1.0.0">
 </head>
@@ -203,6 +286,50 @@
         onclick="goPayrollSettings()">
         工资标准设置
       </button>
+
+    </div>
+
+  </section>
+
+
+  <!-- ==================== 危险操作 ==================== -->
+
+  <section class="admin-danger-zone">
+
+    <div class="admin-danger-zone-head">
+
+      <div>
+        <h3>⚠️ 系统数据归零</h3>
+        <p>
+          完全清空当前浏览器内的 mine-management 人员、设备、任务、运输、
+          维修、库房、加油、考勤、工资、报表、聊天及登录状态等本地数据。
+        </p>
+
+        <div class="danger-note">
+          执行归零前系统会自动导出一份完整 JSON 备份。
+          此操作不会删除 GitHub 代码，也不会删除 Supabase 项目、数据库表或 Auth 用户。
+          归零完成后当前管理员会自动退出。
+        </div>
+      </div>
+
+      <div class="admin-danger-actions">
+
+        <button
+          class="btn-backup-only"
+          type="button"
+          onclick="exportFullSystemBackup()">
+          下载 JSON 备份
+        </button>
+
+        <button
+          id="adminSystemResetButton"
+          class="btn-danger-reset"
+          type="button"
+          onclick="startFullSystemReset()">
+          ⚠️ 系统数据归零
+        </button>
+
+      </div>
 
     </div>
 
