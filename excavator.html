@@ -168,6 +168,22 @@
             font-size: 48px;
         }
 
+        .shift-kpi-item.kpi-clickable {
+            cursor: pointer;
+            transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease;
+        }
+
+        .shift-kpi-item.kpi-clickable:hover {
+            transform: translateY(-2px);
+            border-color: #93c5fd;
+            box-shadow: 0 8px 18px rgba(37, 99, 235, .10);
+        }
+
+        .shift-kpi-item.kpi-clickable:focus-visible {
+            outline: 3px solid rgba(37, 99, 235, .25);
+            outline-offset: 2px;
+        }
+
         .shift-kpi-sub {
             margin-top: 5px;
             color: #94a3b8;
@@ -683,7 +699,13 @@
 
         <div class="shift-kpi-grid">
 
-            <div class="shift-kpi-item primary">
+            <div
+                id="excavatorShiftTripsKpi"
+                class="shift-kpi-item primary kpi-clickable"
+                role="button"
+                tabindex="0"
+                aria-label="查看本班每次装车明细"
+            >
                 <span class="shift-kpi-label">本班装车趟数</span>
                 <strong
                     id="excavatorShiftTripCount"
@@ -696,7 +718,13 @@
                 </span>
             </div>
 
-            <div class="shift-kpi-item">
+            <div
+                id="excavatorShiftTripRankKpi"
+                class="shift-kpi-item kpi-clickable"
+                role="button"
+                tabindex="0"
+                aria-label="查看本班挖机趟数排名明细"
+            >
                 <span class="shift-kpi-label">本班装车趟数排名</span>
                 <strong
                     id="excavatorTripRankValue"
@@ -712,7 +740,13 @@
                 </span>
             </div>
 
-            <div class="shift-kpi-item">
+            <div
+                id="excavatorPerformanceRankKpi"
+                class="shift-kpi-item kpi-clickable"
+                role="button"
+                tabindex="0"
+                aria-label="查看本班挖机司机绩效排名明细"
+            >
                 <span class="shift-kpi-label">本班绩效排名</span>
                 <strong
                     id="excavatorPerformanceRankValue"
@@ -1008,6 +1042,9 @@ function initialize() {
 
 
     installTeamTransferUi();
+
+
+    installExcavatorKpiDetailInteractions();
 
 
     refreshAll();
@@ -2749,6 +2786,885 @@ function getExcavatorTripStats(
                             )
                 )
     };
+}
+
+
+
+/* =========================================================
+   本班实时数据卡片明细
+========================================================= */
+
+function installExcavatorKpiDetailInteractions() {
+
+    const bindings = [
+        [
+            "excavatorShiftTripsKpi",
+            openExcavatorShiftTripsDetail
+        ],
+        [
+            "excavatorShiftTripRankKpi",
+            openExcavatorTripRankingDetail
+        ],
+        [
+            "excavatorPerformanceRankKpi",
+            openExcavatorPerformanceRankingDetail
+        ]
+    ];
+
+
+    bindings.forEach(
+        item => {
+
+            const element =
+                document.getElementById(
+                    item[0]
+                );
+
+
+            if (
+                !element
+            ) {
+
+                return;
+            }
+
+
+            const handler =
+                item[1];
+
+
+            element.addEventListener(
+                "click",
+                handler
+            );
+
+
+            element.addEventListener(
+                "keydown",
+                event => {
+
+                    if (
+                        event.key ===
+                            "Enter" ||
+                        event.key ===
+                            " "
+                    ) {
+
+                        event.preventDefault();
+
+                        handler();
+                    }
+                }
+            );
+        }
+    );
+}
+
+
+
+function ensureExcavatorKpiDetailModal() {
+
+    let modal =
+        document.getElementById(
+            "excavatorKpiDetailModal"
+        );
+
+
+    if (
+        modal
+    ) {
+
+        return modal;
+    }
+
+
+    modal =
+        document.createElement(
+            "div"
+        );
+
+
+    modal.id =
+        "excavatorKpiDetailModal";
+
+
+    modal.innerHTML = `
+        <div class="excavator-kpi-detail-backdrop"></div>
+        <div class="excavator-kpi-detail-panel">
+            <div class="excavator-kpi-detail-head">
+                <div>
+                    <h2 id="excavatorKpiDetailTitle">明细</h2>
+                    <p id="excavatorKpiDetailSubtitle"></p>
+                </div>
+                <button type="button" id="excavatorKpiDetailClose">关闭</button>
+            </div>
+            <div id="excavatorKpiDetailBody"></div>
+        </div>
+    `;
+
+
+    const style =
+        document.createElement(
+            "style"
+        );
+
+
+    style.textContent = `
+        #excavatorKpiDetailModal {
+            position: fixed;
+            inset: 0;
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 18px;
+        }
+        #excavatorKpiDetailModal.hidden {
+            display: none;
+        }
+        .excavator-kpi-detail-backdrop {
+            position: absolute;
+            inset: 0;
+            background: rgba(15, 23, 42, .55);
+        }
+        .excavator-kpi-detail-panel {
+            position: relative;
+            width: min(760px, 100%);
+            max-height: 84vh;
+            overflow: auto;
+            border-radius: 16px;
+            background: #fff;
+            box-shadow: 0 24px 60px rgba(15, 23, 42, .25);
+            padding: 18px;
+        }
+        .excavator-kpi-detail-head {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 14px;
+        }
+        .excavator-kpi-detail-head h2 {
+            margin: 0;
+            font-size: 20px;
+        }
+        .excavator-kpi-detail-head p {
+            margin: 5px 0 0;
+            color: #64748b;
+            font-size: 12px;
+        }
+        #excavatorKpiDetailClose {
+            border: 0;
+            border-radius: 9px;
+            padding: 8px 12px;
+            background: #e2e8f0;
+            color: #0f172a;
+            font-weight: 700;
+            cursor: pointer;
+        }
+        .excavator-kpi-detail-row {
+            display: grid;
+            grid-template-columns: 56px 1fr auto;
+            gap: 10px;
+            align-items: center;
+            padding: 11px 10px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .excavator-kpi-detail-row.current {
+            border-radius: 10px;
+            background: #eff6ff;
+        }
+        .excavator-kpi-detail-rank {
+            font-weight: 900;
+            color: #1d4ed8;
+        }
+        .excavator-kpi-detail-main strong,
+        .excavator-kpi-detail-main span {
+            display: block;
+        }
+        .excavator-kpi-detail-main span {
+            margin-top: 3px;
+            color: #64748b;
+            font-size: 12px;
+        }
+        .excavator-kpi-detail-value {
+            text-align: right;
+            font-weight: 900;
+        }
+        .excavator-kpi-trip-row {
+            padding: 12px 10px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .excavator-kpi-trip-top {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+            font-weight: 800;
+        }
+        .excavator-kpi-trip-meta {
+            margin-top: 5px;
+            color: #64748b;
+            font-size: 12px;
+            line-height: 1.6;
+        }
+        .excavator-kpi-empty {
+            padding: 28px 12px;
+            text-align: center;
+            color: #94a3b8;
+        }
+    `;
+
+
+    document.head.appendChild(
+        style
+    );
+
+
+    document.body.appendChild(
+        modal
+    );
+
+
+    function close() {
+
+        modal.classList.add(
+            "hidden"
+        );
+    }
+
+
+    document.getElementById(
+        "excavatorKpiDetailClose"
+    )
+        ?.addEventListener(
+            "click",
+            close
+        );
+
+
+    modal.querySelector(
+        ".excavator-kpi-detail-backdrop"
+    )
+        ?.addEventListener(
+            "click",
+            close
+        );
+
+
+    modal.classList.add(
+        "hidden"
+    );
+
+
+    return modal;
+}
+
+
+
+function showExcavatorKpiDetail(
+    title,
+    subtitle,
+    html
+) {
+
+    const modal =
+        ensureExcavatorKpiDetailModal();
+
+
+    setText(
+        "excavatorKpiDetailTitle",
+        title
+    );
+
+
+    setText(
+        "excavatorKpiDetailSubtitle",
+        subtitle
+    );
+
+
+    const body =
+        document.getElementById(
+            "excavatorKpiDetailBody"
+        );
+
+
+    if (
+        body
+    ) {
+
+        body.innerHTML =
+            html;
+    }
+
+
+    modal.classList.remove(
+        "hidden"
+    );
+}
+
+
+
+function tripBelongsToExcavator(
+    task,
+    trip,
+    excavatorId
+) {
+
+    if (
+        !task ||
+        !trip ||
+        !excavatorId
+    ) {
+
+        return false;
+    }
+
+
+    const truckId =
+        getTripVehicleNumber(
+            trip
+        );
+
+
+    if (
+        !truckId
+    ) {
+
+        return false;
+    }
+
+
+    const directExcavatorId =
+        String(
+            (
+                trip.temporaryLoading ===
+                    true
+                    ? (
+                        trip.temporaryExcavatorId ||
+                        trip.temporaryExcavatorNumber ||
+                        trip.excavatorId ||
+                        trip.excavatorNumber
+                    )
+                    : (
+                        trip.excavatorId ||
+                        trip.excavatorNumber
+                    )
+            ) ||
+            ""
+        );
+
+
+    if (
+        directExcavatorId
+    ) {
+
+        return (
+            directExcavatorId ===
+            String(
+                excavatorId
+            )
+        );
+    }
+
+
+    const tripTime =
+        getTripTime(
+            trip
+        );
+
+
+    const bindingHistory =
+        Array.isArray(
+            task.truckBindingHistory
+        )
+            ? task.truckBindingHistory
+            : [];
+
+
+    if (
+        tripTime &&
+        bindingHistory.length
+    ) {
+
+        return bindingHistory.some(
+            record => {
+
+                if (
+                    String(
+                        record.excavatorId ||
+                        ""
+                    ) !==
+                    String(
+                        excavatorId
+                    )
+                ) {
+
+                    return false;
+                }
+
+
+                if (
+                    String(
+                        record.truckId ||
+                        ""
+                    ) !==
+                    truckId
+                ) {
+
+                    return false;
+                }
+
+
+                const start =
+                    new Date(
+                        record.startAt ||
+                        0
+                    );
+
+
+                if (
+                    Number.isNaN(
+                        start.getTime()
+                    )
+                ) {
+
+                    return false;
+                }
+
+
+                const end =
+                    record.endAt
+                        ? new Date(
+                            record.endAt
+                        )
+                        : null;
+
+
+                return (
+                    tripTime >=
+                        start &&
+                    (
+                        !end ||
+                        Number.isNaN(
+                            end.getTime()
+                        ) ||
+                        tripTime <=
+                            end
+                    )
+                );
+            }
+        );
+    }
+
+
+    const currentBinding =
+        findExcavatorBinding(
+            task,
+            excavatorId
+        );
+
+
+    return Boolean(
+        currentBinding?.truckIds?.includes(
+            truckId
+        )
+    );
+}
+
+
+
+function getExcavatorOwnedTrips(
+    task,
+    excavatorId
+) {
+
+    return getValidTaskTrips(
+        task
+    )
+        .filter(
+            trip =>
+                tripBelongsToExcavator(
+                    task,
+                    trip,
+                    excavatorId
+                )
+        );
+}
+
+
+
+function openExcavatorShiftTripsDetail() {
+
+    if (
+        !currentTask ||
+        !currentExcavatorAssignment
+    ) {
+
+        showExcavatorKpiDetail(
+            "本班装车趟数明细",
+            "等待班次任务",
+            '<div class="excavator-kpi-empty">当前没有有效班次任务</div>'
+        );
+
+        return;
+    }
+
+
+    const excavatorId =
+        String(
+            currentExcavatorAssignment.excavatorId ||
+            currentExcavatorAssignment.excavatorNumber ||
+            ""
+        )
+        .trim();
+
+
+    const trips =
+        getExcavatorOwnedTrips(
+            currentTask,
+            excavatorId
+        )
+        .slice()
+        .sort(
+            (a, b) =>
+                new Date(
+                    a.completedAt ||
+                    a.createdAt ||
+                    0
+                ) -
+                new Date(
+                    b.completedAt ||
+                    b.createdAt ||
+                    0
+                )
+        );
+
+
+    const html =
+        trips.length
+            ? trips.map(
+                (
+                    trip,
+                    index
+                ) => {
+
+                    const temporary =
+                        trip.temporaryLoading ===
+                            true;
+
+
+                    return `
+                        <div class="excavator-kpi-trip-row">
+                            <div class="excavator-kpi-trip-top">
+                                <span>第 ${index + 1} 车</span>
+                                <span>${escapeHtml(formatDateTime(trip.completedAt || trip.createdAt))}</span>
+                            </div>
+                            <div class="excavator-kpi-trip-meta">
+                                车辆：${escapeHtml(getTripVehicleNumber(trip) || "-")}
+                                · 挖机：${escapeHtml(excavatorId || "-")}
+                                ${temporary ? " · 临时装车" : ""}
+                                <br>
+                                路线：${escapeHtml(trip.loadingZoneName || trip.loadingPoint || currentTask.loadingPoint || "-")}
+                                → ${escapeHtml(trip.unloadingZoneName || trip.unloadingPoint || currentTask.unloadingPoint || "-")}
+                            </div>
+                        </div>
+                    `;
+                }
+            )
+            .join(
+                ""
+            )
+            : '<div class="excavator-kpi-empty">本班暂无有效装车记录</div>';
+
+
+    showExcavatorKpiDetail(
+        "本班装车趟数明细",
+        (
+            currentTask.shift ||
+            "本班"
+        ) +
+        " · " +
+        excavatorId +
+        " · 共 " +
+        trips.length +
+        " 车",
+        html
+    );
+}
+
+
+
+function buildExcavatorShiftRanking() {
+
+    if (
+        !currentTask
+    ) {
+
+        return [];
+    }
+
+
+    const assignments =
+        Array.isArray(
+            currentTask.excavatorDriverAssignments
+        )
+            ? currentTask.excavatorDriverAssignments
+            : [];
+
+
+    const map =
+        new Map();
+
+
+    assignments.forEach(
+        assignment => {
+
+            const excavatorId =
+                String(
+                    assignment.excavatorId ||
+                    assignment.excavatorNumber ||
+                    ""
+                )
+                .trim();
+
+
+            if (
+                !excavatorId ||
+                map.has(
+                    excavatorId
+                )
+            ) {
+
+                return;
+            }
+
+
+            map.set(
+                excavatorId,
+                getExcavatorTripStats(
+                    currentTask,
+                    excavatorId
+                ).total
+            );
+        }
+    );
+
+
+    return Array.from(
+        map.entries()
+    )
+    .map(
+        item => ({
+            excavatorId:
+                item[0],
+
+            count:
+                item[1]
+        })
+    )
+    .sort(
+        (a, b) =>
+            b.count -
+                a.count ||
+            a.excavatorId.localeCompare(
+                b.excavatorId,
+                "zh-CN"
+            )
+    );
+}
+
+
+
+function openExcavatorTripRankingDetail() {
+
+    const ranking =
+        buildExcavatorShiftRanking();
+
+
+    const currentExcavatorId =
+        String(
+            currentExcavatorAssignment?.excavatorId ||
+            currentExcavatorAssignment?.excavatorNumber ||
+            ""
+        )
+        .trim();
+
+
+    const html =
+        ranking.length
+            ? ranking.map(
+                (
+                    item,
+                    index
+                ) => `
+                    <div class="excavator-kpi-detail-row ${item.excavatorId === currentExcavatorId ? "current" : ""}">
+                        <div class="excavator-kpi-detail-rank">#${index + 1}</div>
+                        <div class="excavator-kpi-detail-main">
+                            <strong>${escapeHtml(item.excavatorId)}</strong>
+                            <span>${item.excavatorId === currentExcavatorId ? "当前挖机" : "本班挖机"}</span>
+                        </div>
+                        <div class="excavator-kpi-detail-value">${item.count} 车</div>
+                    </div>
+                `
+            )
+            .join(
+                ""
+            )
+            : '<div class="excavator-kpi-empty">本班暂无挖机排名数据</div>';
+
+
+    showExcavatorKpiDetail(
+        "本班装车趟数排名",
+        (
+            currentTask?.shift ||
+            "本班"
+        ) +
+        " · 共 " +
+        ranking.length +
+        " 台挖机",
+        html
+    );
+}
+
+
+
+function openExcavatorPerformanceRankingDetail() {
+
+    const month =
+        getExcavatorPerformanceMonth();
+
+
+    const records =
+        readJson(
+            STORAGE.PERFORMANCE_RANKING,
+            []
+        );
+
+
+    const ranking =
+        (
+            Array.isArray(
+                records
+            )
+                ? records.filter(
+                    item =>
+                        String(
+                            item.month ||
+                            ""
+                        ) ===
+                            month
+                )
+                : []
+        )
+        .slice()
+        .sort(
+            (a, b) => {
+
+                const aRank =
+                    Number(
+                        a.rank ||
+                        999999
+                    );
+
+                const bRank =
+                    Number(
+                        b.rank ||
+                        999999
+                    );
+
+
+                return (
+                    aRank -
+                        bRank ||
+                    Number(
+                        b.comprehensiveScore ||
+                        0
+                    ) -
+                    Number(
+                        a.comprehensiveScore ||
+                        0
+                    )
+                );
+            }
+        );
+
+
+    const myId =
+        String(
+            getPersonId(
+                currentPerson
+            ) ||
+            ""
+        )
+        .trim();
+
+
+    const html =
+        ranking.length
+            ? ranking.map(
+                (
+                    item,
+                    index
+                ) => {
+
+                    const itemId =
+                        String(
+                            item.personId ||
+                            item.driverId ||
+                            item.employeeId ||
+                            ""
+                        )
+                        .trim();
+
+
+                    const name =
+                        item.personName ||
+                        item.driverName ||
+                        item.name ||
+                        itemId ||
+                        "-";
+
+
+                    const rank =
+                        Number(
+                            item.rank ||
+                            index +
+                            1
+                        );
+
+
+                    const score =
+                        Number(
+                            item.comprehensiveScore ||
+                            0
+                        );
+
+
+                    return `
+                        <div class="excavator-kpi-detail-row ${myId && itemId === myId ? "current" : ""}">
+                            <div class="excavator-kpi-detail-rank">#${rank}</div>
+                            <div class="excavator-kpi-detail-main">
+                                <strong>${escapeHtml(name)}</strong>
+                                <span>${escapeHtml(item.employeeNo || itemId || "-")}</span>
+                            </div>
+                            <div class="excavator-kpi-detail-value">${score.toFixed(1)} 分</div>
+                        </div>
+                    `;
+                }
+            )
+            .join(
+                ""
+            )
+            : '<div class="excavator-kpi-empty">本月绩效排名尚未生成</div>';
+
+
+    showExcavatorKpiDetail(
+        "本班绩效排名明细",
+        month +
+        " · 综合绩效",
+        html
+    );
 }
 
 
