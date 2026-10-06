@@ -760,99 +760,439 @@ function resetSummaryText() {
 }
 
 
+function setSystemResetStatus(
+  message,
+  type = ""
+) {
+
+  const box =
+    document.getElementById(
+      "systemResetStatus"
+    );
+
+
+  if (!box) {
+    return;
+  }
+
+
+  box.textContent =
+    message || "";
+
+
+  box.className =
+    "system-reset-status" +
+    (
+      message
+        ? " show"
+        : ""
+    ) +
+    (
+      type
+        ? " " + type
+        : ""
+    );
+}
+
+
 function startFullSystemReset() {
 
-  const firstConfirmed =
-    window.confirm(
-      resetSummaryText()
+  const modal =
+    document.getElementById(
+      "systemResetModal"
+    );
+
+
+  const summary =
+    document.getElementById(
+      "systemResetSummary"
+    );
+
+
+  const confirmBox =
+    document.getElementById(
+      "systemResetConfirmBox"
+    );
+
+
+  const confirmInput =
+    document.getElementById(
+      "systemResetConfirmInput"
+    );
+
+
+  const nextButton =
+    document.getElementById(
+      "systemResetNextButton"
+    );
+
+
+  const executeButton =
+    document.getElementById(
+      "systemResetExecuteButton"
     );
 
 
   if (
-    !firstConfirmed
+    !modal ||
+    !summary
   ) {
 
-    showToast(
-      "已取消系统归零。",
-      "warning"
+    alert(
+      "归零确认窗口加载失败，请强制刷新页面后重试。"
     );
 
     return;
   }
 
 
-  const typed =
-    window.prompt(
-      "第二次确认：\n\n请输入 RESET（必须完全一致）才能执行系统数据归零。"
+  summary.textContent =
+    resetSummaryText()
+      .replace(
+        "\n确定进入第二次确认吗？",
+        ""
+      );
+
+
+  if (confirmBox) {
+    confirmBox.classList.remove(
+      "show"
+    );
+  }
+
+
+  if (confirmInput) {
+    confirmInput.value =
+      "";
+  }
+
+
+  if (nextButton) {
+    nextButton.style.display =
+      "";
+  }
+
+
+  if (executeButton) {
+    executeButton.classList.remove(
+      "show"
+    );
+
+    executeButton.disabled =
+      false;
+
+    executeButton.textContent =
+      "下载备份并归零";
+  }
+
+
+  setSystemResetStatus(
+    ""
+  );
+
+
+  modal.classList.add(
+    "show"
+  );
+
+
+  modal.setAttribute(
+    "aria-hidden",
+    "false"
+  );
+}
+
+
+function closeSystemResetModal() {
+
+  const modal =
+    document.getElementById(
+      "systemResetModal"
+    );
+
+
+  if (modal) {
+    modal.classList.remove(
+      "show"
+    );
+
+    modal.setAttribute(
+      "aria-hidden",
+      "true"
+    );
+  }
+}
+
+
+function showSystemResetSecondStep() {
+
+  const confirmBox =
+    document.getElementById(
+      "systemResetConfirmBox"
+    );
+
+
+  const confirmInput =
+    document.getElementById(
+      "systemResetConfirmInput"
+    );
+
+
+  const nextButton =
+    document.getElementById(
+      "systemResetNextButton"
+    );
+
+
+  const executeButton =
+    document.getElementById(
+      "systemResetExecuteButton"
+    );
+
+
+  confirmBox
+    ?.classList.add(
+      "show"
+    );
+
+
+  if (nextButton) {
+    nextButton.style.display =
+      "none";
+  }
+
+
+  executeButton
+    ?.classList.add(
+      "show"
+    );
+
+
+  setSystemResetStatus(
+    "第二步：只有输入 RESET 后才会真正删除数据。"
+  );
+
+
+  setTimeout(
+    () =>
+      confirmInput
+        ?.focus(),
+    50
+  );
+}
+
+
+async function executeFullSystemReset() {
+
+  const input =
+    document.getElementById(
+      "systemResetConfirmInput"
+    );
+
+
+  const button =
+    document.getElementById(
+      "systemResetExecuteButton"
     );
 
 
   if (
-    typed !==
+    String(
+      input?.value ||
+      ""
+    ).trim() !==
       "RESET"
   ) {
 
-    alert(
-      "输入内容不是 RESET，系统归零已取消。"
+    setSystemResetStatus(
+      "输入内容不是 RESET，系统没有执行任何删除。",
+      "error"
     );
+
+    input?.focus();
 
     return;
   }
 
 
-  const finalBackup =
-    exportFullSystemBackup();
-
-
-  if (
-    !finalBackup
-  ) {
-
-    alert(
-      "由于 JSON 备份未成功生成，本次归零已自动取消。"
-    );
-
-    return;
-  }
-
-
-  const resetButton =
-    document.getElementById(
-      "adminSystemResetButton"
-    );
-
-
-  if (
-    resetButton
-  ) {
-
-    resetButton.disabled =
+  if (button) {
+    button.disabled =
       true;
 
-    resetButton.textContent =
-      "正在归零...";
+    button.textContent =
+      "正在备份...";
+  }
+
+
+  setSystemResetStatus(
+    "正在生成并下载 JSON 全量备份，请稍候..."
+  );
+
+
+  let backup;
+
+
+  try {
+
+    backup =
+      buildFullSystemBackup();
+
+
+    downloadBackupObject(
+      backup
+    );
+
+  } catch (
+    error
+  ) {
+
+    console.error(
+      "归零前备份失败：",
+      error
+    );
+
+
+    setSystemResetStatus(
+      "JSON 备份失败，因此已自动取消归零。\n" +
+      (
+        error?.message ||
+        String(error)
+      ),
+      "error"
+    );
+
+
+    if (button) {
+      button.disabled =
+        false;
+
+      button.textContent =
+        "下载备份并归零";
+    }
+
+
+    return;
   }
 
 
   /*
-   * 完全归零：
-   * 不保留任何浏览器本地业务/身份/设置键。
-   *
-   * GitHub 代码和远端 Supabase 项目不在浏览器 localStorage 内，
-   * 因此不会被此操作删除。
+   * 给浏览器一个短暂时间启动文件下载，
+   * 再执行存储清空，避免部分内置浏览器中下载与清空竞争。
    */
-  localStorage.clear();
+  await new Promise(
+    resolve =>
+      setTimeout(
+        resolve,
+        600
+      )
+  );
 
-  sessionStorage.clear();
+
+  if (button) {
+    button.textContent =
+      "正在归零...";
+  }
 
 
-  alert(
-    "系统本地数据已完全归零。\n\nJSON 备份已在执行前自动下载。\n现在将返回系统首页。"
+  setSystemResetStatus(
+    "备份已触发下载，正在清空本地数据..."
+  );
+
+
+  try {
+
+    localStorage.clear();
+
+    sessionStorage.clear();
+
+  } catch (
+    error
+  ) {
+
+    console.error(
+      "系统数据归零失败：",
+      error
+    );
+
+
+    setSystemResetStatus(
+      "清空浏览器存储失败。JSON 备份已经下载，但数据没有完全删除。\n" +
+      (
+        error?.message ||
+        String(error)
+      ),
+      "error"
+    );
+
+
+    if (button) {
+      button.disabled =
+        false;
+
+      button.textContent =
+        "重新尝试归零";
+    }
+
+
+    return;
+  }
+
+
+  const localRemaining =
+    localStorage.length;
+
+
+  const sessionRemaining =
+    sessionStorage.length;
+
+
+  if (
+    localRemaining !==
+      0 ||
+    sessionRemaining !==
+      0
+  ) {
+
+    setSystemResetStatus(
+      "归零校验失败：仍剩余 localStorage " +
+      localRemaining +
+      " 个键，sessionStorage " +
+      sessionRemaining +
+      " 个键。已停止跳转，请重试。",
+      "error"
+    );
+
+
+    if (button) {
+      button.disabled =
+        false;
+
+      button.textContent =
+        "重新尝试归零";
+    }
+
+
+    return;
+  }
+
+
+  setSystemResetStatus(
+    "归零成功：localStorage 0 个键，sessionStorage 0 个键。正在返回首页...",
+    "success"
+  );
+
+
+  await new Promise(
+    resolve =>
+      setTimeout(
+        resolve,
+        900
+      )
   );
 
 
   location.replace(
-    "index.html"
+    "index.html?reset=1"
   );
 }
 
