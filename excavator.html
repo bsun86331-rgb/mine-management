@@ -676,7 +676,7 @@
 
             <div>
                 <h2>📈 本班实时数据</h2>
-                <p>装车趟数、趟数排名、绩效排名实时显示</p>
+                <p>装车趟数、趟数排名、绩效排名实时显示 · 临时装车优先归属临时挖机</p>
             </div>
 
         </div>
@@ -2432,9 +2432,10 @@ function getTripTime(
 
    优先级：
 
-   1. 运输记录本身有 excavatorId
-   2. truckBindingHistory 时间段匹配
-   3. 老任务没有绑定历史时，按当前 bindings 兼容
+   1. 临时装车记录优先使用 temporaryExcavatorId
+   2. 正常记录使用 excavatorId
+   3. truckBindingHistory 时间段匹配
+   4. 老任务没有绑定历史时，按当前 bindings 兼容
 ========================================================= */
 
 function getExcavatorTripStats(
@@ -2523,9 +2524,20 @@ function getExcavatorTripStats(
             const directExcavatorId =
                 String(
 
-                    trip.excavatorId ||
-
-                    trip.excavatorNumber ||
+                    (
+                        trip.temporaryLoading ===
+                            true
+                            ? (
+                                trip.temporaryExcavatorId ||
+                                trip.temporaryExcavatorNumber ||
+                                trip.excavatorId ||
+                                trip.excavatorNumber
+                            )
+                            : (
+                                trip.excavatorId ||
+                                trip.excavatorNumber
+                            )
+                    ) ||
 
                     ""
 
