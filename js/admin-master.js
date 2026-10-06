@@ -1419,7 +1419,6 @@ function exportPersonnelExcel() {
 
 
   const headers = [
-    "人员编号",
     "员工编号",
     "姓名",
     "手机号",
@@ -1441,9 +1440,6 @@ function exportPersonnelExcel() {
   const rows =
     records.map(
       person => [
-        person.personId ||
-          "",
-
         person.employeeNo ||
         person.employeeId ||
           "",
