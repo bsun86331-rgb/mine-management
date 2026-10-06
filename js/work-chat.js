@@ -839,23 +839,44 @@ mine-management 全端工作聊天 V1.1
                 "mineChatUnread"
             );
 
+        const launcher =
+            document.getElementById(
+                "mineChatLauncher"
+            );
+
         if (
-            !badge
+            badge
         ) {
-            return;
+            badge.textContent =
+                unread > 99
+                    ? "99+"
+                    : String(
+                        unread
+                    );
+
+            badge.style.display =
+                unread > 0
+                    ? "block"
+                    : "none";
         }
 
-        badge.textContent =
-            unread > 99
-                ? "99+"
-                : String(
-                    unread
-                );
+        if (
+            launcher
+        ) {
+            launcher.classList.toggle(
+                "has-unread",
+                unread > 0
+            );
 
-        badge.style.display =
-            unread > 0
-                ? "block"
-                : "none";
+            launcher.setAttribute(
+                "aria-label",
+                unread > 0
+                    ? "打开工作聊天，" +
+                      unread +
+                      " 条未读消息"
+                    : "打开工作聊天"
+            );
+        }
     }
 
 
@@ -1315,10 +1336,45 @@ mine-management 全端工作聊天 V1.1
             "storage",
             event => {
                 if (
-                    event.key ===
+                    event.key !==
                         STORAGE_KEY
                 ) {
-                    renderMessages();
+                    return;
+                }
+
+                const incoming =
+                    safeParse(
+                        event.newValue,
+                        []
+                    );
+
+                const messages =
+                    Array.isArray(
+                        incoming
+                    )
+                        ? incoming
+                        : [];
+
+                const lastMessage =
+                    messages[
+                        messages.length -
+                        1
+                    ];
+
+                renderMessages();
+
+                if (
+                    lastMessage &&
+                    !panelOpen &&
+                    lastMessage.senderPersonId !==
+                        getPersonId(
+                            identity
+                        )
+                ) {
+                    unread +=
+                        1;
+
+                    updateUnread();
                 }
             }
         );
