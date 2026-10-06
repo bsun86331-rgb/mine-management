@@ -133,6 +133,24 @@
       }
     }
 
+    .admin-section-actions {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    @media (max-width: 620px) {
+      .admin-section-actions {
+        width: 100%;
+      }
+
+      .admin-section-actions .btn {
+        flex: 1 1 auto;
+      }
+    }
+
     .admin-danger-zone {
       margin: 0 0 18px;
       padding: 16px;
@@ -565,11 +583,23 @@
         <p>统一维护矿山全部人员基础资料</p>
       </div>
 
-      <button
-        class="btn btn-primary"
-        onclick="openPersonnelModal()">
-        + 新增人员
-      </button>
+      <div class="admin-section-actions">
+
+        <button
+          class="btn btn-secondary"
+          type="button"
+          onclick="exportPersonnelExcel()">
+          📥 导出人员 Excel
+        </button>
+
+        <button
+          class="btn btn-primary"
+          type="button"
+          onclick="openPersonnelModal()">
+          + 新增人员
+        </button>
+
+      </div>
 
     </div>
 
@@ -646,11 +676,23 @@
         <p>建立统一设备档案，为生产调度提供设备数据</p>
       </div>
 
-      <button
-        class="btn btn-primary"
-        onclick="openEquipmentModal()">
-        + 新增设备
-      </button>
+      <div class="admin-section-actions">
+
+        <button
+          class="btn btn-secondary"
+          type="button"
+          onclick="exportEquipmentExcel()">
+          📥 导出设备 Excel
+        </button>
+
+        <button
+          class="btn btn-primary"
+          type="button"
+          onclick="openEquipmentModal()">
+          + 新增设备
+        </button>
+
+      </div>
 
     </div>
 
@@ -742,11 +784,23 @@
         <p>库存、领用、退还及离职物资结算</p>
       </div>
 
-      <button
-        class="btn btn-primary"
-        onclick="openMaterialModal()">
-        + 新增物资
-      </button>
+      <div class="admin-section-actions">
+
+        <button
+          class="btn btn-secondary"
+          type="button"
+          onclick="exportMaterialInventoryExcel()">
+          📥 导出库存 Excel
+        </button>
+
+        <button
+          class="btn btn-primary"
+          type="button"
+          onclick="openMaterialModal()">
+          + 新增物资
+        </button>
+
+      </div>
 
     </div>
 
@@ -1753,7 +1807,7 @@
   }
 </script>
 
-<script src="js/admin-master.js?v=2.11.2-reset-modal"></script>
+<script src="js/admin-master.js?v=2.11.3-excel"></script>
 
 <script>
 "use strict";
