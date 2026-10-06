@@ -3928,11 +3928,32 @@
         <section class="photo-section">
 
             <h3>
-                证件照片
+                人员照片 / 证件照片
             </h3>
 
 
             <div class="photo-grid">
+
+
+                <div class="photo-box">
+
+                    <div class="photo-title">
+                        本人自拍 / 人员头像
+                    </div>
+
+                    <img
+                        id="detailSelfiePhoto"
+                        alt="本人自拍照片"
+                    >
+
+                    <div
+                        class="no-photo"
+                        id="detailSelfiePhotoEmpty"
+                    >
+                        未上传
+                    </div>
+
+                </div>
 
 
                 <div class="photo-box">
@@ -5748,6 +5769,15 @@ function openDetail(personId) {
 
 
     setPhoto(
+        "detailSelfiePhoto",
+        "detailSelfiePhotoEmpty",
+        person.selfiePhoto ||
+        person.profilePhoto ||
+        person.avatarPhoto
+    );
+
+
+    setPhoto(
         "detailIdCardPhoto",
         "detailIdCardPhotoEmpty",
         person.idCardPhoto
@@ -7215,6 +7245,16 @@ function printCurrentPhotos() {
 
 
     const photos = [
+
+        {
+            title:
+                "本人自拍 / 人员头像",
+
+            data:
+                person.selfiePhoto ||
+                person.profilePhoto ||
+                person.avatarPhoto
+        },
 
         {
             title:
