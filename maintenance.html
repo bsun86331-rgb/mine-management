@@ -509,6 +509,41 @@ footer {
 
 }
 
+
+/* =========================================================
+   V2.10.3E 调度只读查看修理厂工位看板
+========================================================= */
+body.dispatch-board-readonly .nav-grid {
+    display: none !important;
+}
+
+body.dispatch-board-readonly #page-board > .card:nth-of-type(3) {
+    display: none !important;
+}
+
+body.dispatch-board-readonly #page-board .section-title button {
+    display: none !important;
+}
+
+body.dispatch-board-readonly .page-section:not(#page-board) {
+    display: none !important;
+}
+
+.dispatch-board-notice {
+    display: none;
+    margin: 0 0 16px;
+    padding: 12px 14px;
+    border: 1px solid #bfdbfe;
+    border-radius: 12px;
+    background: #eff6ff;
+    color: #1e40af;
+    font-size: 13px;
+    line-height: 1.7;
+}
+
+body.dispatch-board-readonly .dispatch-board-notice {
+    display: block;
+}
 </style>
     <link rel="stylesheet" href="css/ui-system.css?v=1.2.0">
 <link rel="stylesheet" href="css/work-chat.css?v=1.0.0">
@@ -531,7 +566,7 @@ footer {
             </h1>
 
             <p>
-                Workshop Maintenance · V2.10.3D
+                Workshop Maintenance · V2.10.3E
             </p>
 
         </div>
@@ -553,6 +588,11 @@ footer {
 
 
 <main>
+
+
+<div class="dispatch-board-notice">
+    当前为调度只读视图：可查看修理厂工位占用、维修车辆、维修工、维修项目及开始时间；不能进行派工、验收或修改维修数据。
+</div>
 
 
 <div class="notice">
@@ -1668,7 +1708,7 @@ footer {
 
 <footer>
 
-矿山管理系统 · 修理厂维修管理 V2.10.3D
+矿山管理系统 · 修理厂维修管理 V2.10.3E
 
 </footer>
 
@@ -2144,6 +2184,29 @@ footer {
 "use strict";
 
 
+const MAINTENANCE_VIEW_PARAMS =
+    new URLSearchParams(
+        location.search
+    );
+
+
+const DISPATCH_BOARD_READONLY =
+    MAINTENANCE_VIEW_PARAMS.get(
+        "view"
+    ) ===
+    "dispatch-board";
+
+
+if (
+    DISPATCH_BOARD_READONLY
+) {
+
+    document.body.classList.add(
+        "dispatch-board-readonly"
+    );
+}
+
+
 /* =========================================================
    数据键
 ========================================================= */
@@ -2350,6 +2413,75 @@ function verifyMaintenanceAccess() {
 
     const records =
         getMaintenancePersonnelRecords();
+
+
+    /*
+     * 调度从 dispatch.html 进入时，仅允许查看维修看板。
+     * 不改变 currentPersonId / selectedPosition，也不赋予维修管理权限。
+     */
+    if (
+        DISPATCH_BOARD_READONLY
+    ) {
+
+        const currentPersonId =
+            localStorage.getItem(
+                "currentPersonId"
+            ) || "";
+
+
+        const person =
+            records.find(
+                item =>
+                    String(
+                        getMaintenancePersonId(
+                            item
+                        )
+                    ) ===
+                    String(
+                        currentPersonId
+                    )
+            );
+
+
+        const position =
+            String(
+                person?.position ||
+                localStorage.getItem(
+                    "selectedPosition"
+                ) ||
+                ""
+            )
+            .trim();
+
+
+        const approved =
+            person
+                ? isMaintenancePersonApproved(
+                    person
+                )
+                : false;
+
+
+        if (
+            approved &&
+            [
+                "车队长",
+                "调度",
+                "调度员"
+            ]
+            .includes(
+                position
+            )
+        ) {
+
+            return true;
+        }
+
+
+        return denyMaintenanceAccess(
+            "当前只读维修看板仅允许已审核的调度 / 车队长进入。"
+        );
+    }
 
 
     const currentPersonId =
@@ -2569,8 +2701,65 @@ const DEFAULT_BAYS = [
 
 if (verifyMaintenanceAccess()) {
 
-    initialize();
+    if (
+        DISPATCH_BOARD_READONLY
+    ) {
 
+        initializeDispatchBoardReadonly();
+
+    } else {
+
+        initialize();
+    }
+
+}
+
+
+
+/* =========================================================
+   调度只读维修看板
+========================================================= */
+
+function initializeDispatchBoardReadonly() {
+
+    renderStatistics();
+
+    renderWorkshopBoard();
+
+
+    window.addEventListener(
+        "storage",
+        event => {
+
+            if (
+                [
+                    STORAGE.REQUESTS,
+                    STORAGE.WORK_ORDERS,
+                    STORAGE.BAYS
+                ]
+                .includes(
+                    event.key
+                )
+            ) {
+
+                renderStatistics();
+
+                renderWorkshopBoard();
+            }
+        }
+    );
+
+
+    setInterval(
+        function () {
+
+            renderStatistics();
+
+            renderWorkshopBoard();
+
+        },
+        5000
+    );
 }
 
 
@@ -4907,7 +5096,7 @@ function releaseBay(
 
 
 /* =========================================================
-   V2.10.3D
+   V2.10.3E
    设备运行状态联动
 ========================================================= */
 
