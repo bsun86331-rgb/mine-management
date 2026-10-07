@@ -779,7 +779,7 @@
 
 
 <footer>
-    矿山管理系统 · 统一人员注册 V2.11.0I
+    矿山管理系统 · 统一人员注册 V2.11.0J
 </footer>
 
 
@@ -1382,38 +1382,300 @@ function getPersonnelRecords() {
 
 
 
+function compactPersonnelRecordsForStorage(
+    records
+) {
+
+    return (
+        Array.isArray(
+            records
+        )
+            ? records
+            : []
+    )
+    .map(
+        item => {
+
+            const compact = {
+                ...item
+            };
+
+
+            /*
+             * 兼容旧版本历史字段，但避免同一张 base64 图片
+             * 在 selfiePhoto / profilePhoto / avatarPhoto 中重复保存。
+             * 只删除“内容完全相同”的冗余副本，不删除正式照片。
+             */
+            const canonicalSelfie =
+                compact.selfiePhoto ||
+                compact.profilePhoto ||
+                compact.avatarPhoto ||
+                "";
+
+
+            if (
+                canonicalSelfie
+            ) {
+
+                compact.selfiePhoto =
+                    canonicalSelfie;
+            }
+
+
+            if (
+                compact.profilePhoto ===
+                    canonicalSelfie
+            ) {
+
+                delete compact.profilePhoto;
+            }
+
+
+            if (
+                compact.avatarPhoto ===
+                    canonicalSelfie
+            ) {
+
+                delete compact.avatarPhoto;
+            }
+
+
+            const canonicalLicense =
+                compact.driverLicensePhoto ||
+                compact.licensePhoto ||
+                "";
+
+
+            if (
+                canonicalLicense
+            ) {
+
+                compact.driverLicensePhoto =
+                    canonicalLicense;
+            }
+
+
+            if (
+                compact.licensePhoto ===
+                    canonicalLicense
+            ) {
+
+                delete compact.licensePhoto;
+            }
+
+
+            return compact;
+        }
+    );
+}
+
+
+function getLocalStorageUsageSummary() {
+
+    const rows = [];
+
+
+    for (
+        let i = 0;
+        i < localStorage.length;
+        i += 1
+    ) {
+
+        const key =
+            localStorage.key(
+                i
+            ) ||
+            "";
+
+
+        const value =
+            localStorage.getItem(
+                key
+            ) ||
+            "";
+
+
+        /*
+         * localStorage 通常以 UTF-16 字符保存。
+         * 这里按 2 bytes / 字符估算即可用于诊断。
+         */
+        const bytes =
+            (
+                key.length +
+                value.length
+            ) *
+            2;
+
+
+        rows.push({
+            key,
+            bytes
+        });
+    }
+
+
+    rows.sort(
+        (
+            a,
+            b
+        ) =>
+            b.bytes -
+            a.bytes
+    );
+
+
+    return {
+        totalBytes:
+            rows.reduce(
+                (
+                    sum,
+                    item
+                ) =>
+                    sum +
+                    item.bytes,
+                0
+            ),
+        rows
+    };
+}
+
+
+function cleanupSafeRegistrationCache() {
+
+    /*
+     * 只清理由人员登记页产生或历史版本可能遗留的临时缓存。
+     * personnelRecords、审核数据、正式业务数据均不在清理范围内。
+     */
+    const exactKeys = [
+        "personRegisterDraft",
+        "personRegistrationDraft",
+        "registrationDraft",
+        "personRegisterPhotoDraft",
+        "personRegisterPreviewCache",
+        "registrationPhotoPreviewCache"
+    ];
+
+
+    exactKeys.forEach(
+        key => {
+
+            localStorage.removeItem(
+                key
+            );
+        }
+    );
+}
+
+
 function savePersonnelRecords(
     records
 ) {
 
-    try {
+    const compactRecords =
+        compactPersonnelRecordsForStorage(
+            records
+        );
+
+
+    const write = () => {
 
         localStorage.setItem(
             "personnelRecords",
             JSON.stringify(
-                records
+                compactRecords
             )
         );
+    };
+
+
+    try {
+
+        write();
 
 
     } catch (
         error
     ) {
 
-        if (
+        const quotaExceeded =
             error?.name ===
                 "QuotaExceededError" ||
             error?.code ===
-                22
+                22;
+
+
+        if (
+            !quotaExceeded
         ) {
 
-            throw new Error(
-                "浏览器本地存储空间已满。照片已经自动压缩，但当前浏览器中已有较多历史图片或聊天照片。请先在管理员端备份后清理旧测试数据，再重新提交。"
-            );
+            throw error;
         }
 
 
-        throw error;
+        /*
+         * 第一次空间不足时只清理明确属于登记页的临时缓存，
+         * 然后自动重试一次；绝不自动删除正式人员资料。
+         */
+        cleanupSafeRegistrationCache();
+
+
+        try {
+
+            write();
+
+
+        } catch (
+            retryError
+        ) {
+
+            const usage =
+                getLocalStorageUsageSummary();
+
+
+            const largest =
+                usage.rows
+                    .slice(
+                        0,
+                        3
+                    )
+                    .map(
+                        item =>
+                            item.key +
+                            " ≈ " +
+                            (
+                                item.bytes /
+                                1024 /
+                                1024
+                            ).toFixed(
+                                2
+                            ) +
+                            " MB"
+                    )
+                    .join(
+                        "\n"
+                    );
+
+
+            throw new Error(
+                "浏览器本地存储空间仍然不足，本次没有删除任何正式人员资料。\n\n" +
+                "当前 localStorage 估算占用约：" +
+                (
+                    usage.totalBytes /
+                    1024 /
+                    1024
+                ).toFixed(
+                    2
+                ) +
+                " MB" +
+                (
+                    largest
+                        ? "\n\n占用最大的项目：\n" +
+                          largest
+                        : ""
+                ) +
+                "\n\n请把这个提示截图发给我，下一步我们只处理占空间最大的缓存项。"
+            );
+        }
     }
 
 }
@@ -3528,7 +3790,8 @@ async function submitRegistration() {
 
 
         alert(
-            "提交失败。图片可能过大或浏览器存储空间不足，请减少照片后重试。"
+            error?.message ||
+            "提交失败。请检查填写内容后重试。"
         );
 
 
