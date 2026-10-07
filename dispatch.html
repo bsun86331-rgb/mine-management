@@ -110,37 +110,6 @@
             color: #0f172a;
         }
 
-        .zone-manual-location {
-            margin-top: 12px;
-            padding-top: 12px;
-            border-top: 1px dashed #cbd5e1;
-        }
-
-        .zone-manual-location-grid {
-            display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-            gap: 10px;
-            margin-top: 8px;
-        }
-
-        .zone-manual-location-grid input {
-            width: 100%;
-            min-height: 40px;
-        }
-
-        .zone-manual-location-note {
-            margin-top: 7px;
-            color: #64748b;
-            font-size: 12px;
-            line-height: 1.6;
-        }
-
-        @media(max-width:640px){
-            .zone-manual-location-grid{
-                grid-template-columns:1fr;
-            }
-        }
-
         .zone-list-card {
             margin-top: 10px;
             padding: 13px;
@@ -2708,7 +2677,7 @@
         </div>
 
         <div class="dispatch-header-badge">
-            📋 调度端 V2.13.8
+            📋 调度端 V2.13.7
         </div>
     </div>
 </header>
@@ -3841,49 +3810,6 @@
             <div>
                 定位时间：
                 <strong id="zoneGpsTime">-</strong>
-            </div>
-
-            <div class="zone-manual-location">
-                <strong>电脑定位失败时可手动填写坐标</strong>
-
-                <div class="zone-manual-location-grid">
-                    <div>
-                        <label for="zoneManualLatitude">纬度</label>
-                        <input
-                            id="zoneManualLatitude"
-                            type="number"
-                            step="0.000001"
-                            min="-90"
-                            max="90"
-                            placeholder="例如：43.123456"
-                        >
-                    </div>
-
-                    <div>
-                        <label for="zoneManualLongitude">经度</label>
-                        <input
-                            id="zoneManualLongitude"
-                            type="number"
-                            step="0.000001"
-                            min="-180"
-                            max="180"
-                            placeholder="例如：106.123456"
-                        >
-                    </div>
-                </div>
-
-                <button
-                    id="useManualZoneLocationButton"
-                    class="secondary-button"
-                    type="button"
-                    style="width:100%;margin-top:10px;"
-                >
-                    使用手动坐标作为区域中心
-                </button>
-
-                <div class="zone-manual-location-note">
-                    电脑没有 GPS、Windows 定位服务关闭或浏览器拒绝定位时，可从手机定位或地图复制经纬度到这里。
-                </div>
             </div>
 
         </div>
@@ -6462,99 +6388,19 @@ function toggleZoneMaterialField() {
 }
 
 
-function applyTransportZoneLocation(
-    latitude,
-    longitude,
-    accuracy,
-    source
-) {
+function captureTransportZoneLocation() {
 
-    currentTransportZoneLocation = {
+    if (
+        !navigator.geolocation
+    ) {
 
-        latitude:
-            Number(
-                latitude
-            ),
+        alert(
+            "当前浏览器不支持 GPS 定位。"
+        );
 
-        longitude:
-            Number(
-                longitude
-            ),
+        return;
+    }
 
-        accuracy:
-            Number(
-                accuracy ||
-                0
-            ),
-
-        source:
-            source ||
-            "geolocation",
-
-        capturedAt:
-            new Date()
-                .toISOString()
-    };
-
-
-    document
-        .getElementById(
-            "zoneLatitude"
-        )
-        .textContent =
-            currentTransportZoneLocation
-                .latitude
-                .toFixed(
-                    6
-                );
-
-
-    document
-        .getElementById(
-            "zoneLongitude"
-        )
-        .textContent =
-            currentTransportZoneLocation
-                .longitude
-                .toFixed(
-                    6
-                );
-
-
-    document
-        .getElementById(
-            "zoneGpsAccuracy"
-        )
-        .textContent =
-            currentTransportZoneLocation
-                .accuracy > 0
-                ? currentTransportZoneLocation
-                    .accuracy
-                    .toFixed(
-                        1
-                    ) +
-                  " m"
-                : "手动坐标";
-
-
-    document
-        .getElementById(
-            "zoneGpsTime"
-        )
-        .textContent =
-            new Date(
-                currentTransportZoneLocation
-                    .capturedAt
-            )
-                .toLocaleString(
-                    "zh-CN"
-                );
-}
-
-
-function setZoneLocationButtonState(
-    loading
-) {
 
     const button =
         document
@@ -6564,259 +6410,146 @@ function setZoneLocationButtonState(
 
 
     if (
-        !button
+        button
     ) {
 
-        return;
+        button.disabled =
+            true;
+
+        button.textContent =
+            "正在获取定位…";
     }
 
 
-    button.disabled =
-        Boolean(
-            loading
-        );
+    navigator.geolocation
+        .getCurrentPosition(
+
+            position => {
+
+                currentTransportZoneLocation = {
+
+                    latitude:
+                        Number(
+                            position.coords.latitude
+                        ),
+
+                    longitude:
+                        Number(
+                            position.coords.longitude
+                        ),
+
+                    accuracy:
+                        Number(
+                            position.coords.accuracy ||
+                            0
+                        ),
+
+                    capturedAt:
+                        new Date()
+                            .toISOString()
+                };
 
 
-    button.textContent =
-        loading
-            ? "正在获取定位…"
-            : (
-                currentTransportZoneLocation
-                    ? "📍 重新获取当前位置"
-                    : "📍 获取当前位置作为区域中心"
-            );
-}
+                document
+                    .getElementById(
+                        "zoneLatitude"
+                    )
+                    .textContent =
+                        currentTransportZoneLocation
+                            .latitude
+                            .toFixed(
+                                6
+                            );
 
 
-function getTransportZonePosition(
-    options
-) {
+                document
+                    .getElementById(
+                        "zoneLongitude"
+                    )
+                    .textContent =
+                        currentTransportZoneLocation
+                            .longitude
+                            .toFixed(
+                                6
+                            );
 
-    return new Promise(
-        (
-            resolve,
-            reject
-        ) => {
 
-            navigator.geolocation
-                .getCurrentPosition(
-                    resolve,
-                    reject,
-                    options
+                document
+                    .getElementById(
+                        "zoneGpsAccuracy"
+                    )
+                    .textContent =
+                        currentTransportZoneLocation
+                            .accuracy
+                            .toFixed(
+                                1
+                            ) +
+                        " m";
+
+
+                document
+                    .getElementById(
+                        "zoneGpsTime"
+                    )
+                    .textContent =
+                        new Date(
+                            currentTransportZoneLocation
+                                .capturedAt
+                        )
+                            .toLocaleString(
+                                "zh-CN"
+                            );
+
+
+                if (
+                    button
+                ) {
+
+                    button.disabled =
+                        false;
+
+                    button.textContent =
+                        "📍 重新获取当前位置";
+                }
+
+            },
+
+            error => {
+
+                console.error(
+                    "区域定位失败：",
+                    error
                 );
-        }
-    );
-}
 
 
-async function captureTransportZoneLocation() {
+                if (
+                    button
+                ) {
 
-    if (
-        !navigator.geolocation
-    ) {
+                    button.disabled =
+                        false;
 
-        alert(
-            "当前浏览器不支持位置定位。请使用下方手动经纬度作为区域中心。"
+                    button.textContent =
+                        "📍 获取当前位置作为区域中心";
+                }
+
+
+                alert(
+                    "定位失败，请检查位置权限和手机 GPS 后重试。"
+                );
+            },
+
+            {
+                enableHighAccuracy:
+                    true,
+
+                timeout:
+                    15000,
+
+                maximumAge:
+                    0
+            }
         );
-
-        return;
-    }
-
-
-    setZoneLocationButtonState(
-        true
-    );
-
-
-    try {
-
-        let position;
-
-
-        try {
-
-            /*
-             * 第一轮：优先高精度，适合手机或带定位硬件的电脑。
-             */
-            position =
-                await getTransportZonePosition({
-                    enableHighAccuracy:
-                        true,
-
-                    timeout:
-                        12000,
-
-                    maximumAge:
-                        0
-                });
-
-
-        } catch (
-            highAccuracyError
-        ) {
-
-            console.warn(
-                "高精度区域定位失败，尝试电脑兼容定位：",
-                highAccuracyError
-            );
-
-
-            /*
-             * 第二轮：关闭高精度要求。
-             * 桌面电脑没有独立 GPS 时，浏览器可尝试使用
-             * Windows 定位服务 / Wi-Fi / 网络位置。
-             */
-            position =
-                await getTransportZonePosition({
-                    enableHighAccuracy:
-                        false,
-
-                    timeout:
-                        20000,
-
-                    maximumAge:
-                        300000
-                });
-        }
-
-
-        applyTransportZoneLocation(
-            position.coords.latitude,
-            position.coords.longitude,
-            position.coords.accuracy,
-            "browser"
-        );
-
-
-    } catch (
-        error
-    ) {
-
-        console.error(
-            "区域定位失败：",
-            error
-        );
-
-
-        let reason =
-            "电脑无法取得当前位置。";
-
-
-        if (
-            error?.code ===
-            1
-        ) {
-
-            reason =
-                "浏览器或系统未允许位置权限。";
-        }
-
-
-        if (
-            error?.code ===
-            2
-        ) {
-
-            reason =
-                "电脑当前没有可用的位置来源。";
-        }
-
-
-        if (
-            error?.code ===
-            3
-        ) {
-
-            reason =
-                "电脑定位超时。";
-        }
-
-
-        alert(
-            reason +
-            "\n\n请检查 Windows“位置服务”和浏览器网站位置权限；如果电脑本身没有 GPS，可直接使用下方“手动坐标”填写区域中心。"
-        );
-
-
-    } finally {
-
-        setZoneLocationButtonState(
-            false
-        );
-    }
-}
-
-
-function useManualTransportZoneLocation() {
-
-    const latitude =
-        Number(
-            document
-                .getElementById(
-                    "zoneManualLatitude"
-                )
-                ?.value
-        );
-
-
-    const longitude =
-        Number(
-            document
-                .getElementById(
-                    "zoneManualLongitude"
-                )
-                ?.value
-        );
-
-
-    if (
-        !Number.isFinite(
-            latitude
-        ) ||
-        latitude < -90 ||
-        latitude > 90
-    ) {
-
-        alert(
-            "请输入正确的纬度（-90 到 90）。"
-        );
-
-        return;
-    }
-
-
-    if (
-        !Number.isFinite(
-            longitude
-        ) ||
-        longitude < -180 ||
-        longitude > 180
-    ) {
-
-        alert(
-            "请输入正确的经度（-180 到 180）。"
-        );
-
-        return;
-    }
-
-
-    applyTransportZoneLocation(
-        latitude,
-        longitude,
-        0,
-        "manual"
-    );
-
-
-    setZoneLocationButtonState(
-        false
-    );
-
-
-    alert(
-        "已使用手动经纬度作为区域中心。"
-    );
 }
 
 
@@ -7813,16 +7546,6 @@ document
     ?.addEventListener(
         "click",
         captureTransportZoneLocation
-    );
-
-
-document
-    .getElementById(
-        "useManualZoneLocationButton"
-    )
-    ?.addEventListener(
-        "click",
-        useManualTransportZoneLocation
     );
 
 
