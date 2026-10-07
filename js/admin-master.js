@@ -1540,7 +1540,7 @@ function exportEquipmentExcel() {
     "设备名称",
     "设备类别",
     "大架号",
-    "型号",
+    "发动机号",
     "车牌号",
     "所属公司/车队",
     "载重/斗容",
@@ -1568,7 +1568,7 @@ function exportEquipmentExcel() {
         item.chassisNumber ||
           "",
 
-        item.model ||
+        item.engineNumber ||
           "",
 
         item.plateNumber ||
@@ -2678,13 +2678,218 @@ function saveEquipmentRecords(records) {
 }
 
 
+let equipmentCertificatePhotoData =
+  "";
+
+let equipmentEntryPhotoData =
+  "";
+
+
+function showEquipmentPhotoPreview(
+  previewId,
+  data
+) {
+  const preview =
+    document.getElementById(
+      previewId
+    );
+
+  if (!preview) return;
+
+  if (data) {
+    preview.src = data;
+    preview.style.display = "block";
+  } else {
+    preview.removeAttribute("src");
+    preview.style.display = "none";
+  }
+}
+
+
+function compressEquipmentImage(
+  file,
+  maxSide = 1400,
+  quality = 0.72
+) {
+  return new Promise(
+    (
+      resolve,
+      reject
+    ) => {
+      const reader =
+        new FileReader();
+
+      reader.onerror = () =>
+        reject(
+          new Error(
+            "图片读取失败"
+          )
+        );
+
+      reader.onload = event => {
+        const image =
+          new Image();
+
+        image.onerror = () =>
+          reject(
+            new Error(
+              "图片解析失败"
+            )
+          );
+
+        image.onload = () => {
+          let width =
+            image.naturalWidth ||
+            image.width;
+
+          let height =
+            image.naturalHeight ||
+            image.height;
+
+          const ratio =
+            Math.min(
+              1,
+              maxSide /
+                Math.max(
+                  width,
+                  height
+                )
+            );
+
+          width =
+            Math.max(
+              1,
+              Math.round(
+                width *
+                ratio
+              )
+            );
+
+          height =
+            Math.max(
+              1,
+              Math.round(
+                height *
+                ratio
+              )
+            );
+
+          const canvas =
+            document.createElement(
+              "canvas"
+            );
+
+          canvas.width =
+            width;
+
+          canvas.height =
+            height;
+
+          const context =
+            canvas.getContext(
+              "2d"
+            );
+
+          context.drawImage(
+            image,
+            0,
+            0,
+            width,
+            height
+          );
+
+          resolve(
+            canvas.toDataURL(
+              "image/jpeg",
+              quality
+            )
+          );
+        };
+
+        image.src =
+          event.target.result;
+      };
+
+      reader.readAsDataURL(
+        file
+      );
+    }
+  );
+}
+
+
+async function handleEquipmentPhotoChange(
+  inputId,
+  kind
+) {
+  const input =
+    document.getElementById(
+      inputId
+    );
+
+  const file =
+    input?.files?.[0];
+
+  if (!file) return;
+
+  try {
+    const isCertificate =
+      kind === "certificate";
+
+    const data =
+      await compressEquipmentImage(
+        file,
+        isCertificate
+          ? 1600
+          : 1280,
+        isCertificate
+          ? 0.74
+          : 0.68
+      );
+
+    if (isCertificate) {
+      equipmentCertificatePhotoData =
+        data;
+
+      showEquipmentPhotoPreview(
+        "equipmentCertificatePreview",
+        data
+      );
+    } else {
+      equipmentEntryPhotoData =
+        data;
+
+      showEquipmentPhotoPreview(
+        "equipmentEntryPhotoPreview",
+        data
+      );
+    }
+
+  } catch (error) {
+    console.error(
+      "设备图片处理失败：",
+      error
+    );
+
+    showToast(
+      "图片处理失败，请重新选择",
+      "error"
+    );
+
+    if (input) {
+      input.value = "";
+    }
+  }
+}
+
+
 function clearEquipmentForm() {
   [
     "equipmentId",
     "equipmentNumber",
     "equipmentName",
     "equipmentFrameNumber",
-    "equipmentModel",
+    "equipmentEngineNumber",
     "equipmentPlate",
     "equipmentTeam",
     "equipmentCapacity",
@@ -2706,6 +2911,40 @@ function clearEquipmentForm() {
   document.getElementById(
     "equipmentStatus"
   ).value = "available";
+
+  const certificateInput =
+    document.getElementById(
+      "equipmentCertificatePhoto"
+    );
+
+  const entryPhotoInput =
+    document.getElementById(
+      "equipmentEntryPhoto"
+    );
+
+  if (certificateInput) {
+    certificateInput.value = "";
+  }
+
+  if (entryPhotoInput) {
+    entryPhotoInput.value = "";
+  }
+
+  equipmentCertificatePhotoData =
+    "";
+
+  equipmentEntryPhotoData =
+    "";
+
+  showEquipmentPhotoPreview(
+    "equipmentCertificatePreview",
+    ""
+  );
+
+  showEquipmentPhotoPreview(
+    "equipmentEntryPhotoPreview",
+    ""
+  );
 }
 
 
@@ -2766,8 +3005,10 @@ function openEquipmentModal(equipmentId = "") {
     "";
 
   document.getElementById(
-    "equipmentModel"
-  ).value = equipment.model || "";
+    "equipmentEngineNumber"
+  ).value =
+    equipment.engineNumber ||
+    "";
 
   document.getElementById(
     "equipmentPlate"
@@ -2796,6 +3037,24 @@ function openEquipmentModal(equipmentId = "") {
   document.getElementById(
     "equipmentRemark"
   ).value = equipment.remark || "";
+
+  equipmentCertificatePhotoData =
+    equipment.certificatePhoto ||
+    "";
+
+  equipmentEntryPhotoData =
+    equipment.entryPhoto ||
+    "";
+
+  showEquipmentPhotoPreview(
+    "equipmentCertificatePreview",
+    equipmentCertificatePhotoData
+  );
+
+  showEquipmentPhotoPreview(
+    "equipmentEntryPhotoPreview",
+    equipmentEntryPhotoData
+  );
 
   openModal("equipmentModal");
 }
@@ -2875,10 +3134,10 @@ function saveEquipment() {
         )
         .value.trim(),
 
-    model:
+    engineNumber:
       document
         .getElementById(
-          "equipmentModel"
+          "equipmentEngineNumber"
         )
         .value.trim(),
 
@@ -2930,6 +3189,14 @@ function saveEquipment() {
           "equipmentRemark"
         )
         .value.trim(),
+
+    certificatePhoto:
+      equipmentCertificatePhotoData ||
+      "",
+
+    entryPhoto:
+      equipmentEntryPhotoData ||
+      "",
 
     updatedAt: nowISO()
   };
@@ -3013,6 +3280,7 @@ function renderEquipment() {
       item.frameNumber,
       item.vin,
       item.chassisNumber,
+      item.engineNumber,
       item.model,
       item.plateNumber,
       item.team
@@ -3096,8 +3364,9 @@ function renderEquipment() {
             </span>
 
             <span>
-              🧰 ${escapeHtml(
-                item.model || "无型号"
+              ⚙️ ${escapeHtml(
+                item.engineNumber ||
+                "无发动机号"
               )}
             </span>
 
@@ -3109,6 +3378,24 @@ function renderEquipment() {
                 "无大架号"
               )}
             </span>
+
+            ${item.certificatePhoto
+              ? `
+                <span>
+                  📄 已录入合格证
+                </span>
+              `
+              : ""
+            }
+
+            ${item.entryPhoto
+              ? `
+                <span>
+                  📷 已录入进场照片
+                </span>
+              `
+              : ""
+            }
 
             <span>
               🚘 ${escapeHtml(
@@ -3189,6 +3476,36 @@ function toggleEquipmentDisabled(equipmentId) {
 
   showToast("设备状态已更新");
 }
+
+
+document
+  .getElementById(
+    "equipmentCertificatePhoto"
+  )
+  ?.addEventListener(
+    "change",
+    function () {
+      handleEquipmentPhotoChange(
+        "equipmentCertificatePhoto",
+        "certificate"
+      );
+    }
+  );
+
+
+document
+  .getElementById(
+    "equipmentEntryPhoto"
+  )
+  ?.addEventListener(
+    "change",
+    function () {
+      handleEquipmentPhotoChange(
+        "equipmentEntryPhoto",
+        "entry"
+      );
+    }
+  );
 
 
 /* =========================================================
