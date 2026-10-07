@@ -2711,6 +2711,14 @@
                 </div>
             </button>
 
+            <button id="openWorkshopBoardButton" class="todo-card" type="button">
+                <span class="todo-icon">🏭</span>
+                <div>
+                    <strong style="font-size:18px;">查看</strong>
+                    <span>修理厂工位看板</span>
+                </div>
+            </button>
+
             <button id="openVehicleChangeButton" class="todo-card" type="button">
                 <span class="todo-icon">🔧</span>
                 <div>
@@ -35837,6 +35845,20 @@ function closeTemporaryUnloadReview() {
             "hidden"
         );
 }
+
+
+document
+    .getElementById(
+        "openWorkshopBoardButton"
+    )
+    ?.addEventListener(
+        "click",
+        function () {
+
+            location.href =
+                "maintenance.html?view=dispatch-board";
+        }
+    );
 
 
 document
