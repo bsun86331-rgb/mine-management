@@ -3251,6 +3251,15 @@ function updateEquipmentNumberUi(
       editing
         ? ""
         : "none";
+
+    button.dataset.mode =
+      "";
+
+    button.dataset.oldNumber =
+      "";
+
+    button.textContent =
+      "🔁 更换设备编号";
   }
 
   if (help) {
@@ -3262,7 +3271,89 @@ function updateEquipmentNumberUi(
 }
 
 
-function changeEquipmentNumber() {
+async function migrateLegacyEquipmentPhotosForRecords(
+  records
+) {
+  const jobs = [];
+
+  records.forEach(
+    item => {
+      const equipmentId =
+        item.equipmentId ||
+        "";
+
+      if (
+        equipmentId &&
+        item.certificatePhoto
+      ) {
+        jobs.push(
+          saveEquipmentPhoto(
+            equipmentPhotoKey(
+              equipmentId,
+              "certificate"
+            ),
+            item.certificatePhoto
+          )
+        );
+      }
+
+      if (
+        equipmentId &&
+        item.entryPhoto
+      ) {
+        jobs.push(
+          saveEquipmentPhoto(
+            equipmentPhotoKey(
+              equipmentId,
+              "entry"
+            ),
+            item.entryPhoto
+          )
+        );
+      }
+    }
+  );
+
+  try {
+    await Promise.all(
+      jobs
+    );
+  } catch (error) {
+    console.warn(
+      "旧设备照片迁移到 IndexedDB 失败，将保留原数据：",
+      error
+    );
+
+    return false;
+  }
+
+  records.forEach(
+    item => {
+      if (
+        item.certificatePhoto
+      ) {
+        item.hasCertificatePhoto =
+          true;
+
+        delete item.certificatePhoto;
+      }
+
+      if (
+        item.entryPhoto
+      ) {
+        item.hasEntryPhoto =
+          true;
+
+        delete item.entryPhoto;
+      }
+    }
+  );
+
+  return true;
+}
+
+
+async function changeEquipmentNumber() {
   const equipmentId =
     document
       .getElementById(
@@ -3272,9 +3363,23 @@ function changeEquipmentNumber() {
       .trim() ||
     "";
 
-  if (!equipmentId) {
+  const numberInput =
+    document.getElementById(
+      "equipmentNumber"
+    );
+
+  const button =
+    document.getElementById(
+      "changeEquipmentNumberButton"
+    );
+
+  if (
+    !equipmentId ||
+    !numberInput ||
+    !button
+  ) {
     showToast(
-      "请先保存设备后再更换编号",
+      "未找到当前设备资料",
       "error"
     );
     return;
@@ -3298,27 +3403,56 @@ function changeEquipmentNumber() {
     return;
   }
 
+  /*
+   * 第一次点击：解锁输入框。
+   * 避免部分浏览器 / 内嵌浏览器屏蔽 prompt / confirm，
+   * 直接在当前编辑窗口里修改编号。
+   */
+  if (
+    button.dataset.mode !==
+    "confirm"
+  ) {
+    button.dataset.mode =
+      "confirm";
+
+    button.dataset.oldNumber =
+      String(
+        records[index]
+          .equipmentNumber ||
+        ""
+      )
+      .trim();
+
+    numberInput.readOnly =
+      false;
+
+    numberInput.focus();
+
+    numberInput.select();
+
+    button.textContent =
+      "✅ 确认更换设备编号";
+
+    showToast(
+      "请在上方输入新的设备编号，再点击“确认更换设备编号”"
+    );
+
+    return;
+  }
+
   const oldNumber =
     String(
+      button.dataset.oldNumber ||
       records[index]
         .equipmentNumber ||
       ""
     )
     .trim();
 
-  const input =
-    prompt(
-      "请输入新的设备编号：",
-      oldNumber
-    );
-
-  if (input === null) {
-    return;
-  }
-
   const newNumber =
     String(
-      input
+      numberInput.value ||
+      ""
     )
     .trim();
 
@@ -3337,6 +3471,16 @@ function changeEquipmentNumber() {
     showToast(
       "设备编号没有变化"
     );
+
+    numberInput.readOnly =
+      true;
+
+    button.dataset.mode =
+      "";
+
+    button.textContent =
+      "🔁 更换设备编号";
+
     return;
   }
 
@@ -3363,20 +3507,6 @@ function changeEquipmentNumber() {
     return;
   }
 
-  const confirmed =
-    confirm(
-      "确认将设备编号从“" +
-      oldNumber +
-      "”更换为“" +
-      newNumber +
-      "”吗？\n\n" +
-      "系统会同步更新这台设备的保养、维修、设备检查、调度、油料和运输等本地记录；设备档案 ID 不变，因此仍视为同一台设备。"
-    );
-
-  if (!confirmed) {
-    return;
-  }
-
   const backup = {};
 
   try {
@@ -3391,6 +3521,13 @@ function changeEquipmentNumber() {
             key
           );
       }
+    );
+
+    /*
+     * 先迁移旧版内嵌照片，释放 localStorage 空间。
+     */
+    await migrateLegacyEquipmentPhotosForRecords(
+      records
     );
 
     records[index] = {
@@ -3415,12 +3552,20 @@ function changeEquipmentNumber() {
         newNumber
       );
 
-    document
-      .getElementById(
-        "equipmentNumber"
-      )
-      .value =
-        newNumber;
+    numberInput.value =
+      newNumber;
+
+    numberInput.readOnly =
+      true;
+
+    button.dataset.mode =
+      "";
+
+    button.dataset.oldNumber =
+      "";
+
+    button.textContent =
+      "🔁 更换设备编号";
 
     renderEquipment();
 
@@ -3471,13 +3616,30 @@ function changeEquipmentNumber() {
       }
     );
 
+    numberInput.value =
+      oldNumber;
+
+    numberInput.readOnly =
+      true;
+
+    button.dataset.mode =
+      "";
+
+    button.dataset.oldNumber =
+      "";
+
+    button.textContent =
+      "🔁 更换设备编号";
+
     showToast(
-      "设备编号更换失败，已尝试恢复原数据",
+      error?.name ===
+        "QuotaExceededError"
+        ? "浏览器本地存储空间不足，更换编号失败。"
+        : "设备编号更换失败，已恢复原数据",
       "error"
     );
   }
 }
-
 
 function clearEquipmentForm() {
   [
@@ -4217,33 +4379,89 @@ function renderEquipment() {
 }
 
 
-function toggleEquipmentDisabled(equipmentId) {
-  const records = getEquipment();
+async function toggleEquipmentDisabled(
+  equipmentId
+) {
+  const records =
+    getEquipment();
 
   const index =
     records.findIndex(
       item =>
-        item.equipmentId === equipmentId
+        item.equipmentId ===
+        equipmentId
     );
 
-  if (index < 0) return;
+  if (index < 0) {
+    showToast(
+      "未找到设备资料",
+      "error"
+    );
+
+    return;
+  }
+
+  const oldStatus =
+    records[index].status ||
+    "available";
 
   records[index].status =
-    records[index].status === "disabled"
+    oldStatus ===
+      "disabled"
       ? "available"
       : "disabled";
 
   records[index].updatedAt =
     nowISO();
 
-  saveEquipmentRecords(records);
+  try {
+    /*
+     * 若历史设备记录里仍有 base64 照片，先迁移到 IndexedDB，
+     * 避免 localStorage 已接近上限时连“停用/恢复”都无法保存。
+     */
+    await migrateLegacyEquipmentPhotosForRecords(
+      records
+    );
+
+    saveEquipmentRecords(
+      records
+    );
+
+  } catch (error) {
+    console.error(
+      "设备状态保存失败：",
+      error
+    );
+
+    records[index].status =
+      oldStatus;
+
+    showToast(
+      error?.name ===
+        "QuotaExceededError"
+        ? "浏览器本地存储空间不足，设备状态暂时无法修改。"
+        : "设备状态修改失败，请重试。",
+      "error"
+    );
+
+    return;
+  }
 
   renderEquipment();
+
   updateSummary();
 
-  showToast("设备状态已更新");
+  showToast(
+    oldStatus ===
+      "disabled"
+      ? "设备已恢复可用"
+      : "设备已停用"
+  );
 }
 
+
+window.toggleEquipmentDisabled =
+  toggleEquipmentDisabled;
 
 document
   .getElementById(
