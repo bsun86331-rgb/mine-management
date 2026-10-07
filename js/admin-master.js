@@ -3057,6 +3057,428 @@ async function handleEquipmentPhotoChange(
 }
 
 
+const EQUIPMENT_NUMBER_REFERENCE_KEYS = [
+  "maintenanceRequests",
+  "maintenanceWorkOrders",
+  "workshopBays",
+  "maintenanceCosts",
+  "maintenanceAlerts",
+  "equipmentMaintenanceSettings",
+  "equipmentMeterReadings",
+  "equipmentMaintenanceRecords",
+  "equipmentOperationalStatus",
+  "equipmentUsageChecks",
+  "equipmentUsageRecords",
+  "dispatchPublishedTasks",
+  "auxiliaryDemoTasks",
+  "auxiliaryWorkRecords",
+  "auxiliaryVehicleProfile",
+  "driverProfile",
+  "fuelRequests",
+  "fuelRecords",
+  "tripRecords",
+  "driverTripRecords",
+  "transportRecords",
+  "excavatorTripRecords",
+  "excavatorLoadingRecords",
+  "loadingRecords",
+  "temporaryUnloadRequests"
+];
+
+
+function replaceEquipmentNumberDeep(
+  value,
+  oldNumber,
+  newNumber
+) {
+  if (
+    typeof value === "string"
+  ) {
+    return value === oldNumber
+      ? newNumber
+      : value;
+  }
+
+  if (
+    Array.isArray(
+      value
+    )
+  ) {
+    return value.map(
+      item =>
+        replaceEquipmentNumberDeep(
+          item,
+          oldNumber,
+          newNumber
+        )
+    );
+  }
+
+  if (
+    value &&
+    typeof value === "object"
+  ) {
+    const next = {};
+
+    Object.entries(
+      value
+    )
+    .forEach(
+      (
+        [
+          key,
+          item
+        ]
+      ) => {
+        const nextKey =
+          key === oldNumber
+            ? newNumber
+            : key;
+
+        next[nextKey] =
+          replaceEquipmentNumberDeep(
+            item,
+            oldNumber,
+            newNumber
+          );
+      }
+    );
+
+    return next;
+  }
+
+  return value;
+}
+
+
+function migrateEquipmentNumberReferences(
+  oldNumber,
+  newNumber
+) {
+  const prepared = [];
+
+  EQUIPMENT_NUMBER_REFERENCE_KEYS
+    .forEach(
+      key => {
+        const raw =
+          localStorage.getItem(
+            key
+          );
+
+        if (!raw) {
+          return;
+        }
+
+        try {
+          const parsed =
+            JSON.parse(
+              raw
+            );
+
+          const replaced =
+            replaceEquipmentNumberDeep(
+              parsed,
+              oldNumber,
+              newNumber
+            );
+
+          const nextRaw =
+            JSON.stringify(
+              replaced
+            );
+
+          if (
+            nextRaw !== raw
+          ) {
+            prepared.push({
+              key,
+              raw:
+                nextRaw
+            });
+          }
+
+        } catch (error) {
+          console.warn(
+            "设备编号迁移跳过无法解析的数据：",
+            key,
+            error
+          );
+        }
+      }
+    );
+
+
+  prepared.forEach(
+    item => {
+      localStorage.setItem(
+        item.key,
+        item.raw
+      );
+    }
+  );
+
+  return prepared.length;
+}
+
+
+function updateEquipmentNumberUi(
+  editing
+) {
+  const input =
+    document.getElementById(
+      "equipmentNumber"
+    );
+
+  const button =
+    document.getElementById(
+      "changeEquipmentNumberButton"
+    );
+
+  const help =
+    document.getElementById(
+      "changeEquipmentNumberHelp"
+    );
+
+  if (input) {
+    input.readOnly =
+      Boolean(
+        editing
+      );
+  }
+
+  if (button) {
+    button.style.display =
+      editing
+        ? ""
+        : "none";
+  }
+
+  if (help) {
+    help.style.display =
+      editing
+        ? "block"
+        : "none";
+  }
+}
+
+
+function changeEquipmentNumber() {
+  const equipmentId =
+    document
+      .getElementById(
+        "equipmentId"
+      )
+      ?.value
+      .trim() ||
+    "";
+
+  if (!equipmentId) {
+    showToast(
+      "请先保存设备后再更换编号",
+      "error"
+    );
+    return;
+  }
+
+  const records =
+    getEquipment();
+
+  const index =
+    records.findIndex(
+      item =>
+        item.equipmentId ===
+        equipmentId
+    );
+
+  if (index < 0) {
+    showToast(
+      "未找到设备资料",
+      "error"
+    );
+    return;
+  }
+
+  const oldNumber =
+    String(
+      records[index]
+        .equipmentNumber ||
+      ""
+    )
+    .trim();
+
+  const input =
+    prompt(
+      "请输入新的设备编号：",
+      oldNumber
+    );
+
+  if (input === null) {
+    return;
+  }
+
+  const newNumber =
+    String(
+      input
+    )
+    .trim();
+
+  if (!newNumber) {
+    showToast(
+      "新设备编号不能为空",
+      "error"
+    );
+    return;
+  }
+
+  if (
+    newNumber ===
+    oldNumber
+  ) {
+    showToast(
+      "设备编号没有变化"
+    );
+    return;
+  }
+
+  const duplicate =
+    records.some(
+      item =>
+        item.equipmentId !==
+          equipmentId &&
+        String(
+          item.equipmentNumber ||
+          ""
+        )
+        .trim()
+        .toLowerCase() ===
+        newNumber
+          .toLowerCase()
+    );
+
+  if (duplicate) {
+    showToast(
+      "新的设备编号已经存在",
+      "error"
+    );
+    return;
+  }
+
+  const confirmed =
+    confirm(
+      "确认将设备编号从“" +
+      oldNumber +
+      "”更换为“" +
+      newNumber +
+      "”吗？\n\n" +
+      "系统会同步更新这台设备的保养、维修、设备检查、调度、油料和运输等本地记录；设备档案 ID 不变，因此仍视为同一台设备。"
+    );
+
+  if (!confirmed) {
+    return;
+  }
+
+  const backup = {};
+
+  try {
+    [
+      STORAGE.EQUIPMENT,
+      ...EQUIPMENT_NUMBER_REFERENCE_KEYS
+    ]
+    .forEach(
+      key => {
+        backup[key] =
+          localStorage.getItem(
+            key
+          );
+      }
+    );
+
+    records[index] = {
+      ...records[index],
+      equipmentNumber:
+        newNumber,
+      previousEquipmentNumber:
+        oldNumber,
+      equipmentNumberChangedAt:
+        nowISO(),
+      updatedAt:
+        nowISO()
+    };
+
+    saveEquipmentRecords(
+      records
+    );
+
+    const migratedCount =
+      migrateEquipmentNumberReferences(
+        oldNumber,
+        newNumber
+      );
+
+    document
+      .getElementById(
+        "equipmentNumber"
+      )
+      .value =
+        newNumber;
+
+    renderEquipment();
+
+    updateSummary();
+
+    showToast(
+      "设备编号已更换，已同步 " +
+      migratedCount +
+      " 类关联记录"
+    );
+
+  } catch (error) {
+    console.error(
+      "设备编号更换失败：",
+      error
+    );
+
+    Object.entries(
+      backup
+    )
+    .forEach(
+      (
+        [
+          key,
+          raw
+        ]
+      ) => {
+        try {
+          if (raw === null) {
+            localStorage.removeItem(
+              key
+            );
+          } else {
+            localStorage.setItem(
+              key,
+              raw
+            );
+          }
+        } catch (
+          rollbackError
+        ) {
+          console.error(
+            "设备编号回滚失败：",
+            key,
+            rollbackError
+          );
+        }
+      }
+    );
+
+    showToast(
+      "设备编号更换失败，已尝试恢复原数据",
+      "error"
+    );
+  }
+}
+
+
 function clearEquipmentForm() {
   [
     "equipmentId",
@@ -3133,6 +3555,10 @@ function openEquipmentModal(equipmentId = "") {
   if (!equipmentId) {
     title.textContent = "🚜 新增设备";
 
+    updateEquipmentNumberUi(
+      false
+    );
+
     document.getElementById(
       "equipmentEntryDate"
     ).value = localDate();
@@ -3153,6 +3579,10 @@ function openEquipmentModal(equipmentId = "") {
   }
 
   title.textContent = "✏️ 编辑设备";
+
+  updateEquipmentNumberUi(
+    true
+  );
 
   document.getElementById(
     "equipmentId"
