@@ -723,7 +723,7 @@
       <input
         id="equipmentSearch"
         type="search"
-        placeholder="搜索设备编号、名称、型号、大架号、车牌..."
+        placeholder="搜索设备编号、名称、发动机号、大架号、车牌..."
         oninput="renderEquipment()">
 
 
@@ -1332,10 +1332,11 @@
 
 
       <label>
-        型号
+        发动机号
         <input
-          id="equipmentModel"
-          type="text">
+          id="equipmentEngineNumber"
+          type="text"
+          placeholder="请输入发动机号">
       </label>
 
 
@@ -1402,6 +1403,54 @@
         <small class="equipment-status-help">
           作业中、维修中、保养中由系统联动；管理员可设置可用、备用、停用。
         </small>
+      </label>
+
+
+      <label>
+        合格证照片（选填）
+        <input
+          id="equipmentCertificatePhoto"
+          type="file"
+          accept="image/*"
+          capture="environment">
+
+        <img
+          id="equipmentCertificatePreview"
+          alt="合格证照片预览"
+          style="
+            display:none;
+            width:100%;
+            max-height:220px;
+            margin-top:8px;
+            object-fit:contain;
+            border:1px solid #e2e8f0;
+            border-radius:10px;
+            background:#f8fafc;
+          ">
+      </label>
+
+
+      <label>
+        车辆进场照片（选填）
+        <input
+          id="equipmentEntryPhoto"
+          type="file"
+          accept="image/*"
+          capture="environment">
+
+        <img
+          id="equipmentEntryPhotoPreview"
+          alt="车辆进场照片预览"
+          style="
+            display:none;
+            width:100%;
+            max-height:220px;
+            margin-top:8px;
+            object-fit:contain;
+            border:1px solid #e2e8f0;
+            border-radius:10px;
+            background:#f8fafc;
+          ">
       </label>
 
 
@@ -1809,7 +1858,7 @@
   }
 </script>
 
-<script src="js/admin-master.js?v=2.11.4-frame"></script>
+<script src="js/admin-master.js?v=2.11.5-engine-photo"></script>
 
 <script>
 "use strict";
