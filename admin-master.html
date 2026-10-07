@@ -723,7 +723,7 @@
       <input
         id="equipmentSearch"
         type="search"
-        placeholder="搜索设备编号、名称、型号、车牌..."
+        placeholder="搜索设备编号、名称、型号、大架号、车牌..."
         oninput="renderEquipment()">
 
 
@@ -1323,10 +1323,11 @@
 
 
       <label>
-        品牌
+        大架号
         <input
-          id="equipmentBrand"
-          type="text">
+          id="equipmentFrameNumber"
+          type="text"
+          placeholder="请输入车辆大架号 / 车架号">
       </label>
 
 
@@ -1808,7 +1809,7 @@
   }
 </script>
 
-<script src="js/admin-master.js?v=2.11.3-excel"></script>
+<script src="js/admin-master.js?v=2.11.4-frame"></script>
 
 <script>
 "use strict";
