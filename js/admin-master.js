@@ -4247,6 +4247,26 @@ function toggleEquipmentDisabled(equipmentId) {
 
 document
   .getElementById(
+    "changeEquipmentNumberButton"
+  )
+  ?.addEventListener(
+    "click",
+    function (
+      event
+    ) {
+      event.preventDefault();
+      event.stopPropagation();
+      changeEquipmentNumber();
+    }
+  );
+
+
+window.changeEquipmentNumber =
+  changeEquipmentNumber;
+
+
+document
+  .getElementById(
     "equipmentCertificatePhoto"
   )
   ?.addEventListener(
