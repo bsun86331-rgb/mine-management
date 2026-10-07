@@ -4358,13 +4358,17 @@ function renderEquipment() {
 
           <button
             class="btn btn-small btn-secondary"
-            onclick="openEquipmentModal('${item.equipmentId}')">
+            type="button"
+            data-equipment-action="edit"
+            data-equipment-id="${escapeHtml(item.equipmentId)}">
             编辑
           </button>
 
           <button
             class="btn btn-small btn-warning"
-            onclick="toggleEquipmentDisabled('${item.equipmentId}')">
+            type="button"
+            data-equipment-action="toggle-status"
+            data-equipment-id="${escapeHtml(item.equipmentId)}">
             ${
               item.status === "disabled"
                 ? "恢复可用"
@@ -4423,9 +4427,50 @@ async function toggleEquipmentDisabled(
       records
     );
 
+    /*
+     * 关键修复：
+     * 管理员页面还有“设备实时状态联动层”。
+     * 如果只改 item.status，联动层会根据旧的 adminBaseStatus
+     * 在下一次刷新时把状态重新改回“可用”，表现为“停用按钮没反应”。
+     */
+    const nextBaseStatus =
+      records[index].status ===
+        "disabled"
+        ? "disabled"
+        : "available";
+
+    records[index].adminBaseStatus =
+      nextBaseStatus;
+
     saveEquipmentRecords(
       records
     );
+
+    /*
+     * 同步统一运行状态，避免 equipmentOperationalStatus 中
+     * 旧的 available / disabled 再把结果覆盖回来。
+     * 这些函数由 admin-master.html 的实时联动层提供。
+     */
+    if (
+      typeof window.adminUpdateMasterBaseStatus ===
+        "function"
+    ) {
+      window.adminUpdateMasterBaseStatus(
+        records[index].equipmentNumber,
+        nextBaseStatus
+      );
+    }
+
+    if (
+      typeof window.adminSetOperationalStatus ===
+        "function"
+    ) {
+      window.adminSetOperationalStatus(
+        records[index].equipmentNumber,
+        nextBaseStatus,
+        "admin_master_toggle"
+      );
+    }
 
   } catch (error) {
     console.error(
@@ -4462,6 +4507,59 @@ async function toggleEquipmentDisabled(
 
 window.toggleEquipmentDisabled =
   toggleEquipmentDisabled;
+
+
+/*
+ * 设备列表是动态 renderEquipment() 生成的。
+ * 使用事件委托，避免动态按钮仅依赖 inline onclick 在部分浏览器中失效。
+ */
+document
+  .getElementById(
+    "equipmentList"
+  )
+  ?.addEventListener(
+    "click",
+    function (
+      event
+    ) {
+      const button =
+        event.target.closest(
+          "[data-equipment-action]"
+        );
+
+      if (!button) {
+        return;
+      }
+
+      event.preventDefault();
+      event.stopPropagation();
+
+      const equipmentId =
+        button.dataset.equipmentId ||
+        "";
+
+      if (
+        button.dataset.equipmentAction ===
+        "toggle-status"
+      ) {
+        toggleEquipmentDisabled(
+          equipmentId
+        );
+
+        return;
+      }
+
+      if (
+        button.dataset.equipmentAction ===
+        "edit"
+      ) {
+        openEquipmentModal(
+          equipmentId
+        );
+      }
+    }
+  );
+
 
 document
   .getElementById(
