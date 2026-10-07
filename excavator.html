@@ -506,6 +506,25 @@
         }
 
 
+        .material-request-button {
+            width: 100%;
+            min-height: 52px;
+            padding: 13px 16px;
+            border: 1px solid #bfdbfe;
+            border-radius: 11px;
+            background: #eff6ff;
+            color: #1d4ed8;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+
+        .material-request-button:active {
+            transform: translateY(1px);
+        }
+
+
         .warning-box {
             padding: 13px;
             border: 1px solid #fed7aa;
@@ -813,6 +832,54 @@
 
 
     <!-- =====================================================
+         物资领用
+    ====================================================== -->
+
+    <section class="card">
+
+        <div class="section-title">
+
+            <div>
+
+                <h2>
+                    📦 物资领用
+                </h2>
+
+                <p>
+                    申请劳保、工具及其他后勤物资
+                </p>
+
+            </div>
+
+        </div>
+
+
+        <div class="action-grid">
+
+            <button
+                type="button"
+                class="material-request-button"
+                onclick="openMaterialRequest()"
+            >
+                📦 物资领用申请
+            </button>
+
+        </div>
+
+
+        <div class="task-note">
+
+            进入统一物资领用中心后，
+            可选择物资、填写数量、用途和备注，
+            并查看自己的申请状态。
+
+        </div>
+
+    </section>
+
+
+
+    <!-- =====================================================
          异常上报 / 设备维修
     ====================================================== -->
 
@@ -965,7 +1032,7 @@
 
 <footer>
 
-    矿山管理系统 · 挖机司机端 V2.11.0E V2.10.0L
+    矿山管理系统 · 挖机司机端 V2.11.0F V2.10.0L
 
 </footer>
 
@@ -5589,6 +5656,14 @@ function openMaintenanceReport() {
 /* =========================================================
    返回首页
 ========================================================= */
+
+function openMaterialRequest() {
+
+    location.href =
+        "material-request.html";
+}
+
+
 
 function goHome() {
 
