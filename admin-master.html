@@ -393,7 +393,7 @@
 <header class="top-header">
   <div>
     <h1>⚙️ 管理员基础资料中心</h1>
-    <p>V2.10.1H · 人员 + 设备 + 后勤物资 + 报表 + 工资</p>
+    <p>V2.10.1I · 人员 + 设备 + 报表 + 工资</p>
   </div>
 
   <button class="btn btn-light" onclick="goHome()">
@@ -524,22 +524,6 @@
       </div>
     </div>
 
-    <div class="summary-card">
-      <div class="summary-icon">📦</div>
-      <div>
-        <span>物资种类</span>
-        <strong id="materialCount">0</strong>
-      </div>
-    </div>
-
-    <div class="summary-card warning-card">
-      <div class="summary-icon">⚠️</div>
-      <div>
-        <span>未归还物资</span>
-        <strong id="unreturnedCount">0</strong>
-      </div>
-    </div>
-
   </section>
 
 
@@ -559,13 +543,6 @@
       class="tab-btn"
       onclick="switchModule('equipment')">
       🚜 设备管理
-    </button>
-
-    <button
-      id="materialTab"
-      class="tab-btn"
-      onclick="switchModule('material')">
-      📦 后勤物资
     </button>
 
   </nav>
@@ -772,318 +749,7 @@
   </section>
 
 
-  <!-- ===================================================== -->
-  <!-- 后勤物资 -->
-  <!-- ===================================================== -->
-
-  <section id="materialModule" class="module-section">
-
-    <div class="section-header">
-
-      <div>
-        <h2>📦 后勤物资管理</h2>
-        <p>库存、领用、退还及离职物资结算</p>
-      </div>
-
-      <div class="admin-section-actions">
-
-        <button
-          class="btn btn-secondary"
-          type="button"
-          onclick="exportMaterialInventoryExcel()">
-          📥 导出库存 Excel
-        </button>
-
-        <button
-          class="btn btn-primary"
-          type="button"
-          onclick="openMaterialModal()">
-          + 新增物资
-        </button>
-
-      </div>
-
-    </div>
-
-
-    <!-- 物资子菜单 -->
-
-    <div class="sub-tabs">
-
-      <button
-        id="materialStockTab"
-        class="sub-tab active"
-        onclick="switchMaterialView('stock')">
-        📦 库存
-      </button>
-
-      <button
-        id="materialIssueTab"
-        class="sub-tab"
-        onclick="switchMaterialView('issue')">
-        📤 员工领用
-      </button>
-
-      <button
-        id="materialReturnTab"
-        class="sub-tab"
-        onclick="switchMaterialView('return')">
-        📥 员工退还
-      </button>
-
-      <button
-        id="materialEmployeeTab"
-        class="sub-tab"
-        onclick="switchMaterialView('employee')">
-        👤 员工名下物资
-      </button>
-
-      <button
-        id="materialHistoryTab"
-        class="sub-tab"
-        onclick="switchMaterialView('history')">
-        📚 领退记录
-      </button>
-
-      <button
-        id="resignationSettlementTab"
-        class="sub-tab"
-        onclick="switchMaterialView('settlement')">
-        💰 离职结算
-      </button>
-
-    </div>
-
-
-    <!-- 库存 -->
-
-    <div id="materialStockView" class="material-view active">
-
-      <div class="toolbar">
-
-        <input
-          id="materialSearch"
-          type="search"
-          placeholder="搜索物资名称..."
-          oninput="renderMaterials()">
-
-        <select
-          id="materialTypeFilter"
-          onchange="renderMaterials()">
-
-          <option value="">全部类型</option>
-          <option value="consumable">消耗品</option>
-          <option value="returnable">可回收物资</option>
-
-        </select>
-
-      </div>
-
-      <div id="materialList" class="record-list"></div>
-
-    </div>
-
-
-    <!-- 员工领用 -->
-
-    <div id="materialIssueView" class="material-view">
-
-      <div class="form-panel">
-
-        <h3>📤 员工领用物资</h3>
-
-        <div class="form-grid">
-
-          <label>
-            领用员工 *
-            <select id="issuePerson"></select>
-          </label>
-
-          <label>
-            领用物资 *
-            <select
-              id="issueMaterial"
-              onchange="updateIssueMaterialInfo()">
-            </select>
-          </label>
-
-          <label>
-            当前库存
-            <input
-              id="issueCurrentStock"
-              type="text"
-              readonly>
-          </label>
-
-          <label>
-            领用数量 *
-            <input
-              id="issueQuantity"
-              type="number"
-              min="1"
-              value="1">
-          </label>
-
-          <label>
-            领用日期
-            <input
-              id="issueDate"
-              type="date">
-          </label>
-
-          <label class="full-width">
-            备注
-            <textarea
-              id="issueRemark"
-              rows="3"
-              placeholder="可填写用途、班组等信息"></textarea>
-          </label>
-
-        </div>
-
-        <button
-          class="btn btn-primary"
-          onclick="issueMaterial()">
-          确认领用
-        </button>
-
-      </div>
-
-    </div>
-
-
-    <!-- 员工退还 -->
-
-    <div id="materialReturnView" class="material-view">
-
-      <div class="form-panel">
-
-        <h3>📥 员工退还物资</h3>
-
-        <div class="form-grid">
-
-          <label>
-            员工 *
-            <select
-              id="returnPerson"
-              onchange="loadPersonReturnableMaterials()">
-            </select>
-          </label>
-
-          <label>
-            待归还物资 *
-            <select
-              id="returnMaterial"
-              onchange="updateReturnMaterialInfo()">
-            </select>
-          </label>
-
-          <label>
-            当前未归还数量
-            <input
-              id="returnOutstanding"
-              type="text"
-              readonly>
-          </label>
-
-          <label>
-            本次归还数量 *
-            <input
-              id="returnQuantity"
-              type="number"
-              min="1"
-              value="1">
-          </label>
-
-          <label>
-            物资状态
-            <select id="returnCondition">
-              <option value="normal">正常</option>
-              <option value="damaged">损坏</option>
-            </select>
-          </label>
-
-          <label>
-            归还日期
-            <input
-              id="returnDate"
-              type="date">
-          </label>
-
-          <label class="full-width">
-            备注
-            <textarea
-              id="returnRemark"
-              rows="3"></textarea>
-          </label>
-
-        </div>
-
-        <button
-          class="btn btn-primary"
-          onclick="returnMaterial()">
-          确认退还
-        </button>
-
-      </div>
-
-    </div>
-
-
-    <!-- 员工名下物资 -->
-
-    <div id="materialEmployeeView" class="material-view">
-
-      <div class="toolbar">
-
-        <select
-          id="employeeMaterialPerson"
-          onchange="renderEmployeeMaterials()">
-        </select>
-
-      </div>
-
-      <div id="employeeMaterialSummary"></div>
-
-    </div>
-
-
-    <!-- 领退历史 -->
-
-    <div id="materialHistoryView" class="material-view">
-
-      <div class="toolbar">
-
-        <input
-          id="materialHistorySearch"
-          type="search"
-          placeholder="搜索员工或物资..."
-          oninput="renderMaterialHistory()">
-
-      </div>
-
-      <div id="materialHistoryList" class="record-list"></div>
-
-    </div>
-
-
-    <!-- 离职结算 -->
-
-    <div id="resignationSettlementView" class="material-view">
-
-      <div class="section-note">
-        员工未归还公司可回收物资时仍可办理离职，
-        系统根据未归还数量及扣款标准生成建议工资扣款。
-      </div>
-
-      <div id="settlementList" class="record-list"></div>
-
-    </div>
-
-  </section>
-
-</main>
-
+  <!-- 后勤物资统一由 warehouse.html（库房管理）维护，管理员端不再重复管理 -->
 
 <!-- ===================================================== -->
 <!-- 人员新增 / 编辑 -->
@@ -1873,7 +1539,7 @@
   }
 </script>
 
-<script src="js/admin-master.js?v=2.11.10-toggle-fix"></script>
+<script src="js/admin-master.js?v=2.11.11-warehouse-only"></script>
 
 <script>
 "use strict";
