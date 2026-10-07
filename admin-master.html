@@ -1289,6 +1289,21 @@
           id="equipmentNumber"
           type="text"
           placeholder="按矿上设备编号">
+
+        <button
+          id="changeEquipmentNumberButton"
+          type="button"
+          class="btn btn-small btn-secondary"
+          style="display:none;margin-top:8px;width:100%;"
+          onclick="changeEquipmentNumber()">
+          🔁 更换设备编号
+        </button>
+
+        <small
+          id="changeEquipmentNumberHelp"
+          style="display:none;margin-top:6px;color:#64748b;line-height:1.6;">
+          编辑已有设备时请使用“更换设备编号”，系统会同步保养、维修、检查、调度等历史记录。
+        </small>
       </label>
 
 
@@ -1858,7 +1873,7 @@
   }
 </script>
 
-<script src="js/admin-master.js?v=2.11.6-photo-idb"></script>
+<script src="js/admin-master.js?v=2.11.7-number-migrate"></script>
 
 <script>
 "use strict";
