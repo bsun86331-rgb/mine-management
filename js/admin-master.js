@@ -1,7 +1,7 @@
 /* =========================================================
    矿山管理系统
-   V2.11.0 管理员基础资料中心
-   人员 + 设备 + 后勤物资
+   V2.11.1 管理员基础资料中心
+   人员 + 设备（后勤物资统一由库房管理）
 ========================================================= */
 
 "use strict";
@@ -1959,10 +1959,6 @@ function switchModule(module) {
     renderEquipment();
   }
 
-  if (module === "material") {
-    refreshMaterialSelectors();
-    renderMaterials();
-  }
 }
 
 
@@ -2047,21 +2043,10 @@ function updateSummary() {
   const equipment =
     readStorage(STORAGE.EQUIPMENT, []);
 
-  const materials =
-    readStorage(STORAGE.MATERIALS, []);
-
   const activePersonnel =
     personnel.filter(person =>
       !["resigned", "disabled"].includes(person.status)
     ).length;
-
-  const outstanding =
-    getAllOutstandingMaterials()
-      .reduce(
-        (sum, item) =>
-          sum + numberValue(item.outstandingQuantity),
-        0
-      );
 
   setText(
     "activePersonnelCount",
@@ -2071,16 +2056,6 @@ function updateSummary() {
   setText(
     "equipmentCount",
     equipment.length
-  );
-
-  setText(
-    "materialCount",
-    materials.length
-  );
-
-  setText(
-    "unreturnedCount",
-    outstanding
   );
 }
 
@@ -6847,28 +6822,16 @@ function init() {
 
   importExistingDriverProfile();
 
-  setDefaultDates();
-
   bindModalBackdrop();
 
   renderPersonnel();
 
   renderEquipment();
 
-  renderMaterials();
-
-  refreshMaterialSelectors();
-
-  renderMaterialHistory();
-
-  renderSettlementRecords();
-
   updateSummary();
 
-  toggleMaterialReturnFields();
-
   console.log(
-    "V2.11.0 管理员基础资料中心已加载"
+    "V2.11.1 管理员基础资料中心已加载：后勤物资统一由库房管理"
   );
 }
 
