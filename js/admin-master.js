@@ -1539,7 +1539,7 @@ function exportEquipmentExcel() {
     "设备编号",
     "设备名称",
     "设备类别",
-    "品牌",
+    "大架号",
     "型号",
     "车牌号",
     "所属公司/车队",
@@ -1563,7 +1563,9 @@ function exportEquipmentExcel() {
         item.type ||
           "",
 
-        item.brand ||
+        item.frameNumber ||
+        item.vin ||
+        item.chassisNumber ||
           "",
 
         item.model ||
@@ -2681,7 +2683,7 @@ function clearEquipmentForm() {
     "equipmentId",
     "equipmentNumber",
     "equipmentName",
-    "equipmentBrand",
+    "equipmentFrameNumber",
     "equipmentModel",
     "equipmentPlate",
     "equipmentTeam",
@@ -2756,8 +2758,12 @@ function openEquipmentModal(equipmentId = "") {
   ).value = equipment.type || "";
 
   document.getElementById(
-    "equipmentBrand"
-  ).value = equipment.brand || "";
+    "equipmentFrameNumber"
+  ).value =
+    equipment.frameNumber ||
+    equipment.vin ||
+    equipment.chassisNumber ||
+    "";
 
   document.getElementById(
     "equipmentModel"
@@ -2862,10 +2868,10 @@ function saveEquipment() {
 
     type,
 
-    brand:
+    frameNumber:
       document
         .getElementById(
-          "equipmentBrand"
+          "equipmentFrameNumber"
         )
         .value.trim(),
 
@@ -3004,7 +3010,9 @@ function renderEquipment() {
       item.equipmentNumber,
       item.equipmentName,
       item.type,
-      item.brand,
+      item.frameNumber,
+      item.vin,
+      item.chassisNumber,
       item.model,
       item.plateNumber,
       item.team
@@ -3088,13 +3096,17 @@ function renderEquipment() {
             </span>
 
             <span>
-              🏭 ${escapeHtml(
-                [
-                  item.brand,
-                  item.model
-                ]
-                  .filter(Boolean)
-                  .join(" ") || "-"
+              🧰 ${escapeHtml(
+                item.model || "无型号"
+              )}
+            </span>
+
+            <span>
+              🔩 ${escapeHtml(
+                item.frameNumber ||
+                item.vin ||
+                item.chassisNumber ||
+                "无大架号"
               )}
             </span>
 
