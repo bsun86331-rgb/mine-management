@@ -2685,6 +2685,180 @@ let equipmentEntryPhotoData =
   "";
 
 
+/*
+ * 设备照片不再写入 localStorage。
+ * localStorage 只保存设备文字档案；合格证和进场照片保存到 IndexedDB，
+ * 避免两张 base64 图片把 equipmentRecords 撑爆导致“设备无法保存”。
+ */
+const EQUIPMENT_PHOTO_DB_NAME =
+  "mineManagementEquipmentPhotos";
+
+const EQUIPMENT_PHOTO_STORE =
+  "photos";
+
+
+function openEquipmentPhotoDb() {
+  return new Promise(
+    (
+      resolve,
+      reject
+    ) => {
+      const request =
+        indexedDB.open(
+          EQUIPMENT_PHOTO_DB_NAME,
+          1
+        );
+
+      request.onupgradeneeded =
+        event => {
+          const db =
+            event.target.result;
+
+          if (
+            !db.objectStoreNames.contains(
+              EQUIPMENT_PHOTO_STORE
+            )
+          ) {
+            db.createObjectStore(
+              EQUIPMENT_PHOTO_STORE
+            );
+          }
+        };
+
+      request.onsuccess = () =>
+        resolve(
+          request.result
+        );
+
+      request.onerror = () =>
+        reject(
+          request.error ||
+          new Error(
+            "设备照片数据库打开失败"
+          )
+        );
+    }
+  );
+}
+
+
+async function saveEquipmentPhoto(
+  key,
+  data
+) {
+  if (!key || !data) {
+    return;
+  }
+
+  const db =
+    await openEquipmentPhotoDb();
+
+  await new Promise(
+    (
+      resolve,
+      reject
+    ) => {
+      const tx =
+        db.transaction(
+          EQUIPMENT_PHOTO_STORE,
+          "readwrite"
+        );
+
+      tx.objectStore(
+        EQUIPMENT_PHOTO_STORE
+      )
+      .put(
+        data,
+        key
+      );
+
+      tx.oncomplete =
+        resolve;
+
+      tx.onerror = () =>
+        reject(
+          tx.error ||
+          new Error(
+            "设备照片保存失败"
+          )
+        );
+    }
+  );
+
+  db.close();
+}
+
+
+async function getEquipmentPhoto(
+  key
+) {
+  if (!key) {
+    return "";
+  }
+
+  const db =
+    await openEquipmentPhotoDb();
+
+  const data =
+    await new Promise(
+      (
+        resolve,
+        reject
+      ) => {
+        const tx =
+          db.transaction(
+            EQUIPMENT_PHOTO_STORE,
+            "readonly"
+          );
+
+        const request =
+          tx.objectStore(
+            EQUIPMENT_PHOTO_STORE
+          )
+          .get(
+            key
+          );
+
+        request.onsuccess = () =>
+          resolve(
+            request.result ||
+            ""
+          );
+
+        request.onerror = () =>
+          reject(
+            request.error ||
+            new Error(
+              "设备照片读取失败"
+            )
+          );
+      }
+    );
+
+  db.close();
+
+  return data;
+}
+
+
+function equipmentPhotoKey(
+  equipmentId,
+  type
+) {
+  return (
+    String(
+      equipmentId ||
+      ""
+    ) +
+    "::" +
+    String(
+      type ||
+      ""
+    )
+  );
+}
+
+
 function showEquipmentPhotoPreview(
   previewId,
   data
@@ -3057,10 +3231,66 @@ function openEquipmentModal(equipmentId = "") {
   );
 
   openModal("equipmentModal");
+
+
+  /*
+   * 新版照片从 IndexedDB 异步读取。
+   * 老版本若已有 localStorage base64 仍可继续显示。
+   */
+  Promise.all([
+    getEquipmentPhoto(
+      equipmentPhotoKey(
+        equipment.equipmentId,
+        "certificate"
+      )
+    ),
+    getEquipmentPhoto(
+      equipmentPhotoKey(
+        equipment.equipmentId,
+        "entry"
+      )
+    )
+  ])
+  .then(
+    (
+      [
+        certificatePhoto,
+        entryPhoto
+      ]
+    ) => {
+      if (certificatePhoto) {
+        equipmentCertificatePhotoData =
+          certificatePhoto;
+
+        showEquipmentPhotoPreview(
+          "equipmentCertificatePreview",
+          certificatePhoto
+        );
+      }
+
+      if (entryPhoto) {
+        equipmentEntryPhotoData =
+          entryPhoto;
+
+        showEquipmentPhotoPreview(
+          "equipmentEntryPhotoPreview",
+          entryPhoto
+        );
+      }
+    }
+  )
+  .catch(
+    error => {
+      console.warn(
+        "读取设备照片失败：",
+        error
+      );
+    }
+  );
 }
 
 
-function saveEquipment() {
+async function saveEquipment() {
   const equipmentId =
     document
       .getElementById("equipmentId")
@@ -3190,22 +3420,86 @@ function saveEquipment() {
         )
         .value.trim(),
 
-    certificatePhoto:
-      equipmentCertificatePhotoData ||
-      "",
+    hasCertificatePhoto:
+      Boolean(
+        equipmentCertificatePhotoData
+      ),
 
-    entryPhoto:
-      equipmentEntryPhotoData ||
-      "",
+    hasEntryPhoto:
+      Boolean(
+        equipmentEntryPhotoData
+      ),
 
     updatedAt: nowISO()
   };
+
+  const finalEquipmentId =
+    equipmentId ||
+    uid(
+      "EQ"
+    );
+
+
+  /*
+   * 先把选填照片写入 IndexedDB。
+   * 即使照片保存失败，也不能阻止设备文字档案保存。
+   */
+  let photoWarning =
+    "";
+
+  try {
+    const photoWrites =
+      [];
+
+    if (
+      equipmentCertificatePhotoData
+    ) {
+      photoWrites.push(
+        saveEquipmentPhoto(
+          equipmentPhotoKey(
+            finalEquipmentId,
+            "certificate"
+          ),
+          equipmentCertificatePhotoData
+        )
+      );
+    }
+
+    if (
+      equipmentEntryPhotoData
+    ) {
+      photoWrites.push(
+        saveEquipmentPhoto(
+          equipmentPhotoKey(
+            finalEquipmentId,
+            "entry"
+          ),
+          equipmentEntryPhotoData
+        )
+      );
+    }
+
+    await Promise.all(
+      photoWrites
+    );
+
+  } catch (error) {
+    console.error(
+      "设备照片保存失败：",
+      error
+    );
+
+    photoWarning =
+      "，但照片未能保存";
+  }
+
 
   if (equipmentId) {
     const index =
       records.findIndex(
         item =>
-          item.equipmentId === equipmentId
+          item.equipmentId ===
+          equipmentId
       );
 
     if (index < 0) {
@@ -3220,22 +3514,65 @@ function saveEquipment() {
       ...records[index],
       ...data
     };
+
+    /*
+     * 清除旧版写进 localStorage 的大图片，释放空间。
+     */
+    delete records[index]
+      .certificatePhoto;
+
+    delete records[index]
+      .entryPhoto;
+
   } else {
     records.push({
-      equipmentId: uid("EQ"),
+      equipmentId:
+        finalEquipmentId,
       ...data,
-      createdAt: nowISO()
+      createdAt:
+        nowISO()
     });
   }
 
-  saveEquipmentRecords(records);
 
-  closeModal("equipmentModal");
+  try {
+    saveEquipmentRecords(
+      records
+    );
+
+  } catch (error) {
+    console.error(
+      "设备档案保存失败：",
+      error
+    );
+
+    showToast(
+      error?.name ===
+        "QuotaExceededError"
+        ? "浏览器本地存储空间已满，设备文字档案暂时无法保存。"
+        : "设备保存失败，请重试。",
+      "error"
+    );
+
+    return;
+  }
+
+
+  closeModal(
+    "equipmentModal"
+  );
 
   renderEquipment();
+
   updateSummary();
 
-  showToast("设备资料已保存");
+  showToast(
+    "设备资料已保存" +
+    photoWarning,
+    photoWarning
+      ? "warning"
+      : undefined
+  );
 }
 
 
@@ -3379,7 +3716,7 @@ function renderEquipment() {
               )}
             </span>
 
-            ${item.certificatePhoto
+            ${item.hasCertificatePhoto || item.certificatePhoto
               ? `
                 <span>
                   📄 已录入合格证
@@ -3388,7 +3725,7 @@ function renderEquipment() {
               : ""
             }
 
-            ${item.entryPhoto
+            ${item.hasEntryPhoto || item.entryPhoto
               ? `
                 <span>
                   📷 已录入进场照片
