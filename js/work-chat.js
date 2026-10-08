@@ -1,6 +1,6 @@
 /*
 ====================================================
-mine-management 全端工作聊天 V1.3
+mine-management 全端工作聊天 V1.3.1
 ----------------------------------------------------
 当前阶段：
 1. 所有正式端口加载同一个聊天组件；
@@ -1105,6 +1105,39 @@ mine-management 全端工作聊天 V1.3
     ];
 
 
+    const QUICK_GRID_SELECTORS = {
+        "driver-work.html":
+            ".todo-grid",
+
+        "excavator.html":
+            ".action-grid",
+
+        "auxiliary.html":
+            ".quick-grid",
+
+        "fuel.html":
+            ".nav-grid",
+
+        "dispatch.html":
+            ".todo-grid",
+
+        "maintenance.html":
+            ".nav-grid",
+
+        "maintenance-worker.html":
+            ".nav-grid",
+
+        "management.html":
+            ".quick-grid",
+
+        "general-manager.html":
+            ".quick-grid",
+
+        "warehouse.html":
+            ".warehouse-tabs, .tab-row, .nav-grid"
+    };
+
+
     function getCurrentPageName() {
         const path =
             location.pathname
@@ -1153,7 +1186,78 @@ mine-management 全端工作聊天 V1.3
     }
 
 
-    function mountUnifiedApplicationCenter() {
+    function hasQuickAction(
+        container,
+        label
+    ) {
+        return Array.from(
+            container.querySelectorAll(
+                "button, a"
+            )
+        )
+        .some(
+            element =>
+                String(
+                    element.textContent ||
+                    ""
+                )
+                .replace(
+                    /\s+/g,
+                    ""
+                )
+                .includes(
+                    label
+                )
+        );
+    }
+
+
+    function createQuickActionButton(
+        icon,
+        title,
+        subTitle,
+        target,
+        kind
+    ) {
+        const button =
+            document.createElement(
+                "button"
+            );
+
+        button.type =
+            "button";
+
+        button.className =
+            "mine-common-quick-action " +
+            kind;
+
+        button.innerHTML = `
+            <span class="mine-common-quick-icon">
+                ${icon}
+            </span>
+
+            <span class="mine-common-quick-title">
+                ${title}
+            </span>
+
+            <span class="mine-common-quick-sub">
+                ${subTitle}
+            </span>
+        `;
+
+        button.addEventListener(
+            "click",
+            () =>
+                openUnifiedApplication(
+                    target
+                )
+        );
+
+        return button;
+    }
+
+
+    function mountUnifiedQuickActions() {
         const page =
             getCurrentPageName();
 
@@ -1165,29 +1269,10 @@ mine-management 全端工作聊天 V1.3
             return;
         }
 
-        if (
-            document.getElementById(
-                "mineUnifiedApplicationCenter"
-            )
-        ) {
-            return;
-        }
-
-        const main =
-            document.querySelector(
-                "main"
-            );
-
-        if (
-            !main
-        ) {
-            return;
-        }
-
 
         if (
             !document.getElementById(
-                "mineUnifiedApplicationStyle"
+                "mineCommonQuickActionStyle"
             )
         ) {
             const style =
@@ -1196,73 +1281,48 @@ mine-management 全端工作聊天 V1.3
                 );
 
             style.id =
-                "mineUnifiedApplicationStyle";
+                "mineCommonQuickActionStyle";
 
             style.textContent = `
-                #mineUnifiedApplicationCenter{
-                    margin:14px 0;
-                    padding:16px;
-                    border:1px solid #dbeafe;
+                .mine-common-quick-action{
+                    min-height:92px;
+                    padding:14px 12px;
+                    border:1px solid #dbe3ef;
                     border-radius:14px;
                     background:#ffffff;
-                    box-shadow:0 6px 18px rgba(15,23,42,.05);
-                }
-                #mineUnifiedApplicationCenter .mine-app-head{
+                    color:#0f172a;
                     display:flex;
-                    align-items:flex-start;
-                    justify-content:space-between;
-                    gap:12px;
-                    margin-bottom:12px;
+                    flex-direction:column;
+                    align-items:center;
+                    justify-content:center;
+                    gap:5px;
+                    text-align:center;
+                    cursor:pointer;
+                    font:inherit;
                 }
-                #mineUnifiedApplicationCenter .mine-app-head h2{
-                    margin:0;
-                    color:#0f172a;
-                    font-size:18px;
+
+                .mine-common-quick-action:hover{
+                    border-color:#93c5fd;
+                    box-shadow:0 8px 20px rgba(37,99,235,.08);
                 }
-                #mineUnifiedApplicationCenter .mine-app-head p{
-                    margin:5px 0 0;
-                    color:#64748b;
-                    font-size:12px;
-                    line-height:1.6;
+
+                .mine-common-quick-icon{
+                    display:block;
+                    font-size:22px;
+                    line-height:1;
                 }
-                #mineUnifiedApplicationCenter .mine-app-grid{
-                    display:grid;
-                    grid-template-columns:repeat(3,minmax(0,1fr));
-                    gap:10px;
-                }
-                #mineUnifiedApplicationCenter .mine-app-button{
-                    min-height:52px;
-                    border:1px solid #cbd5e1;
-                    border-radius:11px;
-                    background:#f8fafc;
-                    color:#0f172a;
+
+                .mine-common-quick-title{
+                    display:block;
                     font-size:14px;
                     font-weight:800;
-                    cursor:pointer;
                 }
-                #mineUnifiedApplicationCenter .mine-app-button:hover{
-                    border-color:#93c5fd;
-                    background:#eff6ff;
-                }
-                #mineUnifiedApplicationCenter .mine-app-button.material{
-                    color:#166534;
-                    background:#f0fdf4;
-                    border-color:#bbf7d0;
-                }
-                #mineUnifiedApplicationCenter .mine-app-button.leave{
-                    color:#1d4ed8;
-                    background:#eff6ff;
-                    border-color:#bfdbfe;
-                }
-                #mineUnifiedApplicationCenter .mine-app-button.fuel{
-                    color:#9a3412;
-                    background:#fff7ed;
-                    border-color:#fed7aa;
-                }
-                @media(max-width:700px){
-                    #mineUnifiedApplicationCenter .mine-app-grid{
-                        grid-template-columns:1fr;
-                    }
+
+                .mine-common-quick-sub{
+                    display:block;
+                    color:#64748b;
+                    font-size:11px;
+                    line-height:1.4;
                 }
             `;
 
@@ -1272,95 +1332,124 @@ mine-management 全端工作聊天 V1.3
         }
 
 
-        const section =
-            document.createElement(
-                "section"
-            );
+        const selector =
+            QUICK_GRID_SELECTORS[
+                page
+            ];
 
-        section.id =
-            "mineUnifiedApplicationCenter";
+        let container =
+            selector
+                ? document.querySelector(
+                    selector
+                )
+                : null;
 
-        section.innerHTML = `
-            <div class="mine-app-head">
-                <div>
-                    <h2>🧾 统一申请中心</h2>
-                    <p>
-                        所有岗位统一使用同一套物资、请假和加油申请流程。
-                    </p>
+
+        if (
+            !container
+        ) {
+            const main =
+                document.querySelector(
+                    "main"
+                );
+
+            if (
+                !main
+            ) {
+                return;
+            }
+
+            const section =
+                document.createElement(
+                    "section"
+                );
+
+            section.className =
+                "card mine-fallback-quick-section";
+
+            section.innerHTML = `
+                <div style="margin-bottom:12px;font-weight:800;">
+                    ⚡ 快捷功能
                 </div>
-            </div>
 
-            <div class="mine-app-grid">
-                <button
-                    id="mineUnifiedMaterialButton"
-                    type="button"
-                    class="mine-app-button material"
-                >
-                    📦 物资申请
-                </button>
+                <div
+                    class="mine-fallback-quick-grid"
+                    style="
+                        display:grid;
+                        grid-template-columns:repeat(3,minmax(0,1fr));
+                        gap:10px;
+                    "
+                ></div>
+            `;
 
-                <button
-                    id="mineUnifiedLeaveButton"
-                    type="button"
-                    class="mine-app-button leave"
-                >
-                    🗓 请假申请
-                </button>
-
-                <button
-                    id="mineUnifiedFuelButton"
-                    type="button"
-                    class="mine-app-button fuel"
-                >
-                    ⛽ 加油申请
-                </button>
-            </div>
-        `;
-
-
-        main.insertBefore(
-            section,
-            main.firstChild
-        );
-
-
-        document
-            .getElementById(
-                "mineUnifiedMaterialButton"
-            )
-            ?.addEventListener(
-                "click",
-                () =>
-                    openUnifiedApplication(
-                        "material-request.html"
-                    )
+            main.insertBefore(
+                section,
+                main.firstChild
             );
 
+            container =
+                section.querySelector(
+                    ".mine-fallback-quick-grid"
+                );
+        }
 
-        document
-            .getElementById(
-                "mineUnifiedLeaveButton"
+
+        if (
+            !hasQuickAction(
+                container,
+                "物资申请"
+            ) &&
+            !hasQuickAction(
+                container,
+                "物资领用"
             )
-            ?.addEventListener(
-                "click",
-                () =>
-                    openUnifiedApplication(
-                        "leave-request.html"
-                    )
+        ) {
+            container.appendChild(
+                createQuickActionButton(
+                    "📦",
+                    "物资申请",
+                    "劳保及工作物资",
+                    "material-request.html",
+                    "material"
+                )
             );
+        }
 
 
-        document
-            .getElementById(
-                "mineUnifiedFuelButton"
+        if (
+            !hasQuickAction(
+                container,
+                "请假申请"
             )
-            ?.addEventListener(
-                "click",
-                () =>
-                    openUnifiedApplication(
-                        "fuel-request.html"
-                    )
+        ) {
+            container.appendChild(
+                createQuickActionButton(
+                    "📝",
+                    "请假申请",
+                    "提交请假记录",
+                    "leave-request.html",
+                    "leave"
+                )
             );
+        }
+
+
+        if (
+            !hasQuickAction(
+                container,
+                "加油申请"
+            )
+        ) {
+            container.appendChild(
+                createQuickActionButton(
+                    "⛽",
+                    "加油申请",
+                    "进入统一加油中心",
+                    "fuel-request.html",
+                    "fuel"
+                )
+            );
+        }
     }
 
 
@@ -1379,7 +1468,7 @@ mine-management 全端工作聊天 V1.3
         }
 
 
-        mountUnifiedApplicationCenter();
+        mountUnifiedQuickActions();
 
 
         if (
