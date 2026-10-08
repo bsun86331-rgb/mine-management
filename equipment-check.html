@@ -165,7 +165,6 @@ button{
 
 <section class="card">
 <h2>④ 使用前检查</h2><div class="sub">现场检查完成后，只选择最终结果。</div>
-<div id="hints" class="hints"></div>
 <div class="result-grid" style="margin-top:13px">
 <div id="okBox" class="result" onclick="setResult('未见异常')"><b>✅ 未见异常</b><small>检查未发现明显异常。</small></div>
 <div id="badBox" class="result" onclick="setResult('发现异常')"><b>⚠️ 发现异常</b><small>必须填写异常说明并上传照片。</small></div>
@@ -368,8 +367,6 @@ function renderPrevious(){
 }
 
 function renderHints(){
- const hs=isExc(equipment)?["发动机、仪表、报警","液压系统、油管、漏油","履带及行走机构","回转机构","动臂、斗杆、铲斗","驾驶室及安全设施"]:["轮胎、轮毂","制动、转向","发动机、仪表、报警","灯光、喇叭、倒车报警","液压/货箱/漏油漏液","安全带、后视镜、灭火器、车身"];
- document.getElementById("hints").innerHTML=hs.map(x=>`<div class="hint">• ${x}</div>`).join("");
  const ps=isExc(equipment)?["发动机","液压系统","履带/行走","回转机构","动臂/斗杆/铲斗","电气/仪表","漏油漏液","安全设施","其他"]:["轮胎/轮毂","制动系统","转向系统","发动机","电气/仪表","灯光/报警","液压/货箱","漏油漏液","安全设施","车身/驾驶室","其他"];
  document.getElementById("parts").innerHTML=ps.map(x=>`<label class="part"><input type="checkbox" name="part" value="${x}"><span>${x}</span></label>`).join("");
 }
