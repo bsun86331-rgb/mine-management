@@ -1707,6 +1707,17 @@
     font-size: 11px;
 }
 
+.core-task-row.selected {
+    border-color: #2563eb;
+    background: #eff6ff;
+    box-shadow: inset 0 0 0 1px #2563eb;
+}
+
+.core-task-row.selected strong,
+.core-task-row.selected span {
+    color: #1d4ed8;
+}
+
 .core-new-task-row {
     border-style: dashed;
     border-color: #60a5fa;
@@ -5042,7 +5053,7 @@
         <div class="core-board-block">
             <div class="core-board-block-title">
                 <strong>② 任务清单</strong>
-                <span>这里只显示任务名称、编号、状态和已绑定设备摘要；任务执行操作统一放到前页生产任务看板</span>
+                <span>点击已有任务只选择任务；只有点击下方“+ 新建任务”才进入创建任务</span>
             </div>
 
             <div id="coreDispatchTaskList" class="core-task-list"></div>
@@ -23811,6 +23822,9 @@ let coreCurrentDevice =
 let coreSelectedTruckIds =
     new Set();
 
+let coreSelectedTaskId =
+    "";
+
 let coreAuxiliaryDraftAssignments =
     [];
 
@@ -26589,13 +26603,13 @@ function renderCoreTaskList() {
                         <div class="core-task-card">
 
                             <div
-                                class="core-task-row"
-                                onclick="openTaskEditorFromCoreList('${shiftEscape(id)}')"
+                                class="core-task-row ${String(coreSelectedTaskId) === String(id) ? "selected" : ""}"
+                                onclick="selectTaskFromCoreList('${shiftEscape(id)}')"
                                 style="cursor:pointer;"
                             >
                                 <strong>${shiftEscape(task.taskName || id || "-")}</strong>
                                 <span>编号：${shiftEscape(id || "-")}</span>
-                                <span>${active ? "执行中" : "待安排"}</span>
+                                <span>${String(coreSelectedTaskId) === String(id) ? "已选择" : (active ? "执行中" : "待安排")}</span>
                             </div>
 
                             ${coreTaskBindingHtml(id)}
@@ -27302,6 +27316,60 @@ function returnToCoreTaskListAfterTaskForm() {
         }
     );
 }
+
+
+function selectTaskFromCoreList(
+    taskId
+) {
+
+    const id =
+        String(
+            taskId ||
+            ""
+        );
+
+
+    if (
+        !id
+    ) {
+
+        return;
+    }
+
+
+    const exists =
+        getPublishedShiftTasks()
+            .some(
+                item =>
+                    String(
+                        shiftTaskId(
+                            item
+                        ) ||
+                        ""
+                    ) ===
+                        id
+            );
+
+
+    if (
+        !exists
+    ) {
+
+        alert(
+            "没有找到该任务。"
+        );
+
+        return;
+    }
+
+
+    coreSelectedTaskId =
+        id;
+
+
+    renderCoreTaskList();
+}
+
 
 
 function openTaskCreateFromCoreList() {
@@ -29304,6 +29372,16 @@ function openCoreEquipmentDetail(
 
 
         if (
+            !group.taskSelection &&
+            coreSelectedTaskId
+        ) {
+
+            group.taskSelection =
+                coreSelectedTaskId;
+        }
+
+
+        if (
             coreDispatchMode ===
                 "adjust" &&
             coreAdjustTaskId
@@ -29428,6 +29506,16 @@ function openCoreEquipmentDetail(
             coreGetAuxiliaryDraftAssignment(
                 item.__id
             );
+
+
+        if (
+            !assignment.taskSelection &&
+            coreSelectedTaskId
+        ) {
+
+            assignment.taskSelection =
+                coreSelectedTaskId;
+        }
 
 
         const driverSelect =
