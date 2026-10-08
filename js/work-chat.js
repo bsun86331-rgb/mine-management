@@ -1,6 +1,6 @@
 /*
 ====================================================
-mine-management 全端工作聊天 V1.4.1
+mine-management 全端工作聊天 V1.5
 ----------------------------------------------------
 当前阶段：
 1. 所有正式端口加载同一个聊天组件；
@@ -1428,7 +1428,9 @@ mine-management 全端工作聊天 V1.4.1
         const hideSelectorsByPage = {
 
             "driver-work.html": [
-                "#leaveSection"
+                "#leaveSection",
+                "#penaltySection",
+                "#penaltyShortcut"
             ],
 
             "auxiliary.html": [
@@ -1637,6 +1639,32 @@ mine-management 全端工作聊天 V1.4.1
                     font-weight:400;
                     line-height:1.4;
                 }
+                .mine-bottom-quick-button{
+                    position:relative;
+                }
+
+                .mine-bottom-quick-badge{
+                    position:absolute;
+                    top:8px;
+                    right:8px;
+                    min-width:22px;
+                    height:22px;
+                    padding:0 6px;
+                    border-radius:999px;
+                    background:#dc2626;
+                    color:#fff;
+                    display:none;
+                    align-items:center;
+                    justify-content:center;
+                    font-size:11px;
+                    font-weight:900;
+                    line-height:22px;
+                }
+
+                .mine-bottom-quick-badge.show{
+                    display:flex;
+                }
+
 
                 @media(max-width:720px){
                     #mineBottomQuickActions .mine-bottom-quick-grid{
@@ -1750,6 +1778,261 @@ mine-management 全端工作聊天 V1.4.1
                         page
                     )
             )
+        );
+
+
+        const rewardPenaltyButton =
+            createBottomQuickButton(
+                "💰",
+                "奖罚、加班",
+                "查看并确认新记录",
+                () =>
+                    openUnifiedApplication(
+                        "reward-penalty-overtime.html"
+                    )
+            );
+
+        const rewardPenaltyBadge =
+            document.createElement(
+                "span"
+            );
+
+        rewardPenaltyBadge.className =
+            "mine-bottom-quick-badge";
+
+        rewardPenaltyButton.appendChild(
+            rewardPenaltyBadge
+        );
+
+        grid.appendChild(
+            rewardPenaltyButton
+        );
+
+
+        function readRecordArray(
+            key
+        ) {
+            try {
+                const data =
+                    JSON.parse(
+                        localStorage.getItem(
+                            key
+                        )
+                    );
+
+                return Array.isArray(
+                    data
+                )
+                    ? data
+                    : [];
+
+            } catch (
+                error
+            ) {
+                return [];
+            }
+        }
+
+
+        function currentIdentityId() {
+            return String(
+                identity?.personId ||
+                identity?.employeeId ||
+                identity?.driverId ||
+                identity?.id ||
+                identity?.employeeNo ||
+                ""
+            )
+            .trim();
+        }
+
+
+        function isMine(
+            item
+        ) {
+            const ownId =
+                currentIdentityId();
+
+            const itemId =
+                String(
+                    item?.personId ||
+                    item?.employeeId ||
+                    item?.driverId ||
+                    item?.employeeNo ||
+                    ""
+                )
+                .trim();
+
+            if (
+                ownId &&
+                itemId
+            ) {
+                return (
+                    ownId ===
+                    itemId
+                );
+            }
+
+
+            const ownName =
+                String(
+                    identity?.name ||
+                    ""
+                )
+                .trim();
+
+            const itemName =
+                String(
+                    item?.personName ||
+                    item?.driverName ||
+                    item?.name ||
+                    ""
+                )
+                .trim();
+
+            return Boolean(
+                ownName &&
+                itemName &&
+                ownName ===
+                    itemName
+            );
+        }
+
+
+        function needsAcknowledgement(
+            type,
+            item
+        ) {
+            const status =
+                String(
+                    item?.status ||
+                    ""
+                )
+                .toLowerCase();
+
+            if (
+                [
+                    "acknowledged",
+                    "processed",
+                    "confirmed",
+                    "cancelled",
+                    "rejected"
+                ]
+                .includes(
+                    status
+                )
+            ) {
+                return false;
+            }
+
+            if (
+                type ===
+                "penalty"
+            ) {
+                return (
+                    status ===
+                        "pending_acknowledgement" ||
+                    status ===
+                        "issued" ||
+                    status ===
+                        ""
+                );
+            }
+
+            return (
+                status ===
+                    "issued" ||
+                status ===
+                    "pending_acknowledgement" ||
+                status ===
+                    "pending_confirmation" ||
+                status ===
+                    ""
+            );
+        }
+
+
+        function refreshRewardPenaltyBadge() {
+            const count =
+                [
+                    ...readRecordArray(
+                        "rewardRecords"
+                    )
+                    .filter(
+                        item =>
+                            isMine(
+                                item
+                            ) &&
+                            needsAcknowledgement(
+                                "reward",
+                                item
+                            )
+                    ),
+
+                    ...readRecordArray(
+                        "penaltyRecords"
+                    )
+                    .filter(
+                        item =>
+                            isMine(
+                                item
+                            ) &&
+                            needsAcknowledgement(
+                                "penalty",
+                                item
+                            )
+                    ),
+
+                    ...readRecordArray(
+                        "overtimeRecords"
+                    )
+                    .filter(
+                        item =>
+                            isMine(
+                                item
+                            ) &&
+                            needsAcknowledgement(
+                                "overtime",
+                                item
+                            )
+                    )
+                ]
+                .length;
+
+
+            rewardPenaltyBadge.textContent =
+                count > 99
+                    ? "99+"
+                    : String(
+                        count
+                    );
+
+            rewardPenaltyBadge.classList.toggle(
+                "show",
+                count > 0
+            );
+        }
+
+
+        refreshRewardPenaltyBadge();
+
+
+        window.addEventListener(
+            "storage",
+            event => {
+                if (
+                    [
+                        "rewardRecords",
+                        "penaltyRecords",
+                        "overtimeRecords"
+                    ]
+                    .includes(
+                        event.key
+                    )
+                ) {
+                    refreshRewardPenaltyBadge();
+                }
+            }
         );
 
 
