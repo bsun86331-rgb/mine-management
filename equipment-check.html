@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#0f172a">
-<title>设备使用检查 - 矿山管理系统</title>
+<title>设备使用前检查 - 矿山管理系统</title>
 <style>
 *{box-sizing:border-box}
 :root{--bg:#f1f5f9;--card:#fff;--text:#0f172a;--muted:#64748b;--line:#e2e8f0;--blue:#2563eb;--green:#16a34a;--yellow:#d97706;--red:#dc2626;--dark:#0f172a}
@@ -114,7 +114,7 @@ button{
 <link rel="stylesheet" href="css/work-chat.css?v=1.0.0">
 </head>
 <body>
-<header><div class="head"><div><h1>🧰 设备使用检查</h1><div class="ver">EQUIPMENT-CHECK V1.1 · 班次接班 + 临时用车</div></div><button class="header-btn" onclick="location.href='index.html'">返回首页</button></div></header>
+<header><div class="head"><div><h1>🧰 设备使用前检查</h1><div class="ver">EQUIPMENT-CHECK V1.1 · 班次接班 + 临时用车</div></div><button class="header-btn" onclick="location.href='index.html'">返回首页</button></div></header>
 
 <main>
 <section class="card"><div class="notice">
@@ -403,7 +403,7 @@ function createUsageRecord(check){
 
 function submitCheck(){
  person=resolvePerson();
- if(!person)return alert("当前人员未审核、已请假、已停用或已离职，不能提交设备使用检查。");
+ if(!person)return alert("当前人员未审核、已请假、已停用或已离职，不能提交设备使用前检查。");
  if(mode==="shift"&&!ctx?.shiftId)return alert("班次模式下无法识别 shiftId，请先由调度发布本班任务。");
  if(mode==="usage"){syncManualEquipment();if(!document.getElementById("usagePurpose").value.trim())return alert("请填写本次用车用途。")}
  if(!equipment)return alert("请选择或填写使用车辆。");
