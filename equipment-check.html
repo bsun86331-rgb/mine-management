@@ -173,7 +173,6 @@ button{
 
 <section id="abnormalCard" class="card hidden">
 <div class="flex"><div><h2>⑤ 异常情况</h2><div class="sub">自动生成维修单；班次模式关联上一班司机，用车模式关联上一位使用人。</div></div><span class="badge red">必须留证</span></div>
-<label>异常部位 *</label><div id="parts" class="parts"></div>
 <div style="margin-top:12px"><label>异常说明 *</label><textarea id="abnormalDescription" placeholder="请描述异常位置、现象等"></textarea></div>
 <div class="photos" style="margin-top:12px"><b>📷 异常现场照片 *</b><div class="sub">至少1张，最多4张。</div><input id="abnormalPhotoInput" type="file" accept="image/*" capture="environment" multiple onchange="loadAbnormalPhotos(event)"><div id="abnormalPreview" class="previews"></div></div>
 </section>
@@ -315,7 +314,7 @@ function syncManualEquipment(){
  const type=document.getElementById("manualVehicleType").value.trim(),no=document.getElementById("manualVehicleNumber").value.trim();
  if(!type||!no)return;
  equipment={equipmentId:no,equipmentNumber:no,equipmentType:type,category:"vehicle",source:"manual_usage"};
- renderMeter();renderPrevious();renderHints();renderMaintenance();showLocked();
+ renderMeter();renderPrevious();renderMaintenance();showLocked();
 }
 
 function equipmentChanged(){
@@ -325,7 +324,7 @@ function equipmentChanged(){
   document.getElementById("manualVehicleType").value=equipment.equipmentType||"其他车辆";
   document.getElementById("manualVehicleNumber").value=equipment.equipmentNumber||"";
  }
- renderMeter();renderPrevious();renderHints();renderMaintenance();showLocked();
+ renderMeter();renderPrevious();renderMaintenance();showLocked();
 }
 
 function latestMeter(){
@@ -364,11 +363,6 @@ function renderPrevious(){
  const p=previousUser(),el=document.getElementById("previousUser");
  if(!p){el.textContent="暂无可识别记录";return}
  el.textContent=mode==="shift"?`${p.name||p.id} · ${p.shift||""} · ${p.shiftId||""}`:`${p.name||p.id} · ${p.createdAt?new Date(p.createdAt).toLocaleString("zh-CN"):""}`;
-}
-
-function renderHints(){
- const ps=isExc(equipment)?["发动机","液压系统","履带/行走","回转机构","动臂/斗杆/铲斗","电气/仪表","漏油漏液","安全设施","其他"]:["轮胎/轮毂","制动系统","转向系统","发动机","电气/仪表","灯光/报警","液压/货箱","漏油漏液","安全设施","车身/驾驶室","其他"];
- document.getElementById("parts").innerHTML=ps.map(x=>`<label class="part"><input type="checkbox" name="part" value="${x}"><span>${x}</span></label>`).join("");
 }
 
 function setResult(r){result=r;document.getElementById("okBox").classList.toggle("ok",r==="未见异常");document.getElementById("badBox").classList.toggle("bad",r==="发现异常");document.getElementById("abnormalCard").classList.toggle("hidden",r!=="发现异常")}
@@ -421,8 +415,8 @@ function submitCheck(){
  if(!meterPhoto)return alert("必须上传仪表照片。");
  if(!result)return alert("请选择检查结果。");
 
- const parts=[...document.querySelectorAll('input[name="part"]:checked')].map(x=>x.value),desc=document.getElementById("abnormalDescription").value.trim();
- if(result==="发现异常"&&(!parts.length||!desc||!abPhotos.length))return alert("发现异常时必须选择异常部位、填写说明并上传至少1张照片。");
+ const parts=[],desc=document.getElementById("abnormalDescription").value.trim();
+ if(result==="发现异常"&&(!desc||!abPhotos.length))return alert("发现异常时必须填写说明并上传至少1张照片。");
  if(!confirm("确认提交？提交后记录锁定，不能修改。"))return;
 
  const now=new Date().toISOString(),prev=previousUser(),id=pid(person),u=unit();
@@ -501,7 +495,7 @@ function submitCheck(){
  alert(result==="发现异常"?`检查已锁定，已自动生成维修单：${check.maintenanceRequestId}`:"检查已锁定，设备使用记录已建立。");
 }
 
-function resetDraft(){if(!confirm("确认清空当前未提交内容？"))return;document.getElementById("meterReading").value="";document.getElementById("abnormalDescription").value="";document.querySelectorAll('input[name="part"]').forEach(x=>x.checked=false);meterPhoto=null;abPhotos=[];result="";document.getElementById("meterPreview").innerHTML="";renderAbPhotos();setResult("");renderMaintenance()}
+function resetDraft(){if(!confirm("确认清空当前未提交内容？"))return;document.getElementById("meterReading").value="";document.getElementById("abnormalDescription").value="";meterPhoto=null;abPhotos=[];result="";document.getElementById("meterPreview").innerHTML="";renderAbPhotos();setResult("");renderMaintenance()}
 
 function renderHistory(){
  const h=arr(K.USAGE_RECORDS).slice().sort((a,b)=>new Date(b.createdAt||0)-new Date(a.createdAt||0)).slice(0,10);
@@ -515,7 +509,7 @@ function init(){
  const aux=obj(K.AUX_PROFILE);
  mode=ctx?.shiftId?"shift":aux?.vehicleNumber?"usage":"usage";
  if(aux?.vehicleType)document.getElementById("manualVehicleType").value=aux.vehicleType;if(aux?.vehicleNumber)document.getElementById("manualVehicleNumber").value=aux.vehicleNumber;
- setMode(mode);renderHints();renderHistory();renderMeter();renderMaintenance();
+ setMode(mode);renderHistory();renderMeter();renderMaintenance();
 }
 
 init();
