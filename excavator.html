@@ -867,10 +867,10 @@
         </div>
 
 
-        <div class="trip-total">
+        <div class="trip-total" id="monthlyDriverTripPanel" role="button" tabindex="0" style="cursor:pointer" aria-label="查看本月该司机装车明细" onclick="openMonthlyDriverTripDetail()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openMonthlyDriverTripDetail()}">
 
             <span>
-                当前任务累计
+                本月该司机累计装车趟数（点击查看明细）
             </span>
 
             <strong id="totalTripCount">
@@ -4010,6 +4010,55 @@ function refreshExcavatorPerformanceRanking() {
    当前任务车数显示
 ========================================================= */
 
+function getMonthlyDriverTripRecords() {
+    if (!currentPerson) return [];
+    const now = new Date();
+    const first = new Date(now.getFullYear(), now.getMonth(), 1);
+    const next = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+    const personId = getPersonId(currentPerson);
+    const personName = String(currentPerson.name || "").trim();
+    const tasks = getTasks();
+    const byId = new Map(tasks.map(t => [String(t.taskId || t.dispatchTaskId || t.id || ""), t]));
+    return getTrips().filter(trip => {
+        if (trip.dispatchConfirmation === "rejected" || trip.officialCountEligible === false) return false;
+        const time = getTripTime(trip);
+        if (!time || time < first || time >= next || !getTripVehicleNumber(trip)) return false;
+        const taskId = String(trip.taskId || trip.dispatchTaskId || "");
+        const task = byId.get(taskId);
+        if (!task) return false;
+        const directOperatorId = String(trip.excavatorDriverId || trip.excavatorOperatorId || trip.operatorId || "");
+        const directOperatorName = String(trip.excavatorDriverName || trip.excavatorOperatorName || trip.operatorName || "").trim();
+        if (directOperatorId) return Boolean(personId && directOperatorId === personId);
+        if (directOperatorName) return Boolean(personName && directOperatorName === personName);
+        const candidates = [
+            ...(Array.isArray(task.bindings) ? task.bindings : []),
+            ...(Array.isArray(task.excavatorDriverAssignments) ? task.excavatorDriverAssignments : [])
+        ];
+        return candidates.some(row => {
+            const id = String(row.excavatorDriverId || row.operatorId || row.driverId || row.personId || "");
+            const name = String(row.excavatorDriverName || row.operatorName || row.driverName || row.personName || "").trim();
+            const matched = id ? (personId && id === personId) : (personName && name === personName);
+            const excavatorId = String(row.excavatorId || row.excavatorNumber || "");
+            return matched && excavatorId && tripBelongsToExcavator(task, trip, excavatorId);
+        });
+    }).sort((a,b) => getTripTime(b) - getTripTime(a));
+}
+
+function openMonthlyDriverTripDetail() {
+    const trips = getMonthlyDriverTripRecords();
+    const now = new Date();
+    const month = now.getFullYear() + "年" + (now.getMonth()+1) + "月";
+    const html = trips.length ? trips.map((trip,index) => {
+        const taskId = String(trip.taskId || trip.dispatchTaskId || "");
+        const task = getTasks().find(t => String(t.taskId || t.dispatchTaskId || t.id || "") === taskId);
+        return `<div class="excavator-kpi-trip-row">
+          <div class="excavator-kpi-trip-top"><span>第 ${index+1} 条</span><span>${escapeHtml(formatDateTime(trip.completedAt || trip.unloadedAt || trip.createdAt))}</span></div>
+          <div class="excavator-kpi-trip-meta">车辆：${escapeHtml(getTripVehicleNumber(trip))} · 任务：${escapeHtml(task?.taskName || taskId || "-")}<br>
+          路线：${escapeHtml(trip.loadingZoneName || trip.loadingPoint || task?.loadingPoint || "-")} → ${escapeHtml(trip.unloadingZoneName || trip.unloadingPoint || task?.unloadingPoint || "-")}</div></div>`;
+    }).join("") : '<div class="excavator-kpi-empty">本月暂无可归属到当前司机的有效装车记录</div>';
+    showExcavatorKpiDetail("本月司机装车明细", month + " · " + (currentPerson?.name || "当前司机") + " · 共 " + trips.length + " 车", html);
+}
+
 function renderTripStatistics() {
 
     const section =
@@ -4044,10 +4093,7 @@ function renderTripStatistics() {
         );
 
 
-    setText(
-        "totalTripCount",
-        stats.total
-    );
+    setText("totalTripCount", getMonthlyDriverTripRecords().length);
 
 
     const currentBinding =
