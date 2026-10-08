@@ -2663,6 +2663,98 @@
 </style>
     <link rel="stylesheet" href="css/ui-system.css?v=1.2.0">
 <link rel="stylesheet" href="css/work-chat.css?v=1.0.0">
+
+<style>
+/* =========================================================
+   V2.13.8 设备工作状态
+   绿色=空闲 / 红色=工作中 / 黄色=维修中
+========================================================= */
+.equipment-work-legend{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+    margin:10px 0 14px;
+}
+.equipment-work-legend span{
+    padding:6px 10px;
+    border-radius:999px;
+    font-size:12px;
+    font-weight:800;
+}
+.equipment-work-legend .idle{
+    background:#dcfce7;
+    color:#166534;
+}
+.equipment-work-legend .working{
+    background:#fee2e2;
+    color:#b91c1c;
+}
+.equipment-work-legend .maintenance{
+    background:#fef3c7;
+    color:#92400e;
+}
+.equipment-work-grid{
+    display:grid;
+    grid-template-columns:repeat(4,minmax(0,1fr));
+    gap:10px;
+}
+.equipment-work-card{
+    min-height:96px;
+    padding:12px;
+    border:1px solid #e2e8f0;
+    border-left-width:5px;
+    border-radius:12px;
+    background:#fff;
+}
+.equipment-work-card.idle{
+    border-left-color:#22c55e;
+    background:#f0fdf4;
+}
+.equipment-work-card.working{
+    border-left-color:#ef4444;
+    background:#fef2f2;
+}
+.equipment-work-card.maintenance{
+    border-left-color:#f59e0b;
+    background:#fffbeb;
+}
+.equipment-work-card-top{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:8px;
+}
+.equipment-work-name{
+    color:#0f172a;
+    font-size:14px;
+    font-weight:900;
+}
+.equipment-work-status{
+    flex:0 0 auto;
+    font-size:11px;
+    font-weight:800;
+}
+.equipment-work-card.idle .equipment-work-status{color:#15803d}
+.equipment-work-card.working .equipment-work-status{color:#dc2626}
+.equipment-work-card.maintenance .equipment-work-status{color:#b45309}
+.equipment-work-meta{
+    margin-top:8px;
+    color:#64748b;
+    font-size:12px;
+    line-height:1.6;
+}
+@media(max-width:980px){
+    .equipment-work-grid{
+        grid-template-columns:repeat(2,minmax(0,1fr));
+    }
+}
+@media(max-width:600px){
+    .equipment-work-grid{
+        grid-template-columns:1fr;
+    }
+}
+</style>
+
 </head>
 
 <body class="dispatch-body">
@@ -2885,6 +2977,45 @@
             </div>
         </div>
 
+    </section>
+
+
+    <!-- =====================================================
+         V2.13.8 设备工作状态
+         绿色=空闲 / 红色=工作中 / 黄色=维修中
+    ===================================================== -->
+    <section
+        id="equipmentWorkStatusSection"
+        class="dispatch-section"
+    >
+        <div class="dispatch-section-title">
+            <div>
+                <h2>🚜 设备工作状态</h2>
+                <p>根据当前生产任务、维修流程和设备运行状态自动判断</p>
+            </div>
+
+            <span
+                id="equipmentWorkStatusCount"
+                class="count-badge"
+            >
+                0 台
+            </span>
+        </div>
+
+        <div class="equipment-work-legend">
+            <span class="idle">🟢 空闲</span>
+            <span class="working">🔴 工作中</span>
+            <span class="maintenance">🟡 维修中</span>
+        </div>
+
+        <div
+            id="equipmentWorkStatusBoard"
+            class="equipment-work-grid"
+        >
+            <div class="empty-placeholder">
+                暂无设备资料
+            </div>
+        </div>
     </section>
 
 
@@ -35916,6 +36047,259 @@ window.addEventListener(
 
                 dispatchRenderTripStats();
             }
+        }
+    }
+);
+
+</script>
+
+<script>
+"use strict";
+
+/* =========================================================
+   V2.13.8 设备工作状态看板
+   只读取现有设备档案 / 任务 / 维修状态，不新增第二套状态数据。
+========================================================= */
+
+function dispatchRenderEquipmentWorkStatus() {
+
+    const board =
+        document.getElementById(
+            "equipmentWorkStatusBoard"
+        );
+
+    const count =
+        document.getElementById(
+            "equipmentWorkStatusCount"
+        );
+
+
+    if (
+        !board ||
+        typeof coreCollectEquipmentCatalog !==
+            "function"
+    ) {
+
+        return;
+    }
+
+
+    const equipment =
+        coreCollectEquipmentCatalog()
+            .filter(
+                item => {
+
+                    const id =
+                        String(
+                            item?.__id ||
+                            ""
+                        )
+                        .trim();
+
+                    if (
+                        !id
+                    ) {
+                        return false;
+                    }
+
+
+                    const ownStatus =
+                        String(
+                            item?.status ||
+                            item?.equipmentStatus ||
+                            ""
+                        )
+                        .toLowerCase();
+
+
+                    /*
+                     * 已正式停用设备不进入当前工作状态看板。
+                     */
+                    return ![
+                        "disabled",
+                        "停用"
+                    ]
+                    .includes(
+                        ownStatus
+                    );
+                }
+            );
+
+
+    if (
+        count
+    ) {
+
+        count.textContent =
+            equipment.length +
+            " 台";
+    }
+
+
+    if (
+        !equipment.length
+    ) {
+
+        board.innerHTML =
+            '<div class="empty-placeholder">暂无设备资料</div>';
+
+        return;
+    }
+
+
+    board.innerHTML =
+        equipment
+            .map(
+                item => {
+
+                    const id =
+                        String(
+                            item.__id ||
+                            ""
+                        );
+
+
+                    let state =
+                        "idle";
+
+                    let label =
+                        "空闲";
+
+
+                    const operational =
+                        typeof dispatchGetEquipmentOperationalStatus ===
+                            "function"
+                            ? dispatchGetEquipmentOperationalStatus(
+                                id
+                              )
+                            : {
+                                status:
+                                    "available"
+                              };
+
+
+                    const operationalStatus =
+                        String(
+                            operational?.status ||
+                            ""
+                        )
+                        .toLowerCase();
+
+
+                    /*
+                     * 维修 / 保养统一显示为黄色“维修中”。
+                     */
+                    if (
+                        [
+                            "maintenance",
+                            "service",
+                            "repair",
+                            "维修中",
+                            "保养中"
+                        ]
+                        .includes(
+                            operationalStatus
+                        )
+                    ) {
+
+                        state =
+                            "maintenance";
+
+                        label =
+                            "维修中";
+
+                    } else {
+
+                        const coreStatus =
+                            typeof coreStatusForEquipment ===
+                                "function"
+                                ? coreStatusForEquipment(
+                                    item
+                                  )
+                                : null;
+
+
+                        if (
+                            coreStatus?.color ===
+                                "red"
+                        ) {
+
+                            state =
+                                "working";
+
+                            label =
+                                "工作中";
+                        }
+                    }
+
+
+                    const typeText =
+                        typeof coreEquipmentTypeText ===
+                            "function"
+                            ? coreEquipmentTypeText(
+                                item,
+                                id
+                              )
+                            : (
+                                item.equipmentType ||
+                                item.vehicleType ||
+                                item.equipmentName ||
+                                "设备"
+                              );
+
+
+                    return `
+                        <div class="equipment-work-card ${state}">
+                            <div class="equipment-work-card-top">
+                                <span class="equipment-work-name">
+                                    ${shiftEscape(id)}
+                                </span>
+
+                                <span class="equipment-work-status">
+                                    ${label}
+                                </span>
+                            </div>
+
+                            <div class="equipment-work-meta">
+                                ${shiftEscape(typeText || "设备")}
+                            </div>
+                        </div>
+                    `;
+                }
+            )
+            .join("");
+}
+
+
+dispatchRenderEquipmentWorkStatus();
+
+
+setInterval(
+    dispatchRenderEquipmentWorkStatus,
+    3000
+);
+
+
+window.addEventListener(
+    "storage",
+    function (
+        event
+    ) {
+
+        if (
+            [
+                "equipmentOperationalStatus",
+                "maintenanceRequests",
+                "maintenanceWorkOrders",
+                "dispatchPublishedTasks",
+                "dispatchShiftExecutions"
+            ]
+            .includes(
+                event.key
+            )
+        ) {
+
+            dispatchRenderEquipmentWorkStatus();
         }
     }
 );
