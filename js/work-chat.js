@@ -1,6 +1,6 @@
 /*
 ====================================================
-mine-management 全端工作聊天 V1.5
+mine-management 全端工作聊天 V1.5.1
 ----------------------------------------------------
 当前阶段：
 1. 所有正式端口加载同一个聊天组件；
@@ -1331,17 +1331,22 @@ mine-management 全端工作聊天 V1.5
 
         const duplicatePatterns = [
             "加油申请",
+            "设备异常上报",
             "异常上报/设备维修",
             "进入异常上报/设备维修",
+            "设备故障/申请维修",
             "物资申请",
             "物资领用申请",
             "物资领用",
             "请假申请",
             "申请请假",
             "打开请假申请",
+            "我的请假",
+            "请假记录",
             "作业历史",
             "历史作业",
-            "历史任务"
+            "历史任务",
+            "待确认罚单"
         ];
 
 
@@ -1428,9 +1433,11 @@ mine-management 全端工作聊天 V1.5
         const hideSelectorsByPage = {
 
             "driver-work.html": [
+                "#leaveShortcut",
                 "#leaveSection",
+                "#penaltyShortcut",
                 "#penaltySection",
-                "#penaltyShortcut"
+                "#maintenanceReportButton"
             ],
 
             "auxiliary.html": [
@@ -1447,6 +1454,11 @@ mine-management 全端工作聊天 V1.5
                 "#page-history"
             ],
 
+            "dispatch.html": [
+                "#myLeaveButton",
+                "#historyTaskButton"
+            ],
+
             "maintenance.html": [
                 '[data-page="history"]',
                 "#page-history"
@@ -1455,6 +1467,10 @@ mine-management 全端工作聊天 V1.5
             "maintenance-worker.html": [
                 '[data-page="history"]',
                 "#page-history"
+            ],
+
+            "management.html": [
+                '[data-module="material-request"]'
             ]
         };
 
@@ -1486,35 +1502,42 @@ mine-management 全端工作聊天 V1.5
 
         document
             .querySelectorAll(
-                ".quick-grid"
+                ".quick-grid, .todo-grid, .action-grid, .nav-grid"
             )
             .forEach(
                 grid => {
-                    const visibleChildren =
+                    if (
+                        grid.closest(
+                            "#mineBottomQuickActions"
+                        )
+                    ) {
+                        return;
+                    }
+
+                    const visibleActions =
                         Array.from(
-                            grid.children
+                            grid.querySelectorAll(
+                                "button, a"
+                            )
                         )
                         .filter(
-                            child =>
-                                child.style.display !==
+                            action =>
+                                action.style.display !==
                                     "none"
                         );
 
 
                     if (
-                        visibleChildren.length ===
+                        visibleActions.length ===
                             0
                     ) {
                         const card =
                             grid.closest(
-                                "section.card, .card"
+                                "section.card, section.driver-card, section.dispatch-section, .card, .driver-card, .dispatch-section"
                             );
 
                         if (
-                            card &&
-                            !card.closest(
-                                "#mineBottomQuickActions"
-                            )
+                            card
                         ) {
                             card.style.display =
                                 "none";
@@ -2042,6 +2065,39 @@ mine-management 全端工作聊天 V1.5
         setTimeout(
             hideDuplicateFunctionKeys,
             300
+        );
+
+
+        /*
+         * 一些工作端会在加载后动态刷新按钮。
+         * 只监听新增节点，确保重复入口后生成时也会被隐藏。
+         */
+        const duplicateObserver =
+            new MutationObserver(
+                mutations => {
+                    if (
+                        mutations.some(
+                            mutation =>
+                                mutation.addedNodes
+                                    ?.length >
+                                0
+                        )
+                    ) {
+                        hideDuplicateFunctionKeys();
+                    }
+                }
+            );
+
+
+        duplicateObserver.observe(
+            document.body,
+            {
+                childList:
+                    true,
+
+                subtree:
+                    true
+            }
         );
     }
 
