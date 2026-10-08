@@ -686,7 +686,7 @@
                 </h2>
 
                 <p>
-                    所有需要加油的车辆和工程设备都可申请
+                    设备类型和编号由当前调度绑定自动生成，司机无需选择
                 </p>
 
             </div>
@@ -694,84 +694,54 @@
         </div>
 
 
-        <div class="form-grid">
+        <div class="info-grid">
 
-            <div class="form-group">
+            <div class="info-box">
 
-                <label for="equipmentType">
+                <span>
                     设备类型
-                </label>
+                </span>
 
-                <select
-                    id="equipmentType"
-                    onchange="saveDraftFields()"
-                >
-
-                    <option value="">
-                        请选择设备类型
-                    </option>
-
-                    <option value="矿卡">
-                        矿卡 / 汽车
-                    </option>
-
-                    <option value="挖掘机">
-                        挖掘机
-                    </option>
-
-                    <option value="装载机">
-                        装载机
-                    </option>
-
-                    <option value="推土机">
-                        推土机
-                    </option>
-
-                    <option value="平路机">
-                        平路机
-                    </option>
-
-                    <option value="洒水车">
-                        洒水车
-                    </option>
-
-                    <option value="大巴">
-                        大巴
-                    </option>
-
-                    <option value="维修车辆">
-                        维修车辆
-                    </option>
-
-                    <option value="管理车辆">
-                        管理车辆
-                    </option>
-
-                    <option value="其他">
-                        其他
-                    </option>
-
-                </select>
+                <strong id="boundEquipmentTypeText">
+                    自动识别中
+                </strong>
 
             </div>
 
 
-            <div class="form-group">
+            <div class="info-box">
 
-                <label for="equipmentNumber">
+                <span>
                     设备 / 车辆编号
-                </label>
+                </span>
 
-                <input
-                    id="equipmentNumber"
-                    type="text"
-                    placeholder="例如：T-021 / W-001"
-                    oninput="saveDraftFields()"
-                >
+                <strong id="boundEquipmentNumberText">
+                    自动识别中
+                </strong>
 
             </div>
 
         </div>
+
+
+        <div
+            id="boundEquipmentStatus"
+            class="location-status waiting"
+            style="margin-top:12px;"
+        >
+            正在读取调度绑定设备……
+        </div>
+
+
+        <input
+            id="equipmentType"
+            type="hidden"
+        >
+
+        <input
+            id="equipmentNumber"
+            type="hidden"
+        >
 
 
         <div class="form-group">
@@ -1147,6 +1117,9 @@ function initialize() {
     restoreDraftFields();
 
 
+    applyCurrentBoundEquipment();
+
+
     renderConfig();
 
 
@@ -1154,7 +1127,12 @@ function initialize() {
 
 
     setInterval(
-        renderAll,
+        function () {
+
+            applyCurrentBoundEquipment();
+
+            renderAll();
+        },
         5000
     );
 }
@@ -1527,20 +1505,10 @@ function saveDraftFields() {
 
     const draft = {
 
-        equipmentType:
-            document
-                .getElementById(
-                    "equipmentType"
-                )
-                .value,
-
-        equipmentNumber:
-            document
-                .getElementById(
-                    "equipmentNumber"
-                )
-                .value,
-
+        /*
+         * 设备类型和编号由调度绑定自动生成，
+         * 草稿只保存司机可编辑的申请备注。
+         */
         remark:
             document
                 .getElementById(
@@ -1568,24 +1536,550 @@ function restoreDraftFields() {
 
 
     document.getElementById(
-        "equipmentType"
-    ).value =
-        draft.equipmentType ||
-        "";
-
-
-    document.getElementById(
-        "equipmentNumber"
-    ).value =
-        draft.equipmentNumber ||
-        "";
-
-
-    document.getElementById(
         "requestRemark"
     ).value =
         draft.remark ||
         "";
+}
+
+
+
+/* =========================================================
+   当前调度绑定设备
+   ---------------------------------------------------------
+   司机不再手工选择设备类型 / 编号。
+   优先读取：
+   1. dispatchPublishedTasks 当前有效任务
+   2. dispatchShiftExecutions 当前班次执行
+   3. driverCurrentTask 旧汽车司机兼容缓存
+========================================================= */
+
+function fuelSamePerson(
+    item
+) {
+
+    if (
+        !currentPerson ||
+        !item
+    ) {
+
+        return false;
+    }
+
+
+    const currentId =
+        getPersonId(
+            currentPerson
+        );
+
+
+    const itemId =
+        String(
+            item.driverId ||
+            item.personId ||
+            item.operatorId ||
+            item.excavatorDriverId ||
+            item.employeeId ||
+            ""
+        );
+
+
+    if (
+        currentId &&
+        itemId &&
+        currentId ===
+            itemId
+    ) {
+
+        return true;
+    }
+
+
+    const currentName =
+        String(
+            currentPerson.name ||
+            ""
+        )
+        .trim();
+
+
+    const itemName =
+        String(
+            item.driverName ||
+            item.personName ||
+            item.operatorName ||
+            item.excavatorDriverName ||
+            ""
+        )
+        .trim();
+
+
+    return Boolean(
+        currentName &&
+        itemName &&
+        currentName ===
+            itemName
+    );
+}
+
+
+
+function fuelEquipmentNumber(
+    item
+) {
+
+    return String(
+        item?.equipmentNumber ||
+        item?.vehicleNumber ||
+        item?.vehicleId ||
+        item?.truckNumber ||
+        item?.truckId ||
+        item?.excavatorNumber ||
+        item?.excavatorId ||
+        item?.equipmentId ||
+        ""
+    )
+    .trim();
+}
+
+
+
+function fuelInferEquipmentType(
+    item,
+    number
+) {
+
+    const raw =
+        (
+            String(
+                item?.equipmentType ||
+                item?.vehicleType ||
+                item?.type ||
+                item?.position ||
+                ""
+            ) +
+            " " +
+            String(
+                number ||
+                ""
+            )
+        )
+        .toLowerCase();
+
+
+    if (
+        /挖机|挖掘机|excavat/.test(
+            raw
+        )
+    ) {
+        return "挖掘机";
+    }
+
+    if (
+        /矿卡|卡车|汽车|truck|dump/.test(
+            raw
+        )
+    ) {
+        return "矿卡";
+    }
+
+    if (
+        /装载|铲车/.test(
+            raw
+        )
+    ) {
+        return "装载机";
+    }
+
+    if (
+        /推土/.test(
+            raw
+        )
+    ) {
+        return "推土机";
+    }
+
+    if (
+        /平路/.test(
+            raw
+        )
+    ) {
+        return "平路机";
+    }
+
+    if (
+        /洒水|水车/.test(
+            raw
+        )
+    ) {
+        return "洒水车";
+    }
+
+    if (
+        /大巴|客车/.test(
+            raw
+        )
+    ) {
+        return "大巴";
+    }
+
+    if (
+        /维修/.test(
+            raw
+        )
+    ) {
+        return "维修车辆";
+    }
+
+
+    return (
+        item?.equipmentType ||
+        item?.vehicleType ||
+        "其他"
+    );
+}
+
+
+
+function fuelBindingFromTask(
+    task
+) {
+
+    if (
+        !task ||
+        [
+            "completed",
+            "finished",
+            "cancelled",
+            "closed"
+        ]
+        .includes(
+            String(
+                task.status ||
+                ""
+            )
+            .toLowerCase()
+        )
+    ) {
+
+        return null;
+    }
+
+
+    const driver =
+        (
+            task.driverAssignments ||
+            []
+        )
+        .find(
+            fuelSamePerson
+        );
+
+
+    if (
+        driver
+    ) {
+
+        const number =
+            fuelEquipmentNumber(
+                driver
+            );
+
+
+        if (
+            number
+        ) {
+
+            return {
+                number,
+                type:
+                    fuelInferEquipmentType(
+                        driver,
+                        number
+                    ),
+                source:
+                    "调度汽车绑定"
+            };
+        }
+    }
+
+
+    const auxiliary =
+        (
+            task.auxiliaryAssignments ||
+            []
+        )
+        .find(
+            fuelSamePerson
+        );
+
+
+    if (
+        auxiliary
+    ) {
+
+        const number =
+            fuelEquipmentNumber(
+                auxiliary
+            );
+
+
+        if (
+            number
+        ) {
+
+            return {
+                number,
+                type:
+                    fuelInferEquipmentType(
+                        auxiliary,
+                        number
+                    ),
+                source:
+                    "调度辅助设备绑定"
+            };
+        }
+    }
+
+
+    const excavator =
+        (
+            task.bindings ||
+            []
+        )
+        .find(
+            fuelSamePerson
+        );
+
+
+    if (
+        excavator
+    ) {
+
+        const number =
+            String(
+                excavator.excavatorNumber ||
+                excavator.excavatorId ||
+                excavator.equipmentNumber ||
+                excavator.equipmentId ||
+                ""
+            )
+            .trim();
+
+
+        if (
+            number
+        ) {
+
+            return {
+                number,
+                type:
+                    "挖掘机",
+                source:
+                    "调度挖机绑定"
+            };
+        }
+    }
+
+
+    return null;
+}
+
+
+
+function getCurrentBoundEquipment() {
+
+    const tasks = [
+        ...(
+            readJson(
+                "dispatchPublishedTasks",
+                []
+            ) ||
+            []
+        ),
+        ...(
+            readJson(
+                "dispatchShiftExecutions",
+                []
+            ) ||
+            []
+        )
+    ]
+    .filter(
+        item =>
+            item &&
+            typeof item ===
+                "object"
+    )
+    .sort(
+        (
+            a,
+            b
+        ) =>
+            new Date(
+                b.updatedAt ||
+                b.publishedAt ||
+                b.createdAt ||
+                0
+            ) -
+            new Date(
+                a.updatedAt ||
+                a.publishedAt ||
+                a.createdAt ||
+                0
+            )
+    );
+
+
+    for (
+        const task of
+        tasks
+    ) {
+
+        const binding =
+            fuelBindingFromTask(
+                task
+            );
+
+
+        if (
+            binding
+        ) {
+
+            return binding;
+        }
+    }
+
+
+    /*
+     * 汽车司机旧端兼容：
+     * driverCurrentTask 已经由调度任务同步生成。
+     */
+    const legacyTask =
+        readJson(
+            "driverCurrentTask",
+            null
+        );
+
+
+    if (
+        legacyTask &&
+        fuelSamePerson({
+            driverId:
+                legacyTask.driverId ||
+                legacyTask.personId,
+            driverName:
+                legacyTask.driverName ||
+                currentPerson?.name
+        })
+    ) {
+
+        const number =
+            fuelEquipmentNumber(
+                legacyTask
+            );
+
+
+        if (
+            number
+        ) {
+
+            return {
+                number,
+                type:
+                    fuelInferEquipmentType(
+                        legacyTask,
+                        number
+                    ),
+                source:
+                    "当前司机任务"
+            };
+        }
+    }
+
+
+    return null;
+}
+
+
+
+function applyCurrentBoundEquipment() {
+
+    const binding =
+        getCurrentBoundEquipment();
+
+
+    const typeInput =
+        document.getElementById(
+            "equipmentType"
+        );
+
+    const numberInput =
+        document.getElementById(
+            "equipmentNumber"
+        );
+
+    const typeText =
+        document.getElementById(
+            "boundEquipmentTypeText"
+        );
+
+    const numberText =
+        document.getElementById(
+            "boundEquipmentNumberText"
+        );
+
+    const status =
+        document.getElementById(
+            "boundEquipmentStatus"
+        );
+
+
+    if (
+        !binding
+    ) {
+
+        typeInput.value =
+            "";
+
+        numberInput.value =
+            "";
+
+        typeText.textContent =
+            "未绑定";
+
+        numberText.textContent =
+            "未绑定";
+
+        status.textContent =
+            "当前没有识别到调度绑定设备，请联系调度先完成设备与司机绑定。";
+
+        status.className =
+            "location-status outside";
+
+        return;
+    }
+
+
+    typeInput.value =
+        binding.type;
+
+    numberInput.value =
+        binding.number;
+
+    typeText.textContent =
+        binding.type;
+
+    numberText.textContent =
+        binding.number;
+
+    status.textContent =
+        "✅ 已自动读取" +
+        binding.source +
+        "，司机无需选择设备。";
+
+    status.className =
+        "location-status inside";
 }
 
 
@@ -2047,6 +2541,9 @@ function updateSubmitButton() {
 
 function submitFuelRequest() {
 
+    applyCurrentBoundEquipment();
+
+
     if (
         !currentPerson
     ) {
@@ -2091,7 +2588,7 @@ function submitFuelRequest() {
     ) {
 
         alert(
-            "请选择设备类型并填写设备编号。"
+            "当前没有识别到调度绑定设备，请联系调度先完成设备与司机绑定。"
         );
 
         return;
