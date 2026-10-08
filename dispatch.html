@@ -3424,23 +3424,13 @@
                     id="currentTaskBoardShiftBadge"
                     class="count-badge"
                 >
-                    默认折叠
+                    全部当班任务
                 </span>
-
-                <button
-                    id="collapseCurrentTaskBoardButton"
-                    type="button"
-                    class="secondary-button"
-                    style="min-height:32px;padding:5px 10px;"
-                >
-                    收起
-                </button>
             </div>
         </div>
 
         <div
             id="currentTaskBoardContent"
-            class="hidden"
         >
 
         <div class="dispatch-trip-stats">
@@ -21875,6 +21865,7 @@ document.addEventListener(
     function () {
 
         renderShiftWorkbench();
+        renderShiftExecutionSummary();
 
 
         /*
@@ -23759,44 +23750,6 @@ document
         "click",
         publishShiftLaunchBoard
     );
-
-
-document
-    .getElementById(
-        "collapseCurrentTaskBoardButton"
-    )
-    ?.addEventListener(
-        "click",
-        function () {
-
-            document
-                .getElementById(
-                    "currentTaskBoardContent"
-                )
-                ?.classList
-                .add(
-                    "hidden"
-                );
-
-
-            const badge =
-                document.getElementById(
-                    "currentTaskBoardShiftBadge"
-                );
-
-
-            if (
-                badge
-            ) {
-
-                badge.textContent =
-                    "默认折叠";
-            }
-        }
-    );
-
-
-
 
 
 /* =========================================================
