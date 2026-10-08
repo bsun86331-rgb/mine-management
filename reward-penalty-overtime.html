@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>奖罚、加班</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#f3f6fb;color:#0f172a;font-family:Arial,"Microsoft YaHei",sans-serif}
+header{padding:18px 20px;background:#0f172a;color:#fff}
+header h1{margin:0;font-size:22px}
+header p{margin:6px 0 0;color:#cbd5e1;font-size:13px}
+main{max-width:900px;margin:0 auto;padding:18px}
+.card{margin-bottom:16px;padding:18px;border:1px solid #e2e8f0;border-radius:16px;background:#fff}
+.title-row{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.title-row h2{margin:0;font-size:20px}
+.title-row p{margin:5px 0 0;color:#64748b;font-size:13px}
+.badge{padding:5px 9px;border-radius:999px;background:#fee2e2;color:#b91c1c;font-size:12px;font-weight:800}
+.record{margin-top:12px;padding:14px;border:1px solid #e2e8f0;border-radius:12px;background:#f8fafc}
+.record.pending{border-color:#fdba74;background:#fff7ed}
+.record-top{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+.record-title{font-weight:900}
+.record-status{font-size:12px;font-weight:800}
+.pending .record-status{color:#c2410c}
+.record-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:10px}
+.info{padding:9px 10px;border-radius:9px;background:#fff}
+.info span{display:block;color:#64748b;font-size:11px}
+.info strong{display:block;margin-top:3px}
+.note{margin-top:10px;padding:10px 12px;border-radius:9px;background:#fff;line-height:1.6}
+.ack{width:100%;margin-top:10px;min-height:44px;border:0;border-radius:10px;background:#d97706;color:#fff;font-weight:900;cursor:pointer}
+.empty{padding:32px 12px;text-align:center;color:#94a3b8}
+.back{min-height:42px;padding:0 16px;border:0;border-radius:10px;background:#e2e8f0;color:#334155;font-weight:800;cursor:pointer}
+.tabs{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.tab{border:1px solid #cbd5e1;background:#fff;color:#475569;border-radius:999px;padding:8px 13px;cursor:pointer;font-weight:700}
+.tab.active{border-color:#2563eb;background:#eff6ff;color:#1d4ed8}
+footer{padding:18px;text-align:center;color:#94a3b8;font-size:12px}
+@media(max-width:700px){.record-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header>
+  <h1>💰 奖罚、加班</h1>
+  <p>查看上级下达的奖励、罚款和加班记录；新信息需要本人确认。</p>
+</header>
+
+<main>
+  <section class="card">
+    <div class="title-row">
+      <div>
+        <h2 id="personName">-</h2>
+        <p><span id="personPosition">-</span> · <span id="personDepartment">-</span></p>
+      </div>
+      <button class="back" type="button" onclick="goBack()">返回</button>
+    </div>
+
+    <div class="tabs">
+      <button class="tab active" data-filter="">全部</button>
+      <button class="tab" data-filter="reward">奖励</button>
+      <button class="tab" data-filter="penalty">罚款</button>
+      <button class="tab" data-filter="overtime">加班</button>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="title-row">
+      <div>
+        <h2>📋 我的记录</h2>
+        <p>待确认记录会优先显示。</p>
+      </div>
+      <span class="badge" id="pendingCount">0 条新信息</span>
+    </div>
+    <div id="recordList"></div>
+  </section>
+</main>
+
+<footer>矿山管理系统 · 奖罚、加班查看确认中心 V1.0</footer>
+
+<script>
+"use strict";
+
+const KEYS={
+  reward:"rewardRecords",
+  penalty:"penaltyRecords",
+  overtime:"overtimeRecords"
+};
+
+let currentPerson=null;
+let activeFilter="";
+
+function safeArray(key){
+  try{
+    const data=JSON.parse(localStorage.getItem(key));
+    return Array.isArray(data)?data:[];
+  }catch(error){
+    return [];
+  }
+}
+
+function saveArray(key,rows){
+  localStorage.setItem(key,JSON.stringify(rows));
+}
+
+function personId(person){
+  return String(person?.personId||person?.employeeId||person?.driverId||person?.id||person?.employeeNo||"").trim();
+}
+
+function resolveCurrentPerson(){
+  const rows=safeArray("personnelRecords");
+  const currentId=String(localStorage.getItem("currentPersonId")||"").trim();
+  const selected=String(localStorage.getItem("selectedPosition")||"").trim();
+
+  if(currentId){
+    const found=rows.find(item=>personId(item)===currentId);
+    if(found)return found;
+  }
+
+  if(selected){
+    const matches=rows.filter(item=>String(item.position||"").trim()===selected);
+    if(matches.length===1)return matches[0];
+  }
+
+  return null;
+}
+
+function samePerson(item){
+  const id=personId(currentPerson);
+  const itemId=String(item?.personId||item?.employeeId||item?.driverId||item?.employeeNo||"").trim();
+
+  if(id&&itemId){
+    return id===itemId;
+  }
+
+  return Boolean(
+    currentPerson?.name &&
+    String(item?.personName||item?.driverName||item?.name||"").trim()===String(currentPerson.name).trim()
+  );
+}
+
+function recordId(type,item){
+  return String(
+    type==="reward"
+      ? (item.rewardId||item.recordId||item.id||"")
+      : type==="penalty"
+        ? (item.penaltyId||item.recordId||item.id||"")
+        : (item.overtimeId||item.recordId||item.id||"")
+  );
+}
+
+function isPending(type,item){
+  const status=String(item.status||"").toLowerCase();
+
+  if(status==="acknowledged"||status==="processed"||status==="confirmed"||status==="cancelled"||status==="rejected"){
+    return false;
+  }
+
+  if(type==="penalty"){
+    return status==="pending_acknowledgement"||status==="issued"||status==="";
+  }
+
+  return status==="issued"||status==="pending_acknowledgement"||status==="pending_confirmation"||status==="";
+}
+
+function allMine(){
+  const rows=[];
+
+  Object.entries(KEYS).forEach(([type,key])=>{
+    safeArray(key).forEach((item,index)=>{
+      if(!samePerson(item))return;
+
+      rows.push({
+        type,
+        key,
+        index,
+        id:recordId(type,item),
+        item
+      });
+    });
+  });
+
+  return rows.sort((a,b)=>{
+    const ap=isPending(a.type,a.item)?1:0;
+    const bp=isPending(b.type,b.item)?1:0;
+    if(ap!==bp)return bp-ap;
+
+    return new Date(b.item.createdAt||b.item.issuedAt||b.item.date||0)-
+           new Date(a.item.createdAt||a.item.issuedAt||a.item.date||0);
+  });
+}
+
+function typeText(type){
+  return type==="reward"?"奖励":type==="penalty"?"罚款":"加班";
+}
+
+function typeIcon(type){
+  return type==="reward"?"🎁":type==="penalty"?"⚠️":"🕒";
+}
+
+function formatDate(value){
+  const date=new Date(value);
+  return Number.isNaN(date.getTime())?"-":date.toLocaleString("zh-CN");
+}
+
+function esc(value){
+  const div=document.createElement("div");
+  div.textContent=String(value??"");
+  return div.innerHTML;
+}
+
+function render(){
+  const rows=allMine();
+  const pending=rows.filter(row=>isPending(row.type,row.item)).length;
+  document.getElementById("pendingCount").textContent=pending+" 条新信息";
+
+  const filtered=activeFilter?rows.filter(row=>row.type===activeFilter):rows;
+  const box=document.getElementById("recordList");
+
+  if(!filtered.length){
+    box.innerHTML='<div class="empty">暂无奖罚或加班记录</div>';
+    return;
+  }
+
+  box.innerHTML=filtered.map(row=>{
+    const item=row.item;
+    const pendingFlag=isPending(row.type,item);
+    const amount=Number(item.amount||item.rewardAmount||item.penaltyAmount||0);
+    return `
+      <div class="record ${pendingFlag?"pending":""}">
+        <div class="record-top">
+          <div class="record-title">${typeIcon(row.type)} ${typeText(row.type)}</div>
+          <div class="record-status">${pendingFlag?"待确认":"已确认"}</div>
+        </div>
+
+        <div class="record-grid">
+          <div class="info"><span>人员</span><strong>${esc(item.personName||item.driverName||item.name||"-")}</strong></div>
+          <div class="info"><span>金额</span><strong>¥ ${amount.toFixed(2)}</strong></div>
+          <div class="info"><span>日期</span><strong>${esc(item.workDate||item.date||String(item.issuedAt||"").slice(0,10)||"-")}</strong></div>
+          <div class="info"><span>下达人</span><strong>${esc(item.issuedBy||item.createdBy||item.operatorName||"-")}</strong></div>
+          <div class="info"><span>车辆</span><strong>${esc(item.vehicleNumber||"-")}</strong></div>
+          <div class="info"><span>时间</span><strong>${formatDate(item.issuedAt||item.createdAt)}</strong></div>
+        </div>
+
+        <div class="note"><strong>事由：</strong>${esc(item.description||item.remark||"-")}</div>
+
+        ${pendingFlag?`
+          <button class="ack" type="button" data-type="${row.type}" data-index="${row.index}">
+            我已知晓
+          </button>
+        `:""}
+      </div>
+    `;
+  }).join("");
+
+  box.querySelectorAll("[data-type][data-index]").forEach(button=>{
+    button.addEventListener("click",()=>{
+      acknowledge(button.dataset.type,Number(button.dataset.index));
+    });
+  });
+}
+
+function acknowledge(type,index){
+  if(!confirm("确认已经阅读并知晓这条"+typeText(type)+"记录吗？")){
+    return;
+  }
+
+  const key=KEYS[type];
+  const rows=safeArray(key);
+  const item=rows[index];
+
+  if(!item||!samePerson(item)){
+    alert("未找到该记录，可能已经更新。");
+    render();
+    return;
+  }
+
+  item.status="acknowledged";
+  item.acknowledgedAt=new Date().toISOString();
+  item.acknowledgedBy=currentPerson?.name||"";
+
+  saveArray(key,rows);
+  render();
+}
+
+function goBack(){
+  if(history.length>1)history.back();
+  else location.href="index.html";
+}
+
+currentPerson=resolveCurrentPerson();
+
+if(!currentPerson){
+  alert("没有识别到当前人员，请从系统首页重新进入。");
+  location.replace("index.html");
+}else{
+  document.getElementById("personName").textContent=currentPerson.name||"-";
+  document.getElementById("personPosition").textContent=currentPerson.position||"-";
+  document.getElementById("personDepartment").textContent=currentPerson.department||currentPerson.team||"-";
+
+  document.querySelectorAll("[data-filter]").forEach(button=>{
+    button.addEventListener("click",()=>{
+      document.querySelectorAll("[data-filter]").forEach(item=>item.classList.remove("active"));
+      button.classList.add("active");
+      activeFilter=button.dataset.filter||"";
+      render();
+    });
+  });
+
+  render();
+
+  window.addEventListener("storage",event=>{
+    if(Object.values(KEYS).includes(event.key)){
+      render();
+    }
+  });
+}
+</script>
+</body>
+</html>
