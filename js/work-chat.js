@@ -1,6 +1,6 @@
 /*
 ====================================================
-mine-management 全端工作聊天 V1.4
+mine-management 全端工作聊天 V1.4.1
 ----------------------------------------------------
 当前阶段：
 1. 所有正式端口加载同一个聊天组件；
@@ -1166,6 +1166,19 @@ mine-management 全端工作聊天 V1.4
             page ===
                 "maintenance-worker.html"
         ) {
+            const historySection =
+                document.getElementById(
+                    "page-history"
+                );
+
+            if (
+                historySection
+            ) {
+                historySection.style.display =
+                    "";
+            }
+
+
             if (
                 typeof window.openPage ===
                     "function"
@@ -1173,6 +1186,14 @@ mine-management 全端工作聊天 V1.4
                 window.openPage(
                     "history"
                 );
+
+                historySection
+                    ?.scrollIntoView({
+                        behavior:
+                            "smooth",
+                        block:
+                            "start"
+                    });
 
                 return;
             }
@@ -1393,6 +1414,72 @@ mine-management 全端工作聊天 V1.4
                     }
                 }
             );
+
+
+        const page =
+            getCurrentPageName();
+
+
+        /*
+         * 页面级重复入口清理：
+         * 只隐藏已经由底部“快捷功能”替代的入口 / 独立申请区，
+         * 不删除数据、不删除业务函数。
+         */
+        const hideSelectorsByPage = {
+
+            "driver-work.html": [
+                "#leaveSection"
+            ],
+
+            "auxiliary.html": [
+                '[data-page="service"]',
+                '[data-page="leave"]',
+                '[data-page="history"]',
+                "#page-service",
+                "#page-leave",
+                "#page-history"
+            ],
+
+            "fuel.html": [
+                '[data-page="history"]',
+                "#page-history"
+            ],
+
+            "maintenance.html": [
+                '[data-page="history"]',
+                "#page-history"
+            ],
+
+            "maintenance-worker.html": [
+                '[data-page="history"]',
+                "#page-history"
+            ]
+        };
+
+
+        (
+            hideSelectorsByPage[
+                page
+            ] ||
+            []
+        )
+        .forEach(
+            selector => {
+                document
+                    .querySelectorAll(
+                        selector
+                    )
+                    .forEach(
+                        element => {
+                            element.style.display =
+                                "none";
+
+                            element.dataset.mineDuplicateHidden =
+                                "1";
+                        }
+                    );
+            }
+        );
 
 
         document
