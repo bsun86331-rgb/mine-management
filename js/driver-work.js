@@ -8090,47 +8090,9 @@ document.addEventListener("DOMContentLoaded", function () {
     */
 
     function getPerformanceMonth() {
-
-        const shiftDate =
-            String(
-                currentTask?.shiftDate ||
-                ""
-            )
-            .trim();
-
-
-        if (
-            /^\d{4}-\d{2}/
-                .test(
-                    shiftDate
-                )
-        ) {
-
-            return shiftDate
-                .slice(
-                    0,
-                    7
-                );
-        }
-
-
-        const now =
-            new Date();
-
-
-        return (
-            now.getFullYear() +
-            "-" +
-            String(
-                now.getMonth() + 1
-            )
-            .padStart(
-                2,
-                "0"
-            )
-        );
+        const now = new Date();
+        return now.getFullYear() + "-" + String(now.getMonth()+1).padStart(2,"0");
     }
-
 
     function refreshTrips() {
 
