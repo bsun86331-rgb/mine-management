@@ -10266,7 +10266,25 @@ function renderShiftExecutionSummary(){
                     )
             );
 
-    if(!executions.length){
+    const executionTaskIds = new Set(executions.map(item => String(item.taskId || "")));
+    const pendingTasks = getPublishedShiftTasks().filter(task =>
+        shiftWorkbenchIsTaskActive(task) &&
+        (!dispatchTaskBoardSelectedShift || shiftWorkbenchTaskShift(task) === dispatchTaskBoardSelectedShift) &&
+        !executionTaskIds.has(shiftTaskId(task))
+    );
+    const pendingHtml = pendingTasks.map(task => {
+        const id = shiftTaskId(task);
+        return `<div class="shift-execution-card production-task-clickable" onclick='coreAdjustTask(${JSON.stringify(id)})'>
+            <div class="shift-execution-top"><div><h4>${shiftEscape(task.taskName || task.name || id || "生产任务")}</h4>
+            <div class="small">编号：${shiftEscape(id)} · 已下发，尚未生成班次执行记录</div></div>
+            <span class="shift-chip">${shiftEscape(shiftWorkbenchTaskShift(task) || "待分班")} · 待执行</span></div>
+            <div class="shift-execution-meta"><div><span>生产日期</span><strong>${shiftEscape(shiftWorkbenchTaskDate(task) || "-")}</strong></div>
+            <div><span>作业区域</span><strong>${shiftEscape(task.area || task.workArea || "-")}</strong></div></div>
+            <div class="shift-inherit-note" style="background:#eff6ff;color:#1d4ed8">点击任务进入绑定调整；生成班次后显示执行进度</div>
+        </div>`;
+    }).join("");
+
+    if(!executions.length && !pendingTasks.length){
         box.innerHTML = `
             <div class="empty-placeholder">
                 ${dispatchTaskBoardSelectedShift || "当前班次"}暂无正式发布的执行任务。
@@ -10465,7 +10483,7 @@ function renderShiftExecutionSummary(){
                     </div>
                 `;
             })
-            .join("");
+            .join("") + pendingHtml;
 }
 
 
