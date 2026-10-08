@@ -1,6 +1,6 @@
 /*
 ====================================================
-mine-management 全端工作聊天 V1.2.1
+mine-management 全端工作聊天 V1.3
 ----------------------------------------------------
 当前阶段：
 1. 所有正式端口加载同一个聊天组件；
@@ -1091,6 +1091,279 @@ mine-management 全端工作聊天 V1.2.1
     }
 
 
+    const UNIFIED_APPLICATION_PAGES = [
+        "driver-work.html",
+        "excavator.html",
+        "auxiliary.html",
+        "fuel.html",
+        "dispatch.html",
+        "maintenance.html",
+        "maintenance-worker.html",
+        "management.html",
+        "warehouse.html",
+        "general-manager.html"
+    ];
+
+
+    function getCurrentPageName() {
+        const path =
+            location.pathname
+                .split("/")
+                .pop();
+
+        return path || "index.html";
+    }
+
+
+    function persistCurrentIdentity() {
+        const personId =
+            getPersonId(
+                identity
+            );
+
+        if (
+            personId
+        ) {
+            localStorage.setItem(
+                "currentPersonId",
+                personId
+            );
+        }
+
+        if (
+            identity?.position
+        ) {
+            localStorage.setItem(
+                "selectedPosition",
+                String(
+                    identity.position
+                )
+            );
+        }
+    }
+
+
+    function openUnifiedApplication(
+        target
+    ) {
+        persistCurrentIdentity();
+
+        location.href =
+            target;
+    }
+
+
+    function mountUnifiedApplicationCenter() {
+        const page =
+            getCurrentPageName();
+
+        if (
+            !UNIFIED_APPLICATION_PAGES.includes(
+                page
+            )
+        ) {
+            return;
+        }
+
+        if (
+            document.getElementById(
+                "mineUnifiedApplicationCenter"
+            )
+        ) {
+            return;
+        }
+
+        const main =
+            document.querySelector(
+                "main"
+            );
+
+        if (
+            !main
+        ) {
+            return;
+        }
+
+
+        if (
+            !document.getElementById(
+                "mineUnifiedApplicationStyle"
+            )
+        ) {
+            const style =
+                document.createElement(
+                    "style"
+                );
+
+            style.id =
+                "mineUnifiedApplicationStyle";
+
+            style.textContent = `
+                #mineUnifiedApplicationCenter{
+                    margin:14px 0;
+                    padding:16px;
+                    border:1px solid #dbeafe;
+                    border-radius:14px;
+                    background:#ffffff;
+                    box-shadow:0 6px 18px rgba(15,23,42,.05);
+                }
+                #mineUnifiedApplicationCenter .mine-app-head{
+                    display:flex;
+                    align-items:flex-start;
+                    justify-content:space-between;
+                    gap:12px;
+                    margin-bottom:12px;
+                }
+                #mineUnifiedApplicationCenter .mine-app-head h2{
+                    margin:0;
+                    color:#0f172a;
+                    font-size:18px;
+                }
+                #mineUnifiedApplicationCenter .mine-app-head p{
+                    margin:5px 0 0;
+                    color:#64748b;
+                    font-size:12px;
+                    line-height:1.6;
+                }
+                #mineUnifiedApplicationCenter .mine-app-grid{
+                    display:grid;
+                    grid-template-columns:repeat(3,minmax(0,1fr));
+                    gap:10px;
+                }
+                #mineUnifiedApplicationCenter .mine-app-button{
+                    min-height:52px;
+                    border:1px solid #cbd5e1;
+                    border-radius:11px;
+                    background:#f8fafc;
+                    color:#0f172a;
+                    font-size:14px;
+                    font-weight:800;
+                    cursor:pointer;
+                }
+                #mineUnifiedApplicationCenter .mine-app-button:hover{
+                    border-color:#93c5fd;
+                    background:#eff6ff;
+                }
+                #mineUnifiedApplicationCenter .mine-app-button.material{
+                    color:#166534;
+                    background:#f0fdf4;
+                    border-color:#bbf7d0;
+                }
+                #mineUnifiedApplicationCenter .mine-app-button.leave{
+                    color:#1d4ed8;
+                    background:#eff6ff;
+                    border-color:#bfdbfe;
+                }
+                #mineUnifiedApplicationCenter .mine-app-button.fuel{
+                    color:#9a3412;
+                    background:#fff7ed;
+                    border-color:#fed7aa;
+                }
+                @media(max-width:700px){
+                    #mineUnifiedApplicationCenter .mine-app-grid{
+                        grid-template-columns:1fr;
+                    }
+                }
+            `;
+
+            document.head.appendChild(
+                style
+            );
+        }
+
+
+        const section =
+            document.createElement(
+                "section"
+            );
+
+        section.id =
+            "mineUnifiedApplicationCenter";
+
+        section.innerHTML = `
+            <div class="mine-app-head">
+                <div>
+                    <h2>🧾 统一申请中心</h2>
+                    <p>
+                        所有岗位统一使用同一套物资、请假和加油申请流程。
+                    </p>
+                </div>
+            </div>
+
+            <div class="mine-app-grid">
+                <button
+                    id="mineUnifiedMaterialButton"
+                    type="button"
+                    class="mine-app-button material"
+                >
+                    📦 物资申请
+                </button>
+
+                <button
+                    id="mineUnifiedLeaveButton"
+                    type="button"
+                    class="mine-app-button leave"
+                >
+                    🗓 请假申请
+                </button>
+
+                <button
+                    id="mineUnifiedFuelButton"
+                    type="button"
+                    class="mine-app-button fuel"
+                >
+                    ⛽ 加油申请
+                </button>
+            </div>
+        `;
+
+
+        main.insertBefore(
+            section,
+            main.firstChild
+        );
+
+
+        document
+            .getElementById(
+                "mineUnifiedMaterialButton"
+            )
+            ?.addEventListener(
+                "click",
+                () =>
+                    openUnifiedApplication(
+                        "material-request.html"
+                    )
+            );
+
+
+        document
+            .getElementById(
+                "mineUnifiedLeaveButton"
+            )
+            ?.addEventListener(
+                "click",
+                () =>
+                    openUnifiedApplication(
+                        "leave-request.html"
+                    )
+            );
+
+
+        document
+            .getElementById(
+                "mineUnifiedFuelButton"
+            )
+            ?.addEventListener(
+                "click",
+                () =>
+                    openUnifiedApplication(
+                        "fuel-request.html"
+                    )
+            );
+    }
+
+
     function mount() {
         identity =
             resolveIdentity();
@@ -1104,6 +1377,10 @@ mine-management 全端工作聊天 V1.2.1
         ) {
             return;
         }
+
+
+        mountUnifiedApplicationCenter();
+
 
         if (
             document.getElementById(
