@@ -1610,69 +1610,22 @@ function findCurrentTask() {
         tasks
     ) {
 
-        const assignments =
-            Array.isArray(
-                task.excavatorDriverAssignments
-            )
-                ? task.excavatorDriverAssignments
-                : [];
+        // Prefer the current dispatch binding schema; retain legacy assignments.
+        const assignments = [
+            ...(Array.isArray(task.bindings) ? task.bindings.map(binding => ({
+                ...binding,
+                driverId: binding.excavatorDriverId || binding.operatorId || "",
+                driverName: binding.excavatorDriverName || binding.operatorName || ""
+            })) : []),
+            ...(Array.isArray(task.excavatorDriverAssignments) ? task.excavatorDriverAssignments : [])
+        ];
 
-
-        const assignment =
-            assignments.find(
-                item => {
-
-                    const assignmentId =
-                        String(
-                            item.driverId ||
-                            item.personId ||
-                            ""
-                        );
-
-
-                    const assignmentName =
-                        String(
-                            item.driverName ||
-                            item.personName ||
-                            ""
-                        ).trim();
-
-
-                    /*
-                     * 优先人员ID
-                     */
-                    if (
-                        personId &&
-                        assignmentId
-                    ) {
-
-                        return (
-                            personId ===
-                            assignmentId
-                        );
-                    }
-
-
-                    /*
-                     * 老数据兼容：
-                     * ID缺失时按姓名
-                     */
-                    if (
-                        personName &&
-                        assignmentName
-                    ) {
-
-                        return (
-                            personName ===
-                            assignmentName
-                        );
-                    }
-
-
-                    return false;
-                }
-            );
-
+        const assignment = assignments.find(item => {
+            const assignmentId = String(item.driverId || item.personId || "");
+            const assignmentName = String(item.driverName || item.personName || "").trim();
+            if (personId && assignmentId && personId === assignmentId) return true;
+            return Boolean(personName && assignmentName && personName === assignmentName);
+        });
 
         if (
             assignment
