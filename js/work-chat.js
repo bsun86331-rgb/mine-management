@@ -1,6 +1,6 @@
 /*
 ====================================================
-mine-management 全端工作聊天 V1.5.1
+mine-management 全端工作聊天 V1.5.2
 ----------------------------------------------------
 当前阶段：
 1. 所有正式端口加载同一个聊天组件；
@@ -1346,7 +1346,8 @@ mine-management 全端工作聊天 V1.5.1
             "作业历史",
             "历史作业",
             "历史任务",
-            "待确认罚单"
+            "待确认罚单",
+            "我的考勤"
         ];
 
 
@@ -1829,6 +1830,19 @@ mine-management 全端工作聊天 V1.5.1
 
         grid.appendChild(
             rewardPenaltyButton
+        );
+
+
+        grid.appendChild(
+            createBottomQuickButton(
+                "📍",
+                "打卡",
+                "进入全员定位考勤中心",
+                () =>
+                    openUnifiedApplication(
+                        "attendance.html"
+                    )
+            )
         );
 
 
