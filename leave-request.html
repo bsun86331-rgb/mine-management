@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>统一请假申请</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#f3f6fb;color:#0f172a;font-family:Arial,"Microsoft YaHei",sans-serif}
+header{padding:18px 20px;background:#0f172a;color:#fff}
+header h1{margin:0;font-size:22px}
+header p{margin:6px 0 0;color:#cbd5e1;font-size:13px}
+main{max-width:760px;margin:0 auto;padding:18px}
+.card{margin-bottom:16px;padding:18px;border:1px solid #e2e8f0;border-radius:16px;background:#fff}
+.section-title{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.section-title h2{margin:0;font-size:20px}
+.section-title p{margin:5px 0 0;color:#64748b;font-size:13px}
+.badge{padding:5px 9px;border-radius:999px;background:#dcfce7;color:#166534;font-size:12px;font-weight:800}
+.approval-tip{margin:14px 0;padding:11px 12px;border-radius:10px;background:#ffedd5;color:#9a3412;font-size:12px;line-height:1.65}
+label{display:block;margin:12px 0 6px;font-weight:700}
+input,select,textarea{width:100%;min-height:42px;padding:10px 12px;border:1px solid #cbd5e1;border-radius:10px;background:#fff;font-size:14px}
+textarea{min-height:100px;resize:vertical}
+.leave-policy-box{margin:12px 0 16px;padding:12px;border:1px solid #dbeafe;border-radius:12px;background:#f8fbff}
+.leave-policy-title{margin-bottom:8px;color:#1e3a8a;font-weight:800}
+.leave-policy-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.leave-policy-item{padding:9px 10px;border:1px solid #e2e8f0;border-radius:9px;background:#fff}
+.leave-policy-item span{display:block;color:#64748b;font-size:11px}
+.leave-policy-item strong{display:block;margin-top:3px;font-size:14px}
+.leave-halfday-grid{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(120px,.7fr);gap:10px;margin-bottom:12px}
+.leave-days-readonly{background:#f8fafc;font-weight:800}
+.leave-auto-tip{margin:6px 0 12px;padding:9px 10px;border-radius:9px;background:#eff6ff;color:#1e40af;font-size:12px;line-height:1.6}
+.leave-impact-box{margin:12px 0;padding:11px 12px;border-radius:10px;background:#fff7ed;color:#9a3412;font-size:12px;line-height:1.7}
+.actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
+button{min-height:44px;border:0;border-radius:10px;font-size:14px;font-weight:800;cursor:pointer}
+.primary{background:#16a34a;color:#fff}
+.secondary{background:#e2e8f0;color:#334155}
+.record{margin-top:10px;padding:12px;border:1px solid #e2e8f0;border-radius:12px;background:#f8fafc}
+.record-top{display:flex;justify-content:space-between;gap:10px}
+.status{font-size:12px;font-weight:800}
+.pending{color:#b45309}.approved{color:#15803d}.rejected{color:#b91c1c}
+.record-info{margin-top:8px;color:#475569;font-size:12px;line-height:1.8}
+.empty{padding:28px 10px;text-align:center;color:#94a3b8}
+footer{padding:18px;text-align:center;color:#94a3b8;font-size:12px}
+@media(max-width:700px){.leave-policy-grid,.leave-halfday-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header>
+  <h1>🗓 统一请假申请</h1>
+  <p>按汽车司机端标准统一：0.5天单位、上午/下午、联系电话、调度/总经理审批。</p>
+</header>
+
+<main>
+  <section class="card">
+    <div class="section-title">
+      <div>
+        <h2 id="personName">-</h2>
+        <p><span id="personPosition">-</span> · <span id="personDepartment">-</span></p>
+      </div>
+      <span class="badge">已识别</span>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="section-title">
+      <div>
+        <h2>📝 请假申请</h2>
+        <p id="approvalRouteText">系统将自动匹配审批人</p>
+      </div>
+    </div>
+
+    <div class="approval-tip" id="approvalTip">
+      请假最小单位为0.5天。
+    </div>
+
+    <label for="leaveType">请假类型 *</label>
+    <select id="leaveType">
+      <option value="事假">事假</option>
+      <option value="轮休假">轮休假</option>
+    </select>
+
+    <div class="leave-policy-box">
+      <div class="leave-policy-title">轮休假额度</div>
+      <div class="leave-policy-grid">
+        <div class="leave-policy-item"><span>是否享有轮休假</span><strong id="rotationLeaveEligible">-</strong></div>
+        <div class="leave-policy-item"><span>当前轮休周期</span><strong id="rotationLeaveCurrentCycle">-</strong></div>
+        <div class="leave-policy-item"><span>周期总额度</span><strong id="rotationLeaveQuota">-</strong></div>
+        <div class="leave-policy-item"><span>本周期已使用</span><strong id="rotationLeaveUsed">-</strong></div>
+        <div class="leave-policy-item"><span>本周期剩余</span><strong id="rotationLeaveRemaining">-</strong></div>
+        <div class="leave-policy-item"><span>额度规则</span><strong>到期重新计算，不跨周期结转</strong></div>
+      </div>
+    </div>
+
+    <label for="leaveDays">本次申请天数 *</label>
+    <input id="leaveDays" class="leave-days-readonly" type="text" value="0.5" readonly>
+
+    <div class="leave-auto-tip">
+      选择开始日期、结束日期和“上午 / 下午”后，系统自动计算请假天数，最小单位为0.5天。
+    </div>
+
+    <div class="leave-halfday-grid">
+      <div>
+        <label for="leaveStartDate">开始日期 *</label>
+        <input id="leaveStartDate" type="date">
+      </div>
+      <div>
+        <label for="leaveStartHalf">开始时段 *</label>
+        <select id="leaveStartHalf">
+          <option value="AM">上午</option>
+          <option value="PM">下午</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="leave-halfday-grid">
+      <div>
+        <label for="leaveEndDate">结束日期 *</label>
+        <input id="leaveEndDate" type="date">
+      </div>
+      <div>
+        <label for="leaveEndHalf">结束时段 *</label>
+        <select id="leaveEndHalf">
+          <option value="AM">上午</option>
+          <option value="PM">下午</option>
+        </select>
+      </div>
+    </div>
+
+    <input id="leaveStart" type="hidden">
+    <input id="leaveEnd" type="hidden">
+
+    <div id="leaveAttendanceImpact" class="leave-impact-box">
+      选择请假日期和上午 / 下午后，系统将自动计算请假天数及考勤影响。
+    </div>
+
+    <label for="leaveContactPhone">联系电话</label>
+    <input id="leaveContactPhone" type="tel">
+
+    <label for="leaveReason">请假原因 *</label>
+    <textarea id="leaveReason" placeholder="请输入请假原因"></textarea>
+
+    <div class="actions">
+      <button type="button" class="primary" onclick="submitLeave()">提交审批</button>
+      <button type="button" class="secondary" onclick="goBack()">返回</button>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="section-title">
+      <div>
+        <h2>📚 我的请假记录</h2>
+        <p>统一读取 leaveRequests，不删除历史记录。</p>
+      </div>
+    </div>
+    <div id="leaveRecordList"></div>
+  </section>
+</main>
+
+<footer>矿山管理系统 · 全员统一请假申请中心 V1.0</footer>
+
+<script src="js/data-service.js"></script>
+<script>
+"use strict";
+
+const STORAGE_KEY = "leaveRequests";
+let currentPerson = null;
+
+function safeParse(value,fallback){
+  try{ const parsed=JSON.parse(value); return parsed ?? fallback; }
+  catch(error){ return fallback; }
+}
+
+function getPersonnel(){
+  const rows=safeParse(localStorage.getItem("personnelRecords"),[]);
+  return Array.isArray(rows)?rows:[];
+}
+
+function personId(person){
+  return String(person?.personId||person?.driverId||person?.employeeId||person?.id||"").trim();
+}
+
+function normalizePosition(position){
+  const map={
+    "卡车司机":"汽车司机",
+    "挖掘机司机":"挖机司机",
+    "装载机司机":"铲车司机",
+    "装载机操作手":"铲车司机",
+    "大巴":"大巴司机",
+    "调度员":"调度",
+    "库房管理员":"库房管理",
+    "维修管理员":"维修管理",
+    "修理厂管理员":"维修管理",
+    "修理工":"维修员",
+    "维修人员":"维修员"
+  };
+  return map[position]||position||"";
+}
+
+function isApproved(person){
+  if(!person||person.enabled===false) return false;
+  const state=String(person.approvalStatus||person.status||"").toLowerCase();
+  if(["rejected","pending","disabled","resigned"].includes(state)) return false;
+  if(["待审核","停用","离职"].includes(String(person.personnelStatus||""))) return false;
+  return state==="approved"||state==="active"||state==="working"||state==="leave"||
+    ["在职可用","作业中","请假"].includes(String(person.personnelStatus||""));
+}
+
+function findCurrentPerson(){
+  const rows=getPersonnel();
+  const currentId=String(localStorage.getItem("currentPersonId")||"");
+  const selectedPosition=normalizePosition(localStorage.getItem("selectedPosition")||"");
+  if(currentId){
+    const found=rows.find(item=>personId(item)===currentId);
+    if(found) return found;
+  }
+  if(selectedPosition){
+    const matches=rows.filter(item=>normalizePosition(item.position)===selectedPosition&&isApproved(item));
+    if(matches.length===1) return matches[0];
+  }
+  return null;
+}
+
+function verifyAccess(){
+  currentPerson=findCurrentPerson();
+  if(!currentPerson){
+    alert("没有找到当前人员资料，请从系统首页重新进入。");
+    location.replace("index.html");
+    return false;
+  }
+  if(!isApproved(currentPerson)){
+    alert("当前人员未处于可用状态。");
+    location.replace("index.html");
+    return false;
+  }
+  return true;
+}
+
+function isManagementPosition(position){
+  const p=normalizePosition(position);
+  return [
+    "车队长","调度","中层管理","库房管理","维修管理",
+    "安全管理","技术管理","管理员"
+  ].includes(p);
+}
+
+function approvalRoute(){
+  const p=normalizePosition(currentPerson?.position||"");
+  if(p==="总经理") return {role:"admin",text:"管理员审批",level:"管理员审批"};
+  if(isManagementPosition(p)) return {role:"general_manager",text:"总经理审批",level:"总经理审批"};
+  return {role:"dispatch",text:"调度审批",level:"调度审批"};
+}
+
+function renderPerson(){
+  document.getElementById("personName").textContent=currentPerson.name||"-";
+  document.getElementById("personPosition").textContent=normalizePosition(currentPerson.position)||"-";
+  document.getElementById("personDepartment").textContent=currentPerson.department||currentPerson.team||"-";
+  document.getElementById("leaveContactPhone").value=currentPerson.phone||"";
+  const route=approvalRoute();
+  document.getElementById("approvalRouteText").textContent="当前审批路线：" + route.text;
+  document.getElementById("approvalTip").textContent="请假最小单位为0.5天。提交后自动进入" + route.text + "。";
+}
+
+function calculateLeaveDays(){
+  const sd=document.getElementById("leaveStartDate").value;
+  const ed=document.getElementById("leaveEndDate").value;
+  const sh=document.getElementById("leaveStartHalf").value;
+  const eh=document.getElementById("leaveEndHalf").value;
+  if(!sd||!ed) return 0.5;
+  const start=new Date(sd+"T00:00:00");
+  const end=new Date(ed+"T00:00:00");
+  const dayDiff=Math.round((end-start)/86400000);
+  const idx={AM:0,PM:1};
+  const halves=dayDiff*2+idx[eh]-idx[sh]+1;
+  return Math.max(0,halves/2);
+}
+
+function syncDateTime(){
+  const sd=document.getElementById("leaveStartDate").value;
+  const ed=document.getElementById("leaveEndDate").value;
+  const sh=document.getElementById("leaveStartHalf").value;
+  const eh=document.getElementById("leaveEndHalf").value;
+  const days=calculateLeaveDays();
+  document.getElementById("leaveDays").value=days>0?String(days):"0.5";
+  document.getElementById("leaveStart").value=sd?sd+(sh==="AM"?"T08:00":"T13:00"):"";
+  document.getElementById("leaveEnd").value=ed?ed+(eh==="AM"?"T12:00":"T17:00"):"";
+  document.getElementById("leaveAttendanceImpact").textContent=
+    sd&&ed&&days>0
+      ? "本次请假 "+days+" 天。提交后将进入审批，并影响对应请假时段考勤。"
+      : "选择请假日期和上午 / 下午后，系统将自动计算请假天数及考勤影响。";
+}
+
+function readLeaves(){
+  const rows=safeParse(localStorage.getItem(STORAGE_KEY),[]);
+  return Array.isArray(rows)?rows:[];
+}
+
+function saveLeaves(rows){
+  localStorage.setItem(STORAGE_KEY,JSON.stringify(rows));
+}
+
+function overlapExists(start,end){
+  const id=personId(currentPerson);
+  return readLeaves().some(item=>{
+    if(!["pending","approved"].includes(item.status)) return false;
+    const same=(id&&(item.applicantId===id||item.personId===id))||
+      (!id&&(item.applicantName===currentPerson.name||item.personName===currentPerson.name));
+    if(!same) return false;
+    return new Date(item.startTime)<new Date(end)&&new Date(item.endTime)>new Date(start);
+  });
+}
+
+function submitLeave(){
+  syncDateTime();
+  const type=document.getElementById("leaveType").value;
+  const start=document.getElementById("leaveStart").value;
+  const end=document.getElementById("leaveEnd").value;
+  const days=Number(document.getElementById("leaveDays").value||0);
+  const phone=document.getElementById("leaveContactPhone").value.trim();
+  const reason=document.getElementById("leaveReason").value.trim();
+
+  if(!start||!end||days<=0||!reason){
+    alert("请完整填写请假日期、时段和原因。");
+    return;
+  }
+  if(new Date(end)<=new Date(start)){
+    alert("请假结束时间必须晚于开始时间。");
+    return;
+  }
+  if(overlapExists(start,end)){
+    alert("当前时间段已有待审批或已批准请假申请。");
+    return;
+  }
+
+  const route=approvalRoute();
+  const id=personId(currentPerson);
+  const record={
+    leaveId:"LEAVE_"+Date.now()+"_"+Math.random().toString(36).slice(2,6),
+    applicantId:id,
+    personId:id,
+    applicantName:currentPerson.name||"",
+    personName:currentPerson.name||"",
+    employeeNo:currentPerson.employeeNo||currentPerson.employeeId||"",
+    role:"personnel",
+    position:currentPerson.position||"",
+    team:currentPerson.team||currentPerson.department||"",
+    department:currentPerson.department||currentPerson.team||"",
+    employeeLevel:isManagementPosition(currentPerson.position)?"management":"frontline",
+    leaveType:type,
+    leaveDays:days,
+    startHalf:document.getElementById("leaveStartHalf").value,
+    endHalf:document.getElementById("leaveEndHalf").value,
+    startTime:new Date(start).toISOString(),
+    endTime:new Date(end).toISOString(),
+    contactPhone:phone,
+    reason,
+    status:"pending",
+    approverRole:route.role,
+    approvalRoute:route.role,
+    approvalLevel:route.level,
+    submittedAt:new Date().toISOString(),
+    approvedAt:null,
+    approvedBy:"",
+    approvalRemark:""
+  };
+
+  const rows=readLeaves();
+  rows.push(record);
+  saveLeaves(rows);
+
+  if(window.MineDataService){
+    Promise.resolve(window.MineDataService.upsert("leave_requests",record))
+      .catch(error=>console.warn("DataService 请假同步失败，本地记录已保留：",error));
+  }
+
+  document.getElementById("leaveReason").value="";
+  renderRecords();
+  alert("请假申请已提交。\n审批人："+route.text+"。");
+}
+
+function renderRecords(){
+  const id=personId(currentPerson);
+  const rows=readLeaves().filter(item=>
+    (id&&(item.applicantId===id||item.personId===id))||
+    (!id&&(item.applicantName===currentPerson.name||item.personName===currentPerson.name))
+  ).slice().reverse();
+
+  const box=document.getElementById("leaveRecordList");
+  if(!rows.length){
+    box.innerHTML='<div class="empty">暂无请假记录</div>';
+    return;
+  }
+
+  box.innerHTML=rows.map(item=>{
+    const status=item.status||"pending";
+    const cls=status==="approved"?"approved":status==="rejected"?"rejected":"pending";
+    const text=status==="approved"?"已批准":status==="rejected"?"已驳回":"待审批";
+    return '<div class="record">'+
+      '<div class="record-top"><strong>'+escapeHtml(item.leaveType||"请假")+'</strong><span class="status '+cls+'">'+text+'</span></div>'+
+      '<div class="record-info">开始：'+formatDateTime(item.startTime)+'<br>结束：'+formatDateTime(item.endTime)+
+      '<br>天数：'+escapeHtml(item.leaveDays??"-")+
+      '<br>原因：'+escapeHtml(item.reason||"-")+
+      (item.approvalRemark?'<br>审批备注：'+escapeHtml(item.approvalRemark):'')+
+      '</div></div>';
+  }).join("");
+}
+
+function escapeHtml(value){
+  const div=document.createElement("div");
+  div.textContent=String(value??"");
+  return div.innerHTML;
+}
+
+function formatDateTime(value){
+  const date=new Date(value);
+  return Number.isNaN(date.getTime())?"-":date.toLocaleString("zh-CN");
+}
+
+function goBack(){
+  if(history.length>1) history.back();
+  else location.href="index.html";
+}
+
+if(verifyAccess()){
+  renderPerson();
+  ["leaveStartDate","leaveEndDate","leaveStartHalf","leaveEndHalf"].forEach(id=>{
+    document.getElementById(id).addEventListener("change",syncDateTime);
+  });
+  syncDateTime();
+  renderRecords();
+  window.addEventListener("storage",event=>{
+    if(event.key===STORAGE_KEY) renderRecords();
+  });
+}
+</script>
+</body>
+</html>
