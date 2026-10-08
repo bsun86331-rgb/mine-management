@@ -1,6 +1,6 @@
 /*
 ====================================================
-mine-management 全端工作聊天 V1.3.1
+mine-management 全端工作聊天 V1.4
 ----------------------------------------------------
 当前阶段：
 1. 所有正式端口加载同一个聊天组件；
@@ -1105,39 +1105,6 @@ mine-management 全端工作聊天 V1.3.1
     ];
 
 
-    const QUICK_GRID_SELECTORS = {
-        "driver-work.html":
-            ".todo-grid",
-
-        "excavator.html":
-            ".action-grid",
-
-        "auxiliary.html":
-            ".quick-grid",
-
-        "fuel.html":
-            ".nav-grid",
-
-        "dispatch.html":
-            ".todo-grid",
-
-        "maintenance.html":
-            ".nav-grid",
-
-        "maintenance-worker.html":
-            ".nav-grid",
-
-        "management.html":
-            ".quick-grid",
-
-        "general-manager.html":
-            ".quick-grid",
-
-        "warehouse.html":
-            ".warehouse-tabs, .tab-row, .nav-grid"
-    };
-
-
     function getCurrentPageName() {
         const path =
             location.pathname
@@ -1186,38 +1153,98 @@ mine-management 全端工作聊天 V1.3.1
     }
 
 
-    function hasQuickAction(
-        container,
-        label
+    function openPageHistory(
+        page
     ) {
-        return Array.from(
-            container.querySelectorAll(
-                "button, a"
-            )
-        )
-        .some(
-            element =>
-                String(
-                    element.textContent ||
-                    ""
+        if (
+            page ===
+                "auxiliary.html" ||
+            page ===
+                "fuel.html" ||
+            page ===
+                "maintenance.html" ||
+            page ===
+                "maintenance-worker.html"
+        ) {
+            if (
+                typeof window.openPage ===
+                    "function"
+            ) {
+                window.openPage(
+                    "history"
+                );
+
+                return;
+            }
+        }
+
+
+        if (
+            page ===
+            "dispatch.html"
+        ) {
+            document
+                .getElementById(
+                    "historyTaskButton"
                 )
-                .replace(
-                    /\s+/g,
-                    ""
+                ?.click();
+
+            return;
+        }
+
+
+        if (
+            page ===
+            "driver-work.html"
+        ) {
+            document
+                .getElementById(
+                    "tripSection"
                 )
-                .includes(
-                    label
+                ?.scrollIntoView({
+                    behavior:
+                        "smooth",
+                    block:
+                        "start"
+                });
+
+            return;
+        }
+
+
+        if (
+            page ===
+            "excavator.html"
+        ) {
+            document
+                .getElementById(
+                    "historyList"
                 )
+                ?.closest(
+                    "section"
+                )
+                ?.scrollIntoView({
+                    behavior:
+                        "smooth",
+                    block:
+                        "start"
+                });
+
+            return;
+        }
+
+
+        openUnifiedApplication(
+            "report-center.html"
         );
     }
 
 
-    function createQuickActionButton(
+    function createBottomQuickButton(
         icon,
         title,
         subTitle,
-        target,
-        kind
+        action
     ) {
         const button =
             document.createElement(
@@ -1228,36 +1255,183 @@ mine-management 全端工作聊天 V1.3.1
             "button";
 
         button.className =
-            "mine-common-quick-action " +
-            kind;
+            "mine-bottom-quick-button";
 
         button.innerHTML = `
-            <span class="mine-common-quick-icon">
+            <span class="mine-bottom-quick-icon">
                 ${icon}
             </span>
 
-            <span class="mine-common-quick-title">
+            <span class="mine-bottom-quick-title">
                 ${title}
             </span>
 
-            <span class="mine-common-quick-sub">
+            <span class="mine-bottom-quick-sub">
                 ${subTitle}
             </span>
         `;
 
         button.addEventListener(
             "click",
-            () =>
-                openUnifiedApplication(
-                    target
-                )
+            action
         );
 
         return button;
     }
 
 
-    function mountUnifiedQuickActions() {
+    function shouldHideDuplicateAction(
+        element
+    ) {
+        if (
+            element.closest(
+                "#mineBottomQuickActions"
+            )
+        ) {
+            return false;
+        }
+
+
+        const text =
+            String(
+                element.textContent ||
+                ""
+            )
+            .replace(
+                /\s+/g,
+                ""
+            );
+
+
+        const duplicatePatterns = [
+            "加油申请",
+            "异常上报/设备维修",
+            "进入异常上报/设备维修",
+            "物资申请",
+            "物资领用申请",
+            "物资领用",
+            "请假申请",
+            "申请请假",
+            "打开请假申请",
+            "作业历史",
+            "历史作业",
+            "历史任务"
+        ];
+
+
+        if (
+            duplicatePatterns.some(
+                pattern =>
+                    text.includes(
+                        pattern
+                    )
+            )
+        ) {
+            return true;
+        }
+
+
+        const page =
+            getCurrentPageName();
+
+
+        if (
+            page ===
+                "fuel.html" &&
+            (
+                text.includes(
+                    "加油记录"
+                ) ||
+                text ===
+                    "设备维修"
+            )
+        ) {
+            return true;
+        }
+
+
+        if (
+            (
+                page ===
+                    "maintenance.html" ||
+                page ===
+                    "maintenance-worker.html"
+            ) &&
+            element.dataset?.page ===
+                "history"
+        ) {
+            return true;
+        }
+
+
+        return false;
+    }
+
+
+    function hideDuplicateFunctionKeys() {
+        document
+            .querySelectorAll(
+                "button, a"
+            )
+            .forEach(
+                element => {
+                    if (
+                        shouldHideDuplicateAction(
+                            element
+                        )
+                    ) {
+                        element.style.display =
+                            "none";
+
+                        element.dataset.mineDuplicateHidden =
+                            "1";
+                    }
+                }
+            );
+
+
+        document
+            .querySelectorAll(
+                ".quick-grid"
+            )
+            .forEach(
+                grid => {
+                    const visibleChildren =
+                        Array.from(
+                            grid.children
+                        )
+                        .filter(
+                            child =>
+                                child.style.display !==
+                                    "none"
+                        );
+
+
+                    if (
+                        visibleChildren.length ===
+                            0
+                    ) {
+                        const card =
+                            grid.closest(
+                                "section.card, .card"
+                            );
+
+                        if (
+                            card &&
+                            !card.closest(
+                                "#mineBottomQuickActions"
+                            )
+                        ) {
+                            card.style.display =
+                                "none";
+                        }
+                    }
+                }
+            );
+    }
+
+
+    function mountBottomQuickActions() {
         const page =
             getCurrentPageName();
 
@@ -1271,8 +1445,29 @@ mine-management 全端工作聊天 V1.3.1
 
 
         if (
+            document.getElementById(
+                "mineBottomQuickActions"
+            )
+        ) {
+            return;
+        }
+
+
+        const main =
+            document.querySelector(
+                "main"
+            );
+
+        if (
+            !main
+        ) {
+            return;
+        }
+
+
+        if (
             !document.getElementById(
-                "mineCommonQuickActionStyle"
+                "mineBottomQuickActionStyle"
             )
         ) {
             const style =
@@ -1281,13 +1476,38 @@ mine-management 全端工作聊天 V1.3.1
                 );
 
             style.id =
-                "mineCommonQuickActionStyle";
+                "mineBottomQuickActionStyle";
 
             style.textContent = `
-                .mine-common-quick-action{
-                    min-height:92px;
-                    padding:14px 12px;
-                    border:1px solid #dbe3ef;
+                #mineBottomQuickActions{
+                    margin-top:16px;
+                    padding:18px;
+                    border:1px solid #e2e8f0;
+                    border-radius:16px;
+                    background:#ffffff;
+                    box-shadow:0 6px 18px rgba(15,23,42,.05);
+                }
+
+                #mineBottomQuickActions .mine-bottom-quick-head{
+                    margin-bottom:14px;
+                }
+
+                #mineBottomQuickActions .mine-bottom-quick-head h2{
+                    margin:0;
+                    color:#0f172a;
+                    font-size:18px;
+                }
+
+                #mineBottomQuickActions .mine-bottom-quick-grid{
+                    display:grid;
+                    grid-template-columns:repeat(3,minmax(0,1fr));
+                    gap:10px;
+                }
+
+                .mine-bottom-quick-button{
+                    min-height:102px;
+                    padding:12px;
+                    border:1px solid #e2e8f0;
                     border-radius:14px;
                     background:#ffffff;
                     color:#0f172a;
@@ -1295,34 +1515,47 @@ mine-management 全端工作聊天 V1.3.1
                     flex-direction:column;
                     align-items:center;
                     justify-content:center;
-                    gap:5px;
                     text-align:center;
                     cursor:pointer;
                     font:inherit;
                 }
 
-                .mine-common-quick-action:hover{
+                .mine-bottom-quick-button:hover{
                     border-color:#93c5fd;
                     box-shadow:0 8px 20px rgba(37,99,235,.08);
                 }
 
-                .mine-common-quick-icon{
+                .mine-bottom-quick-icon{
                     display:block;
-                    font-size:22px;
-                    line-height:1;
+                    margin-bottom:7px;
+                    font-size:24px;
                 }
 
-                .mine-common-quick-title{
+                .mine-bottom-quick-title{
                     display:block;
                     font-size:14px;
                     font-weight:800;
                 }
 
-                .mine-common-quick-sub{
+                .mine-bottom-quick-sub{
                     display:block;
+                    margin-top:4px;
                     color:#64748b;
                     font-size:11px;
+                    font-weight:400;
                     line-height:1.4;
+                }
+
+                @media(max-width:720px){
+                    #mineBottomQuickActions .mine-bottom-quick-grid{
+                        grid-template-columns:repeat(2,minmax(0,1fr));
+                    }
+                }
+
+                @media(max-width:420px){
+                    #mineBottomQuickActions .mine-bottom-quick-grid{
+                        grid-template-columns:1fr;
+                    }
                 }
             `;
 
@@ -1332,124 +1565,109 @@ mine-management 全端工作聊天 V1.3.1
         }
 
 
-        const selector =
-            QUICK_GRID_SELECTORS[
-                page
-            ];
-
-        let container =
-            selector
-                ? document.querySelector(
-                    selector
-                )
-                : null;
-
-
-        if (
-            !container
-        ) {
-            const main =
-                document.querySelector(
-                    "main"
-                );
-
-            if (
-                !main
-            ) {
-                return;
-            }
-
-            const section =
-                document.createElement(
-                    "section"
-                );
-
-            section.className =
-                "card mine-fallback-quick-section";
-
-            section.innerHTML = `
-                <div style="margin-bottom:12px;font-weight:800;">
-                    ⚡ 快捷功能
-                </div>
-
-                <div
-                    class="mine-fallback-quick-grid"
-                    style="
-                        display:grid;
-                        grid-template-columns:repeat(3,minmax(0,1fr));
-                        gap:10px;
-                    "
-                ></div>
-            `;
-
-            main.insertBefore(
-                section,
-                main.firstChild
+        const section =
+            document.createElement(
+                "section"
             );
 
-            container =
-                section.querySelector(
-                    ".mine-fallback-quick-grid"
-                );
-        }
+        section.id =
+            "mineBottomQuickActions";
+
+        section.innerHTML = `
+            <div class="mine-bottom-quick-head">
+                <h2>⚡ 快捷功能</h2>
+            </div>
+
+            <div
+                class="mine-bottom-quick-grid"
+                id="mineBottomQuickGrid"
+            ></div>
+        `;
 
 
-        if (
-            !hasQuickAction(
-                container,
-                "物资申请"
-            ) &&
-            !hasQuickAction(
-                container,
-                "物资领用"
+        main.appendChild(
+            section
+        );
+
+
+        const grid =
+            document.getElementById(
+                "mineBottomQuickGrid"
+            );
+
+
+        grid.appendChild(
+            createBottomQuickButton(
+                "⛽",
+                "加油申请",
+                "进入统一加油中心",
+                () =>
+                    openUnifiedApplication(
+                        "fuel-request.html"
+                    )
             )
-        ) {
-            container.appendChild(
-                createQuickActionButton(
-                    "📦",
-                    "物资申请",
-                    "劳保及工作物资",
-                    "material-request.html",
-                    "material"
-                )
-            );
-        }
+        );
 
 
-        if (
-            !hasQuickAction(
-                container,
-                "请假申请"
+        grid.appendChild(
+            createBottomQuickButton(
+                "⚠️",
+                "异常上报",
+                "进入统一设备维修上报",
+                () =>
+                    openUnifiedApplication(
+                        "maintenance-report.html"
+                    )
             )
-        ) {
-            container.appendChild(
-                createQuickActionButton(
-                    "📝",
-                    "请假申请",
-                    "提交请假记录",
-                    "leave-request.html",
-                    "leave"
-                )
-            );
-        }
+        );
 
 
-        if (
-            !hasQuickAction(
-                container,
-                "加油申请"
+        grid.appendChild(
+            createBottomQuickButton(
+                "📦",
+                "物资申请",
+                "劳保及工作物资",
+                () =>
+                    openUnifiedApplication(
+                        "material-request.html"
+                    )
             )
-        ) {
-            container.appendChild(
-                createQuickActionButton(
-                    "⛽",
-                    "加油申请",
-                    "进入统一加油中心",
-                    "fuel-request.html",
-                    "fuel"
-                )
-            );
-        }
+        );
+
+
+        grid.appendChild(
+            createBottomQuickButton(
+                "📝",
+                "请假申请",
+                "提交请假记录",
+                () =>
+                    openUnifiedApplication(
+                        "leave-request.html"
+                    )
+            )
+        );
+
+
+        grid.appendChild(
+            createBottomQuickButton(
+                "📚",
+                "作业历史",
+                "查看历史记录",
+                () =>
+                    openPageHistory(
+                        page
+                    )
+            )
+        );
+
+
+        hideDuplicateFunctionKeys();
+
+
+        setTimeout(
+            hideDuplicateFunctionKeys,
+            300
+        );
     }
 
 
@@ -1468,7 +1686,7 @@ mine-management 全端工作聊天 V1.3.1
         }
 
 
-        mountUnifiedQuickActions();
+        mountBottomQuickActions();
 
 
         if (
