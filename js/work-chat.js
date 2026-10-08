@@ -1612,7 +1612,7 @@ mine-management 全端工作聊天 V1.4
         grid.appendChild(
             createBottomQuickButton(
                 "⚠️",
-                "异常上报",
+                "设备异常上报",
                 "进入统一设备维修上报",
                 () =>
                     openUnifiedApplication(
