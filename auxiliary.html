@@ -594,7 +594,169 @@
             }
         }
 
-    </style>
+    
+
+
+        /* =========================================================
+           V2.12.1 辅助车辆请假界面统一为汽车司机样式
+        ========================================================= */
+
+        .aux-leave-open {
+            width: 100%;
+            min-height: 46px;
+            border: 0;
+            border-radius: 10px;
+            background: #2563eb;
+            color: #ffffff;
+            font-size: 14px;
+            font-weight: 800;
+            cursor: pointer;
+        }
+
+        .aux-leave-modal {
+            position: fixed;
+            inset: 0;
+            z-index: 100020;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+            background: rgba(15, 23, 42, .58);
+        }
+
+        .aux-leave-modal.show {
+            display: flex;
+        }
+
+        .aux-leave-card {
+            width: min(500px, 100%);
+            max-height: calc(100vh - 32px);
+            overflow: auto;
+            padding: 18px;
+            border-radius: 16px;
+            background: #ffffff;
+            box-shadow: 0 24px 70px rgba(15, 23, 42, .28);
+        }
+
+        .aux-leave-card h2 {
+            margin: 0 0 12px;
+        }
+
+        .aux-leave-approval-tip {
+            margin-bottom: 12px;
+            padding: 10px 12px;
+            border-radius: 10px;
+            background: #ffedd5;
+            color: #9a3412;
+            font-size: 12px;
+            line-height: 1.6;
+        }
+
+        .aux-leave-card > label {
+            display: block;
+            margin: 12px 0 6px;
+            font-weight: 700;
+        }
+
+        .aux-leave-card input,
+        .aux-leave-card select,
+        .aux-leave-card textarea {
+            width: 100%;
+        }
+
+        .leave-policy-box {
+            margin: 12px 0 16px;
+            padding: 12px;
+            border: 1px solid #dbeafe;
+            border-radius: 12px;
+            background: #f8fbff;
+        }
+
+        .leave-policy-title {
+            margin-bottom: 8px;
+            color: #1e3a8a;
+            font-weight: 800;
+        }
+
+        .leave-policy-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 8px;
+        }
+
+        .leave-policy-item {
+            padding: 9px 10px;
+            border: 1px solid #e2e8f0;
+            border-radius: 9px;
+            background: #ffffff;
+        }
+
+        .leave-policy-item span {
+            display: block;
+            color: #64748b;
+            font-size: 11px;
+        }
+
+        .leave-policy-item strong {
+            display: block;
+            margin-top: 3px;
+            color: #0f172a;
+            font-size: 14px;
+        }
+
+        .leave-halfday-grid {
+            display: grid;
+            grid-template-columns: minmax(0, 1.5fr) minmax(120px, .7fr);
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+
+        .leave-halfday-field label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 700;
+        }
+
+        .leave-days-readonly {
+            background: #f8fafc;
+            color: #0f172a;
+            font-weight: 800;
+        }
+
+        .leave-auto-tip {
+            margin: 6px 0 12px;
+            padding: 9px 10px;
+            border-radius: 9px;
+            background: #eff6ff;
+            color: #1e40af;
+            font-size: 12px;
+            line-height: 1.6;
+        }
+
+        .leave-impact-box {
+            margin: 12px 0;
+            padding: 11px 12px;
+            border-radius: 10px;
+            background: #fff7ed;
+            color: #9a3412;
+            font-size: 12px;
+            line-height: 1.7;
+        }
+
+        .aux-leave-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 14px;
+        }
+
+        @media (max-width: 700px) {
+            .leave-halfday-grid,
+            .leave-policy-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+</style>
     <link rel="stylesheet" href="css/ui-system.css?v=1.2.0">
 <link rel="stylesheet" href="css/work-chat.css?v=1.0.0">
 </head>
@@ -1390,103 +1552,18 @@
         <section class="card">
 
             <div class="section-title">
-
                 <div>
-
-                    <h2>
-                        📝 请假申请
-                    </h2>
-
-                    <p>
-                        当前辅助车辆司机请假申请
-                    </p>
-
+                    <h2>📝 请假申请</h2>
+                    <p>辅助车辆司机请假统一提交调度审批</p>
                 </div>
-
             </div>
-
-
-            <div class="form-grid">
-
-                <div class="form-group">
-
-                    <label for="leaveType">
-                        请假类型
-                    </label>
-
-                    <select id="leaveType">
-
-                        <option value="事假">
-                            事假
-                        </option>
-
-                        <option value="病假">
-                            病假
-                        </option>
-
-                        <option value="休假">
-                            休假
-                        </option>
-
-                        <option value="其他">
-                            其他
-                        </option>
-
-                    </select>
-
-                </div>
-
-
-                <div class="form-group">
-
-                    <label for="leaveStart">
-                        开始时间
-                    </label>
-
-                    <input
-                        id="leaveStart"
-                        type="datetime-local"
-                    >
-
-                </div>
-
-
-                <div class="form-group">
-
-                    <label for="leaveEnd">
-                        结束时间
-                    </label>
-
-                    <input
-                        id="leaveEnd"
-                        type="datetime-local"
-                    >
-
-                </div>
-
-            </div>
-
-
-            <div class="form-group">
-
-                <label for="leaveReason">
-                    请假原因
-                </label>
-
-                <textarea
-                    id="leaveReason"
-                    placeholder="请输入请假原因"
-                ></textarea>
-
-            </div>
-
 
             <button
                 type="button"
-                class="primary-btn"
-                onclick="submitLeave()"
+                class="aux-leave-open"
+                onclick="openAuxLeaveModal()"
             >
-                提交请假申请
+                📝 打开请假申请
             </button>
 
         </section>
@@ -1495,17 +1572,10 @@
         <section class="card">
 
             <div class="section-title">
-
                 <div>
-
-                    <h2>
-                        我的请假记录
-                    </h2>
-
+                    <h2>我的请假记录</h2>
                 </div>
-
             </div>
-
 
             <div
                 id="leaveRecordList"
@@ -1518,13 +1588,149 @@
     </section>
 
 
+    <div
+        id="auxLeaveModal"
+        class="aux-leave-modal"
+    >
+        <div class="aux-leave-card">
+
+            <h2>🗓 请假申请</h2>
+
+            <div class="aux-leave-approval-tip">
+                一线司机请假自动提交给调度审批。
+                请假最小单位为0.5天。
+            </div>
+
+            <label for="leaveType">请假类型 *</label>
+            <select id="leaveType">
+                <option value="事假">事假</option>
+                <option value="轮休假">轮休假</option>
+            </select>
+
+            <div class="leave-policy-box">
+                <div class="leave-policy-title">轮休假额度</div>
+
+                <div class="leave-policy-grid">
+                    <div class="leave-policy-item">
+                        <span>是否享有轮休假</span>
+                        <strong>-</strong>
+                    </div>
+                    <div class="leave-policy-item">
+                        <span>当前轮休周期</span>
+                        <strong>-</strong>
+                    </div>
+                    <div class="leave-policy-item">
+                        <span>周期总额度</span>
+                        <strong>-</strong>
+                    </div>
+                    <div class="leave-policy-item">
+                        <span>本周期已使用</span>
+                        <strong>-</strong>
+                    </div>
+                    <div class="leave-policy-item">
+                        <span>本周期剩余</span>
+                        <strong>-</strong>
+                    </div>
+                    <div class="leave-policy-item">
+                        <span>额度规则</span>
+                        <strong>到期重新计算，不跨周期结转</strong>
+                    </div>
+                </div>
+            </div>
+
+            <label for="leaveDays">本次申请天数 *</label>
+            <input
+                id="leaveDays"
+                class="leave-days-readonly"
+                type="text"
+                value="0.5"
+                readonly
+            >
+
+            <p class="leave-auto-tip">
+                选择开始日期、结束日期和“上午 / 下午”后，
+                系统自动计算请假天数，最小单位为0.5天。
+            </p>
+
+            <div class="leave-halfday-grid">
+                <div class="leave-halfday-field">
+                    <label for="leaveStartDate">开始日期 *</label>
+                    <input id="leaveStartDate" type="date">
+                </div>
+
+                <div class="leave-halfday-field">
+                    <label for="leaveStartHalf">开始时段 *</label>
+                    <select id="leaveStartHalf">
+                        <option value="AM">上午</option>
+                        <option value="PM">下午</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="leave-halfday-grid">
+                <div class="leave-halfday-field">
+                    <label for="leaveEndDate">结束日期 *</label>
+                    <input id="leaveEndDate" type="date">
+                </div>
+
+                <div class="leave-halfday-field">
+                    <label for="leaveEndHalf">结束时段 *</label>
+                    <select id="leaveEndHalf">
+                        <option value="AM">上午</option>
+                        <option value="PM">下午</option>
+                    </select>
+                </div>
+            </div>
+
+            <input id="leaveStart" type="hidden">
+            <input id="leaveEnd" type="hidden">
+
+            <div
+                id="leaveAttendanceImpact"
+                class="leave-impact-box"
+            >
+                选择请假日期和上午 / 下午后，
+                系统将自动计算请假天数及考勤影响。
+            </div>
+
+            <label for="leaveContactPhone">联系电话</label>
+            <input id="leaveContactPhone" type="tel">
+
+            <label for="leaveReason">请假原因 *</label>
+            <textarea
+                id="leaveReason"
+                placeholder="请输入请假原因"
+            ></textarea>
+
+            <div class="aux-leave-actions">
+                <button
+                    type="button"
+                    class="primary-btn"
+                    onclick="submitLeave()"
+                >
+                    提交调度审批
+                </button>
+
+                <button
+                    type="button"
+                    class="secondary-btn"
+                    onclick="closeAuxLeaveModal()"
+                >
+                    取消
+                </button>
+            </div>
+
+        </div>
+    </div>
+
+
 </main>
 
 
 
 <footer>
 
-    矿山管理系统 · 辅助车辆司机端 V2.12.0
+    矿山管理系统 · 辅助车辆司机端 V2.12.1
 
 </footer>
 
@@ -1647,6 +1853,46 @@ function initialize() {
 
 
     renderAll();
+
+
+    [
+        "leaveStartDate",
+        "leaveEndDate",
+        "leaveStartHalf",
+        "leaveEndHalf"
+    ]
+    .forEach(
+        id => {
+
+            document
+                .getElementById(
+                    id
+                )
+                ?.addEventListener(
+                    "change",
+                    syncAuxLeaveDateTime
+                );
+        }
+    );
+
+
+    document
+        .getElementById(
+            "auxLeaveModal"
+        )
+        ?.addEventListener(
+            "click",
+            event => {
+
+                if (
+                    event.target?.id ===
+                        "auxLeaveModal"
+                ) {
+
+                    closeAuxLeaveModal();
+                }
+            }
+        );
 
 
     setInterval(
@@ -4262,6 +4508,248 @@ function getLeaves() {
 
 
 
+function openAuxLeaveModal() {
+
+    const modal =
+        document.getElementById(
+            "auxLeaveModal"
+        );
+
+
+    document.getElementById(
+        "leaveContactPhone"
+    ).value =
+        currentPerson?.phone ||
+        "";
+
+
+    document.getElementById(
+        "leaveReason"
+    ).value =
+        "";
+
+
+    syncAuxLeaveDateTime();
+
+
+    modal?.classList.add(
+        "show"
+    );
+}
+
+
+
+function closeAuxLeaveModal() {
+
+    document
+        .getElementById(
+            "auxLeaveModal"
+        )
+        ?.classList.remove(
+            "show"
+        );
+}
+
+
+
+function calculateAuxLeaveDays() {
+
+    const startDate =
+        document
+            .getElementById(
+                "leaveStartDate"
+            )
+            ?.value ||
+        "";
+
+    const endDate =
+        document
+            .getElementById(
+                "leaveEndDate"
+            )
+            ?.value ||
+        "";
+
+    const startHalf =
+        document
+            .getElementById(
+                "leaveStartHalf"
+            )
+            ?.value ||
+        "AM";
+
+    const endHalf =
+        document
+            .getElementById(
+                "leaveEndHalf"
+            )
+            ?.value ||
+        "AM";
+
+
+    if (
+        !startDate ||
+        !endDate
+    ) {
+
+        return 0.5;
+    }
+
+
+    const start =
+        new Date(
+            startDate +
+            "T00:00:00"
+        );
+
+    const end =
+        new Date(
+            endDate +
+            "T00:00:00"
+        );
+
+
+    const dayDiff =
+        Math.round(
+            (
+                end -
+                start
+            ) /
+            86400000
+        );
+
+
+    const halfIndex = {
+        AM: 0,
+        PM: 1
+    };
+
+
+    const halfDays =
+        dayDiff *
+        2 +
+        halfIndex[
+            endHalf
+        ] -
+        halfIndex[
+            startHalf
+        ] +
+        1;
+
+
+    return Math.max(
+        0,
+        halfDays /
+        2
+    );
+}
+
+
+
+function syncAuxLeaveDateTime() {
+
+    const startDate =
+        document
+            .getElementById(
+                "leaveStartDate"
+            )
+            ?.value ||
+        "";
+
+    const endDate =
+        document
+            .getElementById(
+                "leaveEndDate"
+            )
+            ?.value ||
+        "";
+
+    const startHalf =
+        document
+            .getElementById(
+                "leaveStartHalf"
+            )
+            ?.value ||
+        "AM";
+
+    const endHalf =
+        document
+            .getElementById(
+                "leaveEndHalf"
+            )
+            ?.value ||
+        "AM";
+
+
+    const days =
+        calculateAuxLeaveDays();
+
+
+    document
+        .getElementById(
+            "leaveDays"
+        )
+        .value =
+            days > 0
+                ? String(
+                    days
+                )
+                : "0.5";
+
+
+    document
+        .getElementById(
+            "leaveStart"
+        )
+        .value =
+            startDate
+                ? startDate +
+                  (
+                      startHalf === "AM"
+                          ? "T08:00"
+                          : "T13:00"
+                  )
+                : "";
+
+
+    document
+        .getElementById(
+            "leaveEnd"
+        )
+        .value =
+            endDate
+                ? endDate +
+                  (
+                      endHalf === "AM"
+                          ? "T12:00"
+                          : "T17:00"
+                  )
+                : "";
+
+
+    const impact =
+        document.getElementById(
+            "leaveAttendanceImpact"
+        );
+
+
+    if (
+        impact
+    ) {
+
+        impact.textContent =
+            startDate &&
+            endDate &&
+            days > 0
+                ? "本次请假 " +
+                  days +
+                  " 天。提交后将进入调度审批，并影响对应请假时段考勤。"
+                : "选择请假日期和上午 / 下午后，系统将自动计算请假天数及考勤影响。";
+    }
+}
+
+
+
 function submitLeave() {
 
     if (
@@ -4274,6 +4762,9 @@ function submitLeave() {
 
         return;
     }
+
+
+    syncAuxLeaveDateTime();
 
 
     const type =
@@ -4300,6 +4791,26 @@ function submitLeave() {
             .value;
 
 
+    const days =
+        Number(
+            document
+                .getElementById(
+                    "leaveDays"
+                )
+                .value ||
+            0
+        );
+
+
+    const phone =
+        document
+            .getElementById(
+                "leaveContactPhone"
+            )
+            .value
+            .trim();
+
+
     const reason =
         document
             .getElementById(
@@ -4312,11 +4823,12 @@ function submitLeave() {
     if (
         !start ||
         !end ||
+        days <= 0 ||
         !reason
     ) {
 
         alert(
-            "请完整填写请假申请。"
+            "请完整填写请假日期、时段和原因。"
         );
 
         return;
@@ -4340,11 +4852,97 @@ function submitLeave() {
     }
 
 
+    const personId =
+        getPersonId(
+            currentPerson
+        );
+
+
+    const overlap =
+        getLeaves()
+            .some(
+                item => {
+
+                    if (
+                        ![
+                            "pending",
+                            "approved"
+                        ]
+                        .includes(
+                            item.status
+                        )
+                    ) {
+
+                        return false;
+                    }
+
+
+                    const samePerson =
+                        (
+                            personId &&
+                            (
+                                item.applicantId ===
+                                    personId ||
+                                item.personId ===
+                                    personId
+                            )
+                        )
+                        ||
+                        (
+                            !personId &&
+                            (
+                                item.applicantName ===
+                                    currentPerson?.name ||
+                                item.personName ===
+                                    currentPerson?.name
+                            )
+                        );
+
+
+                    if (
+                        !samePerson
+                    ) {
+
+                        return false;
+                    }
+
+
+                    return (
+                        new Date(
+                            item.startTime
+                        ) <
+                            new Date(
+                                end
+                            )
+                        &&
+                        new Date(
+                            item.endTime
+                        ) >
+                            new Date(
+                                start
+                            )
+                    );
+                }
+            );
+
+
+    if (
+        overlap
+    ) {
+
+        alert(
+            "当前时间段已有待审批或已批准请假申请。"
+        );
+
+        return;
+    }
+
+
     const records =
         getLeaves();
 
 
-    records.push({
+    const record = {
 
         leaveId:
             createId(
@@ -4352,9 +4950,9 @@ function submitLeave() {
             ),
 
         applicantId:
-            getPersonId(
-                currentPerson
-            ),
+            personId,
+
+        personId,
 
         applicantName:
             currentPerson.name ||
@@ -4364,6 +4962,11 @@ function submitLeave() {
             currentPerson.name ||
             "",
 
+        employeeNo:
+            currentPerson.employeeNo ||
+            currentPerson.employeeId ||
+            "",
+
         position:
             currentPerson.position ||
             "",
@@ -4371,8 +4974,38 @@ function submitLeave() {
         role:
             "driver",
 
+        team:
+            currentPerson.team ||
+            currentPerson.department ||
+            "",
+
+        department:
+            currentPerson.department ||
+            currentPerson.team ||
+            "",
+
+        employeeLevel:
+            "frontline",
+
         leaveType:
             type,
+
+        leaveDays:
+            days,
+
+        startHalf:
+            document
+                .getElementById(
+                    "leaveStartHalf"
+                )
+                .value,
+
+        endHalf:
+            document
+                .getElementById(
+                    "leaveEndHalf"
+                )
+                .value,
 
         startTime:
             new Date(
@@ -4384,6 +5017,9 @@ function submitLeave() {
                 end
             ).toISOString(),
 
+        contactPhone:
+            phone,
+
         reason,
 
         status:
@@ -4392,10 +5028,27 @@ function submitLeave() {
         approverRole:
             "dispatch",
 
+        approvalLevel:
+            "调度审批",
+
         submittedAt:
             new Date()
-                .toISOString()
-    });
+                .toISOString(),
+
+        approvedAt:
+            null,
+
+        approvedBy:
+            "",
+
+        approvalRemark:
+            ""
+    };
+
+
+    records.push(
+        record
+    );
 
 
     save(
@@ -4404,54 +5057,87 @@ function submitLeave() {
     );
 
 
-    document.getElementById(
-        "leaveStart"
-    ).value =
-        "";
+    if (
+        window.MineDataService
+    ) {
+
+        Promise.resolve(
+            window.MineDataService.upsert(
+                "leave_requests",
+                record
+            )
+        )
+        .catch(
+            error => {
+
+                console.warn(
+                    "DataService 辅助车辆请假同步失败，本地记录已保留：",
+                    error
+                );
+            }
+        );
+    }
 
 
-    document.getElementById(
-        "leaveEnd"
-    ).value =
-        "";
-
-
-    document.getElementById(
+    [
+        "leaveStartDate",
+        "leaveEndDate",
+        "leaveStart",
+        "leaveEnd",
         "leaveReason"
-    ).value =
-        "";
+    ]
+    .forEach(
+        id => {
+
+            const element =
+                document.getElementById(
+                    id
+                );
+
+
+            if (
+                element
+            ) {
+
+                element.value =
+                    "";
+            }
+        }
+    );
+
+
+    document
+        .getElementById(
+            "leaveStartHalf"
+        )
+        .value =
+            "AM";
+
+
+    document
+        .getElementById(
+            "leaveEndHalf"
+        )
+        .value =
+            "AM";
+
+
+    document
+        .getElementById(
+            "leaveDays"
+        )
+        .value =
+            "0.5";
+
+
+    closeAuxLeaveModal();
 
 
     renderAll();
 
-window.addEventListener(
-    "storage",
-    event => {
-
-        if (
-            [
-                STORAGE.TASKS,
-                STORAGE.WORK_RECORDS,
-                STORAGE.VEHICLE_PROFILE,
-                "personnelRecords",
-                "equipmentOperationalStatus",
-                "maintenanceRequests",
-                "maintenanceWorkOrders"
-            ]
-            .includes(
-                event.key
-            )
-        ) {
-
-            renderAll();
-        }
-    }
-);
-
-
 
     alert(
-        "请假申请已经提交。"
+        "请假申请已提交。\n审批人：调度。"
     );
 }
 
