@@ -769,9 +769,9 @@
                 class="shift-kpi-item kpi-clickable"
                 role="button"
                 tabindex="0"
-                aria-label="查看本班挖机司机绩效排名明细"
+                aria-label="查看本月挖机司机绩效排名明细"
             >
-                <span class="shift-kpi-label">本班绩效排名</span>
+                <span class="shift-kpi-label">本月绩效排名</span>
                 <strong
                     id="excavatorPerformanceRankValue"
                     class="shift-kpi-value"
@@ -3597,7 +3597,7 @@ function openExcavatorPerformanceRankingDetail() {
 
 
     showExcavatorKpiDetail(
-        "本班绩效排名明细",
+        "本月绩效排名明细",
         month +
         " · 综合绩效",
         html
@@ -3802,47 +3802,9 @@ function refreshShiftDashboard() {
 
 
 function getExcavatorPerformanceMonth() {
-
-    const shiftDate =
-        String(
-            currentTask?.shiftDate ||
-            ""
-        )
-        .trim();
-
-
-    if (
-        /^\d{4}-\d{2}/.test(
-            shiftDate
-        )
-    ) {
-
-        return shiftDate.slice(
-            0,
-            7
-        );
-    }
-
-
-    const now =
-        new Date();
-
-
-    return (
-        now.getFullYear() +
-        "-" +
-        String(
-            now.getMonth() +
-            1
-        )
-        .padStart(
-            2,
-            "0"
-        )
-    );
+    const now = new Date();
+    return now.getFullYear() + "-" + String(now.getMonth()+1).padStart(2,"0");
 }
-
-
 
 function refreshExcavatorPerformanceRanking() {
 
