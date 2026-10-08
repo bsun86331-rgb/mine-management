@@ -1216,19 +1216,24 @@ mine-management 全端工作聊天 V1.4
             page ===
             "excavator.html"
         ) {
-            document
-                .getElementById(
-                    "historyList"
-                )
-                ?.closest(
-                    "section"
-                )
-                ?.scrollIntoView({
+            const section =
+                document.getElementById(
+                    "excavatorHistorySection"
+                );
+
+            if (
+                section
+            ) {
+                section.style.display =
+                    "";
+
+                section.scrollIntoView({
                     behavior:
                         "smooth",
                     block:
                         "start"
                 });
+            }
 
             return;
         }
