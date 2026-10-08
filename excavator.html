@@ -832,106 +832,6 @@
 
 
     <!-- =====================================================
-         物资领用
-    ====================================================== -->
-
-    <section class="card">
-
-        <div class="section-title">
-
-            <div>
-
-                <h2>
-                    📦 物资领用
-                </h2>
-
-                <p>
-                    申请劳保、工具及其他后勤物资
-                </p>
-
-            </div>
-
-        </div>
-
-
-        <div class="action-grid">
-
-            <button
-                type="button"
-                class="material-request-button"
-                onclick="openMaterialRequest()"
-            >
-                📦 物资领用申请
-            </button>
-
-        </div>
-
-
-        <div class="task-note">
-
-            进入统一物资领用中心后，
-            可选择物资、填写数量、用途和备注，
-            并查看自己的申请状态。
-
-        </div>
-
-    </section>
-
-
-
-    <!-- =====================================================
-         异常上报 / 设备维修
-    ====================================================== -->
-
-    <section class="card">
-
-        <div class="section-title">
-
-            <div>
-
-                <h2>
-                    ⚠️ 异常上报
-                </h2>
-
-                <p>
-                    挖机发生故障时提交设备维修申请
-                </p>
-
-            </div>
-
-        </div>
-
-
-        <div class="action-grid">
-
-            <button
-                type="button"
-                class="maintenance-button"
-                onclick="openMaintenanceReport()"
-            >
-                🔧 设备故障 / 申请维修
-            </button>
-
-        </div>
-
-
-        <div class="task-note">
-
-            生产设备维修申请提交后，
-            先进入调度审批。
-
-            <br>
-
-            调度批准后，
-            再进入维修管理和维修员流程。
-
-        </div>
-
-    </section>
-
-
-
-    <!-- =====================================================
          自动车数
     ====================================================== -->
 
@@ -992,9 +892,14 @@
 
     <!-- =====================================================
          历史任务
+         默认隐藏，仅由底部“快捷功能 → 作业历史”打开
     ====================================================== -->
 
-    <section class="card">
+    <section
+        class="card"
+        id="excavatorHistorySection"
+        style="display:none;"
+    >
 
         <div class="section-title">
 
@@ -1032,7 +937,7 @@
 
 <footer>
 
-    矿山管理系统 · 挖机司机端 V2.11.0H V2.10.0L
+    矿山管理系统 · 挖机司机端 V2.11.0I V2.10.0L
 
 </footer>
 
