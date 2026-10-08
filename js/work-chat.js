@@ -1,6 +1,6 @@
 /*
 ====================================================
-mine-management 全端工作聊天 V1.2
+mine-management 全端工作聊天 V1.2.1
 ----------------------------------------------------
 当前阶段：
 1. 所有正式端口加载同一个聊天组件；
@@ -1122,36 +1122,6 @@ mine-management 全端工作聊天 V1.2
             "mineWorkChatRoot";
 
         root.innerHTML = `
-            ${location.pathname.endsWith(
-                    "/material-request.html"
-                )
-                    ? ""
-                    : `
-            <button
-                type="button"
-                id="mineMaterialRequestLauncher"
-                aria-label="打开物资领用中心"
-                style="
-                    position:relative;
-                    min-width:118px;
-                    min-height:46px;
-                    margin-right:8px;
-                    padding:0 16px;
-                    border:0;
-                    border-radius:999px;
-                    background:#16a34a;
-                    color:#fff;
-                    font-size:14px;
-                    font-weight:800;
-                    box-shadow:0 10px 26px rgba(22,163,74,.24);
-                    cursor:pointer;
-                "
-            >
-                📦 物资领用
-            </button>
-                    `
-            }
-
             <button
                 type="button"
                 class="mine-chat-launcher"
@@ -1260,43 +1230,6 @@ mine-management 全端工作聊天 V1.2
         document.body.appendChild(
             root
         );
-
-        document.getElementById(
-            "mineMaterialRequestLauncher"
-        )
-            ?.addEventListener(
-                "click",
-                () => {
-                    const personId =
-                        getPersonId(
-                            identity
-                        );
-
-                    if (
-                        personId
-                    ) {
-                        localStorage.setItem(
-                            "currentPersonId",
-                            personId
-                        );
-                    }
-
-                    if (
-                        identity?.position
-                    ) {
-                        localStorage.setItem(
-                            "selectedPosition",
-                            String(
-                                identity.position
-                            )
-                        );
-                    }
-
-                    location.href =
-                        "material-request.html";
-                }
-            );
-
 
         document.getElementById(
             "mineChatLauncher"
