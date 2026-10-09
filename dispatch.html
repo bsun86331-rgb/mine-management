@@ -4797,8 +4797,10 @@
             </div>
 
             <div style="margin-top:12px;">
-                <label>本挖机任务 *</label>
-                <select id="coreExcavatorTaskSelect"></select>
+                <label>装载区 *</label>
+                <select id="coreLoadingZoneSelect"></select>
+                <label style="display:block;margin-top:12px;">卸载区 *（可多选）</label>
+                <div id="coreUnloadingZoneOptions" style="display:grid;gap:8px;margin-top:8px;"></div>
             </div>
 
             <div class="double-button-row" style="margin-top:12px;">
@@ -22694,6 +22696,11 @@ function shiftLaunchBindingsForGroups(
                     Boolean
                 ),
 
+            loadingZoneId: group.loadingZoneId || "",
+            loadingZoneName: group.loadingZoneName || "",
+            unloadingZoneIds: group.unloadingZoneIds || [],
+            unloadingZoneNames: group.unloadingZoneNames || [],
+
             shiftId,
             shift,
             shiftDate:
@@ -28989,49 +28996,7 @@ function openCoreEquipmentDetail(
         }
 
 
-        document.getElementById(
-            "coreExcavatorTaskSelect"
-        ).innerHTML =
-            coreTaskOptionsHtml(
-                group.taskSelection
-            );
-
-
-        const taskSelect =
-            document.getElementById(
-                "coreExcavatorTaskSelect"
-            );
-
-
-        taskSelect.value =
-            group.taskSelection ||
-            "";
-
-
-        if (
-            coreDispatchMode ===
-                "adjust"
-        ) {
-
-            group.taskSelection =
-                coreAdjustTaskId;
-
-            taskSelect.innerHTML =
-                coreTaskOptionsHtml(
-                    coreAdjustTaskId
-                );
-
-            taskSelect.value =
-                coreAdjustTaskId;
-
-            taskSelect.disabled =
-                true;
-
-        } else {
-
-            taskSelect.disabled =
-                false;
-        }
+        coreRenderExcavatorZones(group);
 
 
         const removeButton =
@@ -29195,6 +29160,27 @@ function closeCoreEquipmentDetail() {
 }
 
 
+
+function coreRenderExcavatorZones(group) {
+    const zones = readTransportZones().filter(zone => zone.enabled !== false);
+    const loading = zones.filter(zone => zone.zoneType === "loading");
+    const unloading = zones.filter(zone => zone.zoneType === "unloading");
+    const select = document.getElementById("coreLoadingZoneSelect");
+    const box = document.getElementById("coreUnloadingZoneOptions");
+    if (!select || !box) return;
+    select.innerHTML = '<option value="">请选择装载区</option>' +
+        loading.map(zone => '<option value="' + escapeTransportZoneAttribute(zone.zoneId) + '">' +
+        escapeTransportZoneHtml(zone.name || zone.zoneId) + '</option>').join("");
+    select.value = group.loadingZoneId || "";
+    const selected = new Set(Array.isArray(group.unloadingZoneIds) ? group.unloadingZoneIds.map(String) : []);
+    box.innerHTML = unloading.length
+        ? unloading.map(zone => '<label style="display:flex;align-items:center;gap:8px;padding:8px;border:1px solid #e2e8f0;border-radius:8px;">' +
+            '<input type="checkbox" class="core-unload-zone" value="' + escapeTransportZoneAttribute(zone.zoneId) +
+            '" ' + (selected.has(String(zone.zoneId)) ? 'checked' : '') + '> ' +
+            escapeTransportZoneHtml(zone.name || zone.zoneId) + '</label>').join("")
+        : '<div class="zone-empty">暂无已启用的卸载区，请先在运输区域管理中建立。</div>';
+}
+
 function coreCompleteExcavatorBinding() {
 
     if (
@@ -29219,24 +29205,18 @@ function coreCompleteExcavatorBinding() {
     }
 
 
-    const taskId =
-        document.getElementById(
-            "coreExcavatorTaskSelect"
-        )?.value ||
-        "";
-
-
-    if (
-        !taskId
-    ) {
-
-        alert(
-            "请先选择任务。"
-        );
-
+    const loadingZoneId = document.getElementById("coreLoadingZoneSelect")?.value || "";
+    const unloadingZoneIds = Array.from(
+        document.querySelectorAll("#coreUnloadingZoneOptions .core-unload-zone:checked"),
+        node => node.value
+    );
+    const zones = readTransportZones().filter(zone => zone.enabled !== false);
+    const loading = zones.find(zone => String(zone.zoneId) === loadingZoneId && zone.zoneType === "loading");
+    const unloading = unloadingZoneIds.map(id => zones.find(zone => String(zone.zoneId) === id && zone.zoneType === "unloading"));
+    if (!loading || !unloading.length || unloading.some(zone => !zone)) {
+        alert("请选择一个有效装载区和至少一个卸载区。");
         return;
     }
-
 
     const group =
         coreEnsureDraftGroup(
@@ -29310,10 +29290,12 @@ function coreCompleteExcavatorBinding() {
     }
 
 
-    group.taskSelection =
-        taskId;
-
-
+    group.loadingZoneId = loadingZoneId;
+    group.loadingZoneName = loading.name || "";
+    group.unloadingZoneIds = unloadingZoneIds;
+    group.unloadingZoneNames = unloading.map(zone => zone.name || zone.zoneId);
+    group.taskSelection = "__NEW__";
+    group.newTaskName = "运输-" + group.loadingZoneName + "-" + group.unloadingZoneNames.join("、");
     group.bindingConfirmed =
         true;
 
@@ -29527,6 +29509,11 @@ function coreClearExcavatorTrucks() {
 
         group.newTaskName =
             "";
+
+        group.loadingZoneId = "";
+        group.loadingZoneName = "";
+        group.unloadingZoneIds = [];
+        group.unloadingZoneNames = [];
 
         group.bindingConfirmed =
             false;
@@ -30909,44 +30896,6 @@ document
                 false;
         }
     );
-
-
-document
-    .getElementById(
-        "coreExcavatorTaskSelect"
-    )
-    ?.addEventListener(
-        "change",
-        function () {
-
-            if (
-                coreCurrentDevice
-            ) {
-
-                const group =
-                    coreEnsureDraftGroup(
-                        coreCurrentDevice.__id
-                    );
-
-
-                group.taskSelection =
-                    this.value ||
-                    "";
-
-                group.bindingConfirmed =
-                    false;
-
-
-                coreDeduplicateDraftGroups();
-
-
-                renderCoreEquipmentBoards();
-            }
-        }
-    );
-
-
-
 
 
 /* =========================================================
