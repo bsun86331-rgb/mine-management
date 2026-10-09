@@ -2893,7 +2893,7 @@
       <div style="overflow-x:auto;width:100%">
         <table id="dispatchAllocationTable">
           <colgroup><col style="width:152px"><col style="width:72px"><col style="width:130px"><col style="width:130px"><col style="width:130px"><col style="width:130px"><col style="width:130px"><col style="width:130px"><col style="width:130px"><col style="width:130px"><col style="width:130px"><col style="width:174px"></colgroup>
-          <thead><tr><th>挖机</th><th>车数</th><th colspan="9">跟车</th><th>备　注</th></tr></thead>
+          <thead><tr><th colspan="12" style="text-align:left;padding-left:10px">日期：<span id="dispatchAllocationDate"></span></th></tr><tr><th>挖机</th><th>车数</th><th colspan="9">跟车</th><th>备　注</th></tr></thead>
           <tbody id="dispatchAllocationTableBody"><tr><td colspan="12">暂无已下发的分车任务</td></tr></tbody>
         </table>
       </div>
@@ -36264,18 +36264,23 @@ function render(){
      rows.push({ex,operator:b.excavatorDriverName||b.operatorName||op.driverName||op.personName||"",list,area:t.area||t.workArea||"",dump:t.unloadingPoint||t.taskUnloadingPoint||""});
    });
  });
- if(!rows.length){body.innerHTML='<tr><td colspan="12" style="height:54px">暂无已下发的分车任务</td></tr>';return;}
- body.innerHTML=rows.map(r=>{
-   const groups=[];
-   for(let offset=0;offset<Math.max(1,Math.ceil(r.list.length/COLUMNS));offset++){
-     const slice=r.list.slice(offset*COLUMNS,(offset+1)*COLUMNS);
-     const num=Array.from({length:COLUMNS},(_,i)=>'<td>'+escape(slice[i]?.[0]||"")+'</td>').join("");
-     const names=Array.from({length:COLUMNS},(_,i)=>'<td>'+escape(slice[i]?.[1]||"")+'</td>').join("");
-     groups.push('<tr><td class="labelcell">挖机编号：'+escape(r.ex)+'</td><td rowspan="2">'+(offset===0?r.list.length:"续")+'</td>'+num+'<td class="labelcell">采场位置：'+escape(r.area)+'</td></tr>'
-       +'<tr><td class="labelcell">挖机司机姓名：'+escape(r.operator)+'</td>'+names+'<td class="labelcell">排土场位置：'+escape(r.dump)+'</td></tr>');
-   }
-   return groups.join("");
- }).join("");
+ const dateBox=document.getElementById("dispatchAllocationDate");
+ if(dateBox)dateBox.textContent=new Date().toLocaleDateString("zh-CN",{year:"numeric",month:"2-digit",day:"2-digit"});
+ const html=[];const blank={ex:"",operator:"",list:[],area:"",dump:""};
+ const slots=Math.max(12,rows.reduce((sum,r)=>sum+Math.max(1,Math.ceil(r.list.length/COLUMNS)),0));
+ let count=0;
+ [...rows].forEach(r=>{for(let offset=0;offset<Math.max(1,Math.ceil(r.list.length/COLUMNS));offset++){
+   const slice=r.list.slice(offset*COLUMNS,(offset+1)*COLUMNS);
+   html.push(makeRows({...r,list:slice},offset===0?r.list.length:"续"));count++;
+ }});
+ while(count<slots){html.push(makeRows(blank,""));count++;}
+ body.innerHTML=html.join("");
+ function makeRows(r,vehicleCount){
+   const numbers=Array.from({length:COLUMNS},(_,i)=>'<td>'+escape(r.list[i]?.[0]||"")+'</td>').join("");
+   const drivers=Array.from({length:COLUMNS},(_,i)=>'<td>'+escape(r.list[i]?.[1]||"")+'</td>').join("");
+   return '<tr><td class="labelcell">挖机编号'+(r.ex?"："+escape(r.ex):"")+'</td><td rowspan="2">'+escape(vehicleCount)+'</td>'+numbers+'<td class="labelcell">采场位置'+(r.area?"："+escape(r.area):"")+'</td></tr>'
+    +'<tr><td class="labelcell">挖机司机姓名'+(r.operator?"："+escape(r.operator):"")+'</td>'+drivers+'<td class="labelcell">排土场位置'+(r.dump?"："+escape(r.dump):"")+'</td></tr>';
+ }
 }
 render();window.addEventListener("storage",e=>{if(e.key==="dispatchPublishedTasks")render()});setInterval(render,5000);
 })();
