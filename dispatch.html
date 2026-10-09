@@ -2882,11 +2882,19 @@
     <!-- 分车任务表：只读已发布生产任务，不另建任务数据 -->
     <section class="dispatch-section" id="dispatchAllocationTableSection">
       <div class="dispatch-section-title"><div><h2>🚚 分车任务表</h2><p>自动读取已下发任务中的挖机、汽车和司机绑定；横向滑动查看更多车辆</p></div></div>
-      <div style="overflow-x:auto;width:100%;border:1px solid #cbd5e1;border-radius:10px">
-        <table id="dispatchAllocationTable" style="border-collapse:collapse;width:100%;min-width:1320px;table-layout:fixed;text-align:center;font-size:13px">
-          <thead><tr style="background:#eff6ff"><th style="width:138px">挖机</th><th style="width:64px">车数</th><th colspan="9">跟车</th><th style="width:178px">备注</th></tr>
-          <tr><th>挖机编号 / 司机</th><th>数量</th><th colspan="9">汽车编号 / 汽车司机姓名</th><th>采场 / 排土场</th></tr></thead>
-          <tbody id="dispatchAllocationTableBody"><tr><td colspan="12">暂无已下发的挖机与汽车绑定</td></tr></tbody>
+      <style>
+        #dispatchAllocationTable{border-collapse:collapse;table-layout:fixed;width:100%;min-width:1510px;font-family:"SimSun","宋体",serif;font-size:15px;color:#000;text-align:center;background:#fff}
+        #dispatchAllocationTable th,#dispatchAllocationTable td{border:1px solid #111;padding:2px 4px;height:27px;line-height:1.3;font-weight:400}
+        #dispatchAllocationTable thead th{background:#fff;font-size:16px}
+        #dispatchAllocationTable tbody tr:nth-child(4n+3),#dispatchAllocationTable tbody tr:nth-child(4n+4){background:#fffde7}
+        #dispatchAllocationTable .labelcell{text-align:left;white-space:nowrap}
+        #dispatchAllocationTable tbody td{overflow-wrap:anywhere}
+      </style>
+      <div style="overflow-x:auto;width:100%">
+        <table id="dispatchAllocationTable">
+          <colgroup><col style="width:152px"><col style="width:72px"><col style="width:130px"><col style="width:130px"><col style="width:130px"><col style="width:130px"><col style="width:130px"><col style="width:130px"><col style="width:130px"><col style="width:130px"><col style="width:130px"><col style="width:174px"></colgroup>
+          <thead><tr><th>挖机</th><th>车数</th><th colspan="9">跟车</th><th>备　注</th></tr></thead>
+          <tbody id="dispatchAllocationTableBody"><tr><td colspan="12">暂无已下发的分车任务</td></tr></tbody>
         </table>
       </div>
     </section>
@@ -36256,10 +36264,17 @@ function render(){
      rows.push({ex,operator:b.excavatorDriverName||b.operatorName||op.driverName||op.personName||"",list,area:t.area||t.workArea||"",dump:t.unloadingPoint||t.taskUnloadingPoint||""});
    });
  });
- if(!rows.length){body.innerHTML='<tr><td colspan="12" style="padding:20px;color:#64748b">暂无已下发的挖机与汽车绑定</td></tr>';return;}
+ if(!rows.length){body.innerHTML='<tr><td colspan="12" style="height:54px">暂无已下发的分车任务</td></tr>';return;}
  body.innerHTML=rows.map(r=>{
- const cells=Array.from({length:COLUMNS},(_,i)=>{const x=r.list[i]||["",""];return '<td style="padding:8px 4px;border:1px solid #cbd5e1"><div>'+escape(x[0]||"—")+'</div><div style="color:#64748b">'+escape(x[1]||"—")+'</div></td>'}).join("");
- return '<tr><td style="border:1px solid #cbd5e1;padding:8px"><b>'+escape(r.ex)+'</b><div>'+escape(r.operator||"—")+'</div></td><td style="border:1px solid #cbd5e1">'+r.list.length+'</td>'+cells+'<td style="border:1px solid #cbd5e1;padding:8px"><div>采场：'+escape(r.area||"—")+'</div><div>排土：'+escape(r.dump||"—")+'</div></td></tr>';
+   const groups=[];
+   for(let offset=0;offset<Math.max(1,Math.ceil(r.list.length/COLUMNS));offset++){
+     const slice=r.list.slice(offset*COLUMNS,(offset+1)*COLUMNS);
+     const num=Array.from({length:COLUMNS},(_,i)=>'<td>'+escape(slice[i]?.[0]||"")+'</td>').join("");
+     const names=Array.from({length:COLUMNS},(_,i)=>'<td>'+escape(slice[i]?.[1]||"")+'</td>').join("");
+     groups.push('<tr><td class="labelcell">挖机编号：'+escape(r.ex)+'</td><td rowspan="2">'+(offset===0?r.list.length:"续")+'</td>'+num+'<td class="labelcell">采场位置：'+escape(r.area)+'</td></tr>'
+       +'<tr><td class="labelcell">挖机司机姓名：'+escape(r.operator)+'</td>'+names+'<td class="labelcell">排土场位置：'+escape(r.dump)+'</td></tr>');
+   }
+   return groups.join("");
  }).join("");
 }
 render();window.addEventListener("storage",e=>{if(e.key==="dispatchPublishedTasks")render()});setInterval(render,5000);
