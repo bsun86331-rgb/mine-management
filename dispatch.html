@@ -30126,87 +30126,9 @@ function coreBuildPrePublishCheck() {
 }
 
 
-function coreConfirmPublishDespiteGaps(
-    check
-) {
-
-    const lines = [
-        "本班任务发布检查",
-        ""
-    ];
-
-
-    if (
-        check.unassignedExcavators.length
-    ) {
-
-        lines.push(
-            "未安排挖机：" +
-            check.unassignedExcavators.join(
-                "、"
-            )
-        );
-    }
-
-
-    if (
-        check.unassignedTrucks.length
-    ) {
-
-        lines.push(
-            "未安排汽车：" +
-            check.unassignedTrucks.join(
-                "、"
-            )
-        );
-    }
-
-
-    if (
-        check.unassignedAuxiliary.length
-    ) {
-
-        lines.push(
-            "未安排辅助车辆：" +
-            check.unassignedAuxiliary.join(
-                "、"
-            )
-        );
-    }
-
-
-    if (
-        check.incomplete.length
-    ) {
-
-        lines.push(
-            ...check.incomplete
-        );
-    }
-
-
-    if (
-        lines.length ===
-            2
-    ) {
-
-        return true;
-    }
-
-
-    lines.push(
-        "",
-        "现场可能存在设备无司机、停班或暂不安排任务。",
-        "点击“确定”仍然发布已完成配置的设备；",
-        "点击“取消”返回继续分配。"
-    );
-
-
-    return confirm(
-        lines.join(
-            "\n"
-        )
-    );
+// Unassigned equipment is permitted; only actual binding validation blocks saving.
+function coreConfirmPublishDespiteGaps(check) {
+    return true;
 }
 
 
