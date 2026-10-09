@@ -23466,6 +23466,18 @@ function publishShiftLaunchBoard() {
             );
 
 
+        // Keep allocation-table zone choices on the canonical binding rows.
+        bindings.forEach(binding => {
+            const group = taskGroups.find(g =>
+                String(g.excavatorNumber || "") === String(binding.excavatorNumber || binding.excavatorId || "")
+            );
+            if (!group || !group.loadingZone) return;
+            binding.loadingPoint = group.loadingZone;
+            binding.loadingZoneName = group.loadingZone;
+            binding.unloadingPoints = [...(group.unloadingZones || [])];
+            binding.unloadingZoneNames = [...(group.unloadingZones || [])];
+        });
+
         const execution = {
             shiftId:
                 newShiftId,
@@ -23555,6 +23567,18 @@ function publishShiftLaunchBoard() {
                 shiftDeepClone(
                     driverAssignments
                 );
+
+            // Legacy driver pages still read task-level transport fields.
+            const zoneGroups = taskGroups.filter(g => g.loadingZone);
+            if (zoneGroups.length) {
+                const first = zoneGroups[0];
+                task.loadingPoint = first.loadingZone;
+                task.taskLoadingPoint = first.loadingZone;
+                const unloads = [...new Set(zoneGroups.flatMap(g => g.unloadingZones || []))];
+                task.unloadingPoints = unloads;
+                task.unloadingPoint = unloads.join("、");
+                task.taskUnloadingPoint = task.unloadingPoint;
+            }
 
             task.status =
                 "active";
