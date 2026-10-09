@@ -36545,6 +36545,7 @@ function filled(){return rows.filter(r=>r.exc||r.operator||r.trucks.some(t=>t.ve
 function validate(){
  refresh();const selectedRows=filled();if(!selectedRows.length)return "请先选择挖机和汽车";
  const seen={exc:new Set(),operator:new Set(),vehicle:new Set(),driver:new Set()};
+ const allEquipment=new Set(),allPeople=new Set();
  for(const r of selectedRows){
  if(!r.exc||!r.operator)return "每组必须选择挖机及对应司机";
  if(!machines.some(x=>deviceId(x)===r.exc&&x.__category==="excavator"&&isAvailable(x)))return "挖机已停用、维修或资料不存在："+r.exc;
@@ -36556,6 +36557,8 @@ function validate(){
  for(const [kind,v] of [["exc",r.exc],["operator",r.operator]]){
  if(seen[kind].has(v)||held(kind,v))return "挖机或挖机司机重复/已被本班任务占用："+v;
  seen[kind].add(v);
+ if(kind==="exc"){if(allEquipment.has(v))return "设备重复分配："+v;allEquipment.add(v)}
+ else {if(allPeople.has(v))return "人员重复分配："+v;allPeople.add(v)}
  }
  for(const t of r.trucks){
  if(!t.vehicle&&!t.driver)continue;
@@ -36565,8 +36568,20 @@ function validate(){
  for(const [kind,v] of [["vehicle",t.vehicle],["driver",t.driver]]){
  if(seen[kind].has(v)||held(kind,v))return "汽车或汽车司机重复/已被本班任务占用："+v;
  seen[kind].add(v);
+ if(kind==="vehicle"){if(allEquipment.has(v))return "设备重复分配："+v;allEquipment.add(v)}
+ else {if(allPeople.has(v))return "人员重复分配："+v;allPeople.add(v)}
  }
  }
+ }
+ for(const r of auxRows){
+ if(!r.equipment&&!r.person)continue;
+ if(!r.equipment||!r.person)return "辅助设备必须同时选择设备编号和作业人员。";
+ if(!machines.some(m=>deviceId(m)===r.equipment&&m.__category==="auxiliary"&&isAvailable(m)))return "辅助设备不可调度："+r.equipment;
+ const person=people.find(p=>personId(p)===r.person);
+ if(!person||!/司机|操作手|操作员/.test(person.position||"")||/汽车司机|挖机司机|挖掘机司机/.test(person.position||""))return "辅助人员不可调度："+r.person;
+ if(allEquipment.has(r.equipment)||held("auxVehicle",r.equipment))return "辅助设备已被占用："+r.equipment;
+ if(allPeople.has(r.person)||held("auxDriver",r.person))return "辅助人员已被分配："+r.person;
+ allEquipment.add(r.equipment);allPeople.add(r.person);
  }
  return "";
 }
@@ -36575,15 +36590,18 @@ function stats(){
  other.forEach(e=>{
  (e.bindings||[]).forEach(b=>{peopleBusy.add(String(b.excavatorDriverId||b.operatorId||""));deviceBusy.add(String(b.excavatorNumber||b.excavatorId||""));(b.truckIds||[]).forEach(t=>deviceBusy.add(String(t)));});
  (e.driverAssignments||[]).forEach(d=>peopleBusy.add(String(d.driverId||d.personId||"")));
+ (e.auxiliaryAssignments||[]).forEach(d=>{peopleBusy.add(String(d.driverId||d.personId||""));deviceBusy.add(String(d.equipmentId||d.vehicleNumber||d.equipmentNumber||""));});
  });
  const notAssigned=people.filter(p=>/汽车司机/.test(p.position||"")&&!peopleBusy.has(personId(p))).map(personName);
  const freeOperators=people.filter(p=>/挖机|挖掘机/.test(p.position||"")&&!peopleBusy.has(personId(p))).map(personName);
  const idleTrucks=machines.filter(m=>m.__category==="truck"&&isAvailable(m)&&!deviceBusy.has(deviceId(m))).map(deviceId);
  const idleEx=machines.filter(m=>m.__category==="excavator"&&isAvailable(m)&&!deviceBusy.has(deviceId(m))).map(deviceId);
+ const idleAux=machines.filter(m=>m.__category==="auxiliary"&&isAvailable(m)&&!deviceBusy.has(deviceId(m))).map(deviceId);
+ const unassignedAux=people.filter(p=>/司机|操作手|操作员/.test(p.position||"")&&!/汽车司机|挖机司机|挖掘机司机/.test(p.position||"")&&!peopleBusy.has(personId(p))).map(personName);
  const repair=machines.filter(m=>!isAvailable(m)).map(deviceId);
  const box=$("allocationPublishedStatus");if(!box)return;
  box.replaceChildren();const h=document.createElement("strong");h.textContent="本班下发后人员与设备状态";box.append(h);
- for(const [title,values] of [["未分配汽车司机",notAssigned],["未分配挖机司机",freeOperators],["空闲汽车",idleTrucks],["空闲挖机",idleEx],["维修或停用设备",repair]]){
+ for(const [title,values] of [["未分配汽车司机",notAssigned],["未分配挖机司机",freeOperators],["空闲汽车",idleTrucks],["空闲挖机",idleEx],["未分配辅助人员",unassignedAux],["空闲辅助设备",idleAux],["维修或停用设备",repair]]){
  const p=document.createElement("p");p.textContent=title+"（"+values.length+"） "+(values.join("、")||"无");box.append(p);
  }
 }
@@ -36597,6 +36615,9 @@ function publish(){
  trucks:r.trucks.filter(t=>t.vehicle).map(t=>({vehicleNumber:t.vehicle,driverId:t.driver,driverName:label(t.driver)})),
  taskSelection:"__NEW__",newTaskName:taskName,loadingZone:r.loading,unloadingZones:[...r.unloading]
  }));
+ shiftLaunchDraft.auxiliaryAssignments=auxRows.filter(r=>r.equipment).map(r=>({
+ equipmentId:r.equipment,equipmentNumber:r.equipment,vehicleNumber:r.equipment,driverId:r.person,personId:r.person,driverName:label(r.person)
+ }));
  const ok=publishShiftLaunchBoard();
  if(ok===true){$("allocationFlowEditor").hidden=true;stats();}
 }
@@ -36605,7 +36626,20 @@ $("allocationFlowPick").addEventListener("click",e=>{const b=e.target.closest("[
 $("allocationFlowCancel").onclick=()=>{$("allocationFlowPick").hidden=true;};
 $("allocationFlowBack").onclick=()=>{$("allocationFlowEditor").hidden=true;$("allocationFlowPick").hidden=false;};
 $("allocationFlowPublish").onclick=publish;
-$("allocationFlowBody").addEventListener("click",e=>{const b=e.target.closest("button[data-type]");if(b)choose(b.dataset.type,Number(b.dataset.row),Number(b.dataset.col));});
+$("allocationFlowGrid").addEventListener("click",e=>{
+ const add=e.target.closest("#allocationAddTruck");
+ if(add){if(truckColumns>=60)return alert("汽车列已经达到页面显示上限，请拆分生产任务。");truckColumns++;rows.forEach(r=>r.trucks.push(emptyTruck()));sheet();return;}
+ const remove=e.target.closest("[data-remove-exc]");
+ if(remove){const i=Number(remove.dataset.removeExc);if(rows.length>1){rows.splice(i,1);sheet();}return;}
+ const b=e.target.closest("button[data-type]");if(b)choose(b.dataset.type,Number(b.dataset.row),Number(b.dataset.col));
+});
+$("allocationAuxRows").addEventListener("click",e=>{
+ const remove=e.target.closest("[data-remove-aux]");
+ if(remove){auxRows.splice(Number(remove.dataset.removeAux),1);sheet();return;}
+ const b=e.target.closest("button[data-type]");if(b)choose(b.dataset.type,Number(b.dataset.row),Number(b.dataset.col));
+});
+$("allocationAddExcavator").onclick=()=>{rows.push({exc:"",operator:"",trucks:Array.from({length:truckColumns},emptyTruck),loading:"",unloading:[]});sheet();};
+$("allocationAddAux").onclick=()=>{auxRows.push({equipment:"",person:""});sheet();};
 $("allocationFlowClose").onclick=()=>{$("allocationFlowDialog").hidden=true;};
 $("allocationFlowClear").onclick=()=>{if(!target)return;set(target.type,target.i,target.j,"");$("allocationFlowDialog").hidden=true;sheet();};
 $("allocationFlowMulti").onclick=()=>{if(!target||target.type!=="unloading")return;const values=Array.from($("allocationFlowOptions").querySelectorAll('[data-chosen="true"]')).map(x=>x.dataset.value);set("unloading",target.i,-1,values);$("allocationFlowDialog").hidden=true;sheet();};
