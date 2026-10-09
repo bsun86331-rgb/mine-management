@@ -36302,7 +36302,7 @@ function render(){
        const d=driverRows.find(r=>String(r.vehicleNumber||r.vehicleId||r.truckNumber||r.truckId||"")===no)||{};
        return [no,String(d.driverName||d.personName||"")];
      }).filter(x=>x[0]);
-     rows.push({ex,operator:b.excavatorDriverName||b.operatorName||op.driverName||op.personName||"",list,area:t.area||t.workArea||"",dump:t.unloadingPoint||t.taskUnloadingPoint||""});
+     rows.push({ex,operator:b.excavatorDriverName||b.operatorName||op.driverName||op.personName||"",list,area:b.loadingPoint||b.loadingZoneName||t.loadingPoint||t.taskLoadingPoint||t.area||t.workArea||"",dump:(Array.isArray(b.unloadingPoints)&&b.unloadingPoints.length?b.unloadingPoints.join("、"):Array.isArray(t.unloadingPoints)&&t.unloadingPoints.length?t.unloadingPoints.join("、"):t.unloadingPoint||t.taskUnloadingPoint||"")});
    });
  });
  const dateBox=document.getElementById("dispatchAllocationDate");
@@ -36319,8 +36319,8 @@ function render(){
  function makeRows(r,vehicleCount){
    const numbers=Array.from({length:COLUMNS},(_,i)=>'<td>'+escape(r.list[i]?.[0]||"")+'</td>').join("");
    const drivers=Array.from({length:COLUMNS},(_,i)=>'<td>'+escape(r.list[i]?.[1]||"")+'</td>').join("");
-   return '<tr><td class="labelcell">挖机编号'+(r.ex?"："+escape(r.ex):"")+'</td><td rowspan="2">'+escape(vehicleCount)+'</td>'+numbers+'<td class="labelcell">采场位置'+(r.area?"："+escape(r.area):"")+'</td></tr>'
-    +'<tr><td class="labelcell">挖机司机姓名'+(r.operator?"："+escape(r.operator):"")+'</td>'+drivers+'<td class="labelcell">排土场位置'+(r.dump?"："+escape(r.dump):"")+'</td></tr>';
+   return '<tr><td class="labelcell">挖机编号'+(r.ex?"："+escape(r.ex):"")+'</td><td rowspan="2">'+escape(vehicleCount)+'</td>'+numbers+'<td class="labelcell">装载区'+(r.area?"："+escape(r.area):"")+'</td></tr>'
+    +'<tr><td class="labelcell">挖机司机姓名'+(r.operator?"："+escape(r.operator):"")+'</td>'+drivers+'<td class="labelcell">卸载区'+(r.dump?"："+escape(r.dump):"")+'</td></tr>';
  }
 }
 render();window.addEventListener("storage",e=>{if(e.key==="dispatchPublishedTasks")render()});setInterval(render,5000);
