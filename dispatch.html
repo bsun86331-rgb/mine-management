@@ -2899,6 +2899,8 @@
       </div>
     </section>
 
+    <div id="allocationPublishedStatus" class="dispatch-section" style="margin-top:10px" aria-live="polite"><strong>下发后调度资源状态</strong><p>下发任务后显示未分配司机、空闲车辆和维修设备。</p></div>
+
     <!-- 原人员状态数据源：仅供旧版调度数据兼容，不显示人员/设备状态面板 -->
     <div id="personnelStatusBoard" style="display:none" aria-hidden="true"></div>
 
@@ -36441,6 +36443,19 @@ document.getElementById("allocationPublish").onclick=()=>{
   taskSelection:selectedTask,newTaskName:taskName,loadingZone:g.load,unloadingZones:g.unloads
  }));
  publishShiftLaunchBoard();
+ const status=document.getElementById("allocationPublishedStatus");
+ if(status){
+ const assignedDrivers=new Set(used.flatMap(g=>[g.op,...g.trucks.map(t=>t.driver)]).filter(Boolean));
+ const assignedEquipment=new Set(used.flatMap(g=>[g.ex,...g.trucks.map(t=>t.no)]).filter(Boolean));
+ const unassigned=persons.filter(p=>/挖机|挖掘机|汽车司机/.test(p.position||"")&&!assignedDrivers.has(id(p))).map(name);
+ const idle=equipment.filter(x=>equipmentAvailable(x)&&!assignedEquipment.has(String(x.__id||x.equipmentNumber||""))).map(x=>x.__id||x.equipmentNumber);
+ const repair=equipment.filter(x=>!equipmentAvailable(x)).map(x=>x.__id||x.equipmentNumber);
+ status.replaceChildren();
+ const heading=document.createElement("strong");heading.textContent="下发后调度资源状态";status.append(heading);
+ [["未分配司机",unassigned],["空闲设备",idle],["维修或停用设备",repair]].forEach(([label,values])=>{
+ const p=document.createElement("p");p.textContent=label+"（"+values.length+"）："+(values.join("、")||"无");status.append(p)
+ });
+ }
  overlay.hidden=true;
 };
 })();
