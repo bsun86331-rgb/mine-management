@@ -36487,7 +36487,11 @@ function validate(){
  const seen={exc:new Set(),operator:new Set(),vehicle:new Set(),driver:new Set()};
  for(const r of selectedRows){
  if(!r.exc||!r.operator)return "每组必须选择挖机及对应司机";
+ if(!machines.some(x=>deviceId(x)===r.exc&&x.__category==="excavator"&&isAvailable(x)))return "挖机已停用、维修或资料不存在："+r.exc;
+ if(!people.some(p=>personId(p)===r.operator&&/挖机|挖掘机/.test(p.position||"")))return "挖机司机已不可调度："+r.operator;
  if(!r.loading||!r.unloading.length)return "请选择装载区和至少一个卸载区";
+ const zoneNames=t=>new Set(zones.filter(z=>String(z.zoneType||z.type||"")===t).map(z=>String(z.name||z.zoneName||"")));
+ if(!zoneNames("loading").has(r.loading)||r.unloading.some(u=>!zoneNames("unloading").has(u)))return "装载区或卸载区已被删除或停用，请重新选择";
  if(!r.trucks.some(t=>t.vehicle))return "每台挖机至少分配一辆汽车";
  for(const [kind,v] of [["exc",r.exc],["operator",r.operator]]){
  if(seen[kind].has(v)||held(kind,v))return "挖机或挖机司机重复/已被本班任务占用："+v;
@@ -36496,6 +36500,8 @@ function validate(){
  for(const t of r.trucks){
  if(!t.vehicle&&!t.driver)continue;
  if(!t.vehicle||!t.driver)return "每台汽车必须配置汽车司机";
+ if(!machines.some(x=>deviceId(x)===t.vehicle&&x.__category==="truck"&&isAvailable(x)))return "汽车已维修、停用或不存在："+t.vehicle;
+ if(!people.some(p=>personId(p)===t.driver&&/汽车司机/.test(p.position||"")))return "汽车司机已不可调度："+t.driver;
  for(const [kind,v] of [["vehicle",t.vehicle],["driver",t.driver]]){
  if(seen[kind].has(v)||held(kind,v))return "汽车或汽车司机重复/已被本班任务占用："+v;
  seen[kind].add(v);
