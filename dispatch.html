@@ -36001,6 +36001,49 @@ window.addEventListener(
 
 </script>
 
+
+<!-- 下发生产任务：先选择白班/夜班，再进入现有挖机与汽车绑定看板 -->
+<div id="dispatchShiftPickOverlay" role="dialog" aria-modal="true" aria-labelledby="dispatchShiftPickTitle" style="display:none;position:fixed;inset:0;z-index:100000;background:rgba(15,23,42,.55);align-items:center;justify-content:center;padding:18px;">
+  <div style="width:min(420px,100%);background:#fff;border-radius:16px;padding:24px;box-shadow:0 20px 60px rgba(0,0,0,.2);">
+    <h3 id="dispatchShiftPickTitle" style="margin:0 0 8px;font-size:20px;">选择生产班次</h3>
+    <p style="margin:0 0 20px;color:#64748b;">选择白班或夜班后，自动进入挖机、汽车绑定界面。</p>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <button type="button" data-dispatch-shift="白班" style="background:#2563eb;color:#fff;padding:18px 8px;border:0;border-radius:10px;font-size:17px;font-weight:700;cursor:pointer;">☀️ 白班</button>
+      <button type="button" data-dispatch-shift="夜班" style="background:#1e293b;color:#fff;padding:18px 8px;border:0;border-radius:10px;font-size:17px;font-weight:700;cursor:pointer;">🌙 夜班</button>
+    </div>
+    <button type="button" id="dispatchShiftPickCancel" style="display:block;width:100%;margin-top:15px;padding:11px;background:#e2e8f0;color:#334155;border:0;border-radius:9px;cursor:pointer;">取消</button>
+  </div>
+</div>
+<script>
+(function(){
+  "use strict";
+  const overlay=document.getElementById("dispatchShiftPickOverlay");
+  const open=()=>{overlay.style.display="flex";};
+  const close=()=>{overlay.style.display="none";};
+  // 捕获入口点击，阻止原有创建任务界面抢先打开；其他按钮不受影响。
+  document.addEventListener("click",function(event){
+    const button=event.target.closest?.("#newTaskButton");
+    if(!button)return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    open();
+  },true);
+  overlay.querySelectorAll("[data-dispatch-shift]").forEach(button=>{
+    button.addEventListener("click",()=>{
+      const shift=button.dataset.dispatchShift;
+      close();
+      if(typeof openCoreDispatchBoard==="function"){
+        openCoreDispatchBoard(shift);
+      }else{
+        alert("设备绑定界面暂时无法打开，请刷新页面重试。");
+      }
+    });
+  });
+  document.getElementById("dispatchShiftPickCancel").addEventListener("click",close);
+  overlay.addEventListener("click",event=>{if(event.target===overlay)close();});
+  document.addEventListener("keydown",event=>{if(event.key==="Escape"&&overlay.style.display==="flex")close();});
+})();
+</script>
 <script src="js/work-chat.js?v=1.0.0"></script>
 </body>
 </html>
