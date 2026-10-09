@@ -23494,6 +23494,26 @@ function publishShiftLaunchBoard() {
             assignment.taskUnloadingPoint = assignment.unloadingPoint;
         });
 
+
+        // 将辅助车辆及作业人员配置纳入正式班次，不创建第二套存储。
+        const auxiliaryAssignments = (
+            Array.isArray(shiftLaunchDraft.auxiliaryAssignments)
+                ? shiftLaunchDraft.auxiliaryAssignments
+                : []
+        ).map(item => ({
+            ...item,
+            equipmentId: String(item.equipmentId || item.vehicleNumber || item.equipmentNumber || ""),
+            equipmentNumber: String(item.equipmentNumber || item.equipmentId || item.vehicleNumber || ""),
+            vehicleNumber: String(item.vehicleNumber || item.equipmentId || item.equipmentNumber || ""),
+            driverId: String(item.driverId || item.personId || ""),
+            personId: String(item.personId || item.driverId || ""),
+            driverName: String(item.driverName || ""),
+            taskId,
+            shiftId: newShiftId,
+            shift: shiftLaunchDraft.shift,
+            shiftDate: shiftLaunchDraft.date
+        }));
+
         const execution = {
             shiftId:
                 newShiftId,
@@ -23522,8 +23542,7 @@ function publishShiftLaunchBoard() {
             driverAssignments:
                 driverAssignments,
 
-            auxiliaryAssignments:
-                [],
+            auxiliaryAssignments,
 
             inheritedFromShiftId:
                 shiftLaunchDraft.sourceShiftId ||
@@ -23583,6 +23602,8 @@ function publishShiftLaunchBoard() {
                 shiftDeepClone(
                     driverAssignments
                 );
+
+            task.auxiliaryAssignments = shiftDeepClone(auxiliaryAssignments);
 
             // Legacy driver pages still read task-level transport fields.
             const zoneGroups = taskGroups.filter(g => g.loadingZone);
