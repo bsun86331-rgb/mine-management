@@ -36285,5 +36285,141 @@ function render(){
 render();window.addEventListener("storage",e=>{if(e.key==="dispatchPublishedTasks")render()});setInterval(render,5000);
 })();
 </script>
+
+<style>
+#allocationEditorOverlay{position:fixed;inset:0;z-index:99999;background:#f1f5f9;overflow:auto;padding:18px}
+#allocationEditorOverlay[hidden]{display:none}
+#allocationEditorOverlay .alloc-top{display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap;max-width:1600px;margin:0 auto 14px}
+#allocationEditorOverlay .alloc-frame{max-width:1600px;margin:auto;background:white;padding:16px;border-radius:12px}
+#allocationEditorOverlay table{width:100%;min-width:1490px;border-collapse:collapse;table-layout:fixed;font-family:SimSun,"宋体",serif;font-size:14px;color:black}
+#allocationEditorOverlay td,#allocationEditorOverlay th{border:1px solid #111;padding:0;text-align:center;height:30px}
+#allocationEditorOverlay thead th{background:#e5e5e5}
+#allocationEditorOverlay tbody tr:nth-child(4n+3),#allocationEditorOverlay tbody tr:nth-child(4n+4){background:#fffde7}
+#allocationEditorOverlay select{width:100%;height:30px;border:0;background:transparent;color:#111;font-size:13px}
+#allocationEditorOverlay .alloc-button{background:#2563eb;color:white;border:0;border-radius:8px;padding:11px 16px;cursor:pointer;font-weight:700}
+#allocationEditorOverlay .alloc-button.secondary{background:#64748b}
+#allocationEditorOverlay .alloc-stats{display:flex;gap:12px;flex-wrap:wrap;margin-top:14px}
+#allocationEditorOverlay .alloc-stats>div{background:#eff6ff;padding:12px;border-radius:8px;flex:1;min-width:180px}
+</style>
+<div id="allocationEditorOverlay" hidden>
+  <div class="alloc-top">
+    <h2 style="margin:0">生产任务分车表 <span id="allocationShiftLabel"></span></h2>
+    <div><button class="alloc-button secondary" id="allocationBack">返回</button> <button class="alloc-button" id="allocationPublish">确认下发生产任务</button></div>
+  </div>
+  <div class="alloc-frame">
+    <label>生产任务名称 <input id="allocationTaskName" value="" style="max-width:330px;min-height:36px;margin-right:20px"></label>
+    <label>使用已有任务 <select id="allocationTaskChoice" style="max-width:320px;min-height:36px"><option value="__NEW__">新建任务</option></select></label>
+    <div style="overflow-x:auto;margin-top:12px">
+      <table><colgroup><col style="width:160px"><col style="width:65px"><col style="width:125px"><col style="width:125px"><col style="width:125px"><col style="width:125px"><col style="width:125px"><col style="width:125px"><col style="width:125px"><col style="width:125px"><col style="width:125px"><col style="width:190px"></colgroup>
+        <thead><tr><th colspan="12" id="allocationDateLabel">日期</th></tr><tr><th>挖机</th><th>车数</th><th colspan="9">跟车</th><th>备注</th></tr></thead>
+        <tbody id="allocationEditorBody"></tbody>
+      </table>
+    </div>
+    <p style="font-size:12px;color:#64748b">挖机、车辆和司机在同一班次不可重复选择；卸载区支持多选。此处配置将复用正式班次任务发布数据。</p>
+    <div class="alloc-stats" id="allocationStats"></div>
+  </div>
+</div>
+<script>
+(function(){
+"use strict";
+const overlay=document.getElementById("allocationEditorOverlay"), tbody=document.getElementById("allocationEditorBody");
+if(!overlay||!tbody)return;
+const read=k=>{try{const v=JSON.parse(localStorage.getItem(k)||"[]");return Array.isArray(v)?v:[]}catch{return []}};
+const safe=s=>String(s??"").replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
+let shift="",groups=[],zones=[],equipment=[],persons=[];
+const id=x=>String(x.personId||x.employeeId||x.driverId||x.id||"");
+const name=x=>String(x.name||x.personName||"");
+function catalog(){
+ persons=read("personnelRecords").filter(p=>!["disabled","resigned","rejected","pending","leave"].includes(String(p.status||"").toLowerCase()) && !["停用","离职","请假"].includes(p.personnelStatus));
+ zones=typeof readTransportZones==="function"?readTransportZones():read("transportZones");
+ equipment=typeof coreCollectEquipmentCatalog==="function"?Array.from(coreCollectEquipmentCatalog().values()):[];
+ const historical=typeof shiftCollectKnownEquipment==="function"?shiftCollectKnownEquipment():{excavators:[],vehicles:[]};
+ historical.excavators.forEach(n=>{if(!equipment.some(x=>(x.__id||x.equipmentNumber)===n))equipment.push({__id:n,__category:"excavator"})});
+ historical.vehicles.forEach(n=>{if(!equipment.some(x=>(x.__id||x.equipmentNumber)===n))equipment.push({__id:n,__category:"truck"})});
+}
+function equipmentAvailable(x){
+ const status=String(x.operationalStatus||x.status||x.maintenanceStatus||"").toLowerCase();
+ return !/维修|保养中|停用|maintenance|service|disabled|repair/.test(status);
+}
+function availableEquipment(kind){return equipment.filter(x=>x.__category===kind&&equipmentAvailable(x))}
+function zoneType(z){return String(z.type||z.zoneType||z.category||"").toLowerCase()}
+function zoneName(z){return String(z.name||z.zoneName||z.areaName||"")}
+function options(items,value,label){return '<option value="">请选择</option>'+items.map(x=>'<option value="'+safe(x.value)+'" '+(x.value===value?"selected":"")+'>'+safe(x.label)+'</option>').join("")}
+function occupied(kind,ownRow,ownCol){
+ const set=new Set();
+ groups.forEach((r,i)=>{
+  if(kind==="ex"&&i!==ownRow&&r.ex)set.add(r.ex);
+  if(kind==="op"&&i!==ownRow&&r.op)set.add(r.op);
+  (r.trucks||[]).forEach((t,j)=>{if(i===ownRow&&j===ownCol)return;if(kind==="truck"&&t.no)set.add(t.no);if(kind==="driver"&&t.driver)set.add(t.driver)});
+ });
+ return set;
+}
+function select(kind,row,col,value,list,disabled){
+ const opts=options(list.filter(x=>x.value===value||!disabled.has(x.value)),value);
+ return '<select data-kind="'+kind+'" data-row="'+row+'" data-col="'+col+'">'+opts+'</select>';
+}
+function draw(){
+ const ex=availableEquipment("excavator").map(x=>({value:String(x.__id||x.equipmentNumber),label:String(x.__id||x.equipmentNumber)}));
+ const cars=availableEquipment("truck").map(x=>({value:String(x.__id||x.equipmentNumber),label:String(x.__id||x.equipmentNumber)}));
+ const ops=persons.filter(x=>/挖机|挖掘机/.test(x.position||"")).map(x=>({value:id(x),label:name(x)})).filter(x=>x.value);
+ const drivers=persons.filter(x=>/汽车司机/.test(x.position||"")).map(x=>({value:id(x),label:name(x)})).filter(x=>x.value);
+ const loads=zones.filter(x=>/loading|装载|采场/.test(zoneType(x))).map(x=>({value:zoneName(x),label:zoneName(x)})).filter(x=>x.value);
+ const unloads=zones.filter(x=>/unloading|卸载|排土/.test(zoneType(x))).map(x=>({value:zoneName(x),label:zoneName(x)})).filter(x=>x.value);
+ tbody.innerHTML=groups.map((g,i)=>{
+  const top=Array.from({length:9},(_,j)=>select("truck",i,j,g.trucks[j]?.no||"",cars,occupied("truck",i,j))).join("");
+  const bottom=Array.from({length:9},(_,j)=>select("driver",i,j,g.trucks[j]?.driver||"",drivers,occupied("driver",i,j))).join("");
+  const load=select("load",i,-1,g.load,loads,new Set());
+  const unload='<select data-kind="unload" data-row="'+i+'" multiple size="2" style="height:42px">'+unloads.map(x=>'<option value="'+safe(x.value)+'" '+(g.unloads.includes(x.value)?"selected":"")+'>'+safe(x.label)+'</option>').join("")+'</select>';
+  return '<tr><td>'+select("ex",i,-1,g.ex,ex,occupied("ex",i,-1))+'</td><td rowspan="2">'+g.trucks.filter(x=>x?.no).length+'</td>'+top+'<td>装载区 '+load+'</td></tr>'+
+  '<tr><td>'+select("op",i,-1,g.op,ops,occupied("op",i,-1))+'</td>'+bottom+'<td>卸载区 '+unload+'</td></tr>';
+ }).join("");
+ document.getElementById("allocationStats").innerHTML=
+  '<div>未分配汽车司机：'+drivers.filter(x=>!occupied("driver",-1,-1).has(x.value)).map(x=>safe(x.label)).join("、")+'</div>'+
+  '<div>空闲汽车：'+cars.filter(x=>!occupied("truck",-1,-1).has(x.value)).map(x=>safe(x.label)).join("、")+'</div>'+
+  '<div>维修或停用设备：'+equipment.filter(x=>!equipmentAvailable(x)).map(x=>safe(x.__id||x.equipmentNumber||"")).join("、")+'</div>';
+}
+function blank(){return {ex:"",op:"",trucks:Array.from({length:9},()=>({no:"",driver:""})),load:"",unloads:[]}}
+function open(s){
+ shift=s;catalog();groups=Array.from({length:12},blank);
+ document.getElementById("allocationShiftLabel").textContent="· "+s;
+ document.getElementById("allocationDateLabel").textContent="日期："+new Date().toLocaleDateString("zh-CN")+" · "+s;
+ document.getElementById("allocationTaskName").value=s+"生产任务";
+ const taskSelect=document.getElementById("allocationTaskChoice");
+ taskSelect.innerHTML='<option value="__NEW__">新建任务</option>'+read("dispatchPublishedTasks").filter(t=>!["completed","cancelled","withdrawn"].includes(t.status)).map(t=>'<option value="'+safe(t.taskId)+'">'+safe(t.taskName||t.taskId)+'</option>').join("");
+ overlay.hidden=false;draw();overlay.scrollTop=0;
+}
+tbody.addEventListener("change",e=>{
+ const t=e.target;if(!t.matches("select[data-kind]"))return;
+ const i=Number(t.dataset.row),j=Number(t.dataset.col),kind=t.dataset.kind,g=groups[i],v=t.value;
+ if(kind==="ex")g.ex=v;else if(kind==="op")g.op=v;
+ else if(kind==="truck"){g.trucks[j].no=v;if(!v)g.trucks[j].driver=""}
+ else if(kind==="driver")g.trucks[j].driver=v;
+ else if(kind==="load")g.load=v;
+ else if(kind==="unload")g.unloads=Array.from(t.selectedOptions).map(x=>x.value);
+ draw();
+});
+document.getElementById("allocationBack").onclick=()=>{overlay.hidden=true};
+const launch=document.getElementById("newTaskButton");
+if(launch)launch.addEventListener("click",e=>{e.preventDefault();e.stopImmediatePropagation();const picked=prompt("选择班次：输入 白班 或 夜班","白班");if(picked==="白班"||picked==="夜班")open(picked)},true);
+document.getElementById("allocationPublish").onclick=()=>{
+ const used=groups.filter(g=>g.ex);
+ if(!used.length)return alert("请先选择挖机");
+ if(!used.every(g=>g.op&&g.load&&g.unloads.length&&g.trucks.filter(x=>x.no).every(x=>x.driver)))return alert("请完整选择挖机司机、汽车司机、装载区和至少一个卸载区");
+ if(used.some(g=>g.trucks.some(x=>x.driver&&!x.no)))return alert("汽车司机必须绑定汽车");
+ const selectedTask=document.getElementById("allocationTaskChoice").value,taskName=document.getElementById("allocationTaskName").value.trim();
+ if(selectedTask==="__NEW__"&&!taskName)return alert("请填写任务名称");
+ if(!confirm("确认下发 "+shift+" 的 "+used.length+" 台挖机任务？"))return;
+ shiftLaunchDraft=shiftLaunchDraftFromSource(null,shift);
+ shiftLaunchDraft.groups=used.map((g,i)=>({
+  groupId:"ALLOCATION_"+Date.now()+"_"+i,excavatorNumber:g.ex,
+  excavatorDriverId:g.op,excavatorDriverName:name(persons.find(x=>id(x)===g.op)||{}),
+  trucks:g.trucks.filter(x=>x.no).map(x=>({vehicleNumber:x.no,driverId:x.driver,driverName:name(persons.find(p=>id(p)===x.driver)||{})})),
+  taskSelection:selectedTask,newTaskName:taskName,loadingZone:g.load,unloadingZones:g.unloads
+ }));
+ publishShiftLaunchBoard();
+ overlay.hidden=true;
+};
+})();
+</script>
 </body>
 </html>
