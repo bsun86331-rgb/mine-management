@@ -10750,6 +10750,11 @@ function shiftBuildDraft(
                         ""
                     ),
 
+                loadingZoneId: binding.loadingZoneId || "",
+                loadingZoneName: binding.loadingZoneName || "",
+                unloadingZoneIds: Array.isArray(binding.unloadingZoneIds) ? binding.unloadingZoneIds : [],
+                unloadingZoneNames: Array.isArray(binding.unloadingZoneNames) ? binding.unloadingZoneNames : [],
+
                 trucks:
                     uniqueTrucks.map(vehicle=>{
                         const assignment =
