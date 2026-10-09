@@ -36340,6 +36340,24 @@ render();window.addEventListener("storage",e=>{if(e.key==="dispatchPublishedTask
 #allocationFlowEditor th,#allocationFlowEditor td{border:1px solid #111;padding:0;height:30px;text-align:center}
 #allocationFlowEditor thead th{background:#e5e5e5}
 #allocationFlowEditor tbody tr:nth-child(4n+3),#allocationFlowEditor tbody tr:nth-child(4n+4){background:#fffce7}
+#allocationFlowEditor .allocation-grid-row{display:grid;align-items:stretch;min-width:max-content}
+#allocationFlowEditor .allocation-grid-row>div,#allocationFlowEditor .allocation-grid-row>button{border:1px solid #202020;border-right:0;border-bottom:0;min-height:31px;display:flex;align-items:center;justify-content:center}
+#allocationFlowEditor .allocation-grid-row>div:last-child,#allocationFlowEditor .allocation-grid-row>button:last-child{border-right:1px solid #202020}
+#allocationFlowEditor .allocation-grid-row:last-child>div,#allocationFlowEditor .allocation-grid-row:last-child>button{border-bottom:1px solid #202020}
+#allocationFlowEditor .allocation-grid-header{background:#e5e5e5;font-family:SimSun,"宋体",serif;font-weight:bold;text-align:center}
+#allocationFlowEditor .allocation-grid-row:nth-child(4n+4),#allocationFlowEditor .allocation-grid-row:nth-child(4n+5){background:#fffde8}
+#allocationFlowEditor .allocation-grid-row .allocation-grid-count{font-weight:700}
+#allocationFlowEditor .allocation-grid-remove{background:#fff1f2;color:#b91c1c;border:0;cursor:pointer;min-height:31px;width:100%}
+#allocationFlowEditor .allocation-grid-left-add{background:#eff6ff;color:#1d4ed8;cursor:pointer;border:0;font-weight:bold;min-height:31px;width:100%}
+#allocationFlowEditor .allocation-flow-actions{margin:12px 0 18px}
+#allocationFlowEditor .allocation-flow-add{border:1px dashed #2563eb;border-radius:8px;padding:11px 16px;background:#eff6ff;color:#1d4ed8;font-weight:800;cursor:pointer}
+#allocationFlowEditor .allocation-flow-aux{border-top:1px solid #cbd5e1;padding-top:14px;margin-top:18px}
+#allocationFlowEditor .allocation-flow-aux-row{display:grid;grid-template-columns:55px minmax(180px,1fr) minmax(220px,1fr) 80px;max-width:1000px}
+#allocationFlowEditor .allocation-flow-aux-row>div{min-height:38px;border:1px solid #333;border-right:0;border-bottom:0}
+#allocationFlowEditor .allocation-flow-aux-row>div:last-child{border-right:1px solid #333}
+#allocationFlowEditor .allocation-flow-aux-row:last-child>div{border-bottom:1px solid #333}
+#allocationFlowEditor .allocation-flow-aux-row .allocation-flow-cell{min-height:37px}
+
 .allocation-flow-cell{width:100%;min-height:29px;border:0;background:transparent;color:#111;text-align:left;padding:4px;cursor:pointer;font-size:13px;white-space:normal;overflow-wrap:anywhere}
 .allocation-flow-cell:hover,.allocation-flow-option:hover{background:#dbeafe}
 .allocation-flow-option{display:block;width:100%;background:#f8fafc;border:1px solid #cbd5e1;color:#111;text-align:left;padding:11px 13px;border-radius:8px;margin:7px 0;cursor:pointer}
@@ -36356,11 +36374,16 @@ render();window.addEventListener("storage",e=>{if(e.key==="dispatchPublishedTask
  <button type="button" class="allocation-flow-btn" id="allocationFlowPublish">下发生产任务</button></div></div>
  <div class="allocation-flow-sheet">
  <label>任务名称 <input id="allocationFlowTaskName" style="height:36px;width:320px;max-width:95%"></label>
- <div style="overflow-x:auto;margin-top:12px"><table>
- <colgroup><col style="width:150px"><col style="width:65px"><col style="width:125px"><col style="width:125px"><col style="width:125px"><col style="width:125px"><col style="width:125px"><col style="width:125px"><col style="width:125px"><col style="width:125px"><col style="width:125px"><col style="width:190px"></colgroup>
- <thead><tr><th colspan="12" id="allocationFlowDate">日期</th></tr><tr><th>挖机</th><th>车数</th><th colspan="9">跟车</th><th>备注</th></tr></thead>
- <tbody id="allocationFlowBody"></tbody>
- </table></div><p style="font-size:12px;color:#64748b">点击单元格弹出选择窗口；每台挖机占两行，卸载区可多选。</p></div>
+ <div style="overflow-x:auto;margin-top:12px"><div id="allocationFlowGrid"></div></div>
+ <div class="allocation-flow-actions"><button type="button" class="allocation-flow-add" id="allocationAddExcavator">＋ ↓ 增加挖机</button></div>
+ <section class="allocation-flow-aux">
+ <h3>辅助设备配置</h3>
+ <p style="font-size:12px;color:#64748b">点击空白位置选择辅助设备编号和对应作业人员。</p>
+ <div id="allocationAuxRows"></div>
+ <button type="button" class="allocation-flow-add" id="allocationAddAux">＋ 增加辅助设备</button>
+ </section>
+ <p style="font-size:12px;color:#64748b">空白单元格可点击选择。左侧序号代表设备组；“＋ ← 增加汽车”横向扩展跟车位置。每台挖机占上下两行。</p>
+ </div>
 </div>
 <div id="allocationFlowDialog" hidden>
  <div class="allocation-flow-panel"><h3 id="allocationFlowDialogTitle"></h3>
