@@ -36469,21 +36469,20 @@ function held(type,value){
  return false;
 }
 function selected(type,exceptI,exceptJ){
- const values=new Set();
+ const s=new Set();
  for(const [i,r] of rows.entries()){
-  if(i!==exceptI){if(r.exc)values.add(r.exc);if(r.operator)values.add(r.operator);}
+  if(r.exc&&!(type==="exc"&&i===exceptI))s.add(r.exc);
+  if(r.operator&&!(type==="operator"&&i===exceptI))s.add(r.operator);
   for(const [j,t] of r.trucks.entries()){
-   if(i===exceptI&&j===exceptJ&&["vehicle","driver"].includes(type))continue;
-   if(t.vehicle)values.add(t.vehicle);
-   if(t.driver)values.add(t.driver);
+   if(t.vehicle&&!(type==="vehicle"&&i===exceptI&&j===exceptJ))s.add(t.vehicle);
+   if(t.driver&&!(type==="driver"&&i===exceptI&&j===exceptJ))s.add(t.driver);
   }
  }
  for(const [i,r] of auxRows.entries()){
-  if(i===exceptI&&["auxVehicle","auxDriver"].includes(type))continue;
-  if(r.equipment)values.add(r.equipment);
-  if(r.person)values.add(r.person);
+  if(r.equipment&&!(type==="auxVehicle"&&i===exceptI))s.add(r.equipment);
+  if(r.person&&!(type==="auxDriver"&&i===exceptI))s.add(r.person);
  }
- return values;
+ return s;
 }
 function options(type,i,j){
  let result=[];
@@ -36558,7 +36557,7 @@ function choose(type,i,j){
 function open(s){
  shift=s;refresh();truckColumns=1;rows=[blank()];auxRows=[];
  $("allocationFlowPick").hidden=true;$("allocationFlowEditor").hidden=false;
- $("allocationFlowShift").textContent=s;$("allocationFlowDate").textContent="日期："+currentDate()+" · "+s;
+ $("allocationFlowShift").textContent=s;
  $("allocationFlowTaskName").value=currentDate()+" "+s+"生产任务";
  $("allocationFlowEditor").scrollTop=0;sheet();
 }
