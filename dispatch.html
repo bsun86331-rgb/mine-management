@@ -23480,6 +23480,20 @@ function publishShiftLaunchBoard() {
             binding.unloadingZoneNames = [...(group.unloadingZones || [])];
         });
 
+        // 每辆汽车沿用所跟随挖机的区域，供汽车司机端直接读取。
+        driverAssignments.forEach(assignment => {
+            const group = taskGroups.find(g =>
+                String(g.excavatorNumber || "") === String(assignment.excavatorNumber || assignment.excavatorId || "")
+            );
+            if (!group || !group.loadingZone) return;
+            const unloads = [...(group.unloadingZones || [])];
+            assignment.loadingPoint = group.loadingZone;
+            assignment.taskLoadingPoint = group.loadingZone;
+            assignment.unloadingPoints = unloads;
+            assignment.unloadingPoint = unloads.join("、");
+            assignment.taskUnloadingPoint = assignment.unloadingPoint;
+        });
+
         const execution = {
             shiftId:
                 newShiftId,
@@ -36497,12 +36511,13 @@ function stats(){
  (e.driverAssignments||[]).forEach(d=>peopleBusy.add(String(d.driverId||d.personId||"")));
  });
  const notAssigned=people.filter(p=>/汽车司机/.test(p.position||"")&&!peopleBusy.has(personId(p))).map(personName);
+ const freeOperators=people.filter(p=>/挖机|挖掘机/.test(p.position||"")&&!peopleBusy.has(personId(p))).map(personName);
  const idleTrucks=machines.filter(m=>m.__category==="truck"&&isAvailable(m)&&!deviceBusy.has(deviceId(m))).map(deviceId);
  const idleEx=machines.filter(m=>m.__category==="excavator"&&isAvailable(m)&&!deviceBusy.has(deviceId(m))).map(deviceId);
  const repair=machines.filter(m=>!isAvailable(m)).map(deviceId);
  const box=$("allocationPublishedStatus");if(!box)return;
  box.replaceChildren();const h=document.createElement("strong");h.textContent="本班下发后人员与设备状态";box.append(h);
- for(const [title,values] of [["未分配汽车司机",notAssigned],["空闲汽车",idleTrucks],["空闲挖机",idleEx],["维修或停用设备",repair]]){
+ for(const [title,values] of [["未分配汽车司机",notAssigned],["未分配挖机司机",freeOperators],["空闲汽车",idleTrucks],["空闲挖机",idleEx],["维修或停用设备",repair]]){
  const p=document.createElement("p");p.textContent=title+"（"+values.length+"） "+(values.join("、")||"无");box.append(p);
  }
 }
