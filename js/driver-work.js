@@ -2310,11 +2310,17 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
                     if (
-                        bindingChanged
+                        bindingChanged || (masterTask.boardManaged && oldTask.boardVersion !== masterTask.boardVersion)
                     ) {
 
                         const updatedTask = {
                             ...oldTask,
+                            boardManaged: Boolean(masterTask.boardManaged),
+                            boardVersion: masterTask.boardVersion,
+                            team: masterTask.team,
+                            loadingZoneId: masterTask.loadingZoneId,
+                            unloadingZoneIds: masterTask.allowedUnloadingZoneIds || [],
+                            unloadingZoneNames: masterTask.allowedUnloadingZones?.map(z => z.name || z.zoneName || z.zone_name).filter(Boolean).join(' / ') || '',
 
                             taskId:
                                 masterTask.taskId ||
@@ -2491,6 +2497,12 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
                 const converted = {
+                    boardManaged: Boolean(task.boardManaged),
+                    boardVersion: task.boardVersion,
+                    team: task.team,
+                    loadingZoneId: task.loadingZoneId,
+                    unloadingZoneIds: task.allowedUnloadingZoneIds || [],
+                    unloadingZoneNames: task.allowedUnloadingZones?.map(z => z.name || z.zoneName || z.zone_name).filter(Boolean).join(' / ') || '',
 
                     taskId:
                         task.taskId,
@@ -3358,7 +3370,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
             alert(
                 "当前任务缺少班次 shiftId，不能开始正式作业。\\n\\n" +
-                "请让车队长重新生成 / 发布本班任务。"
+                "请让调度在生产任务看板调整绑定并发布。"
             );
 
             return false;
@@ -6267,6 +6279,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
         const record = {
+            team: currentTask.team || profile.team || '',
 
             id:
                 tripId,
