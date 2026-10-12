@@ -71,6 +71,7 @@ test('daily trips deduplicate aliases and keep A/B teams separate from shifts', 
     data.trips = [trip('1', '2026-10-11T09:00:00', 'A', '煤'), trip('1', '2026-10-11T09:00:00', 'A', '煤'), trip('2', '2026-10-11T22:00:00', 'A', '岩石'), trip('3', '2026-10-12T02:00:00', 'B', '煤'), trip('4', '2026-10-12T08:00:00', 'B', '煤'), { ...trip('5', '2026-10-11T12:00:00', 'A', '煤'), status: 'pending_dispatch' }];
     const stats = C.statistics('2026-10-11', '白班', state, data, board);
     assert.deepEqual([stats.totalTrips, stats.aTrips, stats.bTrips, stats.coalTrips, stats.aCoal, stats.bCoal, stats.shiftTrips], [3, 2, 1, 2, 1, 1, 1]);
+    assert.deepEqual([stats.aSlag, stats.bSlag], [1, 0]);
     assert.equal(C.statistics('2026-10-11', '夜班', state, data, board).shiftTrips, 2);
 });
 test('attendance and assignment remain independent; idle and maintenance counts are truthful', () => {
