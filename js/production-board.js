@@ -107,7 +107,7 @@
             ${draft ? '<button type="button" class="pb-full-add" data-action="add-group">＋ 添加生产组</button>' : ''}</div>
             <div class="pb-section"><h3>辅助车辆</h3><div class="pb-assignment-grid">${b.auxiliary.map((a, ai) => `<div class="pb-aux-item">${pair(a.equipmentId, a.driverId, 'auxiliary', -1, ai)}${draft ? `<button type="button" data-action="aux-settings" data-index="${ai}">班组 / 作业内容</button>` : `<p>${escape(a.work || '未填写作业内容')}</p>`}</div>`).join('')}${draft ? '<button type="button" class="pb-add" data-action="add-aux" aria-label="添加辅助车辆">+</button>' : ''}${!b.auxiliary.length && !draft ? '<p>该班次未绑定辅助车辆。</p>' : ''}</div></div>
             <div class="pb-section"><h3>未进入分配的车辆 / 设备</h3><p>绿色为可调配；红色为维修、保养或停用。点击编号查看信息。</p><div class="pb-unassigned">${unassignedEquipment(b)}</div></div>
-            <div class="pb-section"><h3>未进入分配的人员</h3><div class="pb-unassigned">${unassignedPeople(b)}</div></div>
+            <div class="pb-section"><h3>未进入分配的人员</h3><p>仅显示所选${escape(selected.shift)}的未分配一线司机。</p><div class="pb-unassigned">${unassignedPeople(b)}</div></div>
             ${draft ? '<div class="pb-editor-footer"><button type="button" data-action="cancel">取消编辑</button><button type="button" class="pb-primary" data-action="publish">绑定并发布</button></div>' : `<p class="pb-muted">${b.published ? `已绑定 · 版本 ${b.version || '旧任务导入'} · ${escape(b.updatedAt ? new Date(b.updatedAt).toLocaleString('zh-CN') : '')}` : '尚未绑定'}。班次时间和任务仅由调度设置。</p>`}`;
     }
     function unassignedEquipment(b) {
@@ -118,8 +118,8 @@
         }).join('') || '<span class="pb-muted">暂无未分配设备。</span>';
     }
     function unassignedPeople(b) {
-        const used = new Set(C.assignments(b).people), external = C.occupiedElsewhere(b, state, data, state.schedule).people;
-        return data.people.filter(p => C.approved(p) && !used.has(C.personId(p)) && !external.has(C.personId(p))).map(p => { const unavailable = C.onLeave(p, b, data, state.schedule) || /working|作业中/.test(String(p.personnelStatus || p.personnel_status)); return `<button type="button" data-action="person-info" data-id="${escape(C.personId(p))}" class="${unavailable ? 'pb-repair' : ''}">${escape(p.name || C.personId(p))} · ${escape(p.position || '')} · ${C.team(p) || '未分组'} · ${unavailable ? '请假 / 不可调配' : '空闲'}</button>`; }).join('') || '<span class="pb-muted">暂无未分配人员。</span>';
+
+        return C.unassignedPeople(b, state, data).map(p => { const unavailable = C.onLeave(p, b, data, state.schedule) || /working|作业中/.test(String(p.personnelStatus || p.personnel_status)); return `<button type="button" data-action="person-info" data-id="${escape(C.personId(p))}" class="${unavailable ? 'pb-repair' : ''}">${escape(p.name || C.personId(p))} · ${escape(p.position || '')} · ${C.team(p) || '未分组'} · ${unavailable ? '请假 / 不可调配' : '空闲'}</button>`; }).join('') || '<span class="pb-muted">本班暂无未分配的一线人员。</span>';
     }
     function modal(title, content, save) {
         if (dialog.open) dialog.close();

@@ -9,6 +9,27 @@ function fixture() {
     board.groups.push({ id: 'G1', team: 'A', excavatorId: 'E1', excavatorDriverId: 'E1D', trucks: [{ equipmentId: 'T1', driverId: 'T1D' }], loadingZoneId: 'L', unloadingZoneIds: ['U'], material: '煤' });
     return { state, board, data };
 }
+test('unassigned roster contains only frontline personnel in the selected shift', () => {
+    const { state, board, data } = fixture();
+    data.people.push({ personId: 'ADMIN', position: '管理员', team: '生产A组', status: 'approved' });
+    data.people.push({ personId: 'UNKNOWN', position: '汽车司机', status: 'approved' });
+    data.people.push({ personId: 'PENDING', position: '水车司机', team: '生产A组', status: 'pending' });
+    assert.deepEqual(C.unassignedPeople(board, state, data).map(C.personId), ['T2D', 'AD']);
+    data.attendance = [
+        { personId: 'T2D', date: board.date, shiftType: '夜班', whiteUnits: 0, nightUnits: 1 },
+        { personId: 'AD', date: board.date, shift: '白班' },
+        { personId: 'BD', date: board.date, shift: '白班' },
+        { personId: 'UNKNOWN', checkInAt: '2026-10-12T01:00:00' }
+    ];
+    assert.deepEqual(C.unassignedPeople(board, state, data).map(C.personId), ['BD', 'AD']);
+    const night = C.emptyBoard(board.date, '夜班');
+    assert.deepEqual(C.unassignedPeople(night, state, data).map(C.personId), ['T2D', 'UNKNOWN']);
+    data.people.find(p => p.personId === 'AD').workShift = '夜班';
+    // Date-specific attendance takes precedence over a static profile shift.
+    assert.equal(C.personInShift(data.people.find(p => p.personId === 'AD'), board, state, data), true);
+    const empty = C.emptyBoard('2026-10-13', '白班');
+    assert.equal(C.unassignedPeople(empty, state, data).length, 0);
+});
 test('night after midnight belongs to previous production day; exact boundaries switch', () => {
     assert.deepEqual(C.currentSlot(new Date('2026-10-12T07:59:59')), { date: '2026-10-11', shift: '夜班' });
     assert.deepEqual(C.currentSlot(new Date('2026-10-12T08:00:00')), { date: '2026-10-12', shift: '白班' });

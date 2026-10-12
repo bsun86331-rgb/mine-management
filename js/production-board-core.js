@@ -222,6 +222,32 @@
             if (seen.has(id)) return false; seen.add(id); return Number.isFinite(+tripTime(r));
         });
     }
+    function personInShift(person, board, state, data) {
+        const includesShift = value => value === board.shift || value === '白转夜' || value === '夜转白';
+        const records = array(data.attendance).filter(r =>
+            text(r.personId || r.person_id || r.employeeId || r.driverId) === personId(person) &&
+            text(r.date || r.workDate || r.attendanceDate || r.shift_date).slice(0, 10) === board.date &&
+            !/rejected|cancelled|驳回|作废/.test(text(r.status || r.reviewStatus)));
+        const scheduled = records.filter(r => r.whiteUnits != null || r.nightUnits != null || r.shift || r.shiftName || r.shift_name || r.shiftType || r.workShift);
+        if (scheduled.length) return scheduled.some(r => r.whiteUnits != null || r.nightUnits != null
+            ? Number(board.shift === '白班' ? r.whiteUnits : r.nightUnits) > 0
+            : includesShift(text(r.shift || r.shiftName || r.shift_name || r.shiftType || r.workShift)));
+        const declared = text(person.workShift || person.shift || person.shiftName || person.shift_name);
+        if (declared) return includesShift(declared);
+        const range = interval(board.date, board.shift, state.schedule);
+        const punches = array(data.attendance).filter(r => text(r.personId || r.person_id || r.employeeId || r.driverId) === personId(person) && !/rejected|cancelled|驳回|作废/.test(text(r.status || r.reviewStatus)));
+        const times = punches.map(r => new Date(r.checkInAt || r.checkInTime || r.check_in_time)).filter(t => !Number.isNaN(t.getTime()));
+        const day = interval(board.date, '白班', state.schedule), night = interval(board.date, '夜班', state.schedule);
+        if (times.some(t => t >= day.start && t < night.end)) return times.some(t => t >= range.start && t < range.end);
+        // A/B crews are independent of day/night; use the selected board's crews only as a fallback.
+        const crews = new Set([...array(board.groups), ...array(board.auxiliary)].map(team).filter(Boolean));
+        return Boolean(team(person) && crews.has(team(person)));
+    }
+    function unassignedPeople(board, state, data) {
+        const used = new Set(assignments(board).people), external = occupiedElsewhere(board, state, data, state.schedule).people;
+        return data.people.filter(p => approved(p) && ['truck', 'excavator', 'auxiliary'].includes(role(p)) &&
+            !used.has(personId(p)) && !external.has(personId(p)) && personInShift(p, board, state, data));
+    }
     function statistics(date, shift, state, data, board) {
         const start = interval(date, '白班', state.schedule).start, end = interval(date, '夜班', state.schedule).end;
         const range = interval(date, shift, state.schedule);
@@ -258,5 +284,5 @@
         const id = text(identity?.personId), person = people.find(p => personId(p) === id);
         return Boolean(person && approved(person) && role(person) === 'dispatch');
     }
-    return { DEFAULT_SCHEDULE, clone, array, text, flatten, personId, equipmentId, equipmentNumber, team, role, category, approved, minute, dateKey, shiftDate, validateSchedule, interval, currentSlot, slotKey, emptyBoard, emptyState, assignments, blockedEquipment, onLeave, occupiedElsewhere, equipmentChoices, personChoices, validateBoard, boardFor, projections, validTrips, statistics, canEdit };
+    return { DEFAULT_SCHEDULE, clone, array, text, flatten, personId, equipmentId, equipmentNumber, team, role, category, approved, minute, dateKey, shiftDate, validateSchedule, interval, currentSlot, slotKey, emptyBoard, emptyState, assignments, blockedEquipment, onLeave, occupiedElsewhere, equipmentChoices, personChoices, validateBoard, boardFor, projections, validTrips, personInShift, unassignedPeople, statistics, canEdit };
 });
