@@ -2321,7 +2321,6 @@ document.addEventListener("DOMContentLoaded", function () {
                             loadingZoneId: masterTask.loadingZoneId,
                             unloadingZoneIds: masterTask.allowedUnloadingZoneIds || [],
                             unloadingZoneNames: masterTask.allowedUnloadingZones?.map(z => z.name || z.zoneName || z.zone_name).filter(Boolean).join(' / ') || '',
-                            workAddress: masterTask.workAddress || oldTask.workAddress || '',
 
                             taskId:
                                 masterTask.taskId ||
@@ -2532,10 +2531,6 @@ document.addEventListener("DOMContentLoaded", function () {
                         task.workArea ||
                         "",
 
-                    workAddress:
-                        task.workAddress ||
-                        "",
-
                     remark:
                         task.remark ||
                         "",
@@ -2658,11 +2653,6 @@ document.addEventListener("DOMContentLoaded", function () {
             currentTask.workArea ||
             currentTask.area ||
             "-"
-        );
-
-        setText(
-            "taskWorkAddress",
-            currentTask.workAddress || "-"
         );
 
         setText(
