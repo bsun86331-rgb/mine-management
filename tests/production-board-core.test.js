@@ -57,6 +57,17 @@ test('selecting a crew replaces the other crew in a draft without changing the p
     assert.deepEqual(board, before);
     assert.throws(() => C.teamDraft(board, ''), /请选择/);
 });
+test('tasks do not require or prescribe material before the actual unloading zone is known', () => {
+    const { state, board, data } = fixture();
+    delete board.groups[0].material;
+    assert(C.validateBoard(board, state, data));
+    board.published = true;
+    board.publishedAt = '2026-10-11T08:00:00';
+    state.boards[C.slotKey(board.date, board.shift)] = board;
+    const projected = C.projections(state, data, new Date('2026-10-11T09:00:00'));
+    assert.equal(projected.tasks[0].materialType, '');
+    assert.equal(projected.tasks[0].material, '');
+});
 test('dispatch page restores its approved role identity after another role changes the global identity', () => {
     const { data } = fixture();
     assert.equal(C.dispatchIdentity('T1D', 'D', '', data.people).personId, 'D');
