@@ -826,7 +826,7 @@ const POSITION_ALIASES = {
         "铲车司机",
 
     "大巴":
-        "大巴司机",
+        "排土管理",
 
     "测量人员":
         "测量员",
@@ -938,7 +938,7 @@ const VALID_POSITIONS = [
 
     "加油车司机",
 
-    "大巴司机",
+    "排土管理",
 
     "平路机司机",
 
@@ -985,8 +985,6 @@ const DRIVER_POSITIONS = [
     "铲车司机",
 
     "加油车司机",
-
-    "大巴司机",
 
     "平路机司机",
 
@@ -1801,6 +1799,7 @@ function findExistingProfile() {
 function getPersonnelCategory(
     position
 ) {
+    if (position === "排土管理") return "生产一线人员";
 
 
     if (
@@ -2796,7 +2795,7 @@ const PRODUCTION_FRONTLINE_POSITIONS = [
     "挖机司机",
     "铲车司机",
     "加油车司机",
-    "大巴司机",
+    "排土管理",
     "平路机司机",
     "洒水车司机",
     "推土机司机"

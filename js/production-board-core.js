@@ -16,6 +16,7 @@
     const team = row => /(?:生产)?A(?:组|班)?/i.test(text(row?.team || row?.productionTeam || row?.production_team || row?.group)) ? 'A' : /(?:生产)?B(?:组|班)?/i.test(text(row?.team || row?.productionTeam || row?.production_team || row?.group)) ? 'B' : '';
     function role(row) {
         const value = text(row?.position || row?.role);
+        if (/排土管理/.test(value)) return 'dump';
         if (/挖机|挖掘机/.test(value)) return 'excavator';
         if (/汽车司机|卡车|矿卡|运输司机/.test(value)) return 'truck';
         if (/辅助|铲车|装载机|水车|洒水|加油|平路|推土|大巴/.test(value)) return 'auxiliary';
@@ -245,7 +246,7 @@
     }
     function unassignedPeople(board, state, data) {
         const used = new Set(assignments(board).people), external = occupiedElsewhere(board, state, data, state.schedule).people;
-        return data.people.filter(p => approved(p) && ['truck', 'excavator', 'auxiliary'].includes(role(p)) &&
+        return data.people.filter(p => approved(p) && ['truck', 'excavator', 'auxiliary', 'dump'].includes(role(p)) &&
             !used.has(personId(p)) && !external.has(personId(p)) && personInShift(p, board, state, data));
     }
     function statistics(date, shift, state, data, board) {

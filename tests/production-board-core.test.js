@@ -30,6 +30,17 @@ test('unassigned roster contains only frontline personnel in the selected shift'
     const empty = C.emptyBoard('2026-10-13', '白班');
     assert.equal(C.unassignedPeople(empty, state, data).length, 0);
 });
+test('dump management is frontline personnel but cannot be assigned as a vehicle driver', () => {
+    const { state, board, data } = fixture();
+    const person = { personId: 'DUMP', position: '排土管理', team: '生产A组', status: 'approved' };
+    data.people.push(person);
+    assert.equal(C.role(person), 'dump');
+    assert(C.unassignedPeople(board, state, data).some(p => C.personId(p) === 'DUMP'));
+    assert(!C.personChoices('auxiliary', 'A', board, state, data).some(p => C.personId(p) === 'DUMP'));
+    data.attendance.push({ personId: 'DUMP', date: board.date, shift: '夜班' });
+    assert(!C.unassignedPeople(board, state, data).some(p => C.personId(p) === 'DUMP'));
+    assert(C.unassignedPeople(C.emptyBoard(board.date, '夜班'), state, data).some(p => C.personId(p) === 'DUMP'));
+});
 test('night after midnight belongs to previous production day; exact boundaries switch', () => {
     assert.deepEqual(C.currentSlot(new Date('2026-10-12T07:59:59')), { date: '2026-10-11', shift: '夜班' });
     assert.deepEqual(C.currentSlot(new Date('2026-10-12T08:00:00')), { date: '2026-10-12', shift: '白班' });
