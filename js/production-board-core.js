@@ -281,6 +281,14 @@
         const countDuty = list => list.filter(e => equipmentSet.has(equipmentId(e)) && !blockedEquipment(e, data)).length;
         return { totalTrips: daily.length, aTrips: daily.filter(r => tripTeam(r) === 'A').length, bTrips: daily.filter(r => tripTeam(r) === 'B').length, coalTrips: daily.filter(coal).length, aCoal: daily.filter(r => coal(r) && tripTeam(r) === 'A').length, aSlag: daily.filter(r => slag(r) && tripTeam(r) === 'A').length, bSlag: daily.filter(r => slag(r) && tripTeam(r) === 'B').length, bCoal: daily.filter(r => coal(r) && tripTeam(r) === 'B').length, unknownTeam: daily.filter(r => !tripTeam(r)).length, shiftTrips: daily.filter(r => tripTime(r) >= range.start && tripTime(r) < range.end).length, equipmentTotal: equipment.length, equipmentDuty: dutyEquipment.length, equipmentIdle: equipment.filter(e => !equipmentSet.has(equipmentId(e)) && !blockedEquipment(e, data)).length, equipmentRepair: repair.length, equipmentRate: equipment.length ? dutyEquipment.length / equipment.length : 0, truckTotal: trucks.length, truckDuty: countDuty(trucks), truckIdle: trucks.filter(e => !equipmentSet.has(equipmentId(e)) && !blockedEquipment(e, data)).length, truckRepair: trucks.filter(e => blockedEquipment(e, data)).length, truckRate: trucks.length ? countDuty(trucks) / trucks.length : 0, personnelTotal: people.length, personnelDuty: attendanceCount, personnelIdle: people.filter(p => !personSet.has(personId(p)) && !onLeave(p, board, data, state.schedule) && !/working|作业中/.test(text(p.personnelStatus || p.personnel_status))).length, personnelLeave: people.filter(p => onLeave(p, board, data, state.schedule)).length, personnelRate: people.length ? attendanceCount / people.length : 0, productionPeople: new Set(board.groups.flatMap(g => [g.excavatorDriverId, ...g.trucks.map(t => t.driverId)]).filter(Boolean)).size, excavatorDrivers: new Set(board.groups.map(g => g.excavatorDriverId).filter(Boolean)).size, truckDrivers: new Set(board.groups.flatMap(g => g.trucks.map(t => t.driverId)).filter(Boolean)).size, auxiliaryTotal: aux.length, auxiliaryDuty: auxDuty, auxiliaryRate: aux.length ? auxDuty / aux.length : 0, auxiliaryDrivers: new Set(board.auxiliary.map(a => a.driverId).filter(Boolean)).size };
     }
+    function teamDraft(board, crew) {
+        if (!['A', 'B'].includes(crew)) throw new Error('请选择生产A组或生产B组。');
+        const draft = clone(board);
+        draft.team = crew;
+        draft.groups = array(draft.groups).filter(g => g.team === crew);
+        draft.auxiliary = array(draft.auxiliary).filter(a => a.team === crew);
+        return draft;
+    }
     function canEdit(identity, people) {
         const id = text(identity?.personId), person = people.find(p => personId(p) === id);
         if (!person || role(person) !== 'dispatch') return false;
@@ -297,5 +305,5 @@
         }
         return { personId: text(currentId) };
     }
-    return { DEFAULT_SCHEDULE, clone, array, text, flatten, personId, equipmentId, equipmentNumber, team, role, category, approved, minute, dateKey, shiftDate, validateSchedule, interval, currentSlot, slotKey, emptyBoard, emptyState, assignments, blockedEquipment, onLeave, occupiedElsewhere, equipmentChoices, personChoices, validateBoard, boardFor, projections, validTrips, personInShift, unassignedPeople, statistics, canEdit, dispatchIdentity };
+    return { DEFAULT_SCHEDULE, clone, array, text, flatten, personId, equipmentId, equipmentNumber, team, role, category, approved, minute, dateKey, shiftDate, validateSchedule, interval, currentSlot, slotKey, emptyBoard, emptyState, assignments, blockedEquipment, onLeave, occupiedElsewhere, equipmentChoices, personChoices, validateBoard, boardFor, projections, validTrips, personInShift, unassignedPeople, statistics, canEdit, dispatchIdentity, teamDraft };
 });

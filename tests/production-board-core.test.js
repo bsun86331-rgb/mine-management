@@ -46,6 +46,17 @@ test('only approved dispatch personnel can edit', () => {
     data.people[0].status = 'pending';
     assert.equal(C.canEdit({ personId: 'D' }, data.people), false);
 });
+test('selecting a crew replaces the other crew in a draft without changing the published board', () => {
+    const { board } = fixture();
+    board.groups.push({ ...C.clone(board.groups[0]), id: 'GB', team: 'B' });
+    board.auxiliary = [{ team: 'A', equipmentId: 'AA' }, { team: 'B', equipmentId: 'AB' }];
+    const before = C.clone(board), draft = C.teamDraft(board, 'B');
+    assert.equal(draft.team, 'B');
+    assert.deepEqual(draft.groups.map(g => g.id), ['GB']);
+    assert.deepEqual(draft.auxiliary.map(a => a.equipmentId), ['AB']);
+    assert.deepEqual(board, before);
+    assert.throws(() => C.teamDraft(board, ''), /请选择/);
+});
 test('dispatch page restores its approved role identity after another role changes the global identity', () => {
     const { data } = fixture();
     assert.equal(C.dispatchIdentity('T1D', 'D', '', data.people).personId, 'D');
