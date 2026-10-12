@@ -389,7 +389,7 @@ function normalizePosition(position) {
             "铲车司机",
 
         "大巴":
-            "排土管理",
+            "大巴司机",
 
         "测量人员":
             "测量员",
@@ -429,7 +429,7 @@ function getPersonnelCategory(position) {
         "汽车司机",
         "铲车司机",
         "加油车司机",
-        "排土管理",
+        "大巴司机",
         "平路机司机",
         "洒水车司机",
         "推土机司机"

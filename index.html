@@ -1323,7 +1323,7 @@
             </span>
 
             <span class="portal-subtitle">
-                铲车 · 加油车 · 排土管理 · 平路机 · 洒水车 · 推土机
+                铲车 · 加油车 · 大巴 · 平路机 · 洒水车 · 推土机
             </span>
 
         </button>
@@ -1515,8 +1515,8 @@ const POSITION_PAGES = {
     "加油车司机":
         "fuel.html",
 
-    "排土管理":
-        "dump-management.html",
+    "大巴司机":
+        "auxiliary.html",
 
     "平路机司机":
         "auxiliary.html",
@@ -1579,7 +1579,7 @@ const ROLE_GROUPS = {
         roles: [
             "铲车司机",
             "加油车司机",
-            "排土管理",
+            "大巴司机",
             "平路机司机",
             "洒水车司机",
             "推土机司机"
@@ -1631,7 +1631,7 @@ function normalizePosition(position) {
             "铲车司机",
 
         "大巴":
-            "排土管理",
+            "大巴司机",
 
         "测量人员":
             "测量员",
@@ -3119,7 +3119,7 @@ function openRoleModal(groupName) {
                         class="role-btn"
                         onclick="selectPosition('${role}')"
                     >
-                        ${role}
+                        ${role === '大巴司机' ? '排土管理' : role}
                     </button>
 
                 `
