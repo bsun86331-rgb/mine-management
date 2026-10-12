@@ -46,6 +46,17 @@ test('only approved dispatch personnel can edit', () => {
     data.people[0].status = 'pending';
     assert.equal(C.canEdit({ personId: 'D' }, data.people), false);
 });
+test('dispatch page restores its approved role identity after another role changes the global identity', () => {
+    const { data } = fixture();
+    assert.equal(C.dispatchIdentity('T1D', 'D', '', data.people).personId, 'D');
+    assert.equal(C.dispatchIdentity('T1D', '', 'D', data.people).personId, 'D');
+    assert.equal(C.dispatchIdentity('T1D', '', '', data.people).personId, 'T1D');
+    data.people[0].approvalStatus = 'pending';
+    assert(C.canEdit({ personId: 'D' }, data.people));
+    data.people[0].approvalStatus = 'rejected';
+    assert(!C.canEdit({ personId: 'D' }, data.people));
+    assert.equal(C.dispatchIdentity('T1D', 'D', '', data.people).personId, 'T1D');
+});
 test('choices exclude occupied, maintenance, wrong-team and leave resources', () => {
     const { state, board, data } = fixture();
     data.maintenance.push({ equipmentId: 'T3', status: 'pending_dispatch' });

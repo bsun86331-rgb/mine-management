@@ -283,7 +283,19 @@
     }
     function canEdit(identity, people) {
         const id = text(identity?.personId), person = people.find(p => personId(p) === id);
-        return Boolean(person && approved(person) && role(person) === 'dispatch');
+        if (!person || role(person) !== 'dispatch') return false;
+        if (/^(pending|待审核)$/.test(text(person.status)) && !/^(approved|通过|已审核)$/.test(text(person.approvalStatus || person.approval_status))) return false;
+        if (/rejected|disabled|resigned|deleted|驳回|离职|停用/.test(text(person.status) + ' ' + text(person.approvalStatus || person.approval_status) + ' ' + text(person.personnelStatus))) return false;
+        return approved(person) || /^(approved|active|working)$/.test(text(person.status)) || /^(在职可用|作业中)$/.test(text(person.personnelStatus));
     }
-    return { DEFAULT_SCHEDULE, clone, array, text, flatten, personId, equipmentId, equipmentNumber, team, role, category, approved, minute, dateKey, shiftDate, validateSchedule, interval, currentSlot, slotKey, emptyBoard, emptyState, assignments, blockedEquipment, onLeave, occupiedElsewhere, equipmentChoices, personChoices, validateBoard, boardFor, projections, validTrips, personInShift, unassignedPeople, statistics, canEdit };
+    function dispatchIdentity(currentId, mappedId, profileId, people) {
+        const current = people.find(p => personId(p) === text(currentId));
+        // A rejected/pending dispatch identity must not silently switch to another dispatcher.
+        if (current && role(current) === 'dispatch') return { personId: personId(current) };
+        for (const id of [mappedId, profileId]) {
+            if (id && canEdit({ personId: text(id) }, people)) return { personId: text(id) };
+        }
+        return { personId: text(currentId) };
+    }
+    return { DEFAULT_SCHEDULE, clone, array, text, flatten, personId, equipmentId, equipmentNumber, team, role, category, approved, minute, dateKey, shiftDate, validateSchedule, interval, currentSlot, slotKey, emptyBoard, emptyState, assignments, blockedEquipment, onLeave, occupiedElsewhere, equipmentChoices, personChoices, validateBoard, boardFor, projections, validTrips, personInShift, unassignedPeople, statistics, canEdit, dispatchIdentity };
 });

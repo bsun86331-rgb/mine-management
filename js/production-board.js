@@ -30,7 +30,10 @@
     }
     function identity() {
         const profile = read('dispatchUserProfile', {});
-        return { personId: localStorage.getItem('currentPersonId') || profile.personId || profile.employeeId || '' };
+        const currentId = localStorage.getItem('currentPersonId') || '';
+        if (!isDispatchPage) return { personId: currentId };
+        const roles = read('rolePersonIds', {});
+        return C.dispatchIdentity(currentId, roles['车队长'] || roles['调度员'] || roles['调度'], profile.personId || profile.employeeId, data.people);
     }
     const editable = () => isDispatchPage && C.canEdit(identity(), data.people);
     const board = () => draft || C.boardFor(state, selected.date, selected.shift, data);
