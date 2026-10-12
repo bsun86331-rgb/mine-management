@@ -84,7 +84,7 @@
     function pair(equipment, person, kind, groupIndex, index) {
         const broken = equipment && C.blockedEquipment(findEquipment(equipment) || {}, data);
         const attrs = `data-kind="${kind}" data-group="${groupIndex}" data-index="${index}"`;
-        return `<div class="pb-pair ${kind === 'auxiliary' ? 'pb-aux' : ''}">
+        return `<div class="pb-pair ${kind === 'auxiliary' ? 'pb-aux' : kind === 'excavator' ? 'pb-excavator' : ''}">
             <button type="button" class="pb-device" data-action="${draft ? 'choose-equipment' : 'equipment-info'}" data-id="${escape(equipment)}" ${attrs}>${escape(equipmentLabel(equipment))}${broken ? ' · 维修' : ''}</button>
             <button type="button" class="pb-person" data-action="${draft ? 'choose-person' : 'person-info'}" data-id="${escape(person)}" ${attrs}>${escape(personLabel(person))}</button>
             ${draft && kind !== 'excavator' ? `<button class="pb-remove" type="button" data-action="remove-pair" ${attrs}>移除</button>` : ''}
@@ -95,7 +95,7 @@
         if (!section) return;
         const b = board(), s = C.statistics(selected.date, selected.shift, state, data, b), current = C.currentSlot(new Date(), state.schedule);
         const date = new Date(), statisticsHidden = draft || !b.published ? ' hidden' : '';
-        section.innerHTML = `<div class="pb-heading"><div><h2>生产任务看板</h2><p>按生产日期展示白班、夜班；A班组、B班组分别统计完成趟次。</p></div><span class="pb-tag">看板 V2.0.2 · 本机共享 · ${draft ? '编辑中' : editable() ? '调度' : '只读'}</span></div>
+        section.innerHTML = `<div class="pb-heading"><div><h2>生产任务看板</h2><p>按生产日期展示白班、夜班；A班组、B班组分别统计完成趟次。</p></div><span class="pb-tag">看板 V2.0.3 · 本机共享 · ${draft ? '编辑中' : editable() ? '调度' : '只读'}</span></div>
             <div class="pb-toolbar"><label>生产日期 <input type="date" data-action="date" value="${escape(selected.date)}" ${draft ? 'disabled' : ''}></label><span id="pb-live-clock" class="pb-muted">${escape(date.toLocaleString('zh-CN', { hour12: false }))}</span><button type="button" data-action="auto" ${draft ? 'disabled' : ''}>${automatic ? '正在显示当前班' : '回到当前班'}</button>${editable() ? '<button type="button" data-action="schedule"' + (draft ? ' disabled' : '') + '>设置班次时间</button>' : ''}</div>
             <div class="pb-tabs">${['白班', '夜班'].map(shift => `<button type="button" data-action="shift" data-shift="${shift}" class="${shift === selected.shift ? 'pb-active' : ''}" ${draft ? 'disabled' : ''}>${shift}${current.date === selected.date && current.shift === shift ? ' · 当前班' : ''}<small>${shift === '白班' ? state.schedule.dayStart + '—' + state.schedule.dayEnd : state.schedule.nightStart + '—' + state.schedule.nightEnd} ${C.interval(selected.date, shift, state.schedule).end.getDate() !== new Date(selected.date + 'T12:00:00').getDate() ? '（次日结束）' : ''}</small></button>`).join('')}</div>
             <p>生产日：${escape(selected.date)} ${escape(state.schedule.dayStart)} 起，到次日 ${escape(state.schedule.dayStart)} 止。车数按完成趟次统计，车辆台数另列。</p>
