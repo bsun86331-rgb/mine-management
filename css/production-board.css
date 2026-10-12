@@ -7,3 +7,6 @@
 .pb-trip-summary{margin:18px 0}.pb-trip-summary>.pb-metric{text-align:center;background:#edf4ff}.pb-trip-summary>.pb-metric strong{font-size:32px}.pb-trip-groups{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin-top:16px}.pb-trip-group{border:1px solid #dce3ed;border-radius:12px;padding:16px;min-width:0}.production-board .pb-trip-group h3{margin-bottom:12px}.pb-trip-materials{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:10px}@media(max-width:520px){.pb-trip-groups{grid-template-columns:1fr}.pb-trip-group{padding:12px}}
 
 .production-board .pb-pair.pb-excavator{background:#edf5ff;border-color:#9fc4f0}
+
+.pb-dialog .pb-person-detail{display:flex;align-items:flex-start;gap:18px}.pb-dialog .pb-person-detail dl{flex:1;min-width:0;margin:0}.pb-dialog .pb-person-avatar{width:96px;height:96px;flex:0 0 96px;overflow:hidden;border:1px solid #dbe5f0;border-radius:50%;background:#edf4ff;display:flex;align-items:center;justify-content:center;color:#2563eb;font-size:32px;font-weight:700}.pb-dialog .pb-person-avatar img{width:100%;height:100%;object-fit:cover}.pb-dialog .pb-person-avatar-empty{border-radius:14px}
+@media(max-width:520px){.pb-dialog .pb-person-detail{gap:12px}.pb-dialog .pb-person-avatar{width:72px;height:72px;flex-basis:72px}}

@@ -96,7 +96,7 @@
         if (!section) return;
         const b = board(), s = C.statistics(selected.date, selected.shift, state, data, b), current = C.currentSlot(new Date(), state.schedule);
         const date = new Date(), statisticsHidden = draft || !b.published ? ' hidden' : '';
-        section.innerHTML = `<div class="pb-heading"><div><h2>生产任务看板</h2><p>按生产日期展示白班、夜班；A班组、B班组分别统计完成趟次。</p></div><span class="pb-tag">看板 V2.0.6 · 本机共享 · ${draft ? '编辑中' : editable() ? '调度' : '只读'}</span><div class="pb-actions"><button type="button" data-action="toggle" aria-expanded="${!collapsed}" aria-controls="pb-content">${collapsed ? '展开看板' : '收起看板'}</button>${collapsed && editable() && !draft ? '<button type="button" class="pb-primary" data-action="edit">' + (b.published ? '调整绑定' : '下发任务') + '</button>' : ''}</div></div>
+        section.innerHTML = `<div class="pb-heading"><div><h2>生产任务看板</h2><p>按生产日期展示白班、夜班；A班组、B班组分别统计完成趟次。</p></div><span class="pb-tag">看板 V2.0.7 · 本机共享 · ${draft ? '编辑中' : editable() ? '调度' : '只读'}</span><div class="pb-actions"><button type="button" data-action="toggle" aria-expanded="${!collapsed}" aria-controls="pb-content">${collapsed ? '展开看板' : '收起看板'}</button>${collapsed && editable() && !draft ? '<button type="button" class="pb-primary" data-action="edit">' + (b.published ? '调整绑定' : '下发任务') + '</button>' : ''}</div></div>
             <div id="pb-content"${collapsed ? ' hidden' : ''}><div class="pb-toolbar"><label>生产日期 <input type="date" data-action="date" value="${escape(selected.date)}" ${draft ? 'disabled' : ''}></label><span id="pb-live-clock" class="pb-muted">${escape(date.toLocaleString('zh-CN', { hour12: false }))}</span><button type="button" data-action="auto" ${draft ? 'disabled' : ''}>${automatic ? '正在显示当前班' : '回到当前班'}</button>${editable() ? '<button type="button" data-action="schedule"' + (draft ? ' disabled' : '') + '>设置班次时间</button>' : ''}</div>
             <div class="pb-tabs">${['白班', '夜班'].map(shift => `<button type="button" data-action="shift" data-shift="${shift}" class="${shift === selected.shift ? 'pb-active' : ''}" ${draft ? 'disabled' : ''}>${shift}${current.date === selected.date && current.shift === shift ? ' · 当前班' : ''}<small>${shift === '白班' ? state.schedule.dayStart + '—' + state.schedule.dayEnd : state.schedule.nightStart + '—' + state.schedule.nightEnd} ${C.interval(selected.date, shift, state.schedule).end.getDate() !== new Date(selected.date + 'T12:00:00').getDate() ? '（次日结束）' : ''}</small></button>`).join('')}</div>
             <p>生产日：${escape(selected.date)} ${escape(state.schedule.dayStart)} 起，到次日 ${escape(state.schedule.dayStart)} 止。车数按完成趟次统计，车辆台数另列。</p>
@@ -141,8 +141,23 @@
     function details(type, value) {
         const row = type === 'equipment' ? findEquipment(value) : findPerson(value);
         if (!row) return notify('尚未选择或无法找到对应档案。', true);
-        const fields = type === 'equipment' ? [ ['设备编号', C.equipmentNumber(row)], ['设备类型', row.equipmentType || row.vehicleType || row.type], ['型号', row.model], ['状态', C.blockedEquipment(row, data) ? '维修 / 保养，不可调配' : row.equipmentStatus || row.currentStatus || row.status || '可用'], ['所属班组', C.team(row) || '未设置'], ['小时数 / 里程', row.hours || row.hourMeter || row.mileage || '未记录'] ] : [ ['姓名', row.name], ['员工编号', row.employeeNo || row.employee_no || row.employeeId || C.personId(row)], ['岗位', row.position], ['班组', C.team(row) || '未设置'], ['状态', row.personnelStatus || row.personnel_status || row.status] ];
-        modal(type === 'equipment' ? '设备信息' : '人员信息', '<dl>' + fields.map(([name, v]) => `<dt>${escape(name)}</dt><dd>${escape(v || '未填写')}</dd>`).join('') + '</dl>');
+        if (type === 'equipment') {
+            const fields = [ ['设备编号', C.equipmentNumber(row)], ['设备类型', row.equipmentType || row.vehicleType || row.type], ['型号', row.model], ['状态', C.blockedEquipment(row, data) ? '维修 / 保养，不可调配' : row.equipmentStatus || row.currentStatus || row.status || '可用'], ['所属班组', C.team(row) || '未设置'], ['小时数 / 里程', row.hours || row.hourMeter || row.mileage || '未记录'] ];
+            return modal('设备信息', '<dl>' + fields.map(([name, v]) => `<dt>${escape(name)}</dt><dd>${escape(v || '未填写')}</dd>`).join('') + '</dl>');
+        }
+        const fields = [
+            ['姓名', row.name],
+            ['员工编号', row.employeeNo || row.employee_no || row.employeeId || C.personId(row)],
+            ['电话号码', row.phone || row.phoneNumber || row.mobile || row.mobilePhone || row.telephone],
+            ['岗位', row.position],
+            ['班组', C.team(row) || '未设置'],
+            ['状态', row.personnelStatus || row.personnel_status || row.status]
+        ];
+        const avatar = row.avatarPhoto || row.profilePhoto || row.selfiePhoto || '';
+        const photo = avatar
+            ? `<div class="pb-person-avatar"><img src="${escape(avatar)}" alt="${escape(row.name || '人员')}头像"></div>`
+            : `<div class="pb-person-avatar pb-person-avatar-empty" aria-label="暂无头像">${escape((row.name || '人').slice(0, 1))}</div>`;
+        modal('人员信息', '<div class="pb-person-detail">' + photo + '<dl>' + fields.map(([name, v]) => `<dt>${escape(name)}</dt><dd>${escape(v || '未填写')}</dd>`).join('') + '</dl></div>');
     }
     function beginEdit() {
         load();
