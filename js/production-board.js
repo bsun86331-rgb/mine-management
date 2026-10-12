@@ -96,7 +96,7 @@
         if (!section) return;
         const b = board(), s = C.statistics(selected.date, selected.shift, state, data, b), current = C.currentSlot(new Date(), state.schedule);
         const date = new Date(), statisticsHidden = draft || !b.published ? ' hidden' : '';
-        section.innerHTML = `<div class="pb-heading"><div><h2>生产任务看板</h2><p>按生产日期展示白班、夜班；A班组、B班组分别统计完成趟次。</p></div><span class="pb-tag">看板 V2.0.6 · 本机共享 · ${draft ? '编辑中' : editable() ? '调度' : '只读'}</span><div class="pb-actions"><button type="button" data-action="toggle" aria-expanded="${!collapsed}" aria-controls="pb-content">${collapsed ? '展开看板' : '收起看板'}</button>${collapsed && editable() && !draft ? '<button type="button" class="pb-primary" data-action="edit">' + (b.published ? '调整绑定' : '下发任务') + '</button>' : ''}</div></div>
+        section.innerHTML = `<div class="pb-heading"><div><h2>生产任务看板</h2><p>按生产日期展示白班、夜班；A班组、B班组分别统计完成趟次。</p></div><span class="pb-tag">看板 V2.0.7 · 本机共享 · ${draft ? '编辑中' : editable() ? '调度' : '只读'}</span><div class="pb-actions"><button type="button" data-action="toggle" aria-expanded="${!collapsed}" aria-controls="pb-content">${collapsed ? '展开看板' : '收起看板'}</button>${collapsed && editable() && !draft ? '<button type="button" class="pb-primary" data-action="edit">' + (b.published ? '调整绑定' : '下发任务') + '</button>' : ''}</div></div>
             <div id="pb-content"${collapsed ? ' hidden' : ''}><div class="pb-toolbar"><label>生产日期 <input type="date" data-action="date" value="${escape(selected.date)}" ${draft ? 'disabled' : ''}></label><span id="pb-live-clock" class="pb-muted">${escape(date.toLocaleString('zh-CN', { hour12: false }))}</span><button type="button" data-action="auto" ${draft ? 'disabled' : ''}>${automatic ? '正在显示当前班' : '回到当前班'}</button>${editable() ? '<button type="button" data-action="schedule"' + (draft ? ' disabled' : '') + '>设置班次时间</button>' : ''}</div>
             <div class="pb-tabs">${['白班', '夜班'].map(shift => `<button type="button" data-action="shift" data-shift="${shift}" class="${shift === selected.shift ? 'pb-active' : ''}" ${draft ? 'disabled' : ''}>${shift}${current.date === selected.date && current.shift === shift ? ' · 当前班' : ''}<small>${shift === '白班' ? state.schedule.dayStart + '—' + state.schedule.dayEnd : state.schedule.nightStart + '—' + state.schedule.nightEnd} ${C.interval(selected.date, shift, state.schedule).end.getDate() !== new Date(selected.date + 'T12:00:00').getDate() ? '（次日结束）' : ''}</small></button>`).join('')}</div>
             <p>生产日：${escape(selected.date)} ${escape(state.schedule.dayStart)} 起，到次日 ${escape(state.schedule.dayStart)} 止。车数按完成趟次统计，车辆台数另列。</p>
@@ -107,7 +107,7 @@
             <div class="pb-section pb-statistics"${statisticsHidden}><h3>人员</h3><div class="pb-metrics">${metric('人员总数', s.personnelTotal)}${metric('考勤出勤', s.personnelDuty)}${metric('未绑定 / 空闲', s.personnelIdle)}${metric('请假', s.personnelLeave)}${metric('人员出勤率', (s.personnelRate * 100).toFixed(1) + '%')}${metric('生产组绑定人员', s.productionPeople)}</div><p>挖机司机 ${s.excavatorDrivers} 人 · 汽车司机 ${s.truckDrivers} 人 · 辅助车辆司机 ${s.auxiliaryDrivers} 人。人员出勤按所选班次考勤记录计算，绑定与考勤分别统计。</p></div>
             <div class="pb-section"><div class="pb-heading"><h3>${escape(selected.shift)}生产组</h3>${editable() && !draft && !collapsed ? `<div class="pb-actions"><button class="pb-primary" type="button" data-action="edit">${b.published ? '调整绑定' : '下发任务'}</button></div>` : ''}</div>
             ${draft ? `<p class="pb-edit-note">编辑模式：本次调配生产${escape(draft.team)}组。点击设备或人员更换，仅显示可调配设备和空闲人员。点击“绑定并发布”后，各端显示新看板；取消不会改变现有绑定。</p>` : '<p>点击设备编号或人员姓名查看信息。白班、夜班可手动切换。</p>'}
-            ${!b.groups.length ? '<div class="pb-empty">该班次尚未设置生产组。</div>' : b.groups.map((g, gi) => `<div class="pb-group"><div class="pb-group-label">${gi + 1}组<small>${escape(g.team || '未设置')}班组</small><small>跟随汽车 ${g.trucks.length} 辆</small>${draft ? `<button type="button" class="pb-danger" data-action="remove-group" data-group="${gi}">删除组</button>` : ''}</div><div class="pb-assignment-grid">${pair(g.excavatorId, g.excavatorDriverId, 'excavator', gi, 0)}${g.trucks.map((t, ti) => pair(t.equipmentId, t.driverId, 'truck', gi, ti)).join('')}${draft ? `<button type="button" class="pb-add" data-action="add-truck" data-group="${gi}" aria-label="添加汽车">+</button>` : ''}</div><div class="pb-zones"><strong>装卸区域</strong><br>装载区：${escape(zoneLabel(g.loadingZoneId))}<br>${g.unloadingZoneIds.length ? g.unloadingZoneIds.map((zone, i) => `卸载区${i + 1}：${escape(zoneLabel(zone))}`).join('<br>') : '未设置卸载区'}${draft ? `<button type="button" class="pb-zone-edit" data-action="group-settings" data-group="${gi}">区域设置</button>` : ''}</div></div>`).join('')}
+            ${!b.groups.length ? '<div class="pb-empty">该班次尚未设置生产组。</div>' : b.groups.map((g, gi) => `<div class="pb-group"><div class="pb-group-label">${gi + 1}组<small>${escape(g.team || '未设置')}班组</small><small>跟随汽车 ${g.trucks.length} 辆</small>${draft ? `<button type="button" class="pb-danger" data-action="remove-group" data-group="${gi}">删除组</button>` : ''}</div><div class="pb-assignment-grid">${pair(g.excavatorId, g.excavatorDriverId, 'excavator', gi, 0)}${g.trucks.map((t, ti) => pair(t.equipmentId, t.driverId, 'truck', gi, ti)).join('')}${draft ? `<button type="button" class="pb-add" data-action="add-truck" data-group="${gi}" aria-label="添加汽车">+</button>` : ''}</div><div class="pb-zones"><strong>装卸区域</strong><br>装载区：${escape(zoneLabel(g.loadingZoneId))}<br>挖机工作地址：${escape(g.workAddress || '未设置')}<br>${g.unloadingZoneIds.length ? g.unloadingZoneIds.map((zone, i) => `卸载区${i + 1}：${escape(zoneLabel(zone))}`).join('<br>') : '未设置卸载区'}${draft ? `<button type="button" class="pb-zone-edit" data-action="group-settings" data-group="${gi}">区域设置</button>` : ''}</div></div>`).join('')}
             ${draft ? '<button type="button" class="pb-full-add" data-action="add-group">＋ 添加生产组</button>' : ''}</div>
             <div class="pb-section"><h3>辅助车辆</h3><div class="pb-assignment-grid">${b.auxiliary.map((a, ai) => `<div class="pb-aux-item">${pair(a.equipmentId, a.driverId, 'auxiliary', -1, ai)}${draft ? `<button type="button" data-action="aux-settings" data-index="${ai}">作业内容</button>` : `<p>${escape(a.work || '未填写作业内容')}</p>`}</div>`).join('')}${draft ? '<button type="button" class="pb-add" data-action="add-aux" aria-label="添加辅助车辆">+</button>' : ''}${!b.auxiliary.length && !draft ? '<p>该班次未绑定辅助车辆。</p>' : ''}</div></div>
             <div class="pb-section"><h3>未进入分配的车辆 / 设备</h3><p>绿色为可调配；红色为维修、保养或停用。点击编号查看信息。</p><div class="pb-unassigned">${unassignedEquipment(b)}</div></div>
@@ -127,7 +127,7 @@
         const people = draft ? data.people.filter(p => C.approved(p) && ['truck', 'excavator', 'auxiliary'].includes(C.role(p)) && C.team(p) === draft.team && !used.has(C.personId(p)) && !external.has(C.personId(p))) : C.unassignedPeople(b, state, data);
         return people.map(p => { const unavailable = C.onLeave(p, b, data, state.schedule) || /working|作业中/.test(String(p.personnelStatus || p.personnel_status)); return `<button type="button" data-action="person-info" data-id="${escape(C.personId(p))}" class="${unavailable ? 'pb-repair' : ''}">${escape(p.name || C.personId(p))} · ${escape(p.position || '')} · ${C.team(p) || '未分组'} · ${unavailable ? '请假 / 不可调配' : '空闲'}</button>`; }).join('') || '<span class="pb-muted">本班暂无未分配的一线人员。</span>';
     }
-    function modal(title, content, save) {
+    function modal(title, content, save, onReady) {
         if (dialog.open) dialog.close();
         dialog.innerHTML = `<form method="dialog"><h3>${escape(title)}</h3>${content}<div id="pb-dialog-error" class="pb-message pb-error" hidden></div><div class="pb-dialog-actions"><button type="button" data-close>关闭</button>${save ? '<button type="submit" class="pb-primary">确认</button>' : ''}</div></form>`;
         dialog.querySelector('[data-close]').onclick = () => dialog.close();
@@ -137,6 +137,7 @@
             try { save(new FormData(event.target)); dialog.close(); render(); } catch (e) { const error = dialog.querySelector('#pb-dialog-error'); error.hidden = false; error.textContent = e.message; }
         };
         dialog.showModal();
+        if (onReady) onReady(dialog.querySelector('form'));
     }
     function details(type, value) {
         const row = type === 'equipment' ? findEquipment(value) : findPerson(value);
@@ -177,9 +178,29 @@
         const g = draft.groups[index];
         const zoneId = z => String(z.zoneId || z.zone_id || z.id);
         const type = z => String(z.zoneType || z.zone_type || z.type);
-        modal('生产组设置', `<p>本次调配：生产${escape(draft.team)}组</p><label>装载区<select name="load" required><option value="">请选择</option>${data.zones.filter(z => /^(loading|load|装载区|装料区)$/.test(type(z))).map(z => `<option value="${escape(zoneId(z))}" ${zoneId(z) === g.loadingZoneId ? 'selected' : ''}>${escape(zoneLabel(zoneId(z)))}</option>`).join('')}</select></label><fieldset><legend>允许卸载区（可多选）</legend>${data.zones.filter(z => /^(unloading|unload|卸载区|卸料区)$/.test(type(z))).map(z => `<label><input type="checkbox" name="unload" value="${escape(zoneId(z))}" ${g.unloadingZoneIds.includes(zoneId(z)) ? 'checked' : ''}>${escape(zoneLabel(zoneId(z)))}</label>`).join('') || '<p>请先到运输区域管理中建立卸载区。</p>'}</fieldset>`, form => {
+        function previousShiftAddress(loadId) {
+            if (!loadId) return '';
+            const previous = selected.shift === '夜班'
+                ? { date: selected.date, shift: '白班' }
+                : { date: C.shiftDate(selected.date, -1), shift: '夜班' };
+            const priorBoard = state.boards[C.slotKey(previous.date, previous.shift)];
+            if (!priorBoard?.published) return '';
+            const priorGroup = C.array(priorBoard.groups).find(group =>
+                String(group.loadingZoneId || '') === String(loadId) && String(group.workAddress || '').trim()
+            );
+            return priorGroup?.workAddress || '';
+        }
+        const loadZones = data.zones.filter(z => /^(loading|load|装载区|装料区)$/.test(type(z)));
+        const unloadZones = data.zones.filter(z => /^(unloading|unload|卸载区|卸料区)$/.test(type(z)));
+        const initialAddress = g.workAddress || previousShiftAddress(g.loadingZoneId);
+        modal('生产组设置', `<p>本次调配：生产${escape(draft.team)}组</p><label>装载区<select name="load" required><option value="">请选择</option>${loadZones.map(z => `<option value="${escape(zoneId(z))}" ${zoneId(z) === g.loadingZoneId ? 'selected' : ''}>${escape(zoneLabel(zoneId(z)))}</option>`).join('')}</select></label><label>挖机工作地址<input type="text" name="workAddress" maxlength="240" value="${escape(initialAddress)}" placeholder="调度填写挖机所在的具体位置"></label><p class="pb-muted">接班组选择相同装载区时，会自动带入上一班填写的地址；调度可以修改后发布。</p><fieldset><legend>允许卸载区（可多选）</legend>${unloadZones.map(z => `<label><input type="checkbox" name="unload" value="${escape(zoneId(z))}" ${g.unloadingZoneIds.includes(zoneId(z)) ? 'checked' : ''}>${escape(zoneLabel(zoneId(z)))}</label>`).join('') || '<p>请先到运输区域管理中建立卸载区。</p>'}</fieldset>`, form => {
             if (!form.get('load') || !form.getAll('unload').length) throw new Error('请选择一个装载区和至少一个卸载区。');
-            g.team = draft.team; g.loadingZoneId = form.get('load'); g.unloadingZoneIds = form.getAll('unload');
+            g.team = draft.team; g.loadingZoneId = form.get('load'); g.workAddress = String(form.get('workAddress') || '').trim(); g.unloadingZoneIds = form.getAll('unload');
+        }, form => {
+            let addressEdited = false;
+            const load = form.elements.namedItem('load'), address = form.elements.namedItem('workAddress');
+            address?.addEventListener('input', () => { addressEdited = true; });
+            load?.addEventListener('change', () => { if (!addressEdited) address.value = previousShiftAddress(load.value); });
         });
     }
     function schedule() {
