@@ -2503,22 +2503,9 @@ class TruckDriverBot {
         );
 
 
-        const context =
-            this.page.context();
-
-
-        await context.grantPermissions(
-            [
-                "geolocation"
-            ]
-        );
-
-
         /*
-         * Playwright setGeolocation() 在部分 Chromium 环境里，
-         * 业务页最终 getCurrentPosition() 可能返回 accuracy=0 / null。
-         * 测试环境改用确定性的浏览器 GPS 模拟层，
-         * 但业务页面仍然走真实 navigator.geolocation API。
+         * 测试 GPS 仅在隔离页面内覆盖 navigator.geolocation，
+         * 不申请浏览器定位权限，也不连接真实定位服务。
          */
         await this.installDeterministicTestGeolocation();
 
@@ -2632,8 +2619,10 @@ class TruckDriverBot {
                     ) {
 
                         if (
-                            key ===
-                                "driverTripRecords"
+                            [
+                                "driverTripRecords",
+                                "tripRecords"
+                            ].includes(key)
                         ) {
 
                             try {
@@ -2779,19 +2768,7 @@ class TruckDriverBot {
         /*
          * 阶段1：进入装载区并稳定至少4秒。
          */
-        await context.setGeolocation({
-            latitude:
-                43.850000,
-
-            longitude:
-                105.750000,
-
-            accuracy:
-                10
-        });
-
-
-        await this.setDeterministicTestGeolocation({
+await this.setDeterministicTestGeolocation({
             latitude:
                 43.850000,
 
@@ -2837,19 +2814,7 @@ class TruckDriverBot {
          * 阶段2：驶离装载区并稳定至少4秒。
          * 使用中间测试坐标，既不在装载区，也不在卸载区。
          */
-        await context.setGeolocation({
-            latitude:
-                43.855000,
-
-            longitude:
-                105.755000,
-
-            accuracy:
-                10
-        });
-
-
-        await this.setDeterministicTestGeolocation({
+await this.setDeterministicTestGeolocation({
             latitude:
                 43.855000,
 
@@ -2894,19 +2859,7 @@ class TruckDriverBot {
         /*
          * 阶段3：进入允许卸载区。
          */
-        await context.setGeolocation({
-            latitude:
-                43.860000,
-
-            longitude:
-                105.760000,
-
-            accuracy:
-                10
-        });
-
-
-        await this.setDeterministicTestGeolocation({
+await this.setDeterministicTestGeolocation({
             latitude:
                 43.860000,
 
