@@ -18,6 +18,7 @@
         const value = text(row?.position || row?.role);
         if (/挖机|挖掘机/.test(value)) return 'excavator';
         if (/汽车司机|卡车|矿卡|运输司机/.test(value)) return 'truck';
+        if (/排土管理/.test(value)) return 'dump_management';
         if (/辅助|铲车|装载机|水车|洒水|加油|平路|推土|大巴/.test(value)) return 'auxiliary';
         if (/车队长|调度/.test(value)) return 'dispatch';
         return 'other';
@@ -79,6 +80,7 @@
         array(board?.groups).forEach(group => {
             if (group.excavatorId) equipment.push(group.excavatorId);
             if (group.excavatorDriverId) people.push(group.excavatorDriverId);
+            array(group.dumpManagementPeople).forEach(id => { if (id) people.push(id); });
             array(group.trucks).forEach(truck => { if (truck.equipmentId) equipment.push(truck.equipmentId); if (truck.driverId) people.push(truck.driverId); });
         });
         array(board?.auxiliary).forEach(item => { if (item.equipmentId) equipment.push(item.equipmentId); if (item.driverId) people.push(item.driverId); });
@@ -132,7 +134,7 @@
         const own = new Set(assignments(board).people), external = occupiedElsewhere(board, state, data, state.schedule).people;
         return data.people.filter(row => {
             const id = personId(row);
-            return approved(row) && role(row) === kind && (!groupTeam || team(row) === groupTeam) && !onLeave(row, board, data, state.schedule) && !external.has(id) && (!own.has(id) || id === currentId) && (id === currentId || !/working|作业中/.test(text(row.personnelStatus || row.personnel_status)));
+            return approved(row) && role(row) === kind && (!groupTeam || team(row) === groupTeam) && personInShift(row, board, state, data) && !onLeave(row, board, data, state.schedule) && !external.has(id) && (!own.has(id) || id === currentId) && (id === currentId || !/working|作业中/.test(text(row.personnelStatus || row.personnel_status)));
         });
     }
     function validateBoard(board, state, data) {
@@ -152,6 +154,9 @@
             validatePair('excavator', g.excavatorId, g.excavatorDriverId, g.team, label + '挖机');
             if (!g.trucks.length) throw new Error(`${label}请至少配置一台汽车。`);
             g.trucks.forEach(t => validatePair('truck', t.equipmentId, t.driverId, g.team, label + '汽车'));
+            array(g.dumpManagementPeople).forEach(id => {
+                if (!personChoices('dump_management', g.team, board, state, data, id).some(p => personId(p) === id)) throw new Error(`${label}排土管理人员不可调配、已请假或班组不符，请重新选择。`);
+            });
             const load = data.zones.find(z => text(z.zoneId || z.zone_id || z.id) === g.loadingZoneId);
             if (!load || !/^(loading|load|装载区|装料区)$/.test(text(load.zoneType || load.zone_type || load.type))) throw new Error(`${label}请选择有效装载区。`);
             if (!g.unloadingZoneIds.length || g.unloadingZoneIds.some(id => !data.zones.some(z => text(z.zoneId || z.zone_id || z.id) === id && /^(unloading|unload|卸载区|卸料区)$/.test(text(z.zoneType || z.zone_type || z.type))))) throw new Error(`${label}请至少选择一个有效卸载区。`);
@@ -200,7 +205,8 @@
                 const unload = data.zones.filter(z => group.unloadingZoneIds.includes(text(z.zoneId || z.zone_id || z.id)));
                 const binding = { excavatorId: number(group.excavatorId), excavatorNumber: number(group.excavatorId), excavatorDriverId: group.excavatorDriverId, excavatorDriverName: name(group.excavatorDriverId), truckIds: group.trucks.map(t => number(t.equipmentId)), loadingZoneId: group.loadingZoneId, loadingPoint: load?.zoneName || load?.zone_name || load?.name || '', allowedUnloadingZoneIds: clone(group.unloadingZoneIds) };
                 const driverAssignments = group.trucks.map(t => ({ driverId: t.driverId, personId: t.driverId, driverName: name(t.driverId), personName: name(t.driverId), vehicleId: number(t.equipmentId), vehicleNumber: number(t.equipmentId), truckId: number(t.equipmentId), excavatorId: number(group.excavatorId), excavatorNumber: number(group.excavatorId), team: `生产${group.team}组`, shiftId, shift: board.shift }));
-                tasks.push({ taskId, id: taskId, title: `${group.team}班组 ${board.shift}`, boardManaged: true, boardId: board.id, boardVersion: board.version, date: board.date, shiftDate: board.date, shift: board.shift, shiftId, currentShiftId: shiftId, team: `生产${group.team}组`, productionTeam: `生产${group.team}组`, status, materialType: '', material: '', area: binding.loadingPoint, loadingPoint: binding.loadingPoint, loadingZoneId: group.loadingZoneId, unloadingPoint: unload.map(z => z.zoneName || z.zone_name || z.name).join(' / '), unloadingZoneId: group.unloadingZoneIds[0], allowedUnloadingZoneIds: clone(group.unloadingZoneIds), allowedUnloadingZones: clone(unload), bindings: [binding], driverAssignments, excavatorDriverAssignments: [{ driverId: group.excavatorDriverId, driverName: name(group.excavatorDriverId), excavatorId: number(group.excavatorId), excavatorNumber: number(group.excavatorId), shiftId, shift: board.shift }], auxiliaryAssignments: [], bindingHistory: group.trucks.map(t => ({ vehicleId: number(t.equipmentId), vehicleNumber: number(t.equipmentId), truckId: number(t.equipmentId), driverId: t.driverId, excavatorId: number(group.excavatorId), startAt: board.publishedAt, endAt: null })), publishedAt: board.publishedAt, updatedAt: board.updatedAt });
+                const dumpManagementAssignments = array(group.dumpManagementPeople).map(personId => ({ personId, name: name(personId), position: '排土管理', team: `生产${group.team}组`, shift: board.shift, shiftId }));
+                tasks.push({ taskId, id: taskId, title: `${group.team}班组 ${board.shift}`, boardManaged: true, boardId: board.id, boardVersion: board.version, date: board.date, shiftDate: board.date, shift: board.shift, shiftId, currentShiftId: shiftId, team: `生产${group.team}组`, productionTeam: `生产${group.team}组`, status, materialType: '', material: '', area: binding.loadingPoint, loadingPoint: binding.loadingPoint, loadingZoneId: group.loadingZoneId, unloadingPoint: unload.map(z => z.zoneName || z.zone_name || z.name).join(' / '), unloadingZoneId: group.unloadingZoneIds[0], allowedUnloadingZoneIds: clone(group.unloadingZoneIds), allowedUnloadingZones: clone(unload), bindings: [binding], driverAssignments, excavatorDriverAssignments: [{ driverId: group.excavatorDriverId, driverName: name(group.excavatorDriverId), excavatorId: number(group.excavatorId), excavatorNumber: number(group.excavatorId), shiftId, shift: board.shift }], dumpManagementAssignments, auxiliaryAssignments: [], bindingHistory: group.trucks.map(t => ({ vehicleId: number(t.equipmentId), vehicleNumber: number(t.equipmentId), truckId: number(t.equipmentId), driverId: t.driverId, excavatorId: number(group.excavatorId), startAt: board.publishedAt, endAt: null })), publishedAt: board.publishedAt, updatedAt: board.updatedAt });
                 executions.push({ ...clone(tasks[tasks.length - 1]), taskId, shiftId, boardManaged: true, startedAt: window.start.toISOString(), endedAt: window.end.toISOString() });
             });
             if (board.auxiliary.length) {
@@ -244,7 +250,7 @@
     }
     function unassignedPeople(board, state, data) {
         const used = new Set(assignments(board).people), external = occupiedElsewhere(board, state, data, state.schedule).people;
-        return data.people.filter(p => approved(p) && ['truck', 'excavator', 'auxiliary'].includes(role(p)) &&
+        return data.people.filter(p => approved(p) && ['truck', 'excavator', 'auxiliary', 'dump_management'].includes(role(p)) &&
             !used.has(personId(p)) && !external.has(personId(p)) && personInShift(p, board, state, data));
     }
     function statistics(date, shift, state, data, board) {
@@ -278,7 +284,8 @@
         const aux = equipment.filter(e => !['truck', 'excavator', 'other'].includes(category(e)));
         const auxDuty = aux.filter(e => equipmentSet.has(equipmentId(e)) && !blockedEquipment(e, data)).length;
         const countDuty = list => list.filter(e => equipmentSet.has(equipmentId(e)) && !blockedEquipment(e, data)).length;
-        return { totalTrips: daily.length, aTrips: daily.filter(r => tripTeam(r) === 'A').length, bTrips: daily.filter(r => tripTeam(r) === 'B').length, coalTrips: daily.filter(coal).length, aCoal: daily.filter(r => coal(r) && tripTeam(r) === 'A').length, aSlag: daily.filter(r => slag(r) && tripTeam(r) === 'A').length, bSlag: daily.filter(r => slag(r) && tripTeam(r) === 'B').length, bCoal: daily.filter(r => coal(r) && tripTeam(r) === 'B').length, unknownTeam: daily.filter(r => !tripTeam(r)).length, shiftTrips: daily.filter(r => tripTime(r) >= range.start && tripTime(r) < range.end).length, equipmentTotal: equipment.length, equipmentDuty: dutyEquipment.length, equipmentIdle: equipment.filter(e => !equipmentSet.has(equipmentId(e)) && !blockedEquipment(e, data)).length, equipmentRepair: repair.length, equipmentRate: equipment.length ? dutyEquipment.length / equipment.length : 0, truckTotal: trucks.length, truckDuty: countDuty(trucks), truckIdle: trucks.filter(e => !equipmentSet.has(equipmentId(e)) && !blockedEquipment(e, data)).length, truckRepair: trucks.filter(e => blockedEquipment(e, data)).length, truckRate: trucks.length ? countDuty(trucks) / trucks.length : 0, personnelTotal: people.length, personnelDuty: attendanceCount, personnelIdle: people.filter(p => !personSet.has(personId(p)) && !onLeave(p, board, data, state.schedule) && !/working|作业中/.test(text(p.personnelStatus || p.personnel_status))).length, personnelLeave: people.filter(p => onLeave(p, board, data, state.schedule)).length, personnelRate: people.length ? attendanceCount / people.length : 0, productionPeople: new Set(board.groups.flatMap(g => [g.excavatorDriverId, ...g.trucks.map(t => t.driverId)]).filter(Boolean)).size, excavatorDrivers: new Set(board.groups.map(g => g.excavatorDriverId).filter(Boolean)).size, truckDrivers: new Set(board.groups.flatMap(g => g.trucks.map(t => t.driverId)).filter(Boolean)).size, auxiliaryTotal: aux.length, auxiliaryDuty: auxDuty, auxiliaryRate: aux.length ? auxDuty / aux.length : 0, auxiliaryDrivers: new Set(board.auxiliary.map(a => a.driverId).filter(Boolean)).size };
+        const dumpManagers = new Set(board.groups.flatMap(g => array(g.dumpManagementPeople)).filter(Boolean));
+        return { totalTrips: daily.length, aTrips: daily.filter(r => tripTeam(r) === 'A').length, bTrips: daily.filter(r => tripTeam(r) === 'B').length, coalTrips: daily.filter(coal).length, aCoal: daily.filter(r => coal(r) && tripTeam(r) === 'A').length, aSlag: daily.filter(r => slag(r) && tripTeam(r) === 'A').length, bSlag: daily.filter(r => slag(r) && tripTeam(r) === 'B').length, bCoal: daily.filter(r => coal(r) && tripTeam(r) === 'B').length, unknownTeam: daily.filter(r => !tripTeam(r)).length, shiftTrips: daily.filter(r => tripTime(r) >= range.start && tripTime(r) < range.end).length, equipmentTotal: equipment.length, equipmentDuty: dutyEquipment.length, equipmentIdle: equipment.filter(e => !equipmentSet.has(equipmentId(e)) && !blockedEquipment(e, data)).length, equipmentRepair: repair.length, equipmentRate: equipment.length ? dutyEquipment.length / equipment.length : 0, truckTotal: trucks.length, truckDuty: countDuty(trucks), truckIdle: trucks.filter(e => !equipmentSet.has(equipmentId(e)) && !blockedEquipment(e, data)).length, truckRepair: trucks.filter(e => blockedEquipment(e, data)).length, truckRate: trucks.length ? countDuty(trucks) / trucks.length : 0, personnelTotal: people.length, personnelDuty: attendanceCount, personnelIdle: people.filter(p => !personSet.has(personId(p)) && !onLeave(p, board, data, state.schedule) && !/working|作业中/.test(text(p.personnelStatus || p.personnel_status))).length, personnelLeave: people.filter(p => onLeave(p, board, data, state.schedule)).length, personnelRate: people.length ? attendanceCount / people.length : 0, productionPeople: new Set(board.groups.flatMap(g => [g.excavatorDriverId, ...g.trucks.map(t => t.driverId), ...array(g.dumpManagementPeople)]).filter(Boolean)).size, excavatorDrivers: new Set(board.groups.map(g => g.excavatorDriverId).filter(Boolean)).size, truckDrivers: new Set(board.groups.flatMap(g => g.trucks.map(t => t.driverId)).filter(Boolean)).size, dumpManagers: dumpManagers.size, auxiliaryTotal: aux.length, auxiliaryDuty: auxDuty, auxiliaryRate: aux.length ? auxDuty / aux.length : 0, auxiliaryDrivers: new Set(board.auxiliary.map(a => a.driverId).filter(Boolean)).size };
     }
     function teamDraft(board, crew) {
         if (!['A', 'B'].includes(crew)) throw new Error('请选择生产A组或生产B组。');
@@ -306,3 +313,4 @@
     }
     return { DEFAULT_SCHEDULE, clone, array, text, flatten, personId, equipmentId, equipmentNumber, team, role, category, approved, minute, dateKey, shiftDate, validateSchedule, interval, currentSlot, slotKey, emptyBoard, emptyState, assignments, blockedEquipment, onLeave, occupiedElsewhere, equipmentChoices, personChoices, validateBoard, boardFor, projections, validTrips, personInShift, unassignedPeople, statistics, canEdit, dispatchIdentity, teamDraft };
 });
+
