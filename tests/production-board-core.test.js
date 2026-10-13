@@ -1,4 +1,4 @@
-const { test } = require('node:test');
+const { test } = require('@playwright/test');
 const assert = require('node:assert/strict');
 const C = require('../js/production-board-core');
 function fixture() {
