@@ -337,6 +337,19 @@ const A_GROUP = {
 
             team:
                 "后勤办公组"
+        },
+        {
+            personId:
+                "TEST-A-DUMP-MGR-001",
+
+            name:
+                "TEST-A组排土管理01",
+
+            position:
+                "排土管理",
+
+            team:
+                "生产A组"
         }
     ]
 };
