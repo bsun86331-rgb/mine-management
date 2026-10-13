@@ -737,6 +737,41 @@ function buildAGroupPayload() {
     );
 
 
+    const clockNow = new Date(nowIso);
+    const localDateKey = date => [date.getFullYear(), String(date.getMonth() + 1).padStart(2, "0"), String(date.getDate()).padStart(2, "0")].join("-");
+    const minuteOfDay = clockNow.getHours() * 60 + clockNow.getMinutes();
+    const boardShift = minuteOfDay >= 480 && minuteOfDay < 1200 ? "白班" : "夜班";
+    const boardDate = localDateKey(minuteOfDay < 480 ? new Date(clockNow.getFullYear(), clockNow.getMonth(), clockNow.getDate() - 1) : clockNow);
+    const dumpManager = A_GROUP.supportRoles.find(role => role.position === "排土管理");
+    const productionBoardState = {
+        schemaVersion: 2,
+        revision: 1,
+        schedule: { dayStart: "08:00", dayEnd: "20:00", nightStart: "20:00", nightEnd: "08:00" },
+        boards: {
+            [boardDate + "|" + boardShift]: {
+                id: "TEST-BOARD-" + boardDate + "-" + (boardShift === "白班" ? "D" : "N"),
+                date: boardDate,
+                shift: boardShift,
+                groups: A_GROUP.excavators.map((unit, index) => ({
+                    id: "TEST-A-GROUP-" + String(index + 1).padStart(2, "0"),
+                    team: "A",
+                    excavatorId: unit.excavatorId,
+                    excavatorDriverId: unit.driverId,
+                    dumpManagementPeople: index === 0 && dumpManager ? [dumpManager.personId] : [],
+                    trucks: unit.trucks.map(truck => ({ equipmentId: truck.vehicleId, driverId: truck.driverId })),
+                    loadingZoneId: "TEST-LOAD-001",
+                    unloadingZoneIds: ["TEST-UNLOAD-WASTE"]
+                })),
+                auxiliary: [],
+                published: true,
+                publishedAt: nowIso,
+                version: 1,
+                testFixture: true
+            }
+        },
+        audit: []
+    };
+
     A_GROUP.supportRoles.forEach(
         (
             role,
@@ -801,6 +836,7 @@ function buildAGroupPayload() {
         personnel,
         equipment,
         tasks,
+        productionBoardState,
 
         summary: {
             excavators:
@@ -1262,6 +1298,16 @@ async function installAGroupRobotContext(
             mergeRows(
                 "equipmentMaster",
                 payload.equipment
+            );
+
+            mergeRows(
+                "equipmentRecords",
+                payload.equipment
+            );
+
+            localStorage.setItem(
+                "mineProductionBoardV2",
+                JSON.stringify(payload.productionBoardState)
             );
 
 
