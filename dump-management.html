@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>排土管理工作端 · 矿山管理系统</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/production-board.css?v=2.0.12">
+  <style>
+    body{margin:0;background:#eef3f8;color:#172b4d;font-family:Arial,"Microsoft YaHei",sans-serif}
+    .dump-header{background:#111b30;color:#fff;padding:24px max(20px,calc((100% - 1120px)/2));display:flex;align-items:center;justify-content:space-between;gap:18px}
+    .dump-header h1{margin:0;font-size:24px}.dump-header p{margin:5px 0 0;color:#cbd5e1;font-size:13px}
+    .dump-header a{display:inline-flex;align-items:center;justify-content:center;min-height:40px;padding:8px 14px;border:1px solid #475569;border-radius:9px;color:#fff;text-decoration:none;white-space:nowrap}
+    main{width:min(1120px,calc(100% - 32px));margin:24px auto 48px}
+    @media(max-width:520px){.dump-header{align-items:flex-start;padding:18px 16px}.dump-header h1{font-size:20px}main{width:calc(100% - 20px);margin:12px auto 32px}}
+  </style>
+</head>
+<body>
+  <header class="dump-header">
+    <div><h1>排土管理工作端</h1><p>查看调度发布的本班生产任务与A/B组信息 · V2.0.12</p></div>
+    <a href="index.html">返回首页</a>
+  </header>
+  <main>
+    <section id="production-board" class="production-board" aria-label="生产任务看板"></section>
+  </main>
+  <script src="js/production-board-core.js?v=2.0.12"></script>
+  <script src="js/production-board.js?v=2.0.12"></script>
+  <script src="js/work-chat.js?v=1.0.0"></script>
+</body>
+</html>
+
