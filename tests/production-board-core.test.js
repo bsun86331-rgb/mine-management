@@ -119,6 +119,27 @@ test('attendance and assignment remain independent; idle and maintenance counts 
     assert.equal(stats.truckIdle, 1);
     assert.equal(stats.truckRepair, 1);
 });
+test('dump management is a separate frontline role assigned to a production crew without equipment', () => {
+    const { state, board, data } = fixture();
+    const person = { personId: 'DM1', name: '排土员甲', position: '排土管理', team: '生产A组', status: 'approved', personnelStatus: '在职可用' };
+    data.people.push(person);
+    assert.equal(C.role(person), 'dump_management');
+    assert.equal(C.role({ position: '大巴司机' }), 'auxiliary');
+    assert.deepEqual(C.personChoices('dump_management', 'A', board, state, data).map(C.personId), ['DM1']);
+    assert.deepEqual(C.unassignedPeople(board, state, data).map(C.personId), ['T2D', 'AD', 'DM1']);
+    board.groups[0].dumpManagementPeople = ['DM1'];
+    assert.equal(C.validateBoard(board, state, data), true);
+    assert.equal(C.assignments(board).equipment.includes('DM1'), false);
+    assert.equal(C.assignments(board).people.includes('DM1'), true);
+    board.published = true;
+    state.boards[C.slotKey(board.date, board.shift)] = board;
+    const task = C.projections(state, data, new Date('2026-10-11T09:00:00')).tasks[0];
+    assert.deepEqual(task.dumpManagementAssignments.map(row => [row.personId, row.team, row.shift]), [['DM1', '生产A组', '白班']]);
+    assert.equal(C.statistics(board.date, board.shift, state, data, board).dumpManagers, 1);
+    assert.equal(C.statistics(board.date, board.shift, state, data, board).productionPeople, 3);
+    person.team = '生产B组';
+    assert.throws(() => C.validateBoard(board, state, data), /不可调配/);
+});
 test('existing checkInAt and dispatch-confirmed units count in the correct shift', () => {
     const { state, board, data } = fixture();
     data.attendance = [{ personId: 'T1D', date: '2026-10-12', checkInAt: '2026-10-12T02:00:00', attendanceStatus: 'present' }, { personId: 'T2D', date: '2026-10-11', batchConfirmed: true, confirmedAttendance: 1, whiteUnits: 1, nightUnits: 0 }];
@@ -141,3 +162,4 @@ test('legacy task import and projections preserve IDs and consumer contracts', (
     assert.equal(imported.groups[0].trucks[0].driverId, 'T1D');
     assert.equal(imported.groups[0].excavatorDriverId, 'E1D');
 });
+

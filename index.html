@@ -1327,7 +1327,28 @@
         </button>
 
 
-        <button
+                <button
+            type="button"
+            class="portal-card"
+            onclick="selectPosition('排土管理')"
+        >
+
+            <span class="portal-icon">
+                <img src="images/imagesmanagement.jpg" alt="排土管理">
+            </span>
+
+            <span class="portal-title">
+                排土管理
+            </span>
+
+            <span class="portal-subtitle">
+                查看当前白班 / 夜班生产任务看板
+            </span>
+
+        </button>
+
+
+<button
             type="button"
             class="portal-card"
             onclick="selectPosition('车队长')"
@@ -1448,7 +1469,7 @@
 
 
 <footer>
-    矿山管理系统 · 首页最终优化版 V2.10.2J
+    矿山管理系统 · 首页最终优化版 V2.10.2K
 </footer>
 
 
@@ -1494,7 +1515,7 @@
 
 <script>
 
-/* 首页最终优化版 V2.10.2J：保留原登记 / 审核 / 分流 / 高权限验证业务逻辑 */
+/* 首页最终优化版 V2.10.2K：新增排土管理只读工作入口 */
 
 "use strict";
 
@@ -1515,6 +1536,9 @@ const POSITION_PAGES = {
 
     "大巴司机":
         "auxiliary.html",
+
+    "排土管理":
+        "dump-management.html",
 
     "平路机司机":
         "auxiliary.html",
@@ -3117,7 +3141,7 @@ function openRoleModal(groupName) {
                         class="role-btn"
                         onclick="selectPosition('${role}')"
                     >
-                        ${role === '大巴司机' ? '排土管理' : role}
+                        ${role}
                     </button>
 
                 `
