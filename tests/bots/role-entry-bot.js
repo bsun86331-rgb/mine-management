@@ -51,6 +51,9 @@ const ROLE_PAGES = {
     "维修员":
         "maintenance-worker.html",
 
+    "排土管理":
+        "dump-management.html",
+
     "测量员":
         "management.html",
 
