@@ -1,6 +1,8 @@
 const { test } = require('@playwright/test');
 const assert = require('node:assert/strict');
 const C = require('../js/production-board-core');
+const { A_GROUP } = require('./a-group-multi-robot-fixture');
+const { ROLE_PAGES } = require('./bots/role-entry-bot');
 function fixture() {
     const state = C.emptyState(), board = C.emptyBoard('2026-10-11', '白班');
     const people = [ ['D', '调度员', 'A'], ['E1D', '挖机司机', 'A'], ['T1D', '汽车司机', 'A'], ['T2D', '汽车司机', 'A'], ['BD', '汽车司机', 'B'], ['AD', '铲车司机', 'A'] ].map(([personId, position, team]) => ({ personId, name: personId, position, team: `生产${team}组`, status: 'approved', personnelStatus: '在职可用' }));
@@ -163,3 +165,13 @@ test('legacy task import and projections preserve IDs and consumer contracts', (
     assert.equal(imported.groups[0].excavatorDriverId, 'E1D');
 });
 
+
+test('dump management is included in frontline robot role entry fixtures without a vehicle', () => {
+    const person = A_GROUP.supportRoles.find(item => item.position === '排土管理');
+    assert.ok(person);
+    assert.match(person.personId, /^TEST-/);
+    assert.equal(person.team, '生产A组');
+    assert.equal(ROLE_PAGES['排土管理'], 'dump-management.html');
+    assert.equal('equipmentId' in person, false);
+    assert.equal('vehicleId' in person, false);
+});
