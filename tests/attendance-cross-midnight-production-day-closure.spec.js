@@ -90,6 +90,14 @@ test("TEST跨午夜趟次在考勤与生产报表均按生产日统计", async (
     sessionStorage.setItem("managementSession", JSON.stringify({ verified: true, personId: admin.personId, position: admin.position, expiresAt: Date.now() + 600000 }));
   }, { admin });
   await page.goto(`${ORIGIN}/report-center.html`, { waitUntil: "domcontentloaded" });
+  await page.locator('[data-report="attendance"]').click();
+  await page.locator("#attendanceDate").fill(productionDate);
+  await page.locator("#attendanceMonth").fill(productionDate.slice(0, 7));
+  await page.evaluate(() => renderAttendance());
+  const attendanceReportRow = page.locator("#attendanceTableBody tr").filter({ hasText: driver.name });
+  await expect(attendanceReportRow.locator("td").nth(5)).toHaveText("1");
+  await expect(attendanceReportRow.locator("td").nth(6)).toHaveText("-");
+
   await page.locator('[data-report="production"]').click();
   await page.locator("#productionDate").fill(productionDate);
   await page.evaluate(() => renderProduction());
