@@ -224,11 +224,32 @@ function assertSafeWrite(
 }
 
 
+
+
+
+function assertSafeCommand(command) {
+    const text = String(command ?? "");
+    const matches = text.match(
+        /\b(?:TEST-)?(?:TASK|TRIP|DRIVER|VEHICLE|SHIFT|ZONE|REQ|REQUEST|PERSON|EMPLOYEE|EQUIPMENT|EQUIP|MATERIAL|ORDER)-[A-Z0-9_-]+/gi
+    ) || [];
+    const unsafe = matches.filter(id => !id.toUpperCase().startsWith(TEST_PREFIX));
+
+    if (unsafe.length) {
+        throw new Error(
+            "安全拦截：机器人禁止操作非 TEST 数据：" + unsafe.join(", ")
+        );
+    }
+
+    return true;
+}
+
+
 module.exports = {
     TEST_PREFIX,
     isTestId,
     assertTestId,
     assertTestIds,
     assertTestRecord,
-    assertSafeWrite
+    assertSafeWrite,
+    assertSafeCommand
 };
