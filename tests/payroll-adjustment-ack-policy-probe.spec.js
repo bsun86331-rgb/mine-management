@@ -29,11 +29,19 @@ test("TEST工资汇总探测奖励罚款待确认与已确认状态的纳入情�
       { standardId: "TEST-POLICY-DRIVER-STANDARD", scope: "position", standardType: "frontline_position", position: "汽车司机", salaryMode: "performance", baseSalary: 1, performanceUnitPrice: 0, effectiveDate: "2026-01-01", status: "active" }
     ]));
     const record = (id, amount, status) => ({ rewardId: id, personId: worker.personId, personName: worker.name, amount, status, createdAt: `${month}-10T03:00:00.000Z` });
-    localStorage.setItem("rewardRecords", JSON.stringify([record("TEST-PENDING-REWARD", 10, "pending_acknowledgement"), record("TEST-ACK-REWARD", 20, "acknowledged"), record("TEST-REJECTED-REWARD", 100, "rejected")]));
+    localStorage.setItem("rewardRecords", JSON.stringify([
+      record("TEST-PENDING-REWARD", 10, "pending_acknowledgement"),
+      record("TEST-ISSUED-REWARD", 15, "issued"),
+      record("TEST-ACK-REWARD", 20, "acknowledged"),
+      record("TEST-REJECTED-REWARD", 100, "rejected"),
+      record("TEST-CANCELLED-REWARD", 50, "cancelled")
+    ]));
     localStorage.setItem("penaltyRecords", JSON.stringify([
       { penaltyId: "TEST-PENDING-PENALTY", personId: worker.personId, personName: worker.name, amount: 5, status: "pending_acknowledgement", createdAt: `${month}-10T03:00:00.000Z` },
+      { penaltyId: "TEST-ISSUED-PENALTY", personId: worker.personId, personName: worker.name, amount: 7, status: "issued", createdAt: `${month}-10T03:00:00.000Z` },
       { penaltyId: "TEST-ACK-PENALTY", personId: worker.personId, personName: worker.name, amount: 20, status: "acknowledged", createdAt: `${month}-10T03:00:00.000Z` },
-      { penaltyId: "TEST-REJECTED-PENALTY", personId: worker.personId, personName: worker.name, amount: 100, status: "rejected", createdAt: `${month}-10T03:00:00.000Z` }
+      { penaltyId: "TEST-REJECTED-PENALTY", personId: worker.personId, personName: worker.name, amount: 100, status: "rejected", createdAt: `${month}-10T03:00:00.000Z` },
+      { penaltyId: "TEST-CANCELLED-PENALTY", personId: worker.personId, personName: worker.name, amount: 50, status: "cancelled", createdAt: `${month}-10T03:00:00.000Z` }
     ]));
     localStorage.setItem("overtimeRecords", "[]");
     localStorage.setItem("payrollMonthlyRecords", "[]");
@@ -64,9 +72,9 @@ test("TEST工资汇总探测奖励罚款待确认与已确认状态的纳入情�
   });
   await page.goto(`${ORIGIN}/reward-penalty-overtime.html`, { waitUntil: "domcontentloaded" });
   await page.locator('[data-filter="reward"]').click();
-  await page.locator("#recordList .ack").click();
+  await page.locator('#recordList .ack[data-type="reward"][data-index="0"]').click();
   await page.locator('[data-filter="penalty"]').click();
-  await page.locator("#recordList .ack").click();
+  await page.locator('#recordList .ack[data-type="penalty"][data-index="0"]').click();
   const acknowledged = await page.evaluate(() => ({
     reward: JSON.parse(localStorage.getItem("rewardRecords") || "[]").find(row => row.rewardId === "TEST-PENDING-REWARD")?.status,
     penalty: JSON.parse(localStorage.getItem("penaltyRecords") || "[]").find(row => row.penaltyId === "TEST-PENDING-PENALTY")?.status
@@ -81,12 +89,14 @@ test("TEST工资汇总探测奖励罚款待确认与已确认状态的纳入情�
   rows = await page.evaluate(() => JSON.parse(localStorage.getItem("payrollMonthlyRecords") || "[]"));
   workerPayroll = rows.find(row => row.personId === "TEST-POLICY-WORKER-001");
   const afterAck = { reward: workerPayroll?.reward, penalty: workerPayroll?.otherDeduction };
-  console.log("TEST reward/penalty payroll policy observation:", JSON.stringify({ beforeAck, acknowledged, afterAck, source: { pendingReward: 10, acknowledgedReward: 20, rejectedReward: 100, pendingPenalty: 5, acknowledgedPenalty: 20, rejectedPenalty: 100 } }));
+  console.log("TEST reward/penalty payroll policy observation:", JSON.stringify({ beforeAck, acknowledged, afterAck, source: { pendingReward: 10, issuedReward: 15, acknowledgedReward: 20, rejectedReward: 100, cancelledReward: 50, pendingPenalty: 5, issuedPenalty: 7, acknowledgedPenalty: 20, rejectedPenalty: 100, cancelledPenalty: 50 } }));
   expect(acknowledged).toEqual({ reward: "acknowledged", penalty: "acknowledged" });
+  expect(beforeAck).toEqual({ reward: 45, penalty: 32 });
   expect(afterAck).toEqual(beforeAck);
   expect(workerPayroll).toBeTruthy();
   await page.screenshot({ path: evidencePath("证据_工资奖罚待确认状态口径", "payroll-adjustment-ack-policy-probe-2"), fullPage: true });
   expect(errors).toEqual([]);
   expect(blocked).toEqual([]);
 });
+
 
