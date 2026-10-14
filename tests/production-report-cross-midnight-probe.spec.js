@@ -7,7 +7,7 @@ const ORIGIN = "https://mine.test";
 const ROOT = path.resolve(__dirname, "..");
 const productionBoardCore = require(path.join(ROOT, "js", "production-board-core.js"));
 
-test("TEST生产报表跨午夜趟次日期口径观察", async ({ page }) => {
+test("TEST生产报表按班次生产日统计跨午夜趟次", async ({ page }) => {
   const errors = [];
   const blocked = [];
   page.on("pageerror", error => errors.push(error.message));
@@ -89,9 +89,10 @@ test("TEST生产报表跨午夜趟次日期口径观察", async ({ page }) => {
   expect(errors).toEqual([]);
   expect(blocked).toEqual([]);
   expect(assignedSlot).toEqual({ date: "2026-10-13", shift: "夜班" });
-  expect(selectedProductionDayStats).toBe("0");
-  expect(followingCalendarDayStats).toBe("1");
-  expect(productionMonthStats).toBe("1");
-  expect(followingMonthStats).toBe("1");
+  expect(selectedProductionDayStats).toBe("1");
+  expect(tableRows).toBe(1);
+  expect(followingCalendarDayStats).toBe("0");
+  expect(productionMonthStats).toBe("2");
+  expect(followingMonthStats).toBe("0");
 });
 
