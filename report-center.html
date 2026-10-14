@@ -619,7 +619,7 @@
     <div class="header-inner">
         <div>
             <h1>📊 综合报表中心</h1>
-            <p>Report Center · V2.10.2X</p>
+            <p>Report Center · V2.10.2Y</p>
         </div>
 
         <button type="button" class="header-btn" onclick="goHome()">返回首页</button>
@@ -1544,6 +1544,7 @@
                     <option value="">全部岗位</option>
                     <option value="汽车司机">汽车司机</option>
                     <option value="挖机司机">挖机司机</option>
+                    <option value="排土管理">排土管理</option>
                     <option value="车队长">车队长</option>
                     <option value="维修员">维修员</option>
                     <option value="维修管理">维修管理</option>
@@ -1743,7 +1744,7 @@
 </main>
 
 <footer>
-    矿山管理系统 · 综合报表中心 V2.10.2X
+    矿山管理系统 · 综合报表中心 V2.10.2Y
 </footer>
 
 <script src="js/data-service.js"></script>
@@ -3542,6 +3543,22 @@ function findPayrollStandard(person, month) {
     );
 }
 
+function mergeTripAliasRecords(keys) {
+    const seen = new Set();
+    const merged = [];
+
+    keys.forEach(key => {
+        readArray(key).forEach(item => {
+            const id = String(item.tripId || item.recordId || item.id || "");
+            if (id && seen.has(id)) return;
+            if (id) seen.add(id);
+            merged.push(item);
+        });
+    });
+
+    return merged;
+}
+
 function sumDriverTripsForPayroll(person, month) {
     const personId =
         getPersonIdForPayroll(person);
@@ -3549,16 +3566,14 @@ function sumDriverTripsForPayroll(person, month) {
     const personName =
         String(person.name || "");
 
-    const keys = [
+    let total = 0;
+    const rows = mergeTripAliasRecords([
         "tripRecords",
         "driverTripRecords",
         "transportRecords"
-    ];
+    ]);
 
-    let total = 0;
-
-    keys.forEach(key => {
-        readArray(key).forEach(item => {
+    rows.forEach(item => {
             const samePerson =
                 String(
                     item.personId ||
@@ -3602,7 +3617,6 @@ function sumDriverTripsForPayroll(person, month) {
                     1
                 );
             }
-        });
     });
 
     return total;
@@ -3615,16 +3629,14 @@ function sumExcavatorLoadsForPayroll(person, month) {
     const personName =
         String(person.name || "");
 
-    const keys = [
+    let total = 0;
+    const rows = mergeTripAliasRecords([
         "excavatorTripRecords",
         "excavatorLoadingRecords",
         "loadingRecords"
-    ];
+    ]);
 
-    let total = 0;
-
-    keys.forEach(key => {
-        readArray(key).forEach(item => {
+    rows.forEach(item => {
             const samePerson =
                 String(
                     item.personId ||
@@ -3670,7 +3682,6 @@ function sumExcavatorLoadsForPayroll(person, month) {
                     1
                 );
             }
-        });
     });
 
     return total;
@@ -6659,17 +6670,15 @@ function rankingSameVehicle(item, person) {
 }
 
 function getDriverTripCountForRanking(person, month) {
-    const keys = [
+    const rows = mergeTripAliasRecords([
         "tripRecords",
         "driverTripRecords",
         "transportRecords"
-    ];
+    ]);
 
     let total = 0;
 
-    keys.forEach(key => {
-        readArray(key)
-            .forEach(item => {
+    rows.forEach(item => {
                 const recordMonth =
                     payrollRecordMonth(
                         item.completedAt ||
@@ -6705,7 +6714,6 @@ function getDriverTripCountForRanking(person, month) {
                             1
                         );
                 }
-            });
     });
 
     return total;
@@ -6978,7 +6986,7 @@ function isEligibleForMonthlyDriverRanking(person, month) {
     return eligible <= asOf;
 }
 
-function generatePerformanceRanking(showMessage = false) {
+function generatePerformanceRanking(showMessage = false, renderAfter = true) {
     const month =
         document.getElementById(
             "rankingMonth"
@@ -7162,7 +7170,9 @@ function generatePerformanceRanking(showMessage = false) {
         );
     }
 
-    renderRanking();
+    if (renderAfter) {
+        renderRanking();
+    }
 
     if (showMessage) {
         alert(
@@ -7197,6 +7207,7 @@ function renderRanking() {
     if (!records.length) {
         records =
             generatePerformanceRanking(
+                false,
                 false
             );
     }
@@ -9076,3 +9087,4 @@ window.addEventListener(
 </body>
 
 </html>
+

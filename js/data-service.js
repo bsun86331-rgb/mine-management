@@ -712,10 +712,84 @@ Purpose:
     }
 
 
+    const TABLE_PRIMARY_KEY_MAP = {
+        attendance_records: ["attendanceId", "attendance_id"],
+        leave_requests: ["leaveId", "leave_id", "requestId", "request_id", "id"],
+        attendance_geofence_attempts: ["attemptId", "attempt_id"],
+        zero_production_reports: ["reportId", "report_id"],
+        equipment_checks: ["checkId", "check_id"],
+        equipment_meter_readings: [
+            "meterRecordId",
+            "meter_record_id",
+            "readingId",
+            "reading_id"
+        ],
+        penalty_records: ["penaltyId", "penalty_id"],
+        payroll_monthly_records: ["payrollId", "payroll_id"],
+        material_requests: ["requestId", "request_id"],
+        material_holders: ["holderId", "holder_id"],
+        material_recycle_records: ["recycleId", "recycle_id"],
+        material_scrap_records: ["scrapId", "scrap_id"],
+        material_loss_records: [
+            "lostId",
+            "lost_id",
+            "lossId",
+            "loss_id"
+        ],
+        warehouse_transactions: [
+            "ledgerId",
+            "ledger_id",
+            "transactionId",
+            "transaction_id",
+            "id"
+        ],
+        maintenance_requests: ["requestId", "request_id", "maintenanceRequestId", "id"],
+        maintenance_orders: ["orderId", "order_id", "workOrderId", "id"],
+        maintenance_costs: ["costId", "cost_id", "id"],
+        maintenance_alerts: ["alertId", "alert_id", "id"],
+        equipment_maintenance_records: ["maintenanceRecordId", "maintenance_record_id", "recordId", "id"],
+        trip_records: ["id", "tripId", "trip_id"]
+    };
+
+
     function getPrimaryKey(
         table,
         row
     ) {
+
+        const tableCandidates =
+            TABLE_PRIMARY_KEY_MAP[
+                table
+            ];
+
+
+        if (
+            tableCandidates
+        ) {
+
+            for (
+                const key
+                of tableCandidates
+            ) {
+
+                if (
+                    row &&
+                    row[key] !== undefined &&
+                    row[key] !== null &&
+                    row[key] !== ""
+                ) {
+
+                    return {
+                        key,
+                        value:
+                            row[key]
+                    };
+                }
+            }
+
+
+            return null;
+        }
 
         const candidates = [
             "id",
@@ -3295,3 +3369,4 @@ Purpose:
 })(
     window
 );
+

@@ -112,7 +112,7 @@
             ${draft ? '<button type="button" class="pb-full-add" data-action="add-group">＋ 添加生产组</button>' : ''}</div>
             <div class="pb-section"><h3>辅助车辆</h3><div class="pb-assignment-grid">${b.auxiliary.map((a, ai) => `<div class="pb-aux-item">${pair(a.equipmentId, a.driverId, 'auxiliary', -1, ai)}${draft ? `<button type="button" data-action="aux-settings" data-index="${ai}">作业内容</button>` : `<p>${escape(a.work || '未填写作业内容')}</p>`}</div>`).join('')}${draft ? '<button type="button" class="pb-add" data-action="add-aux" aria-label="添加辅助车辆">+</button>' : ''}${!b.auxiliary.length && !draft ? '<p>该班次未绑定辅助车辆。</p>' : ''}</div></div>
             <div class="pb-section"><h3>未进入分配的车辆 / 设备</h3><p>绿色为可调配；红色为维修、保养或停用。点击编号查看信息。</p><div class="pb-unassigned">${unassignedEquipment(b)}</div></div>
-            <div class="pb-section"><h3>未进入分配的人员</h3><p>仅显示所选${escape(selected.shift)}的未分配一线司机。</p><div class="pb-unassigned">${unassignedPeople(b)}</div></div>
+            <div class="pb-section"><h3>未进入分配的人员</h3><p>仅显示所选${escape(selected.shift)}的未分配一线人员（司机和排土管理）。</p><div class="pb-unassigned">${unassignedPeople(b)}</div></div>
             ${draft ? '<div class="pb-editor-footer"><button type="button" data-action="cancel">取消编辑</button><button type="button" class="pb-primary" data-action="publish">绑定并发布</button></div>' : `<p class="pb-muted">${b.published ? `已绑定 · 版本 ${b.version || '旧任务导入'} · ${escape(b.updatedAt ? new Date(b.updatedAt).toLocaleString('zh-CN') : '')}` : '尚未绑定'}。班次时间和任务仅由调度设置。</p>`}</div>`;
     }
     function unassignedEquipment(b) {
