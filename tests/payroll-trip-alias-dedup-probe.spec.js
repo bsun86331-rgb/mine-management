@@ -1,4 +1,5 @@
 "use strict";
+const { evidencePath } = require("./evidence-path.cjs");
 const { test, expect } = require("@playwright/test");
 const fs = require("node:fs/promises");
 const path = require("node:path");
@@ -51,7 +52,7 @@ test("TEST工资绩效统计探测canonical与legacy运输记录别名重复", a
   });
   console.log("TEST payroll alias dedup observation:", JSON.stringify({ performanceQuantity: payroll?.performanceQuantity, performanceSalary: payroll?.performanceSalary, ...duplicateSummary }));
   expect(payroll).toBeTruthy();
-  await page.screenshot({ path: "C:/Users/Administrator/Documents/Codex/2026-10-11/new-chat/outputs/证据_工资绩效运输别名重复计数_2026-10-14.png", fullPage: true });
+  await page.screenshot({ path: evidencePath("证据_工资绩效运输别名重复计数", "payroll-trip-alias-dedup-probe"), fullPage: true });
   expect(errors).toEqual([]);
   expect(blocked).toEqual([]);
 });

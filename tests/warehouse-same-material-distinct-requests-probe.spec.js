@@ -1,4 +1,5 @@
 "use strict";
+const { evidencePath } = require("./evidence-path.cjs");
 
 const { test, expect } = require("@playwright/test");
 const fs = require("node:fs/promises");
@@ -74,7 +75,7 @@ test("TEST同一物资的两张独立领用单分别出库后都保留", async (
   }));
   console.log("TEST same-material distinct request readback:", JSON.stringify(state));
   await page.locator('[data-page="ledger"]').click();
-  await page.screenshot({ path: "C:/Users/Administrator/Documents/Codex/2026-10-11/new-chat/outputs/证据_OPS-07_同物资领用流水重复_2026-10-14.png", fullPage: true });
+  await page.screenshot({ path: evidencePath("证据_OPS-07_同物资领用流水重复", "warehouse-same-material-distinct-requests-probe"), fullPage: true });
   expect(state.requests).toHaveLength(2);
   expect(state.requests.map(row => row.requestId).sort()).toEqual(["TEST-REQ-SAME-MAT-001", "TEST-REQ-SAME-MAT-002"]);
   expect(state.requests.every(row => row.status === "issued" && row.actualQuantity === 1)).toBeTruthy();

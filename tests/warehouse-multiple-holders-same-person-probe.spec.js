@@ -1,4 +1,5 @@
 "use strict";
+const { evidencePath } = require("./evidence-path.cjs");
 
 const { test, expect } = require("@playwright/test");
 const fs = require("node:fs/promises");
@@ -56,7 +57,7 @@ test("TEST同一员工领取两类可回收物资后持有记录都保留", asyn
   console.log("TEST multiple holders after two distinct issues:", JSON.stringify(holders));
   console.log("TEST holder storage writes:", JSON.stringify(await page.evaluate(() => window.__holderWrites || [])));
   await page.locator('[data-page="holders"]').click();
-  await page.screenshot({ path: "C:/Users/Administrator/Documents/Codex/2026-10-11/new-chat/outputs/证据_OPS-07_员工持有记录丢失_2026-10-14.png", fullPage: true });
+  await page.screenshot({ path: evidencePath("证据_OPS-07_员工持有记录丢失", "warehouse-multiple-holders-same-person-probe"), fullPage: true });
   expect(active.map(row => row.materialId).sort()).toEqual(["TEST-MAT-HAT-001", "TEST-MAT-VEST-001"]);
   expect(new Set(active.map(row => row.holderId)).size).toBe(2);
   expect(errors).toEqual([]);

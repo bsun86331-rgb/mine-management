@@ -1,4 +1,5 @@
 "use strict";
+const { evidencePath } = require("./evidence-path.cjs");
 const { test, expect } = require("@playwright/test");
 const fs = require("node:fs/promises");
 const path = require("node:path");
@@ -54,7 +55,7 @@ test("TEST混合新旧记录探测：canonical存在时是否保留独有legacy�
   expect(payroll.performanceQuantity).toBe(2);
   expect(duplicateSummary.uniqueTripIds).toBe(2);
   expect(duplicateSummary.officialProductionTrips).toBe(1);
-  await page.screenshot({ path: "C:/Users/Administrator/Documents/Codex/2026-10-11/new-chat/outputs/证据_工资绩效运输别名重复计数_2026-10-14.png", fullPage: true });
+  await page.screenshot({ path: evidencePath("证据_工资绩效运输别名重复计数", "legacy-canonical-mixed-trip-probe"), fullPage: true });
   expect(errors).toEqual([]);
   expect(blocked).toEqual([]);
 });

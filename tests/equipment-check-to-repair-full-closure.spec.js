@@ -1,4 +1,5 @@
 "use strict";
+const { evidencePath } = require("./evidence-path.cjs");
 
 const { test, expect } = require("@playwright/test");
 const fs = require("node:fs/promises");
@@ -160,7 +161,7 @@ test("TEST设备使用前异常检查到维修申请、派工和验收完整闭�
   expect(orders[0].orderId).toBeTruthy();
   expect(state.costs[0].costId).toBeTruthy();
   expect(state.bay.status).toBe("free");
-  await page.screenshot({ path: "C:/Users/Administrator/Documents/Codex/2026-10-11/new-chat/outputs/证据_设备检查至维修验收闭环_2026-10-14.png", fullPage: true });
+  await page.screenshot({ path: evidencePath("证据_设备检查至维修验收闭环", "equipment-check-to-repair-full-closure"), fullPage: true });
   expect(errors).toEqual([]);
   expect(blocked).toEqual([]);
 });

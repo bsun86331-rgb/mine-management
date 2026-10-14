@@ -1,4 +1,5 @@
 "use strict";
+const { evidencePath } = require("./evidence-path.cjs");
 const { test, expect } = require("@playwright/test");
 const fs = require("node:fs/promises");
 const path = require("node:path");
@@ -76,7 +77,7 @@ test("TEST辅助车辆自定义夜班完成记录进入日历完成日报而非�
   const completionCalendarDayCount = await page.locator("#auxiliaryReportDayCount").innerText();
 
   console.log("TEST辅助车辆班次日期与完成日报观察:", JSON.stringify({ beforeFinish, saved, taskProductionDayCount, completionCalendarDayCount }));
-  await page.screenshot({ path: "C:/Users/Administrator/Documents/Codex/2026-10-11/new-chat/outputs/证据_辅助车辆自定义班次报表日期_2026-10-14.png", fullPage: true });
+  await page.screenshot({ path: evidencePath("证据_辅助车辆自定义班次报表日期", "auxiliary-custom-shift-report-date-probe"), fullPage: true });
   expect(taskProductionDayCount).toBe("0");
   expect(completionCalendarDayCount).toBe("1");
   expect(errors).toEqual([]);

@@ -1,4 +1,5 @@
 "use strict";
+const { evidencePath } = require("./evidence-path.cjs");
 const { test, expect } = require("@playwright/test");
 const fs = require("node:fs/promises");
 const path = require("node:path");
@@ -59,7 +60,7 @@ test("TEST业务口径探测：不计入正式产量的运输记录是否参与�
   expect(payroll.performanceSalary).toBe(100);
   expect(duplicateSummary.officialProductionTrips).toBe(0);
   expect(duplicateSummary.rankingTripCount).toBe(1);
-  await page.screenshot({ path: "C:/Users/Administrator/Documents/Codex/2026-10-11/new-chat/outputs/证据_正式产量排除趟次的工资口径_2026-10-14.png", fullPage: true });
+  await page.screenshot({ path: evidencePath("证据_正式产量排除趟次的工资口径", "payroll-ineligible-trip-policy-probe"), fullPage: true });
   expect(errors).toEqual([]);
   expect(blocked).toEqual([]);
 });

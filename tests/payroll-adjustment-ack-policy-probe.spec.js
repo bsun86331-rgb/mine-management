@@ -1,4 +1,5 @@
 "use strict";
+const { evidencePath } = require("./evidence-path.cjs");
 
 const { test, expect } = require("@playwright/test");
 const fs = require("node:fs/promises");
@@ -52,7 +53,7 @@ test("TEST工资汇总探测奖励罚款待确认与已确认状态的纳入情�
     catch { return route.fulfill({ status: 404, body: "missing test asset" }); }
   });
   await page.goto(`${ORIGIN}/report-center.html`, { waitUntil: "domcontentloaded" });
-  await page.screenshot({ path: "C:/Users/Administrator/Documents/Codex/2026-10-11/new-chat/outputs/证据_工资奖罚待确认状态口径_2026-10-14.png", fullPage: true });
+  await page.screenshot({ path: evidencePath("证据_工资奖罚待确认状态口径", "payroll-adjustment-ack-policy-probe"), fullPage: true });
   let rows = await page.evaluate(() => JSON.parse(localStorage.getItem("payrollMonthlyRecords") || "[]"));
   let workerPayroll = rows.find(row => row.personId === "TEST-POLICY-WORKER-001");
   const beforeAck = { reward: workerPayroll?.reward, penalty: workerPayroll?.otherDeduction };
@@ -84,7 +85,7 @@ test("TEST工资汇总探测奖励罚款待确认与已确认状态的纳入情�
   expect(acknowledged).toEqual({ reward: "acknowledged", penalty: "acknowledged" });
   expect(afterAck).toEqual(beforeAck);
   expect(workerPayroll).toBeTruthy();
-  await page.screenshot({ path: "C:/Users/Administrator/Documents/Codex/2026-10-11/new-chat/outputs/证据_工资奖罚待确认状态口径_2026-10-14.png", fullPage: true });
+  await page.screenshot({ path: evidencePath("证据_工资奖罚待确认状态口径", "payroll-adjustment-ack-policy-probe-2"), fullPage: true });
   expect(errors).toEqual([]);
   expect(blocked).toEqual([]);
 });

@@ -1,4 +1,5 @@
 "use strict";
+const { evidencePath } = require("./evidence-path.cjs");
 
 const { test, expect } = require("@playwright/test");
 const fs = require("node:fs/promises");
@@ -54,7 +55,7 @@ test("TEST同一物资的两笔报废审批分别核销并保留各自记录", a
   }));
   console.log("TEST same-material scrap close readback:", JSON.stringify(state));
   await page.locator('[data-page="ledger"]').click();
-  await page.screenshot({ path: "C:/Users/Administrator/Documents/Codex/2026-10-11/new-chat/outputs/证据_OPS-07_同物资报废流水重复_2026-10-14.png", fullPage: true });
+  await page.screenshot({ path: evidencePath("证据_OPS-07_同物资报废流水重复", "warehouse-secondary-material-records-probe"), fullPage: true });
   expect(state.scraps.map(row => row.scrapId).sort()).toEqual(["TEST-SCRAP-001", "TEST-SCRAP-002"]);
   expect(state.scraps.every(row => row.status === "scrapped")).toBeTruthy();
   expect(state.material).toMatchObject({ issuedQty: 0, pendingScrapQty: 0, scrappedQty: 2 });
@@ -92,7 +93,7 @@ test("TEST同一物资的两笔丢失核销分别保留赔偿流水", async ({ p
   }));
   console.log("TEST same-material loss close readback:", JSON.stringify(state));
   await page.locator('[data-page="ledger"]').click();
-  await page.screenshot({ path: "C:/Users/Administrator/Documents/Codex/2026-10-11/new-chat/outputs/证据_OPS-07_同物资丢失流水重复_2026-10-14.png", fullPage: true });
+  await page.screenshot({ path: evidencePath("证据_OPS-07_同物资丢失流水重复", "warehouse-secondary-material-records-probe-2"), fullPage: true });
   expect(state.losses.map(row => row.lostId).sort()).toEqual(["TEST-LOST-001", "TEST-LOST-002"]);
   expect(state.losses.every(row => row.status === "written_off")).toBeTruthy();
   expect(state.material).toMatchObject({ issuedQty: 0, pendingLostQty: 0 });

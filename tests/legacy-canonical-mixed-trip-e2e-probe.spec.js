@@ -1,4 +1,5 @@
 "use strict";
+const { evidencePath } = require("./evidence-path.cjs");
 const { test, expect } = require("@playwright/test");
 const fs = require("node:fs/promises");
 const path = require("node:path");
@@ -69,7 +70,7 @@ test("TEST机器人真实运输后新旧趟次混合时生产/工资统计差异
   console.log("TEST legacy/canonical mixed statistics:", JSON.stringify({ monthInput: result.monthInput, performanceQuantity: result.performanceQuantity, performanceSalary: result.performanceSalary, uniqueTripIds: result.uniqueTripIds, tripRows: result.tripRows }));
   });
   console.log("TEST legacy/canonical mixed statistics:", JSON.stringify({ monthInput: result.monthInput, performanceQuantity: result.performanceQuantity, performanceSalary: result.performanceSalary, rankingTripCount: result.rankingTripCount, officialTripCount: result.officialTripCount, uniqueTripIds: result.uniqueTripIds, tripRows: result.tripRows }));
-  await page.screenshot({ path: "C:/Users/Administrator/Documents/Codex/2026-10-11/new-chat/outputs/证据_新旧趟次混合统计差异_2026-10-14.png", fullPage: true });
+  await page.screenshot({ path: evidencePath("证据_新旧趟次混合统计差异", "legacy-canonical-mixed-trip-e2e-probe"), fullPage: true });
   expect(result.tripRows).toBe(3);
   expect(result.uniqueTripIds).toBe(2);
   expect(result.performanceQuantity).toBe(2);
