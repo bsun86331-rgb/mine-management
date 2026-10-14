@@ -1,7 +1,7 @@
 /*
 ====================================================
 矿山管理系统
-司机端 V2.13.8
+司机端 V2.13.9
 ====================================================
 功能：
 1. 审核通过司机才可进入
@@ -1125,7 +1125,7 @@ document.addEventListener("DOMContentLoaded", function () {
             #teamTransferFloatingButton {
                 position: fixed;
                 right: 18px;
-                bottom: 18px;
+                bottom: 76px;
                 z-index: 9998;
                 border: 0;
                 border-radius: 999px;
