@@ -8,6 +8,74 @@
 
     <title>财务费用录入中心 - 矿山管理系统</title>
 
+    <script>
+        (function () {
+            "use strict";
+
+            const allowedPositions = new Set(["会计", "管理员", "总经理"]);
+            const aliases = { "财务": "会计", "会计员": "会计" };
+            const normalizePosition = value => aliases[value] || value || "";
+            const readJson = (storage, key, fallback) => {
+                try {
+                    const value = JSON.parse(storage.getItem(key));
+                    return value == null ? fallback : value;
+                } catch (error) {
+                    return fallback;
+                }
+            };
+            const getPersonId = person => String(
+                person?.personId || person?.employeeId || person?.driverId || person?.id || person?.employeeNo || ""
+            );
+            const approved = person => Boolean(person) && ![
+                "rejected", "disabled", "resigned"
+            ].includes(person.status) && ![
+                "rejected", "disabled", "resigned"
+            ].includes(person.approvalStatus) && !["停用", "离职"].includes(person.personnelStatus) && (
+                ["approved", "active", "working", "leave"].includes(person.status) ||
+                person.approvalStatus === "approved" ||
+                ["在职可用", "作业中", "请假"].includes(person.personnelStatus)
+            );
+            const records = readJson(localStorage, "personnelRecords", []);
+            const session = readJson(sessionStorage, "managementSession", null);
+            let identity = null;
+
+            if (
+                session && session.verified === true && session.personId &&
+                Number(session.expiresAt || 0) > Date.now()
+            ) {
+                const position = normalizePosition(session.position);
+                if (allowedPositions.has(position)) {
+                    identity = records.find(person =>
+                        approved(person) && getPersonId(person) === String(session.personId) &&
+                        normalizePosition(person.position) === position
+                    ) || null;
+                }
+            }
+
+            if (!identity) {
+                const currentId = String(localStorage.getItem("currentPersonId") || "");
+                const position = normalizePosition(localStorage.getItem("selectedPosition") || "");
+                if (currentId && position === "会计") {
+                    identity = records.find(person =>
+                        approved(person) && getPersonId(person) === currentId &&
+                        normalizePosition(person.position) === position
+                    ) || null;
+                }
+            }
+
+            if (!identity) {
+                alert("财务费用页面仅对已审核通过的会计、管理员和总经理开放，请从对应工作端进入。");
+                location.replace("index.html");
+                return;
+            }
+
+            window.financeCostAccess = {
+                personId: getPersonId(identity),
+                position: normalizePosition(identity.position)
+            };
+        })();
+    </script>
+
     <style>
         * { box-sizing: border-box; }
 
@@ -279,7 +347,7 @@
     <div class="header-inner">
         <div>
             <h1>🧮 财务费用录入中心</h1>
-            <p>Finance Cost Center · V2.10.1J</p>
+            <p>Finance Cost Center · V2.10.1K</p>
         </div>
 
         <button type="button" class="header-btn" onclick="goHome()">首页</button>
@@ -416,13 +484,69 @@
 </main>
 
 <footer>
-    矿山管理系统 · 财务费用录入中心 V2.10.1J
+    矿山管理系统 · 财务费用录入中心 V2.10.1K
 </footer>
 
 <script>
 "use strict";
 
 const FINANCE_COST_KEY = "financeCostRecords";
+
+function hasFinanceCostAccess() {
+    const access = window.financeCostAccess;
+    if (!access || !["会计", "管理员", "总经理"].includes(access.position)) {
+        return false;
+    }
+
+    const aliases = { "财务": "会计", "会计员": "会计" };
+    const normalizePosition = value => aliases[value] || value || "";
+    let records = [];
+    try {
+        records = JSON.parse(localStorage.getItem("personnelRecords") || "[]");
+    } catch (error) {
+        return false;
+    }
+    if (!Array.isArray(records) || !records.some(person => {
+        const id = String(person?.personId || person?.employeeId || person?.driverId || person?.id || person?.employeeNo || "");
+        const validStatus = !["rejected", "disabled", "resigned"].includes(person?.status) &&
+            !["rejected", "disabled", "resigned"].includes(person?.approvalStatus) &&
+            !["停用", "离职"].includes(person?.personnelStatus) && (
+                ["approved", "active", "working", "leave"].includes(person?.status) ||
+                person?.approvalStatus === "approved" ||
+                ["在职可用", "作业中", "请假"].includes(person?.personnelStatus)
+            );
+        return id === access.personId && validStatus &&
+            normalizePosition(person?.position) === access.position;
+    })) {
+        return false;
+    }
+
+    const session = (() => {
+        try {
+            return JSON.parse(sessionStorage.getItem("managementSession") || "null");
+        } catch (error) {
+            return null;
+        }
+    })();
+    const currentId = String(localStorage.getItem("currentPersonId") || "");
+    const sessionStillValid = session && session.verified === true &&
+        String(session.personId || "") === access.personId &&
+        Number(session.expiresAt || 0) > Date.now();
+    const ordinaryIdentityStillValid = currentId === access.personId &&
+        localStorage.getItem("selectedPosition") === access.position;
+
+    if (["管理员", "总经理"].includes(access.position)) {
+        return Boolean(sessionStillValid);
+    }
+    return Boolean(sessionStillValid || ordinaryIdentityStillValid);
+}
+
+function requireFinanceCostAccess() {
+    if (hasFinanceCostAccess()) return true;
+    alert("当前身份无权操作财务费用，请重新从授权工作端进入。");
+    location.replace("index.html");
+    return false;
+}
 
 const TYPE_LABELS = {
     depreciation: "折旧费用",
@@ -465,6 +589,8 @@ function saveRecords(records) {
 }
 
 function saveFinanceCost() {
+    if (!requireFinanceCostAccess()) return;
+
     const month = document.getElementById("costMonth").value;
     const type = document.getElementById("costType").value;
     const amount = Number(document.getElementById("costAmount").value || 0);
@@ -530,6 +656,8 @@ function saveFinanceCost() {
 }
 
 function deleteFinanceCost(id) {
+    if (!requireFinanceCostAccess()) return;
+
     if (!confirm("确认删除该费用记录？")) {
         return;
     }
@@ -675,7 +803,8 @@ document.getElementById("filterMonth").value = monthNow();
 renderRecords();
 </script>
 
-<script src="js/work-chat.js?v=1.0.0"></script>
+<script src="js/work-chat.js?v=1.0.1"></script>
 </body>
 </html>
+
 

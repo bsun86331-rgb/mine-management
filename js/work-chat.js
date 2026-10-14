@@ -1,6 +1,6 @@
 /*
 ====================================================
-mine-management 全端工作聊天 V1.5.2
+mine-management 全端工作聊天 V1.5.3
 ----------------------------------------------------
 当前阶段：
 1. 所有正式端口加载同一个聊天组件；
@@ -54,6 +54,9 @@ mine-management 全端工作聊天 V1.5.2
 
     let channel =
         null;
+
+    const receivedMessageIds =
+        new Set();
 
 
     function safeParse(
@@ -889,6 +892,42 @@ mine-management 全端工作聊天 V1.5.2
                 ROOM_ID
         ) {
             return;
+        }
+
+        const messageId =
+            String(
+                message.messageId ||
+                [
+                    message.roomId,
+                    message.senderPersonId,
+                    message.createdAt,
+                    message.text,
+                    message.imageName
+                ].join("|")
+            );
+
+        if (
+            receivedMessageIds.has(
+                messageId
+            )
+        ) {
+            return;
+        }
+
+        receivedMessageIds.add(
+            messageId
+        );
+
+        if (
+            receivedMessageIds.size >
+                MAX_MESSAGES * 2
+        ) {
+            const oldestMessageId =
+                receivedMessageIds.values().next().value;
+
+            receivedMessageIds.delete(
+                oldestMessageId
+            );
         }
 
         renderMessages();
@@ -2390,20 +2429,12 @@ mine-management 全端工作聊天 V1.5.2
                         1
                     ];
 
-                renderMessages();
-
-                if (
-                    lastMessage &&
-                    !panelOpen &&
-                    lastMessage.senderPersonId !==
-                        getPersonId(
-                            identity
-                        )
-                ) {
-                    unread +=
-                        1;
-
-                    updateUnread();
+                if (lastMessage) {
+                    receiveMessage(
+                        lastMessage
+                    );
+                } else {
+                    renderMessages();
                 }
             }
         );
@@ -2423,3 +2454,4 @@ mine-management 全端工作聊天 V1.5.2
     }
 
 })();
+
