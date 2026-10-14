@@ -5923,7 +5923,7 @@ function renderLeaveReview() {
             ) {
 
                 box.innerHTML =
-                    '<div class="empty-placeholder">暂无司机请假待审批</div>';
+                    '<div class="empty-placeholder">暂无一线人员请假待审批</div>';
 
                 return;
             }
@@ -10086,7 +10086,7 @@ function dispatchTripTime(
 "use strict";
 
 /* =========================================================
-   司机请假待审批醒目提示
+   一线人员请假待审批醒目提示
    监听现有 leaveTodoCount 的显示值，不接管、不改写原审批逻辑。
 ========================================================= */
 
@@ -10171,10 +10171,10 @@ function dispatchTripTime(
         leaveButton.setAttribute(
             "aria-label",
             hasPending
-                ? "司机请假，" +
+                ? "一线人员请假，" +
                   count +
                   " 条待审批"
-                : "司机请假"
+                : "一线人员请假"
         );
     }
 
