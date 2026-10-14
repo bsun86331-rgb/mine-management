@@ -619,7 +619,7 @@
     <div class="header-inner">
         <div>
             <h1>📊 综合报表中心</h1>
-            <p>Report Center · V2.10.7</p>
+            <p>Report Center · V2.10.8</p>
         </div>
 
         <button type="button" class="header-btn" onclick="goHome()">返回首页</button>
@@ -1744,7 +1744,7 @@
 </main>
 
 <footer>
-    矿山管理系统 · 综合报表中心 V2.10.7
+    矿山管理系统 · 综合报表中心 V2.10.8
 </footer>
 
 <script src="js/data-service.js"></script>
@@ -7583,9 +7583,11 @@ function getAttendanceProductionCount(person, date) {
 
                         const recordDate =
                             attendanceDateKey(
-                                item.completedAt ||
+                                item.productionDate ||
+                                item.shiftDate ||
                                 item.workDate ||
                                 item.date ||
+                                item.completedAt ||
                                 item.createdAt
                             );
 
