@@ -31,20 +31,24 @@ test("TEST运输统计按生产日边界分组去重并拆分A/B煤渣趟次", a
     }
   });
 
-  const { payload } = await installAGroupRobotContext(page, "TEST-A-D-001");
+  await installAGroupRobotContext(page, "TEST-A-D-001");
   await page.goto(`${ORIGIN}/index.html`, { waitUntil: "domcontentloaded" });
-  const board = Object.values(payload.productionBoardState.boards)[0];
-  const nextDate = new Date(`${board.date}T12:00:00`);
+  const boardDate = await page.evaluate(() => {
+    const date = new Date();
+    const pad = value => String(value).padStart(2, "0");
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+  });
+  const nextDate = new Date(`${boardDate}T12:00:00`);
   nextDate.setDate(nextDate.getDate() + 1);
-  const dateAfter = nextDate.toISOString().slice(0, 10);
+  const dateAfter = `${nextDate.getFullYear()}-${String(nextDate.getMonth() + 1).padStart(2, "0")}-${String(nextDate.getDate()).padStart(2, "0")}`;
   const trips = [
-    { tripId: "TEST-TRIP-A-COAL", completedAt: `${board.date}T08:00:00`, status: "completed", team: "A", materialType: "煤" },
-    { tripId: "TEST-TRIP-A-SLAG", completedAt: `${board.date}T19:59:59`, status: "completed", team: "A", materialType: "岩石" },
-    { tripId: "TEST-TRIP-B-COAL", completedAt: `${board.date}T20:00:00`, status: "completed", team: "B", materialType: "煤" },
+    { tripId: "TEST-TRIP-A-COAL", completedAt: `${boardDate}T08:00:00`, status: "completed", team: "A", materialType: "煤" },
+    { tripId: "TEST-TRIP-A-SLAG", completedAt: `${boardDate}T19:59:59`, status: "completed", team: "A", materialType: "岩石" },
+    { tripId: "TEST-TRIP-B-COAL", completedAt: `${boardDate}T20:00:00`, status: "completed", team: "B", materialType: "煤" },
     { tripId: "TEST-TRIP-B-SLAG", completedAt: `${dateAfter}T07:59:59`, status: "completed", team: "B", materialType: "渣" },
-    { tripId: "TEST-TRIP-A-COAL", completedAt: `${board.date}T08:00:00`, status: "completed", team: "A", materialType: "煤" },
+    { tripId: "TEST-TRIP-A-COAL", completedAt: `${boardDate}T08:00:00`, status: "completed", team: "A", materialType: "煤" },
     { tripId: "TEST-TRIP-OUTSIDE", completedAt: `${dateAfter}T08:00:00`, status: "completed", team: "A", materialType: "煤" },
-    { tripId: "TEST-TRIP-PENDING", completedAt: `${board.date}T12:00:00`, status: "pending_dispatch", team: "B", materialType: "煤" }
+    { tripId: "TEST-TRIP-PENDING", completedAt: `${boardDate}T12:00:00`, status: "pending_dispatch", team: "B", materialType: "煤" }
   ];
   await page.evaluate(rows => {
     localStorage.setItem("currentPersonId", "TEST-A-DISPATCH-001");
@@ -71,3 +75,4 @@ test("TEST运输统计按生产日边界分组去重并拆分A/B煤渣趟次", a
   expect(errors).toEqual([]);
   expect(blocked).toEqual([]);
 });
+
