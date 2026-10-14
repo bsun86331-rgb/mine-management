@@ -454,7 +454,7 @@
     <div class="header-inner">
         <div>
             <h1>📍 全员定位考勤中心</h1>
-            <p>Attendance Center · V2.10.2J</p>
+            <p>Attendance Center · V2.10.2K</p>
         </div>
 
         <button type="button" class="header-btn" onclick="goHome()">首页</button>
@@ -676,7 +676,7 @@
 </main>
 
 <footer>
-    矿山管理系统 · 全员定位考勤中心 V2.10.2J
+    矿山管理系统 · 全员定位考勤中心 V2.10.2K
 </footer>
 
 <script src="js/data-service.js"></script>
@@ -1035,8 +1035,10 @@ function getProductionCountForDate(date) {
                 ) === personId;
 
             const recordDate = String(
-                item.date ||
+                item.productionDate ||
+                item.shiftDate ||
                 item.workDate ||
+                item.date ||
                 item.createdAt ||
                 item.completedAt ||
                 ""
