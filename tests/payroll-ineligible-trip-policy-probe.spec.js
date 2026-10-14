@@ -6,7 +6,7 @@ const path = require("node:path");
 const ORIGIN = "https://mine.test";
 const ROOT = path.resolve(__dirname, "..");
 
-test("TEST业务口径探测：不计入正式产量的运输记录是否参与工资绩效", async ({ page }) => {
+test("TEST回归：已完成但不计正式产量的趟次仍计入工资和排名", async ({ page }) => {
   const errors = [];
   const blocked = [];
   page.on("pageerror", error => errors.push(error.message));
