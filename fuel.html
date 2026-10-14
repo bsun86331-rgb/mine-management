@@ -643,7 +643,7 @@
                 </h1>
 
                 <p>
-                    Fuel Truck Management · V2.10.0O
+                    Fuel Truck Management · V2.10.0P
                 </p>
 
             </div>
@@ -3599,6 +3599,11 @@ function renderFuelHistory() {
                             ${
                                 item.rejectReason
                                     ? `<br>驳回原因：${escapeHtml(item.rejectReason)}`
+                                    : ""
+                            }
+                            ${
+                                Array.isArray(item.correctionHistory) && item.correctionHistory.length
+                                    ? `<br>更正前报量：${Number(item.correctionHistory[item.correctionHistory.length - 1].amount || 0).toFixed(1)} L<br>核对说明：${escapeHtml(item.correctionNote || "-")}`
                                     : ""
                             }
 
