@@ -88,6 +88,16 @@ test("TEST 汽车司机运输一趟渣后，生产看板只计一趟", async ({ 
     await expect(board).toContainText(/A组渣总趟数\s*1/);
     await expect(board).toContainText("排土管理 1 人");
     expect(await board.locator('[data-action="edit"]').count()).toBe(0);
+
+    await page.evaluate(() => {
+        const trips = JSON.parse(localStorage.getItem("driverTripRecords") || "[]");
+        trips[0].officialCountEligible = false;
+        trips[0].dispatchConfirmation = "rejected";
+        localStorage.setItem("driverTripRecords", JSON.stringify(trips));
+    });
+    await page.goto(TEST_ORIGIN + "/driver-work.html", { waitUntil: "domcontentloaded" });
+    await expect(page.locator("#todayTripCount")).toHaveText("1");
+    await expect(page.locator("#tripRankValue")).toContainText("第");
     expect(pageErrors).toEqual([]);
     expect(blockedRequests).toEqual([]);
 });
