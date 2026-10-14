@@ -619,7 +619,7 @@
     <div class="header-inner">
         <div>
             <h1>📊 综合报表中心</h1>
-            <p>Report Center · V2.10.4</p>
+            <p>Report Center · V2.10.5</p>
         </div>
 
         <button type="button" class="header-btn" onclick="goHome()">返回首页</button>
@@ -1744,7 +1744,7 @@
 </main>
 
 <footer>
-    矿山管理系统 · 综合报表中心 V2.10.4
+    矿山管理系统 · 综合报表中心 V2.10.5
 </footer>
 
 <script src="js/data-service.js"></script>
@@ -5737,6 +5737,7 @@ function getAuxiliaryCompletedReportRecords() {
         .map(item => ({
             source: "auxiliary",
             completedAt: item.completedAt || item.updatedAt || item.createdAt || "",
+            shiftDate: item.shiftDate || item.productionDate || item.date || "",
             position: item.position || item.vehicleType || "辅助车辆",
             vehicle: item.vehicleNumber || item.vehicleId || "-",
             taskId: item.taskId || item.dispatchTaskId || "-",
@@ -5754,6 +5755,7 @@ function getAuxiliaryCompletedReportRecords() {
         .map(item => ({
             source: "fuel",
             completedAt: item.completedAt || item.createdAt || "",
+            shiftDate: item.shiftDate || item.productionDate || item.date || "",
             position: "加油车司机",
             vehicle: item.vehicleNumber || item.vehicleId || "-",
             taskId: item.requestId || item.taskId || "-",
@@ -5783,12 +5785,12 @@ function renderAuxiliaryProductionReport() {
 
     const dayRecords =
         allRecords.filter(item =>
-            auxiliaryReportDateKey(item.completedAt) === selectedDate
+            auxiliaryReportDateKey(item.shiftDate || item.completedAt) === selectedDate
         );
 
     const monthRecords =
         allRecords.filter(item =>
-            auxiliaryReportDateKey(item.completedAt).slice(0, 7) === selectedMonth
+            auxiliaryReportDateKey(item.shiftDate || item.completedAt).slice(0, 7) === selectedMonth
         );
 
     const monthFuelRecords =
