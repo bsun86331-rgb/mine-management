@@ -14,6 +14,7 @@ test("TEST 汽车司机提交请假后由调度审批并回写状态", async ({ 
   page.on("pageerror", error => errors.push(error.message));
   page.on("dialog", async dialog => { alerts.push(dialog.message()); await dialog.accept(); });
   await page.addInitScript(() => {
+    if (localStorage.getItem("TEST-LEAVE-APPROVAL-SETUP") === "1") return;
     const driverId = "TEST-DRIVER-LEAVE-001";
     const dispatcherId = "TEST-DISPATCH-LEAVE-001";
     localStorage.setItem("personnelRecords", JSON.stringify([
@@ -22,6 +23,7 @@ test("TEST 汽车司机提交请假后由调度审批并回写状态", async ({ 
     ]));
     localStorage.setItem("currentPersonId", driverId);
     localStorage.setItem("selectedPosition", "汽车司机");
+    localStorage.setItem("TEST-LEAVE-APPROVAL-SETUP", "1");
   });
   await page.route("**/*", async route => {
     const req = route.request();
@@ -95,4 +97,3 @@ test("TEST 汽车司机提交请假后由调度审批并回写状态", async ({ 
   expect(errors).toEqual([]);
   expect(blocked).toEqual([]);
 });
-
