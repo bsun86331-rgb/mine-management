@@ -99,6 +99,15 @@ test("TEST司机的零产量报备是否要求车队长确认", async ({ page, c
   await expect(page.locator("#zeroProductionResult")).toContainText("TEST请补充维修工单编号");
   await expect(page.locator("#zeroProductionForm")).toBeVisible();
   await expect(page.locator("#zeroRemark")).toHaveValue("TEST设备故障等待维修，无运输趟次");
+  await openAdminAttendanceReport(page);
+  await expect(page.locator("#attendanceDayZeroPending")).toHaveText("1");
+  await expect(page.locator("#attendanceMonthZeroPending")).toHaveText("1");
+  await expect(page.locator("#attendanceMonthZeroReported")).toHaveText("0");
+  await page.addInitScript(() => {
+    localStorage.setItem("currentPersonId", "TEST-ZERO-001");
+    localStorage.setItem("selectedPosition", "汽车司机");
+  });
+  await page.goto(`${ORIGIN}/attendance.html`, { waitUntil: "domcontentloaded" });
   await page.locator("#zeroRemark").fill("TEST设备故障等待维修，无运输趟次；维修工单TEST-WO-001");
   const dialogsBeforeResubmit = dialogs.length;
   await page.getByRole("button", { name: "提交报备" }).click();
