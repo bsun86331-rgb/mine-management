@@ -2457,7 +2457,7 @@ class TruckDriverBot {
     }
 
 
-    async testNormalTransportClosedLoop() {
+    async testNormalTransportClosedLoop({ expectedMaterialType = "渣", expectedUnloadZoneId = "TEST-UNLOAD-WASTE" } = {}) {
 
         const {
             profile,
@@ -2991,7 +2991,7 @@ class TruckDriverBot {
                 cycle?.unloadingZoneId ||
                 ""
             ) !==
-                "TEST-UNLOAD-WASTE"
+                expectedUnloadZoneId
         ) {
 
             throw new Error(
@@ -3304,11 +3304,11 @@ class TruckDriverBot {
 
         if (
             record?.materialType !==
-                "渣"
+                expectedMaterialType
         ) {
 
             throw new Error(
-                "TruckDriverBot：正常运输物料类型不是“渣”"
+                `TruckDriverBot：正常运输物料类型不是“${expectedMaterialType}”`
             );
         }
 
