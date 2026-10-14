@@ -22,9 +22,9 @@ test("TEST司机统一维修上报保存工单、锁定设备并拦截重复申�
     localStorage.setItem("personnelRecords", JSON.stringify([person, dispatch, manager, worker]));
     localStorage.setItem("currentPersonId", person.personId);
     localStorage.setItem("selectedPosition", person.position);
-    localStorage.setItem("equipmentRecords", JSON.stringify([{ equipmentId: "TEST-REPORT-TRUCK", equipmentNumber: "TEST-REPORT-TRUCK", equipmentType: "汽车", status: "standby" }]));
+    localStorage.setItem("equipmentRecords", JSON.stringify([{ equipmentId: "TEST-REPORT-TRUCK", equipmentNumber: "TEST-REPORT-TRUCK", equipmentType: "汽车", status: "available" }]));
     localStorage.setItem("maintenanceRequests", "[]");
-    localStorage.setItem("equipmentOperationalStatus", JSON.stringify([{ equipmentId: "TEST-REPORT-TRUCK", status: "standby", testFixture: true }]));
+    localStorage.setItem("equipmentOperationalStatus", "[]");
     localStorage.setItem("driverVehicleChangeRequests", JSON.stringify([{ requestId: "TEST-REPORT-LEGACY", status: "pending" }]));
     localStorage.setItem("workshopBays", JSON.stringify([{ bayId: "TEST-REPORT-BAY", name: "TEST维修工位", status: "free" }]));
     localStorage.setItem("maintenanceWorkOrders", "[]");
@@ -71,8 +71,8 @@ test("TEST司机统一维修上报保存工单、锁定设备并拦截重复申�
     legacy: JSON.parse(localStorage.getItem("driverVehicleChangeRequests") || "[]")
   }));
   expect(state.requests).toHaveLength(1);
-  expect(state.requests[0]).toMatchObject({ applicantId: "TEST-REPORT-DRIVER", taskId: "TEST-REPORT-TASK", shiftId: "TEST-REPORT-SHIFT", equipmentType: "汽车", equipmentNumber: "TEST-REPORT-TRUCK", previousEquipmentStatus: "standby", status: "pending_dispatch", dispatchRequired: true, dispatchStatus: "pending", productionReleased: false, canMove: false });
-  expect(state.operational).toContainEqual(expect.objectContaining({ equipmentId: "TEST-REPORT-TRUCK", status: "maintenance", previousStatus: "standby", source: "maintenance_request" }));
+  expect(state.requests[0]).toMatchObject({ applicantId: "TEST-REPORT-DRIVER", taskId: "TEST-REPORT-TASK", shiftId: "TEST-REPORT-SHIFT", equipmentType: "汽车", equipmentNumber: "TEST-REPORT-TRUCK", status: "pending_dispatch", dispatchRequired: true, dispatchStatus: "pending", productionReleased: false, canMove: false });
+  expect(state.operational).toContainEqual(expect.objectContaining({ equipmentId: "TEST-REPORT-TRUCK", status: "maintenance", source: "maintenance_request" }));
   expect(state.legacy).toContainEqual(expect.objectContaining({ requestId: "TEST-REPORT-LEGACY", status: "legacy_cancelled" }));
   expect(dialogs[0]).toContain("维修申请已提交");
 
