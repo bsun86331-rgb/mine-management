@@ -194,6 +194,41 @@ test("TEST设备使用前异常检查到维修申请、派工和验收完整闭�
   expect(state.costs[0].costId).toBeTruthy();
   expect(state.bay.status).toBe("free");
   await page.screenshot({ path: evidencePath("证据_设备检查至维修验收闭环", "equipment-check-to-repair-full-closure"), fullPage: true });
+
+  // A completed order must not be able to create a second cost sheet.
+  await page.evaluate(orderId => openCostSheet(orderId), orders[0].orderId);
+  await expect(page.locator("#costModal")).toBeVisible();
+  await page.getByRole("button", { name: "保存维修费用单" }).click();
+  await expect(page.locator("#costModal")).not.toBeVisible();
+  state = await page.evaluate(() => ({
+    costs: JSON.parse(localStorage.getItem("maintenanceCosts") || "[]"),
+    orders: JSON.parse(localStorage.getItem("maintenanceWorkOrders") || "[]"),
+    requests: JSON.parse(localStorage.getItem("maintenanceRequests") || "[]")
+  }));
+  expect(state.costs).toHaveLength(1);
+  expect(state.costs[0]).toMatchObject({ totalCost: 120, orderId: orders[0].orderId });
+  expect(state.orders[0].status).toBe("completed");
+  expect(state.requests.find(row => row.requestId === generatedRequestId).status).toBe("completed");
+
+  // The manager's report must show the same archived cost by month and equipment.
+  await page.evaluate(() => {
+    const people = JSON.parse(localStorage.getItem("personnelRecords") || "[]");
+    people.push({ personId: "TEST-REPAIR-FULL-REPORT-ADMIN", employeeId: "TEST-REPAIR-FULL-REPORT-ADMIN", employeeNo: "TEST-REPAIR-FULL-REPORT-ADMIN", name: "TEST报表管理员", position: "管理员", team: "管理组", status: "approved", approvalStatus: "approved", personnelStatus: "在职可用" });
+    localStorage.setItem("personnelRecords", JSON.stringify(people));
+    localStorage.setItem("currentPersonId", "TEST-REPAIR-FULL-REPORT-ADMIN");
+    localStorage.setItem("selectedPosition", "管理员");
+    localStorage.setItem("adminPersonId", "TEST-REPAIR-FULL-REPORT-ADMIN");
+    localStorage.setItem("rolePersonIds", JSON.stringify({ 管理员: "TEST-REPAIR-FULL-REPORT-ADMIN" }));
+  });
+  await page.goto(`${ORIGIN}/report-center.html`, { waitUntil: "domcontentloaded" });
+  await page.locator('[data-report="maintenance"]').click();
+  await expect(page.locator("#summaryMaintenance")).toHaveText("120");
+  await expect(page.locator("#maintenanceMonthBadge")).toContainText("维修 1 笔");
+  const reportRow = page.locator("#maintenanceTableBody tr").filter({ hasText: "TEST-REPAIR-FULL-PICKUP" });
+  await expect(reportRow).toContainText("皮卡");
+  await expect(reportRow).toContainText("100.00");
+  await expect(reportRow).toContainText("20.00");
+  await expect(reportRow).toContainText("120.00");
   expect(errors).toEqual([]);
   expect(blocked).toEqual([]);
 });
