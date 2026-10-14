@@ -1744,7 +1744,7 @@
 </main>
 
 <footer>
-    矿山管理系统 · 综合报表中心 V2.10.6
+    矿山管理系统 · 综合报表中心 V2.10.7
 </footer>
 
 <script src="js/data-service.js"></script>
@@ -3397,6 +3397,10 @@ function payrollStandardKind(person) {
         return "auxiliary_fixed";
     }
 
+    if (position === "排土管理") {
+        return "dump_management_fixed";
+    }
+
     return "person_fixed";
 }
 
@@ -3522,6 +3526,27 @@ function findPayrollStandard(person, month) {
         ) {
             return positionStandard;
         }
+    }
+
+    /*
+     * 排土管理：默认使用岗位固定月薪；确有特殊标准时优先个人标准。
+     */
+    if (kind === "dump_management_fixed") {
+        const personOverride = newestPayrollStandard(
+            standards.filter(item =>
+                item.scope !== "position" &&
+                String(item.personId || "") === personId
+            )
+        );
+        if (personOverride) return personOverride;
+
+        return newestPayrollStandard(
+            standards.filter(item =>
+                item.scope === "position" &&
+                item.standardType === "dump_management_fixed_position" &&
+                normalizePosition(item.position) === "排土管理"
+            )
+        );
     }
 
     /*
@@ -4093,6 +4118,23 @@ function generateMonthlyPayroll(showMessage = false) {
 
             } else if (
                 standardKind ===
+                    "dump_management_fixed" &&
+                standard?.scope === "position"
+            ) {
+                /*
+                 * 排土管理岗位固定工资；个人覆盖标准走下方个人阶段分支。
+                 */
+                salaryMode = "fixed";
+                salaryStage = "position_fixed";
+                baseSalary = Number(
+                    standard?.monthlySalary ??
+                    standard?.baseSalary ??
+                    0
+                );
+                performanceUnitPrice = 0;
+
+            } else if (
+                standardKind ===
                 "auxiliary_fixed"
             ) {
                 /*
@@ -4238,6 +4280,18 @@ function generateMonthlyPayroll(showMessage = false) {
                 descriptions.push(
                     "辅助车辆岗位固定月薪"
                 );
+            }
+
+            if (
+                standardKind === "dump_management_fixed" &&
+                standard?.scope === "position"
+            ) {
+                descriptions.push("排土管理岗位固定月薪");
+            } else if (
+                standardKind === "dump_management_fixed" &&
+                standard
+            ) {
+                descriptions.push("排土管理个人覆盖工资标准");
             }
 
             if (
@@ -8221,6 +8275,12 @@ function salaryKindText(item) {
         "auxiliary_fixed"
     ) {
         return "辅助车辆固定月薪";
+    }
+
+    if (item?.salaryStandardKind === "dump_management_fixed") {
+        return item?.salaryStage === "position_fixed"
+            ? "排土管理岗位固定月薪"
+            : "排土管理个人覆盖工资";
     }
 
     if (
