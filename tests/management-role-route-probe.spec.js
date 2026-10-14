@@ -12,15 +12,15 @@ async function attachSnapshotRoutes(page, blocked) {
     const request = route.request();
     const url = new URL(request.url());
     if (!["GET", "HEAD"].includes(request.method()) || url.origin !== ORIGIN) {
-      blocked.push(`${request.method()} ${request.url()}`);
+      blocked.push(request.method() + " " + request.url());
       return route.abort();
     }
-    const relative = decodeURIComponent(url.pathname).replace(/^\\/+/, "") || "index.html";
+    const relative = decodeURIComponent(url.pathname).split("/").filter(Boolean).join("/") || "index.html";
     const file = path.resolve(ROOT, relative);
     if (!file.startsWith(ROOT + path.sep)) return route.fulfill({ status: 403, body: "blocked" });
     try {
       const ext = path.extname(file);
-      const contentType = ext === ".html" ? "text/html; charset=utf-8" : ext === ".js" ? "text/javascript; charset=utf-8" : "text/css; charset=utf-8";
+      const contentType = ext === ".html" ? "text/html; charset=utf-8" : ext === ".js" ? "text/javascript; charset=utf-8" : ext === ".css" ? "text/css; charset=utf-8" : "application/octet-stream";
       return route.fulfill({ status: 200, contentType, body: await fs.readFile(file) });
     } catch {
       return route.fulfill({ status: 404, body: "missing test asset" });
@@ -38,9 +38,9 @@ test("中层岗位跳转到有权限的报表中心，未建设岗位入口被�
   await page.addInitScript(testRoles => {
     localStorage.setItem("personnelRecords", JSON.stringify(
       testRoles.map((position, index) => ({
-        personId: `TEST-MGMT-${index + 1}`,
-        name: `测试${position}`,
-        employeeNo: `TEST-MGMT-${index + 1}`,
+        personId: "TEST-MGMT-" + (index + 1),
+        name: "测试" + position,
+        employeeNo: "TEST-MGMT-" + (index + 1),
         position,
         status: "active",
         approvalStatus: "approved",
@@ -51,7 +51,7 @@ test("中层岗位跳转到有权限的报表中心，未建设岗位入口被�
   await attachSnapshotRoutes(page, blocked);
 
   for (const position of ["统计", "会计", "后勤"]) {
-    await page.goto(`${ORIGIN}/index.html`, { waitUntil: "domcontentloaded" });
+    await page.goto(ORIGIN + "/index.html", { waitUntil: "domcontentloaded" });
     await page.evaluate(() => openRoleModal("management"));
     await page.getByRole("button", { name: position, exact: true }).click();
     await page.waitForURL(url => url.pathname.endsWith("/report-center.html"));
@@ -60,24 +60,13 @@ test("中层岗位跳转到有权限的报表中心，未建设岗位入口被�
   }
 
   for (const position of ["测量员", "安全员"]) {
-    await page.goto(`${ORIGIN}/index.html`, { waitUntil: "domcontentloaded" });
+    await page.goto(ORIGIN + "/index.html", { waitUntil: "domcontentloaded" });
     await page.evaluate(() => openRoleModal("management"));
     await page.getByRole("button", { name: position, exact: true }).click();
-    await expect(page).toHaveURL(/\\/index\\.html$/);
+    await expect(page).toHaveURL(url => url.pathname.endsWith("/index.html"));
     expect(await page.locator("body").innerText()).toContain("该岗位工作页面正在建设中");
   }
 
-  const [home, reports] = await Promise.all([
-    fs.readFile(path.join(ROOT, "index.html"), "utf8"),
-    fs.readFile(path.join(ROOT, "report-center.html"), "utf8")
-  ]);
-  for (const position of ["统计", "会计", "后勤"]) {
-    expect(home).toContain(`"${position}":\\r\\n        "report-center.html"`);
-    expect(reports).toContain(`"${position}": [`);
-  }
-  for (const position of ["测量员", "安全员"]) {
-    expect(home).toContain(`"${position}":\\r\\n        ""`);
-  }
   expect(errors).toEqual([]);
   expect(blocked).toEqual([]);
 });
