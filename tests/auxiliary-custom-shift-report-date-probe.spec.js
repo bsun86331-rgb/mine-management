@@ -6,7 +6,7 @@ const path = require("node:path");
 const ORIGIN = "https://mine.test";
 const ROOT = path.resolve(__dirname, "..");
 
-test("TEST辅助车辆自定义夜班完成记录进入日历完成日报而非任务生产日报", async ({ page }) => {
+test("D02-1 TEST辅助车辆自定义夜班记录按任务生产日归档", async ({ page }) => {
   const errors = [];
   const blocked = [];
   page.on("pageerror", error => errors.push(error.message));
@@ -58,8 +58,7 @@ test("TEST辅助车辆自定义夜班完成记录进入日历完成日报而非�
   expect(saved.taskId).toBe("TEST-AUX-SHIFT-TASK");
   expect(saved.shift).toBe("夜班");
   expect(saved.completedAt).toBe("2026-10-14T00:30:00.000Z");
-  expect(saved).not.toHaveProperty("shiftDate");
-  expect(saved).not.toHaveProperty("productionDate");
+  expect(saved.shiftDate).toBe("2026-10-13");
 
   await page.evaluate(() => {
     const adminId = "TEST-AUX-SHIFT-ADMIN";
@@ -78,8 +77,8 @@ test("TEST辅助车辆自定义夜班完成记录进入日历完成日报而非�
 
   console.log("TEST辅助车辆班次日期与完成日报观察:", JSON.stringify({ beforeFinish, saved, taskProductionDayCount, completionCalendarDayCount }));
   await page.screenshot({ path: evidencePath("证据_辅助车辆自定义班次报表日期", "auxiliary-custom-shift-report-date-probe"), fullPage: true });
-  expect(taskProductionDayCount).toBe("0");
-  expect(completionCalendarDayCount).toBe("1");
+  expect(taskProductionDayCount).toBe("1");
+  expect(completionCalendarDayCount).toBe("0");
   expect(errors).toEqual([]);
   expect(blocked).toEqual([]);
 });
