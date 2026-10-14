@@ -6,7 +6,12 @@ const path = require("node:path");
 
 const ORIGIN = "https://mine.test";
 const ROOT = path.resolve(__dirname, "..");
-const KNOWN_MISSING = new Set(["general-manager.html", "management.html"]);
+const NON_STATIC_ROUTES = new Set([
+  "general-manager.html",
+  "management.html",
+  // This page is served by tests/robot-control-server.js, not GitHub Pages.
+  "robot-test-center.html"
+]);
 
 test("隔离快照全部页面可加载且静态资源无404", async ({ page }) => {
   const blocked = [];
@@ -16,7 +21,7 @@ test("隔离快照全部页面可加载且静态资源无404", async ({ page }) 
   page.on("response", response => {
     if (response.status() >= 400) {
       const pathname = new URL(response.url()).pathname.replace(/^\/+/, "");
-      if (!KNOWN_MISSING.has(pathname)) failures.push(`${response.status()} ${pathname}`);
+      if (!NON_STATIC_ROUTES.has(pathname)) failures.push(`${response.status()} ${pathname}`);
     }
   });
   page.on("dialog", dialog => dialog.accept());
@@ -47,7 +52,7 @@ test("隔离快照全部页面可加载且静态资源无404", async ({ page }) 
   const pages = (await fs.readdir(ROOT)).filter(file => file.toLowerCase().endsWith(".html")).sort();
   const checked = [];
   for (const file of pages) {
-    if (KNOWN_MISSING.has(file)) continue;
+    if (NON_STATIC_ROUTES.has(file)) continue;
     let response;
     try {
       response = await page.goto(`${ORIGIN}/${encodeURIComponent(file)}`, { waitUntil: "domcontentloaded" });
@@ -65,3 +70,4 @@ test("隔离快照全部页面可加载且静态资源无404", async ({ page }) 
   expect(pageErrors, `Page script errors: ${pageErrors.join("; ")}`).toEqual([]);
   expect(blocked, `Non-local or non-GET requests: ${blocked.join("; ")}`).toEqual([]);
 });
+
