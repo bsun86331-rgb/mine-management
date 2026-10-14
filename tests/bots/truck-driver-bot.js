@@ -939,7 +939,6 @@ class TruckDriverBot {
                         localStorage
                     );
 
-
                 localStorage.setItem =
                     function (
                         key,
@@ -2624,6 +2623,9 @@ class TruckDriverBot {
                         localStorage
                     );
 
+                const testTripIds =
+                    Object.create(null);
+
 
                 localStorage.setItem =
                     function (
@@ -2702,6 +2704,9 @@ class TruckDriverBot {
 
                                                     item.recordId =
                                                         testId;
+
+                                                    testTripIds[id] =
+                                                        testId;
                                                 }
                                             }
                                         }
@@ -2731,6 +2736,42 @@ class TruckDriverBot {
                             value
                         );
                     };
+
+                const dataService =
+                    window.MineDataService;
+
+                if (
+                    dataService &&
+                    typeof dataService.upsert === "function"
+                ) {
+                    const originalUpsert =
+                        dataService.upsert.bind(dataService);
+
+                    dataService.upsert = function (
+                        table,
+                        row,
+                        options
+                    ) {
+                        const originalId = String(
+                            row?.tripId || row?.id || ""
+                        );
+                        const testId =
+                            table === "trip_records"
+                                ? testTripIds[originalId]
+                                : "";
+
+                        if (testId) {
+                            row = {
+                                ...row,
+                                id: testId,
+                                tripId: testId,
+                                recordId: testId
+                            };
+                        }
+
+                        return originalUpsert(table, row, options);
+                    };
+                }
 
 
                 window.__robotTestNormalTripGuardInstalled =
@@ -3411,3 +3452,4 @@ class TruckDriverBot {
 module.exports = {
     TruckDriverBot
 };
+
