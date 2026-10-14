@@ -16828,3 +16828,143 @@ window.addEventListener(
         }
     }
 );
+
+
+/* 零产量异常报备：车队长/调度审核后才视为完成。 */
+document.addEventListener("DOMContentLoaded", function initZeroProductionReview() {
+    "use strict";
+    const KEY = "zeroProductionReports";
+    const button = document.getElementById("openZeroProductionReviewButton");
+    const modal = document.getElementById("zeroProductionReviewModal");
+    const list = document.getElementById("zeroProductionReviewList");
+    const count = document.getElementById("zeroProductionTodoCount");
+
+    function readReports() {
+        try {
+            const data = JSON.parse(localStorage.getItem(KEY) || "[]");
+            return Array.isArray(data) ? data : [];
+        } catch (_) {
+            return [];
+        }
+    }
+
+    function getReviewer() {
+        try {
+            const profile = JSON.parse(localStorage.getItem("dispatchUserProfile") || "null");
+            if (!profile) return null;
+            const position = String(profile.position || "").trim();
+            if (!["车队长", "调度员"].includes(position)) return null;
+            if (!profile.name || !(profile.personId || profile.employeeId || profile.id)) return null;
+            return {
+                id: String(profile.personId || profile.employeeId || profile.id),
+                name: String(profile.name),
+                position
+            };
+        } catch (_) {
+            return null;
+        }
+    }
+
+    function esc(value) {
+        const node = document.createElement("span");
+        node.textContent = String(value ?? "");
+        return node.innerHTML;
+    }
+
+    function pending(report) {
+        /* 兼容旧版“已报备”记录：未留下审核人，故仍需人工审核。 */
+        return ["pending_review", "reported"].includes(String(report.status || ""));
+    }
+
+    function render() {
+        const reviewer = getReviewer();
+        if (!button || !count || !list) return;
+        button.style.display = reviewer ? "" : "none";
+        const items = readReports();
+        const queue = items.map((report, index) => ({ report, index }))
+            .filter(item => pending(item.report));
+        count.textContent = String(queue.length);
+        list.innerHTML = queue.length ? queue.map(({ report, index }) => `
+            <article class="maintenance-review-card">
+                <div class="maintenance-review-top">
+                    <strong>${esc(report.personName || "未记录姓名")} · ${esc(report.position || "岗位未记录")}</strong>
+                    <span class="maintenance-status-badge">待审核</span>
+                </div>
+                <div class="maintenance-review-info">
+                    日期：${esc(report.date || "-")}<br>
+                    报备原因：${esc(report.reason || "-")}<br>
+                    说明：${esc(report.remark || "-")}<br>
+                    提交时间：${esc(report.submittedAt || report.createdAt || "-")}
+                </div>
+                <div class="maintenance-review-actions">
+                    <button type="button" class="success-button" data-zero-review="approve" data-index="${index}">审核通过</button>
+                    <button type="button" class="danger-button" data-zero-review="reject" data-index="${index}">驳回并要求补充</button>
+                </div>
+            </article>
+        `).join("") : '<div class="maintenance-review-empty">暂无待审核的零产量报备。</div>';
+    }
+
+    function act(index, decision) {
+        const reviewer = getReviewer();
+        if (!reviewer) {
+            alert("仅车队长 / 调度员可以审核零产量报备。");
+            render();
+            return;
+        }
+        const items = readReports();
+        const report = items[Number(index)];
+        if (!report || !pending(report)) {
+            alert("该报备已被处理或不存在，请刷新列表后重试。");
+            render();
+            return;
+        }
+
+        let reviewReason = "";
+        if (decision === "rejected") {
+            reviewReason = prompt("请填写驳回原因，司机将根据原因补充后重新报备：", "");
+            if (reviewReason === null) return;
+            reviewReason = reviewReason.trim();
+            if (!reviewReason) {
+                alert("驳回时必须填写原因。");
+                return;
+            }
+        }
+
+        const now = new Date().toISOString();
+        report.status = decision;
+        report.reviewedBy = reviewer.id;
+        report.reviewedByName = reviewer.name;
+        report.approverRole = reviewer.position;
+        report.reviewedAt = now;
+        report.updatedAt = now;
+        if (decision === "rejected") report.reviewReason = reviewReason;
+        else delete report.reviewReason;
+
+        localStorage.setItem(KEY, JSON.stringify(items));
+        render();
+    }
+
+    if (button && modal) {
+        button.addEventListener("click", function() {
+            if (!getReviewer()) {
+                alert("仅车队长 / 调度员可以审核零产量报备。");
+                render();
+                return;
+            }
+            render();
+            modal.classList.remove("hidden");
+        });
+    }
+    document.getElementById("closeZeroProductionReviewModal")?.addEventListener("click", function() {
+        modal?.classList.add("hidden");
+    });
+    list?.addEventListener("click", function(event) {
+        const target = event.target.closest("[data-zero-review]");
+        if (!target) return;
+        act(target.dataset.index, target.dataset.zeroReview === "approve" ? "approved" : "rejected");
+    });
+    window.addEventListener("storage", function(event) {
+        if (event.key === KEY || event.key === "dispatchUserProfile") render();
+    });
+    render();
+});
