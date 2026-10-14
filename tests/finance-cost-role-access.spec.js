@@ -138,6 +138,6 @@ test("已审核司机不能通过伪造所选岗位冒充管理员", async ({ pa
         localStorage.setItem("selectedPosition", "管理员");
     });
     await page.goto(`${ORIGIN}/finance-cost.html`, { waitUntil: "domcontentloaded" });
-    await expect(page).toHaveURL(/index\\.html$/);
+    await expect(page).toHaveURL(/index\.html$/);
     await expect(page.getByRole("heading", { name: "🧮 财务费用录入中心" })).toHaveCount(0);
 });
