@@ -31,9 +31,10 @@ async function attachSnapshotRoutes(page, blocked) {
 test("中层岗位跳转到有权限的报表中心，未建设岗位入口被暂停", async ({ page }) => {
   const blocked = [];
   const errors = [];
+  const dialogs = [];
   const roles = ["统计", "会计", "后勤", "测量员", "安全员"];
   page.on("pageerror", error => errors.push(error.message));
-  page.on("dialog", dialog => dialog.accept());
+  page.on("dialog", dialog => { dialogs.push(dialog.message()); return dialog.accept(); });
 
   await page.addInitScript(testRoles => {
     localStorage.setItem("personnelRecords", JSON.stringify(
@@ -64,9 +65,10 @@ test("中层岗位跳转到有权限的报表中心，未建设岗位入口被�
     await page.evaluate(() => openRoleModal("management"));
     await page.getByRole("button", { name: position, exact: true }).click();
     await expect(page).toHaveURL(url => url.pathname.endsWith("/index.html"));
-    expect(await page.locator("body").innerText()).toContain("该岗位工作页面正在建设中");
+    expect(dialogs[dialogs.length - 1]).toBe("该岗位工作页面正在建设中。");
   }
 
+  expect(dialogs).toEqual(["该岗位工作页面正在建设中。", "该岗位工作页面正在建设中。"]);
   expect(errors).toEqual([]);
   expect(blocked).toEqual([]);
 });
