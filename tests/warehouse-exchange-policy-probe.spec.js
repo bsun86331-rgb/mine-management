@@ -7,11 +7,12 @@ const path = require("node:path");
 const ORIGIN = "https://mine.test";
 const ROOT = path.resolve(__dirname, "..");
 
-test("TEST以旧换新流程确认旧物回收是否为出库前置", async ({ page }) => {
+test("D04-1 TEST以旧换新必须先回收验收才能出库", async ({ page }) => {
   const errors = [];
   const blocked = [];
   page.on("pageerror", error => errors.push(error.message));
-  page.on("dialog", async dialog => { if (dialog.type() === "prompt") await dialog.accept("1"); else await dialog.accept(); });
+  const dialogs = [];
+  page.on("dialog", async dialog => { dialogs.push(dialog.message()); if (dialog.type() === "prompt") await dialog.accept("1"); else await dialog.accept(); });
   await page.addInitScript(() => {
     const originalSetItem = Storage.prototype.setItem;
     Storage.prototype.setItem = function (key, rawValue) {
@@ -60,8 +61,17 @@ test("TEST以旧换新流程确认旧物回收是否为出库前置", async ({ p
   await page.locator("#requestList").getByRole("button", { name: "确认出库" }).click();
   const holders = await page.evaluate(() => JSON.parse(localStorage.getItem("materialHolders") || "[]"));
   const recycles = await page.evaluate(() => JSON.parse(localStorage.getItem("materialRecycleRecords") || "[]"));
-  expect(holders).toHaveLength(1);
+  expect(holders).toHaveLength(0);
   expect(recycles).toHaveLength(0);
+  const after = await page.evaluate(() => ({
+    request: JSON.parse(localStorage.getItem("materialRequests") || "[]")[0],
+    material: JSON.parse(localStorage.getItem("warehouseMaterials") || "[]")[0],
+    ledger: JSON.parse(localStorage.getItem("materialLedger") || "[]")
+  }));
+  expect(after.request.status || "pending").toBe("pending");
+  expect(after.material.availableQty).toBe(2);
+  expect(after.ledger).toHaveLength(0);
+  expect(dialogs.some(message => message.includes("需先归还同一员工的旧物"))).toBeTruthy();
   console.log("TEST exchange readback:", JSON.stringify({ request, holders, recycleRecords: recycles }));
   expect(errors).toEqual([]);
   expect(blocked).toEqual([]);
