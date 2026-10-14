@@ -57,6 +57,7 @@ test("TEST 调度在看板编辑中绑定独立排土管理人员", async ({ pag
   await page.goto(`${ORIGIN}/dispatch.html`, { waitUntil: "domcontentloaded" });
   const board = page.locator("#production-board");
   await expect(board.locator(".pb-tag")).toContainText("调度");
+  await expect(board.locator(".pb-tag")).toContainText("看板 V2.0.13");
   await board.locator('[data-action="toggle"]').click();
   await expect(board.locator(".pb-trip-summary")).toBeVisible();
   await board.locator('[data-action="edit"]').first().click();
