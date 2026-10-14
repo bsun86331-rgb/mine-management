@@ -69,7 +69,22 @@ test("TEST司机加油申请按范围门禁自动读取调度绑定并进入加�
   expect(alerts[0]).toContain("不在加油车加油范围");
   expect(await page.evaluate(() => JSON.parse(localStorage.getItem("fuelRequests") || "[]"))).toHaveLength(0);
 
-  await page.getByRole("button", { name: "测试进入范围" }).click();
+  await page.context().grantPermissions(["geolocation"], { origin: ORIGIN });
+  await page.context().setGeolocation({ latitude: 46, longitude: 106 });
+  await page.evaluate(() => localStorage.setItem("fuelStationConfig", JSON.stringify({ latitude: 46, longitude: 106, radius: 50, fuelTruckNumber: "TEST-FUEL-TRUCK" })));
+  await page.getByRole("button", { name: /开始定位/ }).click();
+  await expect(page.locator("#locationStatus")).toContainText("已进入加油车加油范围");
+  await expect(submit).toBeEnabled();
+  await page.context().setGeolocation({ latitude: 46.00046, longitude: 106 });
+  // The app requests maximumAge=5000, so wait past its allowed cache window
+  // before verifying the new virtual position rather than accepting stale GPS.
+  await page.waitForTimeout(5100);
+  await page.getByRole("button", { name: /开始定位/ }).click();
+  await expect(page.locator("#locationStatus")).toContainText("不在加油车加油范围");
+  await expect(submit).toBeDisabled();
+  await page.context().setGeolocation({ latitude: 46, longitude: 106 });
+  await page.getByRole("button", { name: /开始定位/ }).click();
+  await expect(page.locator("#locationStatus")).toContainText("已进入加油车加油范围");
   await expect(submit).toBeEnabled();
   await page.locator("#requestRemark").fill("TEST生产作业加油");
   await submit.click();
