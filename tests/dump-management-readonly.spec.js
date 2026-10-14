@@ -28,6 +28,25 @@ test("TEST排土管理人员看到已发布本班A组看板且只有查看权限
       { zoneId: "TEST-LOAD-001", name: "TEST装载区", zoneType: "loading", enabled: true, testFixture: true },
       { zoneId: "TEST-UNLOAD-WASTE", name: "TEST排土场", zoneType: "unloading", materialType: "渣", enabled: true, testFixture: true }
     ]));
+    const now = new Date();
+    const date = now.toISOString().slice(0, 10);
+    localStorage.setItem("mineProductionBoardV2", JSON.stringify({
+      schemaVersion: 2,
+      revision: 1,
+      schedule: { dayStart: "08:00", dayEnd: "20:00", nightStart: "20:00", nightEnd: "08:00" },
+      boards: {
+        [date + "|白班"]: {
+          id: "TEST-BOARD-DUMP-001", date, shift: "白班", published: true, version: 1,
+          groups: [{
+            id: "TEST-GROUP-DUMP-001", team: "A", excavatorId: "TEST-A-EX-001", excavatorDriverId: "TEST-A-EXD-001",
+            trucks: [1, 2, 3].map(index => ({ equipmentId: "TEST-A-T-00" + index, driverId: "TEST-A-D-00" + index })),
+            dumpManagementPeople: ["TEST-A-DUMP-MGR-001"], loadingZoneId: "TEST-LOAD-001", unloadingZoneIds: ["TEST-UNLOAD-WASTE"], material: "岩石"
+          }],
+          auxiliary: [], publishedAt: now.toISOString(), updatedAt: now.toISOString()
+        }
+      },
+      audit: []
+    }));
   });
   await page.goto(`${ORIGIN}/dump-management.html`, { waitUntil: "domcontentloaded" });
   const board = page.locator("#production-board");
@@ -39,7 +58,7 @@ test("TEST排土管理人员看到已发布本班A组看板且只有查看权限
   await expect(group).toContainText("TEST-A组排土管理01");
   await expect(group).toContainText("TEST排土场");
   await expect(board.locator('[data-action="edit"]')).toHaveCount(0);
-  expect(payload.productionBoardState.revision).toBe(1);
+  expect(JSON.parse(await page.evaluate(() => localStorage.getItem("mineProductionBoardV2"))).revision).toBe(1);
   expect(errors).toEqual([]);
   expect(blocked).toEqual([]);
 });
