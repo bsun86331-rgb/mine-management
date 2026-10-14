@@ -53,6 +53,24 @@ test("TEST 调度在看板编辑中绑定独立排土管理人员", async ({ pag
     const people = JSON.parse(localStorage.getItem("personnelRecords") || "[]");
     people.push({ personId: "TEST-A-D-007", employeeId: "TEST-A-D-007", employeeNo: "TEST-A-D-007", name: "TEST-A组汽车司机07", position: "汽车司机", team: "生产A组", status: "approved", approvalStatus: "approved", personnelStatus: "在职可用", testFixture: true });
     localStorage.setItem("personnelRecords", JSON.stringify(people));
+    const date = new Date().toISOString().slice(0, 10);
+    const groups = [1, 2].map(groupNo => ({
+      id: "TEST-A-GROUP-" + groupNo, team: "A",
+      excavatorId: `TEST-A-EX-00${groupNo}`, excavatorDriverId: `TEST-A-EXD-00${groupNo}`,
+      trucks: [1, 2, 3].map(index => {
+        const truckNo = (groupNo - 1) * 3 + index;
+        return { equipmentId: `TEST-A-T-00${truckNo}`, driverId: `TEST-A-D-00${truckNo}` };
+      }),
+      dumpManagementPeople: groupNo === 1 ? ["TEST-A-DUMP-MGR-001"] : [],
+      loadingZoneId: "TEST-LOAD-001", unloadingZoneIds: ["TEST-UNLOAD-WASTE"], material: "岩石"
+    }));
+    localStorage.setItem("mineProductionBoardV2", JSON.stringify({
+      schemaVersion: 2,
+      revision: 1,
+      schedule: { dayStart: "08:00", dayEnd: "20:00", nightStart: "20:00", nightEnd: "08:00" },
+      boards: { [date + "|白班"]: { id: "TEST-BOARD-A-001", date, shift: "白班", groups, auxiliary: [], published: true, version: 1, publishedAt: new Date().toISOString() } },
+      audit: []
+    }));
   });
   await page.goto(`${ORIGIN}/dispatch.html`, { waitUntil: "domcontentloaded" });
   const board = page.locator("#production-board");
@@ -99,7 +117,6 @@ test("TEST 调度在看板编辑中绑定独立排土管理人员", async ({ pag
   labels = await group.locator(".pb-pair > strong.pb-muted").allTextContents();
   expect(labels).toEqual(truckLabels);
   await board.locator('[data-action="publish"]').click();
-  console.log("TEST dump board publish result:", JSON.stringify(await page.evaluate(() => ({ text: document.querySelector('#production-board')?.innerText, state: JSON.parse(localStorage.getItem('mineProductionBoardV2') || 'null') }))));
   await expect(board.locator(".pb-trip-summary")).toBeVisible();
   await expect(board).toContainText("未分配一线人员（司机和排土管理）");
   const saved = await page.evaluate(() => JSON.parse(localStorage.getItem("mineProductionBoardV2")));
@@ -110,5 +127,3 @@ test("TEST 调度在看板编辑中绑定独立排土管理人员", async ({ pag
   expect(errors).toEqual([]);
   expect(blocked).toEqual([]);
 });
-
-
