@@ -142,6 +142,38 @@ test("TEST设备使用前异常检查到维修申请、派工和验收完整闭�
   await page.locator('[data-page="inspection"]').click();
   await expect(page.locator("#inspectionList")).toContainText("TEST-REPAIR-FULL-PICKUP");
   await page.locator("#inspectionList").getByRole("button", { name: "维修验收" }).click();
+  await page.locator("#inspectionRemark").fill("TEST试车发现制动距离仍偏长，请复查制动系统");
+  await page.getByRole("button", { name: "❌ 返修" }).click();
+  orders = await page.evaluate(() => JSON.parse(localStorage.getItem("maintenanceWorkOrders") || "[]"));
+  state = await page.evaluate(() => ({
+    bay: JSON.parse(localStorage.getItem("workshopBays") || "[]").find(row => row.bayId === "TEST-REPAIR-FULL-BAY"),
+    costs: JSON.parse(localStorage.getItem("maintenanceCosts") || "[]")
+  }));
+  expect(orders[0]).toMatchObject({ status: "rework", reworkReason: "TEST试车发现制动距离仍偏长，请复查制动系统" });
+  expect(state.bay.status).not.toBe("free");
+  expect(state.costs).toHaveLength(0);
+
+  await page.evaluate(() => { localStorage.setItem("currentPersonId", "TEST-REPAIR-FULL-WORKER"); localStorage.setItem("selectedPosition", "维修员"); });
+  await page.goto(`${ORIGIN}/maintenance-worker.html`, { waitUntil: "domcontentloaded" });
+  await page.locator('[data-page="working"]').click();
+  await expect(page.locator("#workingTaskList")).toContainText("TEST试车发现制动距离仍偏长，请复查制动系统");
+  await page.locator("#workingTaskList").getByRole("button", { name: "打开维修记录" }).click();
+  await expect(page.locator("#repairActionButtons")).toContainText("完成维修并提交验收");
+  await page.locator("#faultCause").fill("TEST刹车片磨损");
+  await page.locator("#repairProcess").fill("TEST复查制动总泵、排气并更换刹车片");
+  await page.locator("#actualRepairContent").fill("TEST复测制动系统通过");
+  await page.locator("#partsUsed").fill("TEST刹车片1套");
+  await page.locator("#afterPhotoInput").setInputFiles({ name: "rework-after.png", mimeType: "image/png", buffer: PNG });
+  await page.waitForFunction(() => typeof pendingAfterPhoto === "string" && pendingAfterPhoto.length > 0);
+  await page.getByRole("button", { name: "✅ 完成维修并提交验收" }).click();
+  orders = await page.evaluate(() => JSON.parse(localStorage.getItem("maintenanceWorkOrders") || "[]"));
+  expect(orders[0]).toMatchObject({ status: "waiting_inspection", reworkHistory: [expect.objectContaining({ actualRepairContent: "TEST复测制动系统通过" })] });
+
+  await page.evaluate(() => { localStorage.setItem("currentPersonId", "TEST-REPAIR-FULL-MANAGER"); localStorage.setItem("selectedPosition", "维修管理"); });
+  await page.goto(`${ORIGIN}/maintenance.html`, { waitUntil: "domcontentloaded" });
+  await page.locator('[data-page="inspection"]').click();
+  await expect(page.locator("#inspectionList")).toContainText("TEST-REPAIR-FULL-PICKUP");
+  await page.locator("#inspectionList").getByRole("button", { name: "维修验收" }).click();
   await page.getByRole("button", { name: /验收通过/ }).click();
   await expect(page.locator("#costModal")).toBeVisible();
   await page.locator("#laborCost").fill("100");
@@ -165,4 +197,5 @@ test("TEST设备使用前异常检查到维修申请、派工和验收完整闭�
   expect(errors).toEqual([]);
   expect(blocked).toEqual([]);
 });
+
 
