@@ -135,6 +135,12 @@ Purpose:
         penalty_records:
             "penaltyRecords",
 
+        reward_records:
+            "rewardRecords",
+
+        overtime_records:
+            "overtimeRecords",
+
         payroll_monthly_records:
             "payrollMonthlyRecords",
 
@@ -725,6 +731,8 @@ Purpose:
             "reading_id"
         ],
         penalty_records: ["penaltyId", "penalty_id"],
+        reward_records: ["rewardId", "reward_id"],
+        overtime_records: ["overtimeId", "overtime_id"],
         payroll_monthly_records: ["payrollId", "payroll_id"],
         material_requests: ["requestId", "request_id"],
         material_holders: ["holderId", "holder_id"],
