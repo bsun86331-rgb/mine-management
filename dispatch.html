@@ -2117,7 +2117,7 @@
             <p>Production Dispatch Center</p>
         </div>
 
-        <div class="dispatch-header-badge">📋 调度端 V2.14.0 · 共享生产看板</div>
+        <div class="dispatch-header-badge">📋 调度端 V2.14.1 · 共享生产看板</div>
     </div>
 </header>
 
@@ -2177,6 +2177,14 @@
                 <div>
                     <strong id="leaveTodoCount">0</strong>
                     <span>一线人员请假</span>
+                </div>
+            </button>
+
+            <button id="openZeroProductionReviewButton" class="todo-card" type="button" style="display:none;">
+                <span class="todo-icon">📝</span>
+                <div>
+                    <strong id="zeroProductionTodoCount">0</strong>
+                    <span>零产量报备审核</span>
                 </div>
             </button>
 
@@ -2871,6 +2879,15 @@
 <!-- =====================================================
      V2.10.6E 一线班组批量考勤确认
 ===================================================== -->
+<div id="zeroProductionReviewModal" class="dispatch-modal hidden">
+    <div class="dispatch-modal-card large-modal">
+        <h3>📝 零产量报备审核</h3>
+        <p class="attendance-review-note">司机提交后由车队长 / 调度审核。审核通过才计为完成；驳回后司机可补充说明并重新提交。</p>
+        <div id="zeroProductionReviewList"></div>
+        <button id="closeZeroProductionReviewModal" class="secondary-button full-button" type="button">关闭</button>
+    </div>
+</div>
+
 <div id="attendanceReviewModal" class="dispatch-modal hidden">
     <div class="dispatch-modal-card large-modal">
 
