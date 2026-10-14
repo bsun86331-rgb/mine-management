@@ -61,7 +61,10 @@ test("TEST 临时卸料经调度批准后只生成一趟正式运输记录", asy
   expect(requests[0]).toMatchObject({ taskId, driverId, vehicleNumber: vehicleId, status: "pending_dispatch", materialType: "渣", reason: "修路垫料" });
   expect(requests[0].requestId).toMatch(/^TEST-/);
 
-  await page.evaluate(() => { localStorage.setItem("currentPersonId", "TEST-A-DISPATCH-001"); localStorage.setItem("selectedPosition", "车队长"); });
+  await page.addInitScript(() => {
+    localStorage.setItem("currentPersonId", "TEST-A-DISPATCH-001");
+    localStorage.setItem("selectedPosition", "车队长");
+  });
   await page.goto(`${ORIGIN}/dispatch.html`, { waitUntil: "domcontentloaded" });
   await page.evaluate(() => {
     const original = window.temporaryUnloadTripId;
@@ -93,6 +96,10 @@ test("TEST 临时卸料经调度批准后只生成一趟正式运输记录", asy
 test("TEST 临时卸料被驳回时不增加正式趟数", async ({ page }) => {
   const blocked = [];
   await page.addInitScript(() => {
+    localStorage.setItem("personnelRecords", JSON.stringify([{
+      personId: "TEST-A-DISPATCH-001", employeeNo: "TEST-A-DISPATCH-001", name: "TEST调度员",
+      position: "车队长", status: "approved", approvalStatus: "approved", personnelStatus: "在职可用"
+    }]));
     localStorage.setItem("currentPersonId", "TEST-A-DISPATCH-001");
     localStorage.setItem("selectedPosition", "车队长");
     localStorage.setItem("temporaryUnloadRequests", JSON.stringify([{
@@ -134,3 +141,4 @@ test("TEST 临时卸料被驳回时不增加正式趟数", async ({ page }) => {
   expect(result.trips).toHaveLength(0);
   expect(blocked).toEqual([]);
 });
+
