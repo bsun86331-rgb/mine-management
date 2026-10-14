@@ -504,7 +504,7 @@
                 </h1>
 
                 <p>
-                    Fuel Request Center · V2.9.9C
+                    Fuel Request Center · V2.9.9D
                 </p>
 
             </div>
@@ -2980,6 +2980,15 @@ function renderPendingFuelRecords() {
             .map(
                 item => {
 
+                    const latestCorrection =
+                        Array.isArray(item.correctionHistory) && item.correctionHistory.length
+                            ? item.correctionHistory[item.correctionHistory.length - 1]
+                            : null;
+
+                    const correctionInfo = latestCorrection
+                        ? `<br>加油车核对：${Number(latestCorrection.amount || 0).toFixed(1)} L → ${Number(item.amount || 0).toFixed(1)} L<br>核对说明：${escapeHtml(item.correctionNote || latestCorrection.correctionNote || "-")}`
+                        : "";
+
                     const photoHtml =
                         item.photoData
                             ? `
@@ -3040,6 +3049,8 @@ function renderPendingFuelRecords() {
 
                             完成时间：
                             ${formatDateTime(item.completedAt)}
+
+                            ${correctionInfo}
 
                         </div>
 
