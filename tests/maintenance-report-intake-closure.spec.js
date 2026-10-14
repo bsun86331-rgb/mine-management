@@ -16,13 +16,18 @@ test("TEST司机统一维修上报保存工单、锁定设备并拦截重复申�
     localStorage.clear();
     sessionStorage.clear();
     const person = { personId: "TEST-REPORT-DRIVER", employeeNo: "TEST-REPORT-DRIVER", name: "TEST报修司机", position: "汽车司机", team: "生产A组", status: "approved", approvalStatus: "approved", personnelStatus: "在职可用" };
-    localStorage.setItem("personnelRecords", JSON.stringify([person]));
+    const dispatch = { personId: "TEST-REPORT-DISPATCH", employeeNo: "TEST-REPORT-DISPATCH", name: "TEST调度", position: "车队长", team: "管理组", status: "approved", approvalStatus: "approved", personnelStatus: "在职可用" };
+    const manager = { personId: "TEST-REPORT-MANAGER", employeeNo: "TEST-REPORT-MANAGER", name: "TEST维修管理", position: "维修管理", team: "维修组", status: "approved", approvalStatus: "approved", personnelStatus: "在职可用" };
+    const worker = { personId: "TEST-REPORT-WORKER", employeeNo: "TEST-REPORT-WORKER", name: "维修工01", position: "维修员", team: "维修组", status: "approved", approvalStatus: "approved", personnelStatus: "在职可用" };
+    localStorage.setItem("personnelRecords", JSON.stringify([person, dispatch, manager, worker]));
     localStorage.setItem("currentPersonId", person.personId);
     localStorage.setItem("selectedPosition", person.position);
     localStorage.setItem("equipmentRecords", JSON.stringify([{ equipmentId: "TEST-REPORT-TRUCK", equipmentNumber: "TEST-REPORT-TRUCK", equipmentType: "汽车", status: "available" }]));
     localStorage.setItem("maintenanceRequests", "[]");
     localStorage.setItem("equipmentOperationalStatus", "[]");
     localStorage.setItem("driverVehicleChangeRequests", JSON.stringify([{ requestId: "TEST-REPORT-LEGACY", status: "pending" }]));
+    localStorage.setItem("workshopBays", JSON.stringify([{ bayId: "TEST-REPORT-BAY", name: "TEST维修工位", status: "free" }]));
+    localStorage.setItem("maintenanceWorkOrders", "[]");
     localStorage.setItem("TEST-REPORT-SETUP", "done");
   });
   await page.route("**/*", async route => {
@@ -84,6 +89,41 @@ test("TEST司机统一维修上报保存工单、锁定设备并拦截重复申�
   }));
   expect(state.requests).toHaveLength(1);
   expect(state.operational.filter(row => row.equipmentId === "TEST-REPORT-TRUCK")).toHaveLength(1);
+  const submittedRequestId = state.requests[0].requestId;
+  await page.evaluate(() => {
+    localStorage.setItem("currentPersonId", "TEST-REPORT-DISPATCH");
+    localStorage.setItem("dispatchPersonId", "TEST-REPORT-DISPATCH");
+    localStorage.setItem("selectedPosition", "车队长");
+    const roles = JSON.parse(localStorage.getItem("rolePersonIds") || "{}");
+    roles["车队长"] = "TEST-REPORT-DISPATCH";
+    localStorage.setItem("rolePersonIds", JSON.stringify(roles));
+  });
+  await page.goto(ORIGIN + "/dispatch.html", { waitUntil: "domcontentloaded" });
+  await expect(page.locator("#maintenanceReviewTodoCount")).toHaveText("1");
+  await page.locator("#openMaintenanceReviewButton").click();
+  await expect(page.locator("#maintenanceReviewList")).toContainText("TEST-REPORT-TRUCK");
+  await page.getByRole("button", { name: "✅ 批准进厂" }).click();
+  state = await page.evaluate(() => JSON.parse(localStorage.getItem("maintenanceRequests") || "[]"));
+  expect(state.find(row => row.requestId === submittedRequestId)).toMatchObject({ status: "waiting_entry", dispatchStatus: "approved" });
+
+  await page.evaluate(() => {
+    localStorage.setItem("currentPersonId", "TEST-REPORT-MANAGER");
+    localStorage.setItem("selectedPosition", "维修管理");
+  });
+  await page.goto(ORIGIN + "/maintenance.html", { waitUntil: "domcontentloaded" });
+  await page.locator('[data-page="waiting"]').click();
+  await expect(page.locator("#waitingWorkshopList")).toContainText("TEST-REPORT-TRUCK");
+  await page.locator("#waitingWorkshopList").getByRole("button", { name: "确认车辆已进厂" }).click();
+  state = await page.evaluate(() => JSON.parse(localStorage.getItem("maintenanceRequests") || "[]"));
+  expect(state.find(row => row.requestId === submittedRequestId).status).toBe("waiting_assignment");
+  await page.locator("#assignmentList").getByRole("button", { name: "分配工位 / 维修工" }).click();
+  await page.locator("#assignmentBay").selectOption("TEST-REPORT-BAY");
+  await page.locator("#assignmentWorker").selectOption("维修工01");
+  await page.locator("#assignmentProject").fill("TEST刹车检查维修");
+  await page.getByRole("button", { name: "确认派工" }).click();
+  const orders = await page.evaluate(() => JSON.parse(localStorage.getItem("maintenanceWorkOrders") || "[]"));
+  expect(orders).toHaveLength(1);
+  expect(orders[0]).toMatchObject({ requestId: submittedRequestId, equipmentNumber: "TEST-REPORT-TRUCK", bayId: "TEST-REPORT-BAY", workerName: "维修工01", status: "assigned" });
   expect(errors).toEqual([]);
   expect(blocked).toEqual([]);
 });
