@@ -3408,6 +3408,12 @@ function startCurrentWork() {
             currentTask.shift ||
             "",
 
+        shiftDate:
+            currentTask.shiftDate ||
+            currentTask.productionDate ||
+            currentTask.date ||
+            "",
+
         work:
             currentTask.auxiliaryItem?.work ||
             currentTask.work ||
