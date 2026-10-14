@@ -34,6 +34,12 @@ test("TEST汽车司机能查看生产任务板但没有调度编辑入口", asyn
   await page.locator("dialog.pb-dialog").getByRole("button", { name: "关闭" }).click();
   const savedAfter = await page.evaluate(() => JSON.stringify(JSON.parse(localStorage.getItem("mineProductionBoardV2"))));
   expect(savedAfter).toBe(savedBefore);
+  await page.reload({ waitUntil: "domcontentloaded" });
+  const reloadedBoard = page.locator("#production-board");
+  await reloadedBoard.locator('[data-action="toggle"]').click();
+  await expect(reloadedBoard.locator(".pb-group").first()).toContainText("TEST-A组汽车司机01");
+  const savedAfterReload = await page.evaluate(() => JSON.stringify(JSON.parse(localStorage.getItem("mineProductionBoardV2"))));
+  expect(savedAfterReload).toBe(savedBefore);
   expect(await page.evaluate(() => window.ProductionBoardCore.canEdit({ personId: localStorage.getItem("currentPersonId") }, JSON.parse(localStorage.getItem("personnelRecords"))))).toBe(false);
   expect(payload.productionBoardState.revision).toBe(1);
   expect(errors).toEqual([]);
