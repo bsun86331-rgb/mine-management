@@ -373,10 +373,19 @@ function setOperationalMaintenance(equipmentId){
     const index=rows.findIndex(
         row=>String(row.equipmentId||"")===String(equipmentId)
     );
+    const current=index>=0?rows[index]:null;
+    const previousStatus=current?.status&&
+        !["maintenance","service"].includes(String(current.status))
+            ?String(current.status)
+            :current?.previousStatus&&
+                !["maintenance","service"].includes(String(current.previousStatus))
+                ?String(current.previousStatus)
+                :"available";
 
     const next={
         equipmentId:String(equipmentId),
         status:"maintenance",
+        previousStatus,
         source:"maintenance_request",
         updatedAt:new Date().toISOString()
     };
@@ -390,7 +399,20 @@ function setOperationalMaintenance(equipmentId){
     writeArray(STORAGE.OPERATIONAL_STATUS,rows);
 }
 
-function retireLegacyVehicleChanges(){
+function getEquipmentPreviousStatus(equipmentId){
+    const row=readArray(STORAGE.OPERATIONAL_STATUS).find(
+        item=>String(item.equipmentId||"")===String(equipmentId||"")
+    );
+    if(row?.status&&!["maintenance","service"].includes(String(row.status))){
+        return String(row.status);
+    }
+    if(row?.previousStatus&&!["maintenance","service"].includes(String(row.previousStatus))){
+        return String(row.previousStatus);
+    }
+    return "available";
+}
+
+function retireLegacyVehicleChanges(`
     const rows=readArray(STORAGE.LEGACY_CHANGE);
     let changed=false;
 
@@ -532,6 +554,7 @@ document
             }
 
             const now=new Date().toISOString();
+            const previousEquipmentStatus=getEquipmentPreviousStatus(equipmentNumber);
             const requestId=
                 "MR_"+Date.now()+"_"+Math.random().toString(36).slice(2,7);
 
@@ -560,6 +583,7 @@ document
                 description,
                 canMove,
                 photoData,
+                previousEquipmentStatus,
                 dispatchRequired:true,
                 dispatchStatus:"pending",
                 status:"pending_dispatch",
