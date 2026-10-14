@@ -1,12 +1,12 @@
 {
   "name": "mine-management-robot-tests",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "private": true,
   "scripts": {
     "robot:server": "node tests/robot-control-server.js",
     "test:robots": "playwright test",
     "test:robots:ui": "playwright test --ui",
-    "test:temporary-unload": "playwright test temporary-unload.spec.js",
+    "test:temporary-unload": "playwright test tests/temporary-unload-approval-smoke.spec.js",
     "data:server": "node tests/data-service-check-server.js"
   },
   "devDependencies": {
