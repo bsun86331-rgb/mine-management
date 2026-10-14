@@ -15,7 +15,10 @@ test("TEST司机的零产量报备是否要求车队长确认", async ({ page, c
   page.on("dialog", async dialog => { dialogs.push(dialog.message()); await dialog.accept(); });
   await page.addInitScript(() => {
     if (!localStorage.getItem("personnelRecords")) {
-      localStorage.setItem("personnelRecords", JSON.stringify([{ personId: "TEST-ZERO-001", employeeNo: "TEST-ZERO-001", name: "TEST汽车司机", position: "汽车司机", status: "approved", approvalStatus: "approved", department: "生产A组" }]));
+      localStorage.setItem("personnelRecords", JSON.stringify([
+        { personId: "TEST-ZERO-001", employeeNo: "TEST-ZERO-001", name: "TEST汽车司机", position: "汽车司机", status: "approved", approvalStatus: "approved", department: "生产A组" },
+        { personId: "TEST-ZERO-DISPATCH-001", employeeNo: "TEST-ZERO-DISPATCH-001", name: "TEST车队长", position: "车队长", status: "approved", approvalStatus: "approved", personnelStatus: "在职可用" }
+      ]));
       localStorage.setItem("currentPersonId", "TEST-ZERO-001");
       localStorage.setItem("selectedPosition", "汽车司机");
       localStorage.setItem("attendanceGeofenceConfig", JSON.stringify({ enabled: false, radiusMeters: 100, maxAccuracyMeters: 50, name: "TEST不限制围栏" }));
@@ -44,17 +47,33 @@ test("TEST司机的零产量报备是否要求车队长确认", async ({ page, c
   await expect.poll(() => dialogs.at(-1)).toContain("上班打卡成功");
   await expect(page.locator("#zeroProductionForm")).toBeVisible();
   await page.locator("#zeroReason").selectOption("设备故障");
-  await page.locator("#reporterName").fill("TEST司机自行填写的车队长姓名");
   await page.locator("#zeroRemark").fill("TEST设备故障等待维修，无运输趟次");
   await page.getByRole("button", { name: "提交报备" }).click();
-  await expect.poll(() => dialogs.at(-1)).toContain("零产量异常已完成报备");
+  await expect.poll(() => dialogs.at(-1)).toContain("已提交零产量异常，等待车队长 / 调度审核");
   const reports = await page.evaluate(() => JSON.parse(localStorage.getItem("zeroProductionReports") || "[]"));
   expect(reports).toHaveLength(1);
-  expect(reports[0]).toMatchObject({ personId: "TEST-ZERO-001", reporterName: "TEST司机自行填写的车队长姓名", status: "reported", reason: "设备故障" });
-  expect(reports[0].reportId).toBeTruthy();
+  expect(reports[0]).toMatchObject({ personId: "TEST-ZERO-001", reporterId: "TEST-ZERO-001", reporterName: "TEST汽车司机", status: "pending_review", reason: "设备故障", remark: "TEST设备故障等待维修，无运输趟次" });
   expect(reports[0].approverRole).toBeUndefined();
-  await expect(page.locator("#zeroProductionBadge")).toHaveText("已报备");
+  await expect(page.locator("#zeroProductionBadge")).toHaveText("待审核");
+
+  await page.addInitScript(() => {
+    localStorage.setItem("currentPersonId", "TEST-ZERO-DISPATCH-001");
+    localStorage.setItem("selectedPosition", "车队长");
+  });
+  await page.goto(`${ORIGIN}/dispatch.html`, { waitUntil: "domcontentloaded" });
+  await page.locator("#openZeroProductionReviewButton").click();
+  await expect(page.locator("#zeroProductionReviewList")).toContainText("TEST汽车司机");
+  await page.locator("#zeroProductionReviewList").getByRole("button", { name: "审核通过" }).click();
+  const approved = await page.evaluate(() => JSON.parse(localStorage.getItem("zeroProductionReports") || "[]"));
+  expect(approved[0]).toMatchObject({ status: "approved", reviewedBy: "TEST-ZERO-DISPATCH-001", reviewedByName: "TEST车队长", approverRole: "车队长" });
+  await page.addInitScript(() => {
+    localStorage.setItem("currentPersonId", "TEST-ZERO-001");
+    localStorage.setItem("selectedPosition", "汽车司机");
+  });
+  await page.goto(`${ORIGIN}/attendance.html`, { waitUntil: "domcontentloaded" });
+  await expect(page.locator("#zeroProductionBadge")).toHaveText("审核通过");
   expect(errors).toEqual([]);
   expect(blocked).toEqual([]);
 });
+
 
