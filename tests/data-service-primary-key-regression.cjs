@@ -2,7 +2,7 @@
 
 // Isolated regression probe for DataService primary-key selection.
 // It intentionally expects distinct business rows for one person/material to coexist.
-// Current GitHub snapshot is expected to fail the cases listed below; after the fix it must pass.
+// Regression invariant: distinct business rows with the same person/material must coexist.
 const fs = require("node:fs");
 const path = require("node:path");
 const vm = require("node:vm");
@@ -39,6 +39,8 @@ const cases = [
   ["equipment_checks", "checkId", { equipmentId:"TEST-TRUCK-1" }, { equipmentId:"TEST-TRUCK-2" }],
   ["equipment_meter_readings", "meterRecordId", { equipmentId:"TEST-TRUCK-1", reading:1 }, { equipmentId:"TEST-TRUCK-2", reading:2 }],
   ["penalty_records", "penaltyId", { amount:10 }, { amount:20 }],
+  ["reward_records", "rewardId", { amount:10 }, { amount:20 }],
+  ["overtime_records", "overtimeId", { hours:2 }, { hours:4 }],
   ["payroll_monthly_records", "payrollId", { month:"2026-09" }, { month:"2026-10" }],
   ["material_requests", "requestId", { materialId:"TEST-MAT-1" }, { materialId:"TEST-MAT-2" }],
   ["material_holders", "holderId", { materialId:"TEST-MAT-1" }, { materialId:"TEST-MAT-2" }],
