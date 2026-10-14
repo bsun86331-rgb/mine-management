@@ -27,9 +27,11 @@ test("TEST维修申请被调度驳回后保留原因且不进入修理厂", asyn
       requestId: "TEST-REPAIR-REJECT-001", maintenanceRequestId: "TEST-REPAIR-REJECT-001", source: "equipment_usage_check",
       equipmentId: "TEST-TRUCK-REJECT-001", equipmentNumber: "TEST-TRUCK-REJECT-001", equipmentType: "汽车",
       reportedById: "TEST-DRIVER-REJECT-001", reportedByName: "TEST司机", applicantName: "TEST司机",
+      previousEquipmentStatus: "disabled",
       status: "pending_dispatch", dispatchStatus: "pending", dispatchRequired: true, maintenanceType: "故障维修",
       description: "TEST转向异常", createdAt: new Date().toISOString(), testFixture: true
     }]));
+    localStorage.setItem("equipmentOperationalStatus", JSON.stringify([{ equipmentId: "TEST-TRUCK-REJECT-001", status: "maintenance", previousStatus: "disabled", testFixture: true }]));
     localStorage.setItem("maintenanceWorkOrders", "[]");
   });
   await page.route("**/*", async route => {
@@ -59,6 +61,7 @@ test("TEST维修申请被调度驳回后保留原因且不进入修理厂", asyn
   let request = await page.evaluate(() => JSON.parse(localStorage.getItem("maintenanceRequests"))[0]);
   expect(request).toMatchObject({ status: "rejected", dispatchStatus: "rejected", dispatchRejectReason: "TEST设备无法安全运行，补充检查后再申请" });
   expect(await page.evaluate(() => JSON.parse(localStorage.getItem("maintenanceWorkOrders") || "[]"))).toHaveLength(0);
+  expect(await page.evaluate(() => JSON.parse(localStorage.getItem("equipmentOperationalStatus") || "[]")[0])).toMatchObject({ status: "disabled", previousStatus: "", source: "maintenance_dispatch_rejected" });
 
   request = await page.evaluate(() => JSON.parse(localStorage.getItem("maintenanceRequests"))[0]);
   expect(request).toMatchObject({ status: "rejected", dispatchStatus: "rejected", dispatchRejectReason: "TEST设备无法安全运行，补充检查后再申请" });
