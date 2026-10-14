@@ -454,7 +454,7 @@
     <div class="header-inner">
         <div>
             <h1>📍 全员定位考勤中心</h1>
-            <p>Attendance Center · V2.10.2I</p>
+            <p>Attendance Center · V2.10.2J</p>
         </div>
 
         <button type="button" class="header-btn" onclick="goHome()">首页</button>
@@ -676,7 +676,7 @@
 </main>
 
 <footer>
-    矿山管理系统 · 全员定位考勤中心 V2.10.2I
+    矿山管理系统 · 全员定位考勤中心 V2.10.2J
 </footer>
 
 <script src="js/data-service.js"></script>
@@ -2194,7 +2194,17 @@ function submitZeroProductionReport() {
     }
 
     const records = readArray(STORAGE.ZERO_REPORTS);
-    const existing = getTodayZeroReport();
+    const personId = getPersonId(currentPerson);
+    const reportDate = today();
+    /*
+     * 更新待重报记录时必须直接取自即将保存的 records 数组。
+     * getTodayZeroReport() 会从 localStorage 重新解析并返回独立对象，
+     * 修改该对象不会影响这里保存的数组，导致“提示提交成功但状态仍为已驳回”。
+     */
+    const existing = records.find(item =>
+        String(item.personId || "") === personId &&
+        item.date === reportDate
+    ) || null;
 
     if (existing && existing.status !== "rejected") {
         alert(
@@ -2207,12 +2217,12 @@ function submitZeroProductionReport() {
 
     const now = new Date().toISOString();
     const payload = {
-        personId: getPersonId(currentPerson),
+        personId,
         personName: currentPerson.name || "",
         position: normalizePosition(currentPerson.position),
         reporterId: getPersonId(currentPerson),
         reporterName: currentPerson.name || "",
-        date: today(),
+        date: reportDate,
         reason,
         remark,
         status: "pending_review",
