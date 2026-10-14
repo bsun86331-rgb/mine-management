@@ -78,15 +78,14 @@ test("TEST 汽车司机运输一趟渣后，生产看板只计一趟", async ({ 
     expect(canonicalTrips[0].tripId).toBe(driverTrips[0].tripId);
     expect(canonicalTrips[0].materialType).toBe("渣");
     expect(canonicalTrips[0].unloadingZoneId).toBe("TEST-UNLOAD-WASTE");
-
-    await page.goto(TEST_ORIGIN + "/dispatch.html", { waitUntil: "domcontentloaded" });
+    await page.goto(TEST_ORIGIN + "/driver-work.html", { waitUntil: "domcontentloaded" });
     await page.locator('#production-board [data-action="toggle"]').click();
 
     const board = page.locator("#production-board");
     await expect(board).toContainText(/当日总趟数\s*1/);
     await expect(board).toContainText(/A组总趟数\s*1/);
     await expect(board).toContainText(/A组渣总趟数\s*1/);
-    await expect(board).toContainText("排土管理 1 人");
+    await expect(board).toContainText("排土管理 0 人");
     expect(await board.locator('[data-action="edit"]').count()).toBe(0);
 
     await page.evaluate(() => {
@@ -101,3 +100,8 @@ test("TEST 汽车司机运输一趟渣后，生产看板只计一趟", async ({ 
     expect(pageErrors).toEqual([]);
     expect(blockedRequests).toEqual([]);
 });
+
+
+
+
+
