@@ -2781,7 +2781,7 @@
     color:#94a3b8;
     font-size:12px;
 ">
-    矿山管理系统 · 管理员审核中心 V2.11.0K
+    矿山管理系统 · 管理员审核中心 V2.11.0L
 </footer>
 
 
@@ -17071,6 +17071,10 @@ document.addEventListener(
 
         // team 是唯一正式班组字段；只有管理员审核通过后才修改。
         person.team = toTeam;
+        // department 兼容字段只在为空或仍指向旧班组时同步，避免工作端显示旧班组。
+        if (!person.department || normalizeTeam(person.department) === fromTeam) {
+            person.department = toTeam;
+        }
         person.updatedAt = now;
         person.teamUpdatedAt = now;
         person.teamUpdatedBy = admin.name;
