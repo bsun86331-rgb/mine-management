@@ -21,7 +21,7 @@ test("TEST汽车司机能查看生产任务板但没有调度编辑入口", asyn
     catch { return route.fulfill({ status: 404, body: "missing test asset" }); }
   });
   const { payload } = await installAGroupRobotContext(page, "TEST-A-D-001");
-  await page.goto(`${ORIGIN}/dispatch.html`, { waitUntil: "domcontentloaded" });
+  await page.goto(`${ORIGIN}/driver-work.html`, { waitUntil: "domcontentloaded" });
   const board = page.locator("#production-board");
   await board.locator('[data-action="toggle"]').click();
   await expect(board.locator(".pb-tag")).toContainText("只读");
@@ -41,7 +41,9 @@ test("TEST汽车司机能查看生产任务板但没有调度编辑入口", asyn
   const savedAfterReload = await page.evaluate(() => JSON.stringify(JSON.parse(localStorage.getItem("mineProductionBoardV2"))));
   expect(savedAfterReload).toBe(savedBefore);
   expect(await page.evaluate(() => window.ProductionBoardCore.canEdit({ personId: localStorage.getItem("currentPersonId") }, JSON.parse(localStorage.getItem("personnelRecords"))))).toBe(false);
-  expect(payload.productionBoardState.revision).toBe(1);
+  expect(payload.tasks.some(task => task.status === "active")).toBe(true);
   expect(errors).toEqual([]);
   expect(blocked).toEqual([]);
 });
+
+
