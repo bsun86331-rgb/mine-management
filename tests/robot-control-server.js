@@ -16697,6 +16697,99 @@ async function runAGroupProductionClosedLoop() {
         );
 
 
+        await dispatchPage.addInitScript(
+            groups => {
+
+                const now =
+                    new Date();
+
+                const pad =
+                    value =>
+                        String(value)
+                            .padStart(2, "0");
+
+                const dateKey =
+                    value =>
+                        value.getFullYear() +
+                        "-" +
+                        pad(value.getMonth() + 1) +
+                        "-" +
+                        pad(value.getDate());
+
+                const schedule = {
+                    dayStart: "08:00",
+                    dayEnd: "20:00",
+                    nightStart: "20:00",
+                    nightEnd: "08:00"
+                };
+
+                const minutes =
+                    now.getHours() * 60 +
+                    now.getMinutes();
+
+                const productionDate =
+                    new Date(now);
+
+                if (minutes < 8 * 60) {
+                    productionDate.setDate(
+                        productionDate.getDate() - 1
+                    );
+                }
+
+                const shift =
+                    minutes >= 8 * 60 && minutes < 20 * 60
+                        ? "白班"
+                        : "夜班";
+
+                const date =
+                    dateKey(productionDate);
+
+                const slotKey =
+                    date + "|" + shift;
+
+                const board = {
+                    id: "TEST-A-BOARD-" + date + "-" + shift,
+                    date,
+                    shift,
+                    groups,
+                    auxiliary: [],
+                    published: true,
+                    version: 1,
+                    publishedAt: now.toISOString(),
+                    updatedAt: now.toISOString()
+                };
+
+                localStorage.setItem(
+                    "mineProductionBoardV2",
+                    JSON.stringify({
+                        schemaVersion: 2,
+                        revision: 1,
+                        schedule,
+                        boards: {
+                            [slotKey]: board
+                        },
+                        audit: []
+                    })
+                );
+            },
+            A_GROUP.excavators.map(
+                (unit, index) => ({
+                    id: "TEST-A-BOARD-GROUP-" + (index + 1),
+                    team: "A",
+                    excavatorId: unit.excavatorId,
+                    excavatorDriverId: unit.driverId,
+                    trucks: unit.trucks.map(truck => ({
+                        equipmentId: truck.vehicleId,
+                        driverId: truck.driverId
+                    })),
+                    dumpManagementPeople: [],
+                    loadingZoneId: "TEST-A-LOAD-001",
+                    unloadingZoneIds: ["TEST-A-DUMP-001"]
+                })
+            )
+        );
+
+
         await dispatchPage.goto(
             "dispatch.html",
             {
@@ -16711,30 +16804,46 @@ async function runAGroupProductionClosedLoop() {
         );
 
 
-        const dispatchTotal =
-            Number(
-                (
-                    await dispatchPage
-                        .locator(
-                            "#dispatchTodayTotalTrips"
+        const productionBoard =
+            dispatchPage.locator(
+                "#production-board"
+            );
+
+
+        await productionBoard
+            .locator(
+                '[data-action="toggle"]'
+            )
+            .click();
+
+
+        const dispatchMetrics =
+            await productionBoard
+                .locator(
+                    ".pb-trip-summary .pb-metric"
+                )
+                .evaluateAll(
+                    metrics =>
+                        Object.fromEntries(
+                            metrics.map(metric => [
+                                metric.querySelector("span")?.textContent.trim(),
+                                Number(
+                                    metric.querySelector("strong")?.textContent ||
+                                    0
+                                )
+                            ])
                         )
-                        .textContent()
-                ) ||
-                "0"
-            ) || 0;
+                );
+
+
+        const dispatchTotal =
+            dispatchMetrics["当日总趟数"] ||
+            0;
 
 
         const dispatchWaste =
-            Number(
-                (
-                    await dispatchPage
-                        .locator(
-                            "#dispatchTodayWasteTrips"
-                        )
-                        .textContent()
-                ) ||
-                "0"
-            ) || 0;
+            dispatchMetrics["A组渣总趟数"] ||
+            0;
 
 
         if (
@@ -16743,7 +16852,7 @@ async function runAGroupProductionClosedLoop() {
         ) {
 
             throw new Error(
-                "A组生产联动：调度总趟数不一致，预期=6；实际=" +
+                "A组生产联动：调度看板总趟数不一致，预期=6；实际=" +
                 dispatchTotal
             );
         }
@@ -16755,8 +16864,22 @@ async function runAGroupProductionClosedLoop() {
         ) {
 
             throw new Error(
-                "A组生产联动：调度渣趟数不一致，预期=6；实际=" +
+                "A组生产联动：调度看板A组渣趟数不一致，预期=6；实际=" +
                 dispatchWaste
+            );
+        }
+
+
+        if (
+            dispatchMetrics["A组总趟数"] !== 6 ||
+            dispatchMetrics["B组总趟数"] !== 0 ||
+            dispatchMetrics["A组煤总趟数"] !== 0 ||
+            dispatchMetrics["B组渣总趟数"] !== 0
+        ) {
+
+            throw new Error(
+                "A组生产联动：A/B及煤/渣看板分项不一致，实际=" +
+                JSON.stringify(dispatchMetrics)
             );
         }
 
