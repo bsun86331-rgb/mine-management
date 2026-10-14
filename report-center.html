@@ -1581,7 +1581,7 @@
                 </div>
 
                 <div class="summary-box">
-                    <span>零产量待报备</span>
+                    <span>零产量待处理</span>
                     <strong id="attendanceDayZeroPending">0</strong>
                 </div>
             </div>
@@ -1598,12 +1598,12 @@
                 </div>
 
                 <div class="summary-box">
-                    <span>本月零产量已报备</span>
+                    <span>本月零产量审核通过</span>
                     <strong id="attendanceMonthZeroReported">0</strong>
                 </div>
 
                 <div class="summary-box">
-                    <span>本月零产量未报备</span>
+                    <span>本月零产量待处理</span>
                     <strong id="attendanceMonthZeroPending">0</strong>
                 </div>
             </div>
@@ -1744,7 +1744,7 @@
 </main>
 
 <footer>
-    矿山管理系统 · 综合报表中心 V2.10.5
+    矿山管理系统 · 综合报表中心 V2.10.6
 </footer>
 
 <script src="js/data-service.js"></script>
@@ -7698,9 +7698,12 @@ function renderAttendance() {
                 &&
                 productionCount === 0;
 
+            const zeroApproved =
+                zeroReport?.status === "approved";
+
             if (
                 zeroNeeded &&
-                !zeroReport
+                !zeroApproved
             ) {
                 dayZeroPending +=
                     1;
@@ -7710,10 +7713,15 @@ function renderAttendance() {
                 "-";
 
             if (zeroNeeded) {
-                zeroStatus =
-                    zeroReport
-                        ? "已报备"
-                        : "待报备";
+                if (zeroApproved) {
+                    zeroStatus = "审核通过";
+                } else if (zeroReport?.status === "rejected") {
+                    zeroStatus = "已驳回，待重新报备";
+                } else if (zeroReport) {
+                    zeroStatus = "待审核";
+                } else {
+                    zeroStatus = "待报备";
+                }
             }
 
             return {
@@ -7812,10 +7820,11 @@ function renderAttendance() {
                         record.date
                     );
 
-                if (report) {
+                if (report?.status === "approved") {
                     monthZeroReported +=
                         1;
                 } else {
+                    /* 提交/旧版reported/驳回均未完成审核闭环。 */
                     monthZeroPending +=
                         1;
                 }
