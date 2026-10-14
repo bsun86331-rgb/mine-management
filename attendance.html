@@ -543,7 +543,7 @@
         <div class="section-title">
             <div>
                 <h2>⚠️ 零产量异常报备</h2>
-                <p>有有效考勤但当天生产数量为 0 的生产人员，需要由车队长说明原因。</p>
+                <p>有有效考勤但当天生产数量为 0 的生产人员可自行提交说明；由车队长 / 调度审核通过后才算完成。</p>
             </div>
 
             <span id="zeroProductionBadge" class="badge gray">无需报备</span>
@@ -568,8 +568,8 @@
                 </div>
 
                 <div class="form-group">
-                    <label>报备人</label>
-                    <input id="reporterName" type="text" placeholder="车队长姓名">
+                    <label>提交人（自动读取当前身份）</label>
+                    <input id="reporterName" type="text" readonly>
                 </div>
             </div>
 
@@ -676,7 +676,7 @@
 </main>
 
 <footer>
-    矿山管理系统 · 全员定位考勤中心 V2.10.2G
+    矿山管理系统 · 全员定位考勤中心 V2.10.2H
 </footer>
 
 <script src="js/data-service.js"></script>
@@ -2090,6 +2090,7 @@ function renderZeroProduction(record, productionCount, leaveActive) {
     const form = document.getElementById("zeroProductionForm");
     const result = document.getElementById("zeroProductionResult");
     const badge = document.getElementById("zeroProductionBadge");
+    const reporterInput = document.getElementById("reporterName");
 
     const needsReport =
         isProductionPosition() &&
@@ -2099,17 +2100,56 @@ function renderZeroProduction(record, productionCount, leaveActive) {
 
     const existingReport = getTodayZeroReport();
 
-    if (existingReport) {
+    if (reporterInput) {
+        reporterInput.value = currentPerson?.name || "";
+    }
+
+    if (existingReport?.status === "approved") {
         form.style.display = "none";
         result.style.display = "block";
         result.innerHTML = `
-            已完成报备：<strong>${escapeHtml(existingReport.reason || "-")}</strong><br>
-            报备人：${escapeHtml(existingReport.reporterName || "-")}<br>
+            审核通过：<strong>${escapeHtml(existingReport.reason || "-")}</strong><br>
+            提交人：${escapeHtml(existingReport.reporterName || currentPerson?.name || "-")}<br>
+            审核人：${escapeHtml(existingReport.reviewedByName || "-")}<br>
             说明：${escapeHtml(existingReport.remark || "-")}
         `;
-
-        badge.textContent = "已报备";
+        badge.textContent = "审核通过";
         badge.className = "badge green";
+        return;
+    }
+
+    if (
+        existingReport &&
+        ["pending_review", "reported"].includes(String(existingReport.status || ""))
+    ) {
+        form.style.display = "none";
+        result.style.display = "block";
+        result.innerHTML = `
+            已提交，等待车队长 / 调度审核：<strong>${escapeHtml(existingReport.reason || "-")}</strong><br>
+            提交人：${escapeHtml(existingReport.reporterName || currentPerson?.name || "-")}<br>
+            说明：${escapeHtml(existingReport.remark || "-")}
+        `;
+        badge.textContent = "待审核";
+        badge.className = "badge yellow";
+        return;
+    }
+
+    if (existingReport?.status === "rejected") {
+        result.style.display = "block";
+        result.innerHTML = `
+            报备被驳回：${escapeHtml(existingReport.reviewReason || "请补充说明后重新提交")}<br>
+            上次说明：${escapeHtml(existingReport.remark || "-")}
+        `;
+        badge.textContent = "已驳回";
+        badge.className = "badge red";
+
+        if (needsReport) {
+            form.style.display = "block";
+            document.getElementById("zeroReason").value = existingReport.reason || "";
+            document.getElementById("zeroRemark").value = existingReport.remark || "";
+        } else {
+            form.style.display = "none";
+        }
         return;
     }
 
@@ -2127,6 +2167,7 @@ function renderZeroProduction(record, productionCount, leaveActive) {
     }
 }
 
+
 function getTodayZeroReport() {
     const personId = getPersonId(currentPerson);
     const date = today();
@@ -2140,16 +2181,10 @@ function getTodayZeroReport() {
 
 function submitZeroProductionReport() {
     const reason = document.getElementById("zeroReason").value;
-    const reporterName = document.getElementById("reporterName").value.trim();
     const remark = document.getElementById("zeroRemark").value.trim();
 
     if (!reason) {
         alert("请选择报备原因。");
-        return;
-    }
-
-    if (!reporterName) {
-        alert("请输入报备人姓名。");
         return;
     }
 
@@ -2159,19 +2194,58 @@ function submitZeroProductionReport() {
     }
 
     const records = readArray(STORAGE.ZERO_REPORTS);
+    const existing = getTodayZeroReport();
 
-    records.push({
-        reportId: "ZERO_" + Date.now() + "_" + Math.random().toString(36).slice(2, 7),
+    if (existing && existing.status !== "rejected") {
+        alert(
+            existing.status === "approved"
+                ? "该日期的零产量报备已审核通过。"
+                : "该日期已有零产量报备等待审核。"
+        );
+        return;
+    }
+
+    const now = new Date().toISOString();
+    const payload = {
         personId: getPersonId(currentPerson),
         personName: currentPerson.name || "",
         position: normalizePosition(currentPerson.position),
+        reporterId: getPersonId(currentPerson),
+        reporterName: currentPerson.name || "",
         date: today(),
         reason,
-        reporterName,
         remark,
-        status: "reported",
-        createdAt: new Date().toISOString()
-    });
+        status: "pending_review",
+        submittedAt: now,
+        updatedAt: now
+    };
+
+    if (existing) {
+        existing.reviewHistory = Array.isArray(existing.reviewHistory)
+            ? existing.reviewHistory
+            : [];
+        existing.reviewHistory.push({
+            status: existing.status,
+            reviewReason: existing.reviewReason || "",
+            reviewedBy: existing.reviewedBy || "",
+            reviewedByName: existing.reviewedByName || "",
+            reviewedAt: existing.reviewedAt || ""
+        });
+        Object.assign(existing, payload);
+        delete existing.reviewReason;
+        delete existing.reviewedBy;
+        delete existing.reviewedByName;
+        delete existing.reviewedAt;
+        delete existing.approverRole;
+    } else {
+        payload.reportId =
+            "ZERO_" +
+            Date.now() +
+            "_" +
+            Math.random().toString(36).slice(2, 7);
+        payload.createdAt = now;
+        records.push(payload);
+    }
 
     saveArray(STORAGE.ZERO_REPORTS, records);
 
@@ -2179,7 +2253,10 @@ function submitZeroProductionReport() {
     renderHistory();
     renderAttendanceLedger();
 
-    alert("零产量异常已完成报备。");
+    document.getElementById("zeroReason").value = "";
+    document.getElementById("zeroRemark").value = "";
+
+    alert("已提交零产量异常，等待车队长 / 调度审核。");
 }
 
 
