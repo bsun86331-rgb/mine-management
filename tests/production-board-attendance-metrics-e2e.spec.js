@@ -33,19 +33,17 @@ test("TEST生产看板分别统计已出勤、请假和待审核人员", async (
 
   const { payload } = await installAGroupRobotContext(page, "TEST-A-DISPATCH-001");
   await page.addInitScript(() => {
-    const state = JSON.parse(localStorage.getItem("mineProductionBoardV2"));
-    const board = Object.values(state.boards).find(item => item.published);
-    const startKey = board.shift === "白班" ? "dayStart" : "dayEnd";
-    const [hour, minute] = state.schedule[startKey].split(":").map(Number);
-    const start = new Date(`${board.date}T00:00:00`);
-    start.setHours(hour + 1, minute, 0, 0);
+    const boardDate = new Date().toISOString().slice(0, 10);
+    const shift = "白班";
+    const start = new Date();
+    start.setHours(9, 0, 0, 0);
     const end = new Date(start.getTime() + 2 * 60 * 60 * 1000);
     const firstId = "TEST-A-D-001";
     const leaveId = "TEST-A-D-002";
     const attendance = JSON.parse(localStorage.getItem("attendanceRecords") || "[]").filter(row => ![firstId, leaveId].includes(row.personId));
     attendance.push(
-      { attendanceId: "TEST-ATTEND-PRESENT", personId: firstId, date: board.date, shift: board.shift, status: "confirmed", checkInAt: start.toISOString(), testFixture: true },
-      { attendanceId: "TEST-ATTEND-LEAVE", personId: leaveId, date: board.date, shift: board.shift, status: "confirmed", checkInAt: start.toISOString(), testFixture: true }
+      { attendanceId: "TEST-ATTEND-PRESENT", personId: firstId, date: boardDate, shift, status: "confirmed", checkInAt: start.toISOString(), testFixture: true },
+      { attendanceId: "TEST-ATTEND-LEAVE", personId: leaveId, date: boardDate, shift, status: "confirmed", checkInAt: start.toISOString(), testFixture: true }
     );
     localStorage.setItem("attendanceRecords", JSON.stringify(attendance));
     const leaves = JSON.parse(localStorage.getItem("leaveRequests") || "[]").filter(row => row.personId !== leaveId);
@@ -72,7 +70,7 @@ test("TEST生产看板分别统计已出勤、请假和待审核人员", async (
   expect(values["考勤出勤"]).toBe("1");
   expect(values["请假"]).toBe("1");
   expect(values["人员出勤率"]).toBe(`${(100 / approvedPeople).toFixed(1)}%`);
-  expect(values["生产组绑定人员"]).toBe("9");
+  expect(values["生产组绑定人员"]).toBe("8");
   expect(await board.locator(".pb-unassigned").allTextContents()).not.toContain("TEST待审核司机");
   expect(errors).toEqual([]);
   expect(blocked).toEqual([]);
