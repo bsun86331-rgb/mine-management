@@ -412,7 +412,7 @@ function getEquipmentPreviousStatus(equipmentId){
     return "available";
 }
 
-function retireLegacyVehicleChanges(`
+function retireLegacyVehicleChanges(){
     const rows=readArray(STORAGE.LEGACY_CHANGE);
     let changed=false;
 
