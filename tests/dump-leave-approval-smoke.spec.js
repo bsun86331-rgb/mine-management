@@ -47,6 +47,7 @@ test("TEST 调度可审核排土管理请假", async ({ page }) => {
   });
 
   await page.goto(`${ORIGIN}/dispatch.html`, { waitUntil: "domcontentloaded" });
+  await expect(page.locator(".dispatch-header-badge")).toContainText("V2.14.0");
   await page.locator("#openLeaveReviewButton").click();
   const modal = page.locator("#leaveReviewModal");
   await expect(modal).toBeVisible();
