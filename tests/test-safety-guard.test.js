@@ -5,7 +5,8 @@ const {
   assertTestId,
   assertTestIds,
   assertTestRecord,
-  assertSafeWrite
+  assertSafeWrite,
+  assertSafeCommand
 } = require("./test-safety-guard");
 
 test("TEST安全守卫接受合法TEST标识并规范空格", () => {
@@ -32,4 +33,15 @@ test("TEST安全守卫只允许白名单写入动作和TEST目标", () => {
   expect(assertSafeWrite("complete", "TEST-TRIP-001")).toEqual({ action: "complete", targetId: "TEST-TRIP-001" });
   expect(() => assertSafeWrite("complete", "REAL-TRIP-001")).toThrow(/禁止操作非 TEST 数据/);
   expect(() => assertSafeWrite("execute-arbitrary-code", "TEST-TRIP-001")).toThrow(/未知机器人写入动作/);
+});
+
+test("机器人命令安全检查接受完整TEST业务ID", () => {
+  expect(assertSafeCommand("开始处理 TEST-TRIP-001 和 TEST-TASK-001")).toBe(true);
+  expect(assertSafeCommand("TEST-EQUIPMENT-001 检查后交给 TEST-DRIVER-001")).toBe(true);
+});
+
+test("机器人命令安全检查拒绝正式业务ID和TEST/正式混合命令", () => {
+  expect(() => assertSafeCommand("处理 TRIP-001")).toThrow(/禁止操作非 TEST 数据/);
+  expect(() => assertSafeCommand("处理 REAL-TRIP-001")).toThrow(/禁止操作非 TEST 数据/);
+  expect(() => assertSafeCommand("完成 TEST-TRIP-001，再删除 DRIVER-002")).toThrow(/禁止操作非 TEST 数据/);
 });
