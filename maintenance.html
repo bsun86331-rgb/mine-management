@@ -565,7 +565,7 @@ body.dispatch-board-readonly .dispatch-board-notice {
             </h1>
 
             <p>
-                Workshop Maintenance · V2.10.3E
+                Workshop Maintenance · V2.10.3F
             </p>
 
         </div>
@@ -1712,7 +1712,7 @@ body.dispatch-board-readonly .dispatch-board-notice {
 
 <footer>
 
-矿山管理系统 · 修理厂维修管理 V2.10.3E
+矿山管理系统 · 修理厂维修管理 V2.10.3F
 
 </footer>
 
@@ -6010,6 +6010,32 @@ function syncEquipmentMasterStatus(
                 ) {
 
                     item.equipmentStatus =
+                        status;
+
+                    changed =
+                        true;
+                }
+
+                if (
+                    "currentStatus" in
+                        item
+                ) {
+
+                    const currentStatusLabels = {
+                        available: "可用",
+                        working: "作业中",
+                        maintenance: "维修中",
+                        service: "保养中",
+                        disabled: "停用"
+                    };
+
+                    const normalizedStatus =
+                        String(status || "")
+                            .trim()
+                            .toLowerCase();
+
+                    item.currentStatus =
+                        currentStatusLabels[normalizedStatus] ||
                         status;
 
                     changed =
