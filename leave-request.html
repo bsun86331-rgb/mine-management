@@ -156,7 +156,7 @@ footer{padding:18px;text-align:center;color:#94a3b8;font-size:12px}
   </section>
 </main>
 
-<footer>矿山管理系统 · 全员统一请假申请中心 V1.0</footer>
+<footer>矿山管理系统 · 统一请假申请 V1.0.1</footer>
 
 <script src="js/data-service.js"></script>
 <script>
@@ -187,6 +187,12 @@ function normalizePosition(position){
     "装载机操作手":"铲车司机",
     "大巴":"大巴司机",
     "调度员":"调度",
+    "测量人员":"测量员",
+    "安全人员":"安全员",
+    "统计员":"统计",
+    "财务":"会计",
+    "会计员":"会计",
+    "后勤人员":"后勤",
     "库房管理员":"库房管理",
     "维修管理员":"维修管理",
     "修理厂管理员":"维修管理",
@@ -238,8 +244,9 @@ function verifyAccess(){
 function isManagementPosition(position){
   const p=normalizePosition(position);
   return [
-    "车队长","调度","中层管理","库房管理","维修管理",
-    "安全管理","技术管理","管理员"
+    "车队长","调度","中层管理",
+    "测量员","安全员","统计","会计","后勤",
+    "库房管理","维修管理","安全管理","技术管理","管理员"
   ].includes(p);
 }
 
