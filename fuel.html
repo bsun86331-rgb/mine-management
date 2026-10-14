@@ -643,7 +643,7 @@
                 </h1>
 
                 <p>
-                    Fuel Truck Management · V2.10.0N
+                    Fuel Truck Management · V2.10.0O
                 </p>
 
             </div>
@@ -2672,6 +2672,78 @@ function rejectFuelRecord(
 
 
 
+function correctRejectedFuelRecord(
+    fuelId
+) {
+    const records = getFuelRecords();
+    const item = records.find(
+        record => record.fuelId === fuelId
+    );
+
+    if (!item || item.confirmationStatus !== "rejected") {
+        alert("只能核对并更正已被司机驳回的加油记录。");
+        return;
+    }
+
+    const amountText = prompt(
+        "请核对实际加油量（升），允许填写 0：",
+        String(Number(item.amount || 0))
+    );
+
+    if (amountText === null || !String(amountText).trim()) {
+        return;
+    }
+
+    const correctedAmount = Number(amountText);
+
+    if (!Number.isFinite(correctedAmount) || correctedAmount < 0) {
+        alert("核对后的加油量必须是大于或等于 0 的有效数字。");
+        return;
+    }
+
+    const correctionNote = prompt(
+        "请填写核对说明（例如现场复核数量或未实际加油）："
+    );
+
+    if (correctionNote === null || !correctionNote.trim()) {
+        return;
+    }
+
+    item.correctionHistory = Array.isArray(item.correctionHistory)
+        ? item.correctionHistory
+        : [];
+
+    item.correctionHistory.push({
+        amount: Number(item.amount || 0),
+        confirmationStatus: item.confirmationStatus,
+        rejectReason: item.rejectReason || "",
+        rejectedAt: item.rejectedAt || "",
+        correctedAt: new Date().toISOString(),
+        correctedAmount,
+        correctionNote: correctionNote.trim()
+    });
+
+    item.amount = correctedAmount;
+    item.confirmationStatus = "pending";
+    item.correctedAt = new Date().toISOString();
+    item.correctedBy = "加油车司机";
+    item.correctionNote = correctionNote.trim();
+    item.rejectReason = "";
+
+    save(
+        STORAGE.FUEL_RECORDS,
+        records
+    );
+
+    renderAll();
+
+    alert(
+        "已保存核对后的数量并重新提交司机确认。库存按核对数量计算，原驳回记录保存在更正历史中。"
+    );
+}
+
+
+
 function submitStockAdjustment() {
 
     const theoryStock =
@@ -2806,11 +2878,6 @@ function calculateCurrentStock() {
 
     const fuel =
         getFuelRecords()
-            .filter(
-                item =>
-                    item.confirmationStatus !==
-                    "rejected"
-            )
             .reduce(
                 (
                     sum,
@@ -3543,6 +3610,15 @@ function renderFuelHistory() {
 
                         ${
                             item.confirmationStatus ===
+                            "rejected"
+                                ? `
+                                <div class="task-actions">
+                                    <button class="warning-btn" type="button" onclick="correctRejectedFuelRecord('${escapeJs(item.fuelId)}')">
+                                        核对并更正重报
+                                    </button>
+                                </div>
+                                `
+                                : item.confirmationStatus ===
                             "pending"
 
                                 ? `
