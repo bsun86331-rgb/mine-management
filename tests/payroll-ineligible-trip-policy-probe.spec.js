@@ -56,6 +56,7 @@ test("TEST业务口径探测：不计入正式产量的运输记录是否参与�
   console.log("TEST ineligible trip policy observation:", JSON.stringify({ performanceQuantity: payroll?.performanceQuantity, performanceSalary: payroll?.performanceSalary, ...duplicateSummary }));
   expect(payroll).toBeTruthy();
   expect(payroll.performanceQuantity).toBe(1);
+  expect(payroll.performanceSalary).toBe(100);
   expect(duplicateSummary.officialProductionTrips).toBe(0);
   expect(duplicateSummary.rankingTripCount).toBe(1);
   await page.screenshot({ path: "C:/Users/Administrator/Documents/Codex/2026-10-11/new-chat/outputs/证据_正式产量排除趟次的工资口径_2026-10-14.png", fullPage: true });
