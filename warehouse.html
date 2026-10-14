@@ -1124,17 +1124,17 @@ function saveArray(key, data) {
         return;
     }
 
-    const idFields = [
-        "materialId",
-        "requestId",
-        "holderId",
-        "recycleId",
-        "scrapId",
-        "lossId",
-        "transactionId",
-        "ledgerId",
-        "id"
-    ];
+    const idFieldsByStorageKey = {
+        [STORAGE.MATERIALS]: ["materialId", "material_id", "id"],
+        [STORAGE.REQUESTS]: ["requestId", "request_id", "id"],
+        [STORAGE.HOLDERS]: ["holderId", "holder_id", "id"],
+        [STORAGE.RECYCLES]: ["recycleId", "recycle_id", "id"],
+        [STORAGE.SCRAPS]: ["scrapId", "scrap_id", "id"],
+        [STORAGE.LOSTS]: ["lostId", "lost_id", "lossId", "loss_id", "id"],
+        [STORAGE.LEDGER]: ["ledgerId", "ledger_id", "transactionId", "transaction_id", "id"]
+    };
+
+    const idFields = idFieldsByStorageKey[key] || ["id"];
 
     const getId = item => {
         for (const field of idFields) {
