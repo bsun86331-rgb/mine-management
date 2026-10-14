@@ -163,11 +163,23 @@ footer{text-align:center;padding:20px;color:#94a3b8;font-size:12px}
 </div>
 </div>
 
+<div class="rule-box" style="margin-bottom:14px;">
+<h3>🪨 排土管理岗位固定月薪</h3>
+<p>排土管理采用岗位统一固定月薪，不按运输趟次计薪。特殊工资情况可在下方个人固定月薪中设置个人覆盖标准。</p>
+<div class="grid-3">
+<div class="form-group"><label>岗位</label><input value="排土管理" readonly></div>
+<div class="form-group"><label>固定月薪 *</label><input id="dumpManagerMonthlySalary" type="number" min="0.01" step="0.01"></div>
+<div class="form-group"><label>生效日期 *</label><input id="dumpManagerEffectiveDate" type="date"></div>
+</div>
+<div class="form-group"><label>备注</label><textarea id="dumpManagerRemark" placeholder="排土管理岗位统一固定月薪标准"></textarea></div>
+<div class="formula">岗位固定月薪 + 奖励 + 加班 - 扣款；岗位金额由有工资标准权限的人员配置，不预设工资数额。</div>
+<div style="margin-top:12px"><button class="primary" onclick="saveDumpManagementStandard()">保存排土管理岗位标准</button></div>
+</div>
 
 <div class="rule-box">
 <h3>👥 其他人员固定月薪</h3>
 <p>
-除汽车司机、挖机司机和辅助车辆司机外，其他人员按个人设置。
+汽车司机、挖机司机和辅助车辆司机按岗位标准；排土管理默认按岗位标准，特殊情况可设置个人覆盖；其他人员按个人设置。
 同时保存实习期工资和转正后工资；“当前工资阶段”只属于工资标准，不修改人员档案。
 </p>
 
@@ -295,7 +307,7 @@ footer{text-align:center;padding:20px;color:#94a3b8;font-size:12px}
 </section>
 </main>
 
-<footer>矿山管理系统 · 工资标准与奖扣规则设置 V2.10.1J</footer>
+<footer>矿山管理系统 · 工资标准与奖扣规则设置 V2.10.1K</footer>
 
 <script src="js/data-service.js"></script>
 <script>
@@ -978,6 +990,58 @@ function isAuxiliaryPayrollPosition(position){
  );
 }
 
+const POSITION_FIXED_PAYROLL_POSITIONS=[
+ "排土管理"
+];
+
+function isPositionFixedPayrollPosition(position){
+ return POSITION_FIXED_PAYROLL_POSITIONS.includes(normalizePosition(position));
+}
+
+function findDumpManagementStandard(){
+ return activeStandards()
+   .filter(item=>item.scope==="position"&&
+     item.standardType==="dump_management_fixed_position"&&
+     normalizePosition(item.position)==="排土管理")
+   .sort((a,b)=>String(b.effectiveDate||"").localeCompare(String(a.effectiveDate||"")))[0]||null;
+}
+
+function loadDumpManagementStandard(){
+ const standard=findDumpManagementStandard();
+ document.getElementById("dumpManagerMonthlySalary").value=
+   standard?.monthlySalary??standard?.baseSalary??"";
+ document.getElementById("dumpManagerEffectiveDate").value=standard?.effectiveDate||today();
+ document.getElementById("dumpManagerRemark").value=standard?.remark||"";
+}
+
+function saveDumpManagementStandard(){
+ const monthlySalary=Number(document.getElementById("dumpManagerMonthlySalary").value||0);
+ const effectiveDate=document.getElementById("dumpManagerEffectiveDate").value;
+ if(!Number.isFinite(monthlySalary)||monthlySalary<=0){
+   alert("请输入大于 0 的排土管理固定月薪。");
+   return;
+ }
+ if(!effectiveDate){alert("请选择生效日期。");return;}
+ const standards=getStandards();
+ const existing=standards.find(item=>item.scope==="position"&&
+   item.standardType==="dump_management_fixed_position"&&
+   normalizePosition(item.position)==="排土管理"&&item.status!=="disabled");
+ const now=new Date().toISOString();
+ const data={
+   standardId:existing?.standardId||("PAY_DUMP_MANAGEMENT_"+Date.now()),
+   scope:"position", standardType:"dump_management_fixed_position",
+   personId:"", personName:"全体排土管理", position:"排土管理",
+   salaryMode:"fixed", salaryStage:"position_fixed",
+   monthlySalary, baseSalary:monthlySalary, fixedAllowance:0, performanceUnitPrice:0,
+   effectiveDate, remark:document.getElementById("dumpManagerRemark").value.trim(),
+   status:"active", createdAt:existing?.createdAt||now, updatedAt:now
+ };
+ if(existing)Object.assign(existing,data);else standards.push(data);
+ saveArray(STORAGE.STANDARDS,standards);
+ renderStandards();
+ alert("排土管理岗位固定月薪标准已保存。");
+}
+
 function getFixedSalaryPeople(){
  return getApprovedPeople()
    .filter(person=>
@@ -1645,6 +1709,10 @@ function renderStandards(){
              )
            );
 
+         const positionFixed=
+           item.standardType==="dump_management_fixed_position"||
+           (item.scope==="position"&&isPositionFixedPayrollPosition(item.position));
+
          const stageText=
            item.salaryStage==="regular"
              ? "已转正"
@@ -1653,7 +1721,8 @@ function renderStandards(){
          const currentSalary=
            (
              frontline||
-             auxiliary
+             auxiliary||
+             positionFixed
            )
              ? Number(
                  item.monthlySalary??
@@ -1669,7 +1738,8 @@ function renderStandards(){
          const targetText=
            (
              frontline||
-             auxiliary
+             auxiliary||
+             positionFixed
            )
              ? "全体"+(item.position||"-")
              : (
@@ -1688,8 +1758,12 @@ function renderStandards(){
                  auxiliary
                    ? "辅助车辆固定月薪"
                    : (
-                       "固定月薪 · "+
-                       stageText
+                       positionFixed
+                         ? "岗位固定月薪"
+                         : (
+                             "固定月薪 · "+
+                             stageText
+                           )
                      )
                );
 
@@ -1699,8 +1773,8 @@ function renderStandards(){
           <td>${escapeHtml(item.position||"-")}</td>
           <td>${escapeHtml(salaryType)}</td>
           <td>${currentSalary.toFixed(2)}</td>
-          <td>${(frontline||auxiliary)?"-":Number(item.probationSalary??0).toFixed(2)}</td>
-          <td>${(frontline||auxiliary)?"-":Number(item.regularSalary??0).toFixed(2)}</td>
+          <td>${(frontline||auxiliary||positionFixed)?"-":Number(item.probationSalary??0).toFixed(2)}</td>
+          <td>${(frontline||auxiliary||positionFixed)?"-":Number(item.regularSalary??0).toFixed(2)}</td>
           <td>${frontline?Number(item.performanceUnitPrice||item.unitAmount||0).toFixed(2):"-"}</td>
           <td>${escapeHtml(item.effectiveDate||"-")}</td>
           <td>
@@ -1881,6 +1955,11 @@ if(verifyAccess()){
    today();
 
  document.getElementById(
+   "dumpManagerEffectiveDate"
+ ).value=
+   today();
+
+ document.getElementById(
    "fixedEffectiveDate"
  ).value=
    today();
@@ -1888,6 +1967,8 @@ if(verifyAccess()){
  loadFrontlineStandard();
 
  loadAuxiliaryStandard();
+
+ loadDumpManagementStandard();
 
  loadRules();
 
