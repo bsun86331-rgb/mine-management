@@ -6,7 +6,7 @@ const path = require("node:path");
 const ORIGIN = "https://mine.test";
 const ROOT = path.resolve(__dirname, "..");
 
-test("TEST物资丢失主键覆盖后的工资扣款读取探测", async ({ page }) => {
+test("TEST同一丢失记录只扣款一次且独立丢失分别计入", async ({ page }) => {
   const errors = [];
   const blocked = [];
   page.on("pageerror", error => errors.push(error.message));
@@ -46,10 +46,21 @@ test("TEST物资丢失主键覆盖后的工资扣款读取探测", async ({ page
     catch { return route.fulfill({ status: 404, body: "missing test asset" }); }
   });
   await page.goto(`${ORIGIN}/report-center.html`, { waitUntil: "domcontentloaded" });
+  await expect(page.locator("footer")).toContainText("V2.10.4");
   const payroll = await page.evaluate(() => JSON.parse(localStorage.getItem("payrollMonthlyRecords") || "[]").find(row => row.personId === "TEST-LOSS-PAY-EMPLOYEE"));
   const lossSummary = await page.evaluate(() => { const rows = JSON.parse(localStorage.getItem("materialLostRecords") || "[]"); return { duplicateCount: rows.length, uniqueLostIds: [...new Set(rows.map(row => row.lostId))] }; });
   console.log("TEST duplicate written-off loss payroll observation:", JSON.stringify({ otherDeduction: payroll?.otherDeduction, ...lossSummary }));
   expect(payroll).toBeTruthy();
+  expect(Number(payroll?.otherDeduction)).toBe(25);
+  await page.evaluate(() => {
+    const rows = JSON.parse(localStorage.getItem("materialLostRecords") || "[]");
+    rows.push({ lostId: "TEST-LOST-003", materialId: "TEST-MAT-LOSS-001", personId: "TEST-LOSS-PAY-EMPLOYEE", personName: "TEST赔偿员工", compensationAmount: 15, status: "written_off", writeOffAt: `${new Date().toISOString().slice(0, 7)}-10T03:00:00.000Z` });
+    localStorage.setItem("materialLostRecords", JSON.stringify(rows));
+    localStorage.setItem("payrollMonthlyRecords", "[]");
+    generateMonthlyPayroll(false);
+  });
+  const payrollAfterIndependentLoss = await page.evaluate(() => JSON.parse(localStorage.getItem("payrollMonthlyRecords") || "[]").find(row => row.personId === "TEST-LOSS-PAY-EMPLOYEE"));
+  expect(Number(payrollAfterIndependentLoss?.otherDeduction)).toBe(40);
   await page.screenshot({ path: evidencePath("证据_OPS-07_物资丢失重复计入工资", "payroll-material-loss-double-deduction-probe"), fullPage: true });
   expect(errors).toEqual([]);
   expect(blocked).toEqual([]);
