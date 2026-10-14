@@ -70,6 +70,16 @@ test("TEST管理岗位请假提交总经理审批且不进入调度审批列表"
   await page.goto(`${ORIGIN}/leave-request.html`, { waitUntil: "domcontentloaded" });
   await expect(page.locator("#personPosition")).toHaveText("统计");
   await expect(page.locator("#approvalRouteText")).toContainText("总经理审批");
+  const managementRoles = [
+    "车队长", "调度员", "测量员", "测量人员", "安全员", "安全人员",
+    "统计", "统计员", "会计", "财务", "后勤", "后勤人员",
+    "库房管理", "库房管理员", "维修管理", "维修管理员", "管理员"
+  ];
+  const classifications = await page.evaluate(roles =>
+    roles.map(position => [position, isManagementPosition(position)]),
+    managementRoles
+  );
+  expect(classifications).toEqual(managementRoles.map(position => [position, true]));
   const day = await page.evaluate(() => {
     const date = new Date(Date.now() + 7 * 86400000);
     return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
