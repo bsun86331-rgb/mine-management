@@ -42,13 +42,33 @@ test("TEST辅助车辆出勤、空闲、维修状态和比例显示正确", asyn
       ...JSON.parse(localStorage.getItem("equipmentRecords") || "[]").filter(row => !row.equipmentId?.startsWith("TEST-AUX-")),
       ...extras
     ]));
-    const state = JSON.parse(localStorage.getItem("mineProductionBoardV2"));
-    const board = Object.values(state.boards).find(row => row.published);
-    board.auxiliary = [{ equipmentId: "TEST-AUX-WATER-01", driverId: "TEST-A-AUX-WATER-001", team: "A", work: "TEST道路洒水" }];
-    localStorage.setItem("mineProductionBoardV2", JSON.stringify(state));
   });
 
   await page.goto(`${ORIGIN}/dispatch.html`, { waitUntil: "domcontentloaded" });
+  await page.evaluate(() => {
+    const C = window.ProductionBoardCore;
+    const state = JSON.parse(localStorage.getItem("mineProductionBoardV2") || "null") || C.emptyState();
+    const slot = C.currentSlot(new Date(), state.schedule);
+    const data = {
+      people: JSON.parse(localStorage.getItem("personnelRecords") || "[]"),
+      equipment: JSON.parse(localStorage.getItem("equipmentRecords") || "[]"),
+      tasks: JSON.parse(localStorage.getItem("dispatchPublishedTasks") || "[]"),
+      executions: JSON.parse(localStorage.getItem("dispatchShiftExecutions") || "[]"),
+      zones: JSON.parse(localStorage.getItem("transportZones") || "[]"),
+      operational: JSON.parse(localStorage.getItem("equipmentOperationalStatus") || "[]"),
+      maintenance: [],
+      leaves: [],
+      attendance: [],
+      trips: []
+    };
+    const board = C.boardFor(state, slot.date, slot.shift, data);
+    board.auxiliary = [{ equipmentId: "TEST-AUX-WATER-01", driverId: "TEST-A-AUX-WATER-001", team: "A", work: "TEST道路洒水" }];
+    board.published = true;
+    board.version = 1;
+    state.boards[C.slotKey(slot.date, slot.shift)] = board;
+    localStorage.setItem("mineProductionBoardV2", JSON.stringify(state));
+  });
+  await page.reload({ waitUntil: "domcontentloaded" });
   const board = page.locator("#production-board");
   await board.locator('[data-action="toggle"]').click();
   const values = await board.locator(".pb-metrics").evaluateAll(groups => {
