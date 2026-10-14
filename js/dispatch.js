@@ -16851,15 +16851,35 @@ document.addEventListener("DOMContentLoaded", function initZeroProductionReview(
     function getReviewer() {
         try {
             const profile = JSON.parse(localStorage.getItem("dispatchUserProfile") || "null");
-            if (!profile) return null;
-            const position = String(profile.position || "").trim();
-            if (!["车队长", "调度员"].includes(position)) return null;
-            if (!profile.name || !(profile.personId || profile.employeeId || profile.id)) return null;
-            return {
-                id: String(profile.personId || profile.employeeId || profile.id),
-                name: String(profile.name),
-                position
-            };
+            const positionMap = { "调度员": "车队长" };
+            const selectedPosition = localStorage.getItem("selectedPosition") || profile?.position || "";
+            const position = positionMap[String(selectedPosition).trim()] || String(selectedPosition).trim();
+            const personId = String(
+                localStorage.getItem("currentPersonId") ||
+                profile?.personId ||
+                profile?.employeeId ||
+                profile?.id ||
+                ""
+            );
+            if (position !== "车队长" || !personId) return null;
+
+            const personnel = JSON.parse(localStorage.getItem("personnelRecords") || "[]");
+            if (!Array.isArray(personnel)) return null;
+            const person = personnel.find(item =>
+                String(item.personId || item.employeeId || item.driverId || item.id || "") === personId &&
+                (positionMap[String(item.position || "").trim()] || String(item.position || "").trim()) === "车队长"
+            );
+            if (!person) return null;
+
+            const approved =
+                person.approvalStatus === "approved" ||
+                ["approved", "active", "working"].includes(person.status) ||
+                ["在职可用", "作业中"].includes(person.personnelStatus);
+            if (!approved) return null;
+
+            const name = String(person.name || profile?.name || "");
+            if (!name) return null;
+            return { id: personId, name, position: "车队长" };
         } catch (_) {
             return null;
         }
