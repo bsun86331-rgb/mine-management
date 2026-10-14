@@ -28,7 +28,7 @@ module.exports = defineConfig({
 
     use: {
         baseURL:
-            "https://bsun86331-rgb.github.io/mine-management/",
+            "https://mine.test/",
 
         headless: true,
 
