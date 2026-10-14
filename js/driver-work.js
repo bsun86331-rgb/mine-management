@@ -1,7 +1,7 @@
 /*
 ====================================================
 矿山管理系统
-司机端 V2.12.0
+司机端 V2.13.8
 ====================================================
 功能：
 1. 审核通过司机才可进入
@@ -7003,7 +7003,7 @@ document.addEventListener("DOMContentLoaded", function () {
         const trips =
             getMyCurrentShiftTrips()
                 .filter(
-                    isOfficialTrip
+                    isCountableDriverTrip
                 )
                 .sort(
                     (a, b) =>
@@ -7110,7 +7110,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
         getCurrentShiftTrips()
             .filter(
-                isOfficialTrip
+                isCountableDriverTrip
             )
             .forEach(
                 function (record) {
@@ -7416,16 +7416,17 @@ document.addEventListener("DOMContentLoaded", function () {
 
     /*
     ===============================================
-    本班趟数
+    司机端本班趟数、工资与排名口径
     ===============================================
 
     规则：
     1. 优先按 shiftId 统计，夜班跨零点也不会被拆分。
     2. 旧数据没有 shiftId 时，才使用 shiftDate + shift 兼容。
-    3. 调度判定无效 / officialCountEligible=false 的趟次不计入正式趟数。
+    3. 已完成运输趟次计入司机趟数和排名，即使 officialCountEligible=false；
+       正式产量报表仍按 officialCountEligible 单独过滤。
     */
 
-    function isOfficialTrip(
+    function isCountableDriverTrip(
         record
     ) {
 
@@ -7436,26 +7437,31 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
         if (
-            record.officialCountEligible ===
-                false
+            record.status === "cancelled" ||
+            record.status === "canceled" ||
+            record.status === "已取消"
         ) {
 
             return false;
         }
 
 
-        if (
-            record.dispatchConfirmation ===
-                "rejected" ||
-            record.dispatchConfirmation ===
-                "已判定无效"
-        ) {
+        const status =
+            String(
+                record.status ||
+                record.tripStatus ||
+                ""
+            )
+            .trim()
+            .toLowerCase();
 
-            return false;
-        }
 
-
-        return true;
+        return Boolean(
+            record.completedAt ||
+            record.unloadedAt ||
+            status === "completed" ||
+            status === "已完成"
+        );
     }
 
 
@@ -7770,7 +7776,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
         const validTrips =
             shiftTrips.filter(
-                isOfficialTrip
+                isCountableDriverTrip
             );
 
 
@@ -8112,7 +8118,7 @@ document.addEventListener("DOMContentLoaded", function () {
         const trips =
             getMyCurrentShiftTrips()
                 .filter(
-                    isOfficialTrip
+                    isCountableDriverTrip
                 )
                 .sort(
                     (a, b) =>
