@@ -90,11 +90,16 @@ test("TEST证件照片打印预览可单独选择照片且未选择时阻止打�
   await expect(photos.nth(0)).toHaveClass(/skip-print/);
   await photos.nth(1).locator(".photo-print-checkbox").uncheck();
 
-  const dialogPromise = page.waitForEvent("dialog");
-  await page.getByRole("button", { name: "打印" }).click();
-  const dialog = await dialogPromise;
-  expect(dialog.message()).toBe("请至少勾选一张需要打印的照片。");
-  await dialog.dismiss();
+  const dialogPromise = page.waitForEvent("dialog").then(async dialog => {
+    const message = dialog.message();
+    await dialog.dismiss();
+    return message;
+  });
+  await Promise.all([
+    page.getByRole("button", { name: "打印" }).click(),
+    dialogPromise
+  ]);
+  expect(await dialogPromise).toBe("请至少勾选一张需要打印的照片。");
 
   await page.getByRole("button", { name: "全选" }).click();
   await expect(photos.nth(0)).not.toHaveClass(/skip-print/);
