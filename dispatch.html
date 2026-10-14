@@ -3,6 +3,34 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+    <script>
+    (function protectDispatchPage() {
+        "use strict";
+        const normalize = value => value === "调度员" ? "车队长" : String(value || "").trim();
+        try {
+            const role = normalize(localStorage.getItem("selectedPosition"));
+            const id = String(localStorage.getItem("currentPersonId") || "");
+            const people = JSON.parse(localStorage.getItem("personnelRecords") || "[]");
+            const person = Array.isArray(people) ? people.find(item =>
+                String(item.personId || item.employeeId || item.driverId || item.id || "") === id &&
+                normalize(item.position) === "车队长"
+            ) : null;
+            const approved = person && (
+                person.approvalStatus === "approved" ||
+                ["approved", "active", "working"].includes(person.status) ||
+                ["在职可用", "作业中"].includes(person.personnelStatus)
+            );
+            if (role !== "车队长" || !approved) {
+                alert("调度操作页仅对已审核的车队长 / 调度员开放，请从首页进入你的岗位页面。");
+                window.location.replace("index.html");
+            }
+        } catch (_) {
+            alert("无法确认调度身份，请从首页重新进入岗位页面。");
+            window.location.replace("index.html");
+        }
+    })();
+    </script>
+
     <title>生产调度中心</title>
 
     <link rel="stylesheet" href="css/style.css">
@@ -2117,7 +2145,7 @@
             <p>Production Dispatch Center</p>
         </div>
 
-        <div class="dispatch-header-badge">📋 调度端 V2.14.1 · 共享生产看板</div>
+        <div class="dispatch-header-badge">📋 调度端 V2.14.2 · 共享生产看板</div>
     </div>
 </header>
 
