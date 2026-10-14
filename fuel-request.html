@@ -1946,7 +1946,15 @@ function getCurrentBoundEquipment() {
             binding
         ) {
 
-            return binding;
+            return {
+                ...binding,
+                shiftDate: String(
+                    task.shiftDate ||
+                    task.productionDate ||
+                    task.date ||
+                    ""
+                ).slice(0, 10)
+            };
         }
     }
 
@@ -1992,7 +2000,13 @@ function getCurrentBoundEquipment() {
                         number
                     ),
                 source:
-                    "当前司机任务"
+                    "当前司机任务",
+                shiftDate: String(
+                    legacyTask.shiftDate ||
+                    legacyTask.productionDate ||
+                    legacyTask.date ||
+                    ""
+                ).slice(0, 10)
             };
         }
     }
@@ -2647,6 +2661,8 @@ function submitFuelRequest() {
     const requests =
         getFuelRequests();
 
+    const activeBinding =
+        getCurrentBoundEquipment();
 
     requests.push({
 
@@ -2688,6 +2704,10 @@ function submitFuelRequest() {
             "",
 
         remark,
+
+        shiftDate:
+            activeBinding?.shiftDate ||
+            "",
 
         latitude:
             currentLatitude,
