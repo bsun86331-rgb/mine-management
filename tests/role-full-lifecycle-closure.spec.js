@@ -9,8 +9,6 @@ test("TEST 排土管理登记到审核再进入工作端完整链路", async ({ 
   const errors = [], blocked = [], dialogs = [];
   page.on("pageerror", e => errors.push(e.message));
   page.on("dialog", async d => { dialogs.push(d.message()); await d.accept(); });
-  await page.addInitScript(() => {
-  });
   await page.route("**/*", async route => {
     const req=route.request(), url=new URL(req.url());
     if (!["GET","HEAD"].includes(req.method()) || url.origin!==ORIGIN) { blocked.push(`${req.method()} ${req.url()}`); return route.abort(); }
@@ -37,6 +35,40 @@ test("TEST 排土管理登记到审核再进入工作端完整链路", async ({ 
   await expect.poll(()=>page.evaluate(id=>JSON.parse(localStorage.getItem("personnelRecords")||"[]").find(x=>x.personId===id)?.approvalStatus,applicantId)).toBe("approved");
   await page.goto(`${ORIGIN}/index.html`); await page.getByRole("button",{name:/排土管理/}).click();
   await expect.poll(()=>new URL(page.url()).pathname).toBe("/dump-management.html"); await expect(page.locator("h1")).toContainText("排土管理工作端");
+  expect(errors).toEqual([]); expect(blocked).toEqual([]);
+});
+
+test("TEST 汽车司机登记、审核后进入司机端并按无任务规则隐藏用车检查", async ({ page }) => {
+  const errors = [], blocked = [];
+  page.on("pageerror", e => errors.push(e.message));
+  page.on("dialog", async d => { if (d.type() === "confirm") await d.accept(); else await d.accept(); });
+  await page.route("**/*", async route => {
+    const req=route.request(), url=new URL(req.url());
+    if (!["GET","HEAD"].includes(req.method()) || url.origin!==ORIGIN) { blocked.push(`${req.method()} ${req.url()}`); return route.abort(); }
+    const rel=decodeURIComponent(url.pathname).replace(/^\/+/, "") || "index.html", file=path.resolve(ROOT,rel);
+    if (!file.startsWith(ROOT+path.sep)) return route.fulfill({status:403,body:"blocked"});
+    try { const body=await fs.readFile(file), ext=path.extname(file); return route.fulfill({status:200,contentType:ext===".html"?"text/html; charset=utf-8":ext===".js"?"text/javascript; charset=utf-8":ext===".css"?"text/css; charset=utf-8":"application/octet-stream",body}); }
+    catch { return route.fulfill({status:404,body:"missing test asset"}); }
+  });
+  await page.goto(`${ORIGIN}/person-register.html?position=${encodeURIComponent("汽车司机")}`);
+  await expect(page.locator("#position")).toHaveValue("汽车司机");
+  await page.locator("#name").fill("TEST汽车流程司机"); await page.locator("#phone").fill("13800000001");
+  await page.locator("#passportNumber").fill("TEST-PASSPORT-DRIVER-001");
+  await page.locator("#selfiePhoto").setInputFiles({name:"test.png",mimeType:"image/png",buffer:PNG});
+  await page.locator("#emergencyContact").fill("TEST联系人"); await page.locator("#emergencyPhone").fill("13900000001");
+  await page.locator("#team").selectOption("生产B组"); await page.locator("#submitButton").click();
+  await expect.poll(()=>new URL(page.url()).pathname).toBe("/person-waiting.html");
+  const applicant=await page.evaluate(()=>JSON.parse(localStorage.getItem("personnelRecords")||"[]").find(x=>x.name==="TEST汽车流程司机"));
+  expect(applicant).toBeTruthy(); expect(applicant.team).toBe("生产B组"); expect(applicant.position).toBe("汽车司机");
+  expect(await page.evaluate(()=>JSON.parse(localStorage.getItem("personnelRecords")||"[]").filter(x=>x.name==="TEST汽车流程司机").length)).toBe(1);
+  await page.evaluate(()=>{const people=JSON.parse(localStorage.getItem("personnelRecords")||"[]");people.push({personId:"TEST-ADMIN-DRIVER-001",employeeNo:"TEST-ADMIN-DRIVER-001",name:"TEST司机流程管理员",position:"管理员",team:"后勤办公组",status:"approved",approvalStatus:"approved",personnelStatus:"在职可用",testFixture:true});localStorage.setItem("personnelRecords",JSON.stringify(people));localStorage.setItem("adminPersonId","TEST-ADMIN-DRIVER-001");localStorage.setItem("selectedPosition","管理员");sessionStorage.setItem("managementSession",JSON.stringify({verified:true,personId:"TEST-ADMIN-DRIVER-001",position:"管理员",expiresAt:Date.now()+3600000,testFixture:true}));});
+  await page.goto(`${ORIGIN}/admin-review.html`);
+  const row=page.locator("#personnelTableBody tr").filter({hasText:"TEST汽车流程司机"}); await expect(row).toBeVisible(); await row.click();
+  await expect(page.locator("#detailPosition")).toHaveText("汽车司机"); await page.locator("#approveButton").click();
+  await expect.poll(()=>page.evaluate(id=>JSON.parse(localStorage.getItem("personnelRecords")||"[]").find(x=>x.personId===id)?.approvalStatus,applicant.personId)).toBe("approved");
+  await page.goto(`${ORIGIN}/index.html`); await page.getByRole("button",{name:/汽车司机/}).click();
+  await expect.poll(()=>new URL(page.url()).pathname).toBe("/driver-work.html");
+  await expect(page.locator("#noTaskMessage")).toBeVisible(); await expect(page.locator("#equipmentCheckButton")).toBeHidden();
   expect(errors).toEqual([]); expect(blocked).toEqual([]);
 });
 
