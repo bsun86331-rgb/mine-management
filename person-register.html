@@ -779,7 +779,7 @@
 
 
 <footer>
-    矿山管理系统 · 统一人员注册 V2.11.0J
+    矿山管理系统 · 统一人员注册 V2.11.0K
 </footer>
 
 
@@ -3155,6 +3155,58 @@ function setTeamValue(value) {
    表单验证
 ========================================================= */
 
+function normalizeIdentityDocument(value) {
+
+    return String(value || "")
+        .replace(/\s+/g, "")
+        .toUpperCase();
+}
+
+
+function findDuplicateIdentityDocument() {
+
+    const currentProfile =
+        findExistingProfile();
+
+    const currentPersonId =
+        getPersonId(currentProfile);
+
+    const idCardNumber =
+        normalizeIdentityDocument(
+            getValue("idCardNumber")
+        );
+
+    const passportNumber =
+        normalizeIdentityDocument(
+            getValue("passportNumber")
+        );
+
+    return getPersonnelRecords().find(person => {
+
+        if (
+            currentPersonId &&
+            String(getPersonId(person)) === String(currentPersonId)
+        ) {
+            return false;
+        }
+
+        const savedIdCardNumber =
+            normalizeIdentityDocument(
+                person.idCardNumber || person.idCard
+            );
+
+        const savedPassportNumber =
+            normalizeIdentityDocument(
+                person.passportNumber || person.passport
+            );
+
+        return Boolean(
+            (idCardNumber && savedIdCardNumber === idCardNumber) ||
+            (passportNumber && savedPassportNumber === passportNumber)
+        );
+    }) || null;
+}
+
 function validateForm() {
 
 
@@ -3274,6 +3326,33 @@ function validateForm() {
 
         return false;
 
+    }
+
+
+    const duplicateIdentityDocument =
+        findDuplicateIdentityDocument();
+
+    if (duplicateIdentityDocument) {
+
+        const submittedIdCardNumber =
+            normalizeIdentityDocument(
+                getValue("idCardNumber")
+            );
+
+        const savedIdCardNumber =
+            normalizeIdentityDocument(
+                duplicateIdentityDocument.idCardNumber ||
+                duplicateIdentityDocument.idCard
+            );
+
+        alert(
+            submittedIdCardNumber &&
+            savedIdCardNumber === submittedIdCardNumber
+                ? "该身份证号已存在人员档案，不能重复登记。请联系管理员核实或更正原档案。"
+                : "该护照号已存在人员档案，不能重复登记。请联系管理员核实或更正原档案。"
+        );
+
+        return false;
     }
 
 
@@ -4066,4 +4145,5 @@ initializePage();
 </body>
 
 </html>
+
 
