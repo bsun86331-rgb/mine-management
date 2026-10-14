@@ -7,6 +7,20 @@ const path = require("node:path");
 const ORIGIN = "https://mine.test";
 const ROOT = path.resolve(__dirname, "..");
 
+async function openAdminAttendanceReport(page) {
+  await page.evaluate(() => {
+    const records = JSON.parse(localStorage.getItem("personnelRecords") || "[]");
+    if (!records.some(person => person.personId === "TEST-ZERO-ADMIN-001")) {
+      records.push({ personId: "TEST-ZERO-ADMIN-001", employeeNo: "TEST-ZERO-ADMIN-001", name: "TEST报表管理员", position: "管理员", status: "approved", approvalStatus: "approved" });
+      localStorage.setItem("personnelRecords", JSON.stringify(records));
+    }
+    localStorage.setItem("currentPersonId", "TEST-ZERO-ADMIN-001");
+    localStorage.setItem("selectedPosition", "管理员");
+    sessionStorage.setItem("managementSession", JSON.stringify({ verified: true, personId: "TEST-ZERO-ADMIN-001", position: "管理员", expiresAt: Date.now() + 600000 }));
+  });
+  await page.goto(`${ORIGIN}/report-center.html`, { waitUntil: "domcontentloaded" });
+}
+
 test("TEST司机的零产量报备是否要求车队长确认", async ({ page, context }) => {
   const errors = [];
   const blocked = [];
@@ -59,6 +73,10 @@ test("TEST司机的零产量报备是否要求车队长确认", async ({ page, c
   expect(reports[0]).toMatchObject({ personId: "TEST-ZERO-001", reporterId: "TEST-ZERO-001", reporterName: "TEST汽车司机", status: "pending_review", reason: "设备故障", remark: "TEST设备故障等待维修，无运输趟次" });
   expect(reports[0].approverRole).toBeUndefined();
   await expect(page.locator("#zeroProductionBadge")).toHaveText("待审核");
+  await openAdminAttendanceReport(page);
+  await expect(page.locator("#attendanceDayZeroPending")).toHaveText("1");
+  await expect(page.locator("#attendanceMonthZeroPending")).toHaveText("1");
+  await expect(page.locator("#attendanceMonthZeroReported")).toHaveText("0");
 
   await page.addInitScript(() => {
     localStorage.setItem("currentPersonId", "TEST-ZERO-DISPATCH-001");
@@ -107,6 +125,10 @@ test("TEST司机的零产量报备是否要求车队长确认", async ({ page, c
   });
   await page.goto(`${ORIGIN}/attendance.html`, { waitUntil: "domcontentloaded" });
   await expect(page.locator("#zeroProductionBadge")).toHaveText("审核通过");
+  await openAdminAttendanceReport(page);
+  await expect(page.locator("#attendanceDayZeroPending")).toHaveText("0");
+  await expect(page.locator("#attendanceMonthZeroPending")).toHaveText("0");
+  await expect(page.locator("#attendanceMonthZeroReported")).toHaveText("1");
   expect(errors).toEqual([]);
   expect(blocked).toEqual([]);
 });
