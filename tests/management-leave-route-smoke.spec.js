@@ -14,15 +14,23 @@ test("TEST管理岗位请假提交总经理审批且不进入调度审批列表"
   page.on("pageerror", error => errors.push(error.message));
   page.on("dialog", async dialog => { alerts.push(dialog.message()); await dialog.accept(); });
   await page.addInitScript(() => {
-    const dispatcher = "TEST-DISPATCH-LEAVE-001";
+    const managerId = "TEST-MGMT-LEAVE-001";
+    const dispatcherId = "TEST-DISPATCH-LEAVE-001";
     if (!localStorage.getItem("TEST-HARNESS-LEAVE-INIT")) {
-      localStorage.setItem("personnelRecords", JSON.stringify([{
-        personId: dispatcher, employeeId: dispatcher, employeeNo: dispatcher,
-        name: "TEST调度员", position: "调度", team: "生产A组",
-        status: "approved", approvalStatus: "approved", personnelStatus: "在职可用", testFixture: true
-      }]));
-      localStorage.setItem("currentPersonId", dispatcher);
-      localStorage.setItem("selectedPosition", "调度");
+      localStorage.setItem("personnelRecords", JSON.stringify([
+        {
+          personId: managerId, employeeId: managerId, employeeNo: managerId,
+          name: "TEST统计员", position: "统计", team: "管理组",
+          status: "approved", approvalStatus: "approved", personnelStatus: "在职可用", testFixture: true
+        },
+        {
+          personId: dispatcherId, employeeId: dispatcherId, employeeNo: dispatcherId,
+          name: "TEST调度员", position: "车队长", team: "生产A组",
+          status: "approved", approvalStatus: "approved", personnelStatus: "在职可用", testFixture: true
+        }
+      ]));
+      localStorage.setItem("currentPersonId", managerId);
+      localStorage.setItem("selectedPosition", "统计");
       localStorage.setItem("leaveRequests", "[]");
       localStorage.setItem("TEST-HARNESS-LEAVE-INIT", "1");
     }
@@ -32,7 +40,7 @@ test("TEST管理岗位请假提交总经理审批且不进入调度审批列表"
         try {
           const rows = JSON.parse(value);
           for (const row of rows || []) {
-            if (row.applicantId === dispatcher && !String(row.leaveId || "").startsWith("TEST-")) row.leaveId = "TEST-LEAVE-MGMT-001";
+            if (row.applicantId === "TEST-MGMT-LEAVE-001" && !String(row.leaveId || "").startsWith("TEST-")) row.leaveId = "TEST-LEAVE-MGMT-001";
           }
           value = JSON.stringify(rows);
         } catch {}
@@ -60,7 +68,7 @@ test("TEST管理岗位请假提交总经理审批且不进入调度审批列表"
   });
 
   await page.goto(`${ORIGIN}/leave-request.html`, { waitUntil: "domcontentloaded" });
-  await expect(page.locator("#personPosition")).toHaveText("调度");
+  await expect(page.locator("#personPosition")).toHaveText("统计");
   await expect(page.locator("#approvalRouteText")).toContainText("总经理审批");
   const day = await page.evaluate(() => {
     const date = new Date(Date.now() + 7 * 86400000);
@@ -73,17 +81,21 @@ test("TEST管理岗位请假提交总经理审批且不进入调度审批列表"
 
   let request = await page.evaluate(() => JSON.parse(localStorage.getItem("leaveRequests") || "[]")[0]);
   expect(request).toMatchObject({
-    leaveId: "TEST-LEAVE-MGMT-001", applicantId: "TEST-DISPATCH-LEAVE-001",
-    position: "调度", approvalRoute: "general_manager", approverRole: "general_manager",
+    leaveId: "TEST-LEAVE-MGMT-001", applicantId: "TEST-MGMT-LEAVE-001",
+    position: "统计", approvalRoute: "general_manager", approverRole: "general_manager",
     approvalLevel: "总经理审批", status: "pending"
   });
 
+  await page.evaluate(() => {
+    localStorage.setItem("currentPersonId", "TEST-DISPATCH-LEAVE-001");
+    localStorage.setItem("selectedPosition", "车队长");
+  });
   await page.goto(`${ORIGIN}/dispatch.html`, { waitUntil: "domcontentloaded" });
   await page.locator("#openLeaveReviewButton").click();
   const modal = page.locator("#leaveReviewModal");
   await expect(modal).toBeVisible();
   await expect(modal.locator('[data-leave-approve="TEST-LEAVE-MGMT-001"]')).toHaveCount(0);
-  await expect(modal).not.toContainText("TEST调度员");
+  await expect(modal).not.toContainText("TEST统计员");
   request = await page.evaluate(() => JSON.parse(localStorage.getItem("leaveRequests") || "[]")[0]);
   expect(request.status).toBe("pending");
   expect(errors).toEqual([]);
