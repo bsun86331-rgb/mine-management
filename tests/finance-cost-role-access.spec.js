@@ -67,6 +67,20 @@ test("D11-2 已审核会计、管理员、总经理可以查看财务费用", as
         });
         await expect(page.getByRole("heading", { name: "🧮 财务费用录入中心" })).toBeVisible();
         await expect(page.getByRole("heading", { name: "📋 财务费用记录" })).toBeVisible();
+        await expect(page.getByRole("button", { name: "保存费用" })).toHaveCount(0);
+        await expect(page.getByRole("button", { name: "删除" })).toHaveCount(0);
+        const writeAttempt = await page.evaluate(() => {
+            const before = localStorage.getItem("financeCostRecords");
+            window.alert = () => {};
+            saveFinanceCost();
+            deleteFinanceCost("TEST-FIN-COST-001");
+            return {
+                canWrite: window.__financeCostCanWrite,
+                before,
+                after: localStorage.getItem("financeCostRecords")
+            };
+        });
+        expect(writeAttempt).toEqual({ canWrite: false, before: null, after: null });
     }
 });
 
@@ -89,7 +103,7 @@ test("非授权岗位与未审核会计不能进入财务费用页", async ({ pa
     await page.goto("finance-cost.html");
     await expect(page).toHaveURL(/index\.html$/);
 
-    await page.addInitScript(() => {
+    await page.evaluate(() => {
         localStorage.clear();
         sessionStorage.clear();
         localStorage.setItem("personnelRecords", JSON.stringify([{
@@ -105,3 +119,4 @@ test("非授权岗位与未审核会计不能进入财务费用页", async ({ pa
     await page.goto("finance-cost.html");
     await expect(page).toHaveURL(/index\.html$/);
 });
+
