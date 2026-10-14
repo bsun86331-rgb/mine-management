@@ -18,6 +18,12 @@ const {
 } = require("@playwright/test");
 
 const {
+    assertSafeCommand
+} = require(
+    "./test-safety-guard"
+);
+
+const {
     TruckDriverBot
 } = require(
     "./bots/truck-driver-bot"
@@ -952,59 +958,6 @@ let robotStatus = {
 安全保护
 =========================================================
 */
-
-
-function assertSafeCommand(
-    command
-) {
-
-    const text =
-        String(
-            command ||
-            ""
-        );
-
-
-    /*
-     * 命令中若显式出现常见业务ID，
-     * 必须以 TEST- 开头。
-     */
-
-    const matches =
-        text.match(
-            /\b(?:TASK|TRIP|DRIVER|VEHICLE|SHIFT|ZONE|REQ|REQUEST)-[A-Z0-9_-]+\b/gi
-        ) ||
-        [];
-
-
-    const unsafe =
-        matches.filter(
-            id =>
-                !String(
-                    id
-                )
-                .toUpperCase()
-                .startsWith(
-                    "TEST-"
-                )
-        );
-
-
-    if (
-        unsafe.length
-    ) {
-
-        throw new Error(
-            "安全拦截：机器人禁止操作非 TEST 数据：" +
-            unsafe.join(
-                ", "
-            )
-        );
-    }
-
-
-    return true;
-}
 
 
 /*
