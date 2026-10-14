@@ -388,9 +388,18 @@ function assertTestId(
 
 function buildAGroupPayload() {
 
+    const fixtureNow =
+        new Date();
+
+    fixtureNow.setHours(
+        12,
+        0,
+        0,
+        0
+    );
+
     const nowIso =
-        new Date()
-            .toISOString();
+        fixtureNow.toISOString();
 
 
     const personnel =
@@ -437,15 +446,7 @@ function buildAGroupPayload() {
                     unit.driverId,
 
                 employeeNo:
-                    "TEST-A-EXD-" +
-                    String(
-                        unitIndex +
-                        1
-                    )
-                    .padStart(
-                        2,
-                        "0"
-                    ),
+                    unit.driverId,
 
                 name:
                     unit.driverName,
@@ -957,6 +958,13 @@ async function installAGroupRobotContext(
     const payload =
         buildAGroupPayload();
 
+    await page.clock.install({
+        time:
+            new Date(
+                payload.nowIso
+            )
+    });
+
 
     const identity =
         findIdentity(
@@ -1261,6 +1269,11 @@ async function installAGroupRobotContext(
 
             mergeRows(
                 "equipmentMaster",
+                payload.equipment
+            );
+
+            mergeRows(
+                "equipmentRecords",
                 payload.equipment
             );
 
