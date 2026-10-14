@@ -484,7 +484,7 @@
         <div class="header-row">
             <div>
                 <h1>📦 后勤物资库管理端</h1>
-                <p>Warehouse & Logistics Materials · V2.10.1C</p>
+                <p>Warehouse & Logistics Materials · V2.11.1B</p>
             </div>
 
             <div class="header-actions">
@@ -1361,6 +1361,51 @@ function submitInbound() {
     alert("入库完成。");
 }
 
+function getExchangeReturnRecords(request) {
+    const requestPersonId = String(
+        request.personId ||
+        request.employeeId ||
+        ""
+    ).trim();
+    const requestPersonName = String(
+        request.personName ||
+        request.applicantName ||
+        ""
+    ).trim();
+    const materialId = String(request.materialId || "");
+
+    return readArray(STORAGE.RECYCLES)
+        .filter(record => {
+            if (
+                record.type !== "exchange" ||
+                record.status !== "returned_to_stock" ||
+                String(record.materialId || "") !== materialId
+            ) {
+                return false;
+            }
+
+            const recordPersonId = String(
+                record.personId ||
+                record.employeeId ||
+                ""
+            ).trim();
+            const recordPersonName = String(
+                record.personName ||
+                ""
+            ).trim();
+
+            if (requestPersonId && recordPersonId) {
+                return requestPersonId === recordPersonId;
+            }
+
+            return Boolean(
+                requestPersonName &&
+                recordPersonName &&
+                requestPersonName === recordPersonName
+            );
+        });
+}
+
 function approveRequest(requestId) {
     const requests = readArray(STORAGE.REQUESTS);
     const request = requests.find(item => item.requestId === requestId);
@@ -1375,7 +1420,10 @@ function approveRequest(requestId) {
         return;
     }
 
-    const actualQuantity = Number(prompt("请输入实际发放数量：", request.requestQuantity || request.quantity || 1));
+    const actualQuantity = Number(prompt(
+        "请输入实际发放数量：",
+        request.requestQuantity || request.quantity || 1
+    ));
 
     if (!actualQuantity || actualQuantity <= 0) {
         return;
@@ -1392,6 +1440,79 @@ function approveRequest(requestId) {
     if (Number(material.availableQty || 0) < actualQuantity) {
         alert("可用库存不足。");
         return;
+    }
+
+    let exchangeRecords = null;
+    let exchangeReturnRecordIds = [];
+
+    if (request.requestType === "exchange") {
+        if (material.type !== "recyclable") {
+            alert("以旧换新只能发放可回收物资。");
+            return;
+        }
+
+        exchangeRecords = readArray(STORAGE.RECYCLES);
+        const eligibleRecords = getExchangeReturnRecords(request);
+        const availableExchangeQuantity = eligibleRecords.reduce(
+            (sum, record) =>
+                sum + Math.max(
+                    0,
+                    Number(record.quantity || 0) -
+                    Number(record.exchangeIssuedQuantity || 0)
+                ),
+            0
+        );
+
+        if (availableExchangeQuantity < actualQuantity) {
+            alert(
+                "以旧换新需先归还同一员工的旧物，并由库房检查验收合格后才能出库。可用验收数量：" +
+                availableExchangeQuantity
+            );
+            return;
+        }
+
+        let remaining = actualQuantity;
+
+        for (const eligible of eligibleRecords) {
+            if (remaining <= 0) break;
+
+            const record = exchangeRecords.find(
+                item => item.recycleId === eligible.recycleId
+            );
+
+            if (!record) continue;
+
+            const unusedQuantity = Math.max(
+                0,
+                Number(record.quantity || 0) -
+                Number(record.exchangeIssuedQuantity || 0)
+            );
+            const usedQuantity = Math.min(unusedQuantity, remaining);
+
+            if (usedQuantity <= 0) continue;
+
+            record.exchangeIssuedQuantity =
+                Number(record.exchangeIssuedQuantity || 0) +
+                usedQuantity;
+            record.exchangeRequestIds = Array.isArray(record.exchangeRequestIds)
+                ? record.exchangeRequestIds
+                : [];
+
+            if (!record.exchangeRequestIds.includes(requestId)) {
+                record.exchangeRequestIds.push(requestId);
+            }
+
+            exchangeReturnRecordIds.push(record.recycleId);
+            remaining -= usedQuantity;
+        }
+
+        if (remaining > 0) {
+            alert("验收合格的旧物数量不足，不能完成以旧换新出库。");
+            return;
+        }
+
+        request.exchangeReturnRecordIds = exchangeReturnRecordIds;
+        request.exchangeReturnQuantity = actualQuantity;
     }
 
     material.availableQty -= actualQuantity;
@@ -1425,13 +1546,19 @@ function approveRequest(requestId) {
     saveArray(STORAGE.MATERIALS, materials);
     saveArray(STORAGE.REQUESTS, requests);
 
+    if (exchangeRecords) {
+        saveArray(STORAGE.RECYCLES, exchangeRecords);
+    }
+
     addLedger({
         type: "出库",
         materialId: material.materialId,
         materialName: material.name,
         quantity: actualQuantity,
         personName: request.personName || request.applicantName || "-",
-        remark: request.purpose || request.remark || ""
+        remark: request.requestType === "exchange"
+            ? "以旧换新，已关联验收合格旧物"
+            : request.purpose || request.remark || ""
     });
 
     renderAll();
@@ -1960,9 +2087,11 @@ function renderRequests() {
                     <span class="badge yellow">待出库</span>
                 </div>
                 <div class="record-info">
+                    领用方式：${item.requestType === "exchange" ? "以旧换新" : "普通领用"}<br>
                     申请数量：${Number(item.requestQuantity || item.quantity || 0)}<br>
                     岗位：${escapeHtml(item.position || item.applicantPosition || "-")}<br>
                     用途：${escapeHtml(item.purpose || item.remark || "-")}<br>
+                    ${item.requestType === "exchange" ? "需完成旧物回收并验收合格后才能出库。<br>" : ""}
                     申请时间：${formatDateTime(item.createdAt || item.submittedAt)}
                 </div>
                 <div class="actions" style="margin-top:10px;">
