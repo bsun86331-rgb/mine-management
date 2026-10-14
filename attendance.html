@@ -676,7 +676,7 @@
 </main>
 
 <footer>
-    矿山管理系统 · 全员定位考勤中心 V2.10.2H
+    矿山管理系统 · 全员定位考勤中心 V2.10.2I
 </footer>
 
 <script src="js/data-service.js"></script>
@@ -2995,11 +2995,25 @@ function buildLedgerRow(date) {
     }
 
     if (zeroReport) {
+        const reviewLabel =
+            zeroReport.status === "approved"
+                ? "审核通过"
+                : zeroReport.status === "rejected"
+                    ? "已驳回，待重报"
+                    : "待审核";
         notes.push(
-            "零产量报备：" +
+            "零产量报备（" +
+            reviewLabel +
+            "）：" +
             (
                 zeroReport.reason ||
-                "已报备"
+                "未填写原因"
+            ) +
+            (
+                zeroReport.reviewReason
+                    ? "；审核意见：" +
+                      zeroReport.reviewReason
+                    : ""
             ) +
             (
                 zeroReport.remark
