@@ -47,6 +47,12 @@ test("工作聊天仅出现在个人工作端并写入 TEST 本机记录", async
   const messages = await page.evaluate(() => JSON.parse(localStorage.getItem("mineWorkChatMessagesV1") || "[]"));
   expect(messages).toHaveLength(1);
   expect(messages[0]).toMatchObject({ senderPersonId: "TEST-CHAT-DRIVER-001", senderName: "TEST聊天司机", text: "TEST: 工作聊天本机隔离检查" });
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await expect(page.locator("#mineChatLauncher")).toBeVisible();
+  await page.locator("#mineChatLauncher").click();
+  await expect(page.locator("#mineChatMessages")).toContainText("TEST: 工作聊天本机隔离检查");
+  const reloadedMessages = await page.evaluate(() => JSON.parse(localStorage.getItem("mineWorkChatMessagesV1") || "[]"));
+  expect(reloadedMessages).toEqual(messages);
   expect(errors).toEqual([]);
   expect(blocked).toEqual([]);
 });
