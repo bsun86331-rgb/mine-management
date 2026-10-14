@@ -31,7 +31,7 @@ test("TEST运输统计按生产日边界分组去重并拆分A/B煤渣趟次", a
     }
   });
 
-  await installAGroupRobotContext(page, "TEST-A-D-001");
+  await installAGroupRobotContext(page, "TEST-A-DISPATCH-001");
   await page.goto(`${ORIGIN}/index.html`, { waitUntil: "domcontentloaded" });
   const boardDate = await page.evaluate(() => {
     const date = new Date();
@@ -50,15 +50,7 @@ test("TEST运输统计按生产日边界分组去重并拆分A/B煤渣趟次", a
     { tripId: "TEST-TRIP-OUTSIDE", completedAt: `${dateAfter}T08:00:00`, status: "completed", team: "A", materialType: "煤" },
     { tripId: "TEST-TRIP-PENDING", completedAt: `${boardDate}T12:00:00`, status: "pending_dispatch", team: "B", materialType: "煤" }
   ];
-  await page.evaluate(rows => {
-    localStorage.setItem("currentPersonId", "TEST-A-DISPATCH-001");
-    localStorage.setItem("dispatchPersonId", "TEST-A-DISPATCH-001");
-    localStorage.setItem("selectedPosition", "车队长");
-    const roles = JSON.parse(localStorage.getItem("rolePersonIds") || "{}");
-    roles["车队长"] = "TEST-A-DISPATCH-001";
-    localStorage.setItem("rolePersonIds", JSON.stringify(roles));
-    localStorage.setItem("tripRecords", JSON.stringify(rows));
-  }, trips);
+  await page.evaluate(rows => { localStorage.setItem("tripRecords", JSON.stringify(rows)); }, trips);
 
   await page.goto(`${ORIGIN}/dispatch.html`, { waitUntil: "domcontentloaded" });
   const boardElement = page.locator("#production-board");
@@ -75,4 +67,6 @@ test("TEST运输统计按生产日边界分组去重并拆分A/B煤渣趟次", a
   expect(errors).toEqual([]);
   expect(blocked).toEqual([]);
 });
+
+
 
