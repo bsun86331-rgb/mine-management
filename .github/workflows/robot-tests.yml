@@ -1,0 +1,56 @@
+name: Mine management robot tests
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "**/*.html"
+      - "**/*.js"
+      - "**/*.css"
+      - "tests/**"
+      - "database/**"
+      - "package.json"
+      - "playwright.config.js"
+      - ".github/workflows/robot-tests.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "**/*.html"
+      - "**/*.js"
+      - "**/*.css"
+      - "tests/**"
+      - "database/**"
+      - "package.json"
+      - "playwright.config.js"
+      - ".github/workflows/robot-tests.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mine-management-robots-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  full-robot-suite:
+    name: Full isolated Playwright suite
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install pinned Playwright test runner
+        run: npm install --no-save --no-package-lock --no-audit --no-fund @playwright/test@1.55.0
+
+      - name: Install Chromium and system dependencies
+        run: npx playwright install --with-deps chromium
+
+      - name: Run all isolated robot tests
+        run: npm run test:robots
