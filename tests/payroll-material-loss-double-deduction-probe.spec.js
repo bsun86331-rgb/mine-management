@@ -48,7 +48,7 @@ test("TEST同一丢失记录只扣款一次且独立丢失分别计入", async (
   await page.goto(`${ORIGIN}/report-center.html`, { waitUntil: "domcontentloaded" });
   const headerText = await page.locator("header p").innerText();
   const footerText = await page.locator("footer").innerText();
-  const headerVersion = headerText.match(/V\\d+\\.\\d+\\.\\d+/)?.[0];
+  const headerVersion = headerText.match(/V\d+\.\d+\.\d+/)?.[0];
   expect(headerVersion).toBeTruthy();
   expect(footerText).toContain("综合报表中心");
   expect(footerText).toContain(headerVersion);
