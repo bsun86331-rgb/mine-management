@@ -1,5 +1,6 @@
 "use strict";
 
+const assert = require("node:assert/strict");
 const { test, expect } = require("@playwright/test");
 const fs = require("node:fs");
 const path = require("node:path");
@@ -127,11 +128,12 @@ test("Supabase 序列化契约与 PostgreSQL schema 一致，并完成隔离往�
   expect(listed[0].avatarUrl).toBe("test-avatar.png");
 
   const callsBeforeInvalidWrite = calls.length;
-  await expect(
+  await assert.rejects(
     service.supabase.upsert("system_settings", {
       settingKey: "TEST-ONLY",
       localOnlyFlag: true
-    })
-  ).rejects.toThrow("Supabase schema 不支持字段: system_settings.localOnlyFlag");
+    }),
+    /Supabase schema 不支持字段: system_settings\.localOnlyFlag/
+  );
   expect(calls).toHaveLength(callsBeforeInvalidWrite);
 });
