@@ -190,6 +190,12 @@ test("TEST最终考勤保存遇到审计存储失败时不改变考勤或日确�
   await page.evaluate(() => localStorage.setItem("TEST-ATT-AUDIT-FAIL", "1"));
   dialogStart = dialogs.length;
   await page.locator("#finalAttendanceUnlockMonthButton").click();
+  console.log("TEST attendance unlock failure state", JSON.stringify({
+    dialogs: dialogs.slice(dialogStart),
+    lock: await page.evaluate(month => JSON.parse(localStorage.getItem("adminAttendanceMonthlyLocks") || "[]").find(row => row.month === month), state.date.slice(0, 7)),
+    audit: await page.evaluate(() => JSON.parse(localStorage.getItem("adminAttendanceAuditLogs") || "[]")),
+    unlockVisible: await page.locator("#finalAttendanceUnlockMonthButton").isVisible()
+  }));
   await expect.poll(() => dialogs.slice(dialogStart).some(message => message.includes("保存失败"))).toBe(true);
   monthState = await page.evaluate(month => ({
     lock: JSON.parse(localStorage.getItem("adminAttendanceMonthlyLocks") || "[]")
