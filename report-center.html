@@ -7832,21 +7832,24 @@ function renderAttendance() {
                     1;
             }
 
-            const zeroNeeded =
+            const isProductionWorker =
                 isAttendanceProductionPosition(
                     position
-                )
-                &&
-                isPresent
-                &&
+                ) &&
+                isPresent;
+            const zeroNeeded =
+                isProductionWorker &&
                 productionCount === 0;
 
             const zeroApproved =
                 zeroReport?.status === "approved";
+            const hasZeroReport =
+                isProductionWorker &&
+                !!zeroReport;
 
             if (
-                zeroNeeded &&
-                !zeroApproved
+                (hasZeroReport && !zeroApproved) ||
+                (zeroNeeded && !zeroReport)
             ) {
                 dayZeroPending +=
                     1;
@@ -7855,7 +7858,7 @@ function renderAttendance() {
             let zeroStatus =
                 "-";
 
-            if (zeroNeeded) {
+            if (hasZeroReport || zeroNeeded) {
                 if (zeroApproved) {
                     zeroStatus = "异常报备审核通过（不代表整班最终产量为零）";
                 } else if (zeroReport?.status === "rejected") {
@@ -7955,22 +7958,19 @@ function renderAttendance() {
                     person,
                     record.date
                 );
+            const report =
+                getZeroReportForPersonDate(
+                    person,
+                    record.date
+                );
 
-            if (productionCount === 0) {
-                const report =
-                    getZeroReportForPersonDate(
-                        person,
-                        record.date
-                    );
-
-                if (report?.status === "approved") {
-                    monthZeroReported +=
-                        1;
-                } else {
-                    /* 提交/旧版reported/驳回均未完成审核闭环。 */
-                    monthZeroPending +=
-                        1;
-                }
+            if (report?.status === "approved") {
+                monthZeroReported +=
+                    1;
+            } else if (report || productionCount === 0) {
+                /* 报备是独立异常事件；无报备且趟次为0时仍待说明。 */
+                monthZeroPending +=
+                    1;
             }
         }
     });
