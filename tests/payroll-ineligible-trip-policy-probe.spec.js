@@ -15,6 +15,7 @@ test("TEST回归：已完成但不计正式产量的趟次仍计入工资和排�
     const admin = { personId: "TEST-ALIAS-ADMIN", employeeNo: "TEST-ALIAS-ADMIN", name: "TEST报表管理员", position: "管理员", status: "approved", approvalStatus: "approved" };
     const driver = { personId: "TEST-ALIAS-DRIVER", employeeNo: "TEST-ALIAS-DRIVER", name: "TEST汽车司机", position: "汽车司机", status: "approved", approvalStatus: "approved" };
     const trip = { tripId: "TEST-ALIAS-TRIP-001", personId: driver.personId, personName: driver.name, status: "completed", officialCountEligible: false, materialType: "煤", completedAt: `${month}-10T03:00:00.000Z` };
+    const unmatchedLegacyTrip = { personId: "TEST-UNMATCHED-LEGACY-DRIVER", personName: "TEST待核对历史司机", status: "completed", officialCountEligible: true, materialType: "煤", completedAt: `${month}-10T04:00:00.000Z` };
     localStorage.setItem("personnelRecords", JSON.stringify([admin, driver]));
     localStorage.setItem("currentPersonId", admin.personId);
     localStorage.setItem("selectedPosition", "管理员");
@@ -24,7 +25,7 @@ test("TEST回归：已完成但不计正式产量的趟次仍计入工资和排�
       { standardId: "TEST-ALIAS-ADMIN-STANDARD", scope: "person", standardType: "fixed_person", personId: admin.personId, salaryStage: "regular", regularSalary: 1000, baseSalary: 1000, effectiveDate: "2026-01-01", status: "active" },
       { standardId: "TEST-ALIAS-DRIVER-STANDARD", scope: "position", standardType: "frontline_performance", position: "汽车司机", salaryMode: "performance", baseSalary: 1000, performanceUnitPrice: 100, effectiveDate: "2026-01-01", status: "active" }
     ]));
-    localStorage.setItem("tripRecords", JSON.stringify([trip]));
+    localStorage.setItem("tripRecords", JSON.stringify([trip, unmatchedLegacyTrip]));
     localStorage.setItem("driverTripRecords", "[]");
     localStorage.setItem("transportRecords", "[]");
     localStorage.setItem("payrollMonthlyRecords", "[]");
@@ -52,13 +53,14 @@ test("TEST回归：已完成但不计正式产量的趟次仍计入工资和排�
     const driver = JSON.parse(localStorage.getItem("personnelRecords") || "[]").find(person => person.personId === "TEST-ALIAS-DRIVER");
     const rankingTripCount = getDriverTripCountForRanking(driver, month);
     const rows = ["tripRecords", "driverTripRecords", "transportRecords"].flatMap(key => JSON.parse(localStorage.getItem(key) || "[]"));
-    return { totalRows: rows.length, uniqueTripIds: [...new Set(rows.map(row => row.tripId))].length, officialProductionTrips, rankingTripCount };
+    return { totalRows: rows.length, uniqueTripIds: [...new Set(rows.map(row => row.tripId))].length, officialProductionTrips, unmatchedIdentityRows: rows.filter(row => !row.tripId && !row.recordId && !row.id).length, rankingTripCount };
   });
   console.log("TEST ineligible trip policy observation:", JSON.stringify({ performanceQuantity: payroll?.performanceQuantity, performanceSalary: payroll?.performanceSalary, ...duplicateSummary }));
   expect(payroll).toBeTruthy();
   expect(payroll.performanceQuantity).toBe(1);
   expect(payroll.performanceSalary).toBe(100);
   expect(duplicateSummary.officialProductionTrips).toBe(0);
+  expect(duplicateSummary.unmatchedIdentityRows).toBe(1);
   expect(duplicateSummary.rankingTripCount).toBe(1);
   await page.screenshot({ path: evidencePath("证据_正式产量排除趟次的工资口径", "payroll-ineligible-trip-policy-probe"), fullPage: true });
   expect(errors).toEqual([]);

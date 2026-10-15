@@ -9,6 +9,12 @@
     const clone = value => JSON.parse(JSON.stringify(value));
     const array = value => Array.isArray(value) ? value : [];
     const text = value => String(value == null ? '' : value);
+    function stableTripId(row) {
+        return [row?.tripId, row?.trip_id, row?.recordId, row?.record_id, row?.clientRecordId, row?.client_record_id, row?.id]
+            .map(value => text(value).trim())
+            .find(Boolean) || '';
+    }
+    const hasStableTripId = row => Boolean(stableTripId(row));
     const flatten = row => ({ ...row?.extra, ...row });
     const personId = row => text(row?.personId || row?.person_id || row?.employeeId || row?.driverId || row?.id);
     const equipmentId = row => text(row?.equipmentId || row?.equipment_id || row?.equipmentNumber || row?.vehicleId || row?.vehicle_id || row?.vehicleNumber || row?.id);
@@ -225,7 +231,7 @@
             if (!/completed|approved|finished|valid|完成|通过/.test(text(r.status)) && !r.completedAt && !r.completed_at && !r.unloadedAt && !r.unloaded_at) return false;
             const completedAt = tripTime(r);
             // Records without an immutable trip ID cannot be safely reconciled. Keep them out of official totals until manually matched.
-            const id = text(r.tripId || r.trip_id || r.client_record_id || r.id);
+            const id = stableTripId(r);
             if (!id || !Number.isFinite(+completedAt) || seen.has(id)) return false;
             seen.add(id);
             return true;
@@ -315,6 +321,6 @@
         }
         return { personId: text(currentId) };
     }
-    return { DEFAULT_SCHEDULE, clone, array, text, flatten, personId, equipmentId, equipmentNumber, team, role, category, approved, minute, dateKey, shiftDate, validateSchedule, interval, currentSlot, slotKey, emptyBoard, emptyState, assignments, blockedEquipment, onLeave, occupiedElsewhere, equipmentChoices, personChoices, validateBoard, boardFor, projections, validTrips, personInShift, unassignedPeople, statistics, canEdit, dispatchIdentity, teamDraft };
+    return { DEFAULT_SCHEDULE, clone, array, text, flatten, stableTripId, hasStableTripId, personId, equipmentId, equipmentNumber, team, role, category, approved, minute, dateKey, shiftDate, validateSchedule, interval, currentSlot, slotKey, emptyBoard, emptyState, assignments, blockedEquipment, onLeave, occupiedElsewhere, equipmentChoices, personChoices, validateBoard, boardFor, projections, validTrips, personInShift, unassignedPeople, statistics, canEdit, dispatchIdentity, teamDraft };
 });
 

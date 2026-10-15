@@ -8867,6 +8867,7 @@ function dispatchIsValidTrip(item){
         item &&
         item.status !== "cancelled" &&
         item.dispatchConfirmation !== "rejected" &&
+        window.ProductionBoardCore?.hasStableTripId(item) &&
         item.officialCountEligible !== false
     );
 }

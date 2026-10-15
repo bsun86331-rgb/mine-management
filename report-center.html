@@ -1744,11 +1744,12 @@
 </main>
 
 <footer>
-    矿山管理系统 · 综合报表中心 V2.10.10 · 系统版本 V2.14.9
+    矿山管理系统 · 综合报表中心 V2.10.10 · 系统版本 V2.14.10
 </footer>
 
 <script src="js/data-service.js"></script>
 <script src="js/payroll-data-bridge.js"></script>
+<script src="js/production-board-core.js?v=2.0.14"></script>
 <script>
 "use strict";
 
@@ -5139,6 +5140,7 @@ function isValidProductionRecord(item) {
         item.status !== "rejected" &&
         item.confirmationStatus !== "rejected" &&
         item.dispatchConfirmation !== "rejected" &&
+        window.ProductionBoardCore?.hasStableTripId(item) &&
         item.officialCountEligible !== false
     );
 }
