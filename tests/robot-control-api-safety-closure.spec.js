@@ -29,6 +29,9 @@ test("TEST快速检查报告明确完整Playwright仍是独立发布门槛", asy
   expect(source).toContain("核心/黄金检查通过（完整 Playwright 仍需单独通过）");
   expect(source).toContain("发布前仍需独立运行并核对完整 Playwright 套件");
   expect(source).not.toContain('? "可发布"');
+  expect(source).toContain('"quick-checks-pass"');
+  expect(source).toContain('"quick-checks-failed"');
+  expect(source).not.toContain('? "ready"');
   const center = await require("node:fs/promises").readFile(
     path.join(__dirname, "..", "robot-test-center.html"),
     "utf8"
