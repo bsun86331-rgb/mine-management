@@ -17,10 +17,11 @@ test("TEST无稳定趟次ID在所有正式产量视图中隔离，稳定legacy I
     const today = new Date();
     const completedAt = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 10, 0).toISOString();
     localStorage.setItem("personnelRecords", JSON.stringify([
-      { personId: "TEST-OFFICIAL-ID-ADMIN", employeeNo: "TEST-OFFICIAL-ID-ADMIN", name: "TEST管理员", position: "管理员", status: "approved", approvalStatus: "approved", personnelStatus: "在职可用" }
+      { personId: "TEST-OFFICIAL-ID-ADMIN", employeeNo: "TEST-OFFICIAL-ID-ADMIN", name: "TEST管理员", position: "管理员", status: "approved", approvalStatus: "approved", personnelStatus: "在职可用" },
+      { personId: "TEST-OFFICIAL-ID-DISPATCH", employeeNo: "TEST-OFFICIAL-ID-DISPATCH", name: "TEST调度员", position: "车队长", status: "approved", approvalStatus: "approved", personnelStatus: "在职可用" }
     ]));
-    localStorage.setItem("currentPersonId", "TEST-OFFICIAL-ID-ADMIN");
-    localStorage.setItem("selectedPosition", "管理员");
+    localStorage.setItem("currentPersonId", "TEST-OFFICIAL-ID-DISPATCH");
+    localStorage.setItem("selectedPosition", "车队长");
     localStorage.setItem("adminPersonId", "TEST-OFFICIAL-ID-ADMIN");
     sessionStorage.setItem("managementSession", JSON.stringify({ verified: true, personId: "TEST-OFFICIAL-ID-ADMIN", position: "管理员", expiresAt: Date.now() + 600000 }));
     localStorage.setItem("tripRecords", JSON.stringify([
@@ -54,6 +55,8 @@ test("TEST无稳定趟次ID在所有正式产量视图中隔离，稳定legacy I
   expect(reportIds).toEqual(["TEST-OFFICIAL-LEGACY-002", "TEST-OFFICIAL-STABLE-001"]);
 
   await page.goto(`${ORIGIN}/dispatch.html`, { waitUntil: "domcontentloaded" });
+  const boardCoreSrc = await page.locator('script[src*="production-board-core.js"]').getAttribute("src");
+  expect(boardCoreSrc).toContain("v=2.0.14");
   const dispatchIds = await page.evaluate(() => dispatchGetUnifiedTrips().filter(dispatchIsValidTrip).map(row => window.ProductionBoardCore.stableTripId(row)).sort());
   expect(dispatchIds).toEqual(["TEST-OFFICIAL-LEGACY-002", "TEST-OFFICIAL-STABLE-001"]);
 
