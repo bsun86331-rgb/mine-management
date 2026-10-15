@@ -17,8 +17,8 @@ test("TEST管理员新增和编辑人员档案均阻止重复身份证或护照"
     sessionStorage.clear();
     localStorage.setItem("personnelRecords", JSON.stringify([
       { personId: "TEST-ADMIN-001", name: "TEST管理员", phone: "13800000001", position: "管理员", status: "active", approvalStatus: "approved", personnelStatus: "在职可用" },
-      { personId: "TEST-PERSON-ID-OWNER", name: "TEST身份证原档案", phone: "13800000002", position: "汽车司机", idCardNumber: "TEST-ID-DUPLICATE-001", status: "active", approvalStatus: "approved", personnelStatus: "在职可用" },
-      { personId: "TEST-PERSON-PASSPORT-OWNER", name: "TEST护照原档案", phone: "13800000003", position: "汽车司机", passportNumber: "TEST-PASSPORT-DUPLICATE-001", status: "active", approvalStatus: "approved", personnelStatus: "在职可用" },
+      { personId: "TEST-PERSON-ID-OWNER", name: "TEST身份证原档案", phone: "13800000002", position: "汽车司机", idCardNumber: "TEST-ID-DUPLICATE-\u200b001", status: "active", approvalStatus: "approved", personnelStatus: "在职可用" },
+      { personId: "TEST-PERSON-PASSPORT-OWNER", name: "TEST护照原档案", phone: "13800000003", position: "汽车司机", passportNumber: "TEST-PASSPORT-DUPLICATE-\u2060001", status: "active", approvalStatus: "approved", personnelStatus: "在职可用" },
       { personId: "TEST-PERSON-EDIT", name: "TEST待编辑档案", phone: "13800000004", position: "汽车司机", idCardNumber: "TEST-ID-EDIT-001", status: "active", approvalStatus: "approved", personnelStatus: "在职可用" }
     ]));
     localStorage.setItem("adminPersonId", "TEST-ADMIN-001");

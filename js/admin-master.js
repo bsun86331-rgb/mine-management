@@ -137,7 +137,8 @@ function normalizePersonnelPosition(position) {
 
 function normalizeIdentityDocument(value) {
   return String(value || "")
-    .replace(/\s+/g, "")
+    .normalize("NFKC")
+    .replace(/[\p{White_Space}\p{Cf}]+/gu, "")
     .toUpperCase();
 }
 

@@ -19,8 +19,8 @@ test("TEST登记阻止重复身份证或护照，但允许本人更新原档案"
     localStorage.clear();
     sessionStorage.clear();
     localStorage.setItem("personnelRecords", JSON.stringify([
-      { personId: "TEST-PERSON-ID-OWNER", employeeNo: "TEST-PERSON-ID-OWNER", name: "TEST身份证原档案", phone: "13800000001", position: "汽车司机", team: "生产A组", idCardNumber: "TEST-ID-DUPLICATE-001", passportNumber: "", status: "rejected", approvalStatus: "rejected", personnelStatus: "待修改", testFixture: true },
-      { personId: "TEST-PERSON-PASSPORT-OWNER", employeeNo: "TEST-PERSON-PASSPORT-OWNER", name: "TEST护照原档案", phone: "13800000002", position: "汽车司机", team: "生产B组", idCardNumber: "", passportNumber: "TEST-PASSPORT-DUPLICATE-001", status: "pending", approvalStatus: "pending", personnelStatus: "待审核", testFixture: true }
+      { personId: "TEST-PERSON-ID-OWNER", employeeNo: "TEST-PERSON-ID-OWNER", name: "TEST身份证原档案", phone: "13800000001", position: "汽车司机", team: "生产A组", idCardNumber: "TEST-ID-DUPLICATE-\u200b001", passportNumber: "", status: "rejected", approvalStatus: "rejected", personnelStatus: "待修改", testFixture: true },
+      { personId: "TEST-PERSON-PASSPORT-OWNER", employeeNo: "TEST-PERSON-PASSPORT-OWNER", name: "TEST护照原档案", phone: "13800000002", position: "汽车司机", team: "生产B组", idCardNumber: "", passportNumber: "TEST-PASSPORT-DUPLICATE-\u2060001", status: "pending", approvalStatus: "pending", personnelStatus: "待审核", testFixture: true }
     ]));
     localStorage.setItem("TEST-PERSON-DUPLICATE-IDENTITY-SETUP", "done");
   });

@@ -2481,6 +2481,39 @@ function approveCurrentPerson() {
     const person =
         records[index];
 
+    const normalizeIdentityDocument = value =>
+        String(value || "")
+            .normalize("NFKC")
+            .replace(/[\p{White_Space}\p{Cf}]+/gu, "")
+            .toUpperCase();
+
+    const duplicateIdentity = records.find((record, recordIndex) => {
+        if (recordIndex === index) return false;
+
+        const candidateId = normalizeIdentityDocument(
+            person.idCardNumber || person.idCard
+        );
+        const candidatePassport = normalizeIdentityDocument(
+            person.passportNumber || person.passport
+        );
+        const savedId = normalizeIdentityDocument(
+            record.idCardNumber || record.idCard
+        );
+        const savedPassport = normalizeIdentityDocument(
+            record.passportNumber || record.passport
+        );
+
+        return Boolean(
+            (candidateId && savedId === candidateId) ||
+            (candidatePassport && savedPassport === candidatePassport)
+        );
+    });
+
+    if (duplicateIdentity) {
+        alert("证件号已存在人员档案，不能重复批准。");
+        return;
+    }
+
 
     if (
         getApprovalState(person) ===
