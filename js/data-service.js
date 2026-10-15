@@ -727,6 +727,7 @@ Purpose:
         fuel_intakes: ["intakeId", "intake_id"],
         fuel_stock_adjustments: ["adjustmentId", "adjustment_id"],
         payroll_monthly_locks: ["month", "payrollMonth", "payroll_month"],
+        payroll_audit_logs: ["auditId", "audit_id"],
         equipment_maintenance_settings: ["equipmentId", "equipment_id"],
         attendance_records: ["attendanceId", "attendance_id"],
         leave_requests: ["leaveId", "leave_id", "requestId", "request_id", "id"],
