@@ -2308,7 +2308,7 @@ Purpose:
 
         const allowed = new Set(columns);
         const result = {};
-        const extra = payload.extra && typeof payload.extra === "object" && !Array.isArray(payload.extra)
+        const expandedExtra = payload.extra && typeof payload.extra === "object" && !Array.isArray(payload.extra)
             ? clone(payload.extra)
             : {};
 
@@ -2324,12 +2324,15 @@ Purpose:
             result[snakeToCamel(key)] = clone(fieldValue);
         }
 
+        // Keep the JSONB container available and also expose its legacy top-level fields.
         // Real columns win over same-named JSONB keys to avoid shadowing authoritative values.
-        for (const [key, fieldValue] of Object.entries(result)) {
-            extra[key] = fieldValue;
-        }
-
-        return extra;
+        return {
+            ...expandedExtra,
+            ...result,
+            ...(payload.extra && typeof payload.extra === "object" && !Array.isArray(payload.extra)
+                ? { extra: clone(payload.extra) }
+                : {})
+        };
     }
 
 
