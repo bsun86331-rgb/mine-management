@@ -149,7 +149,7 @@ test("TEST已审核调度员可以进入调度操作页", async ({ page }) => {
   });
 
   await page.goto(ORIGIN + "/dispatch.html", { waitUntil: "domcontentloaded" });
-  await expect(page).toHaveURL(/dispatch\\.html$/);
+  await expect(page).toHaveURL(/dispatch\.html$/);
   await expect(page.getByRole("heading", { name: /生产调度中心/ })).toBeVisible();
   expect(state.errors).toEqual([]);
   expect(state.blocked).toEqual([]);
