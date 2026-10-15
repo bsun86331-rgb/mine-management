@@ -49,7 +49,7 @@ textarea{min-height:72px;resize:vertical}.send{border:0;border-radius:9px;backgr
 <body>
 <header>
   <div class="head">
-    <div><h1>🤖 机器人测试控制中心</h1><div class="sub">Robot Test Control Center · mine-management</div></div>
+    <div><h1>🤖 机器人测试控制中心</h1><div class="sub">Robot Test Control Center · mine-management · 系统版本 V2.14.4</div></div>
     <div class="safe">🔒 仅允许 TEST- 数据</div>
   </div>
 </header>
@@ -65,7 +65,7 @@ textarea{min-height:72px;resize:vertical}.send{border:0;border-radius:9px;backgr
 
   <section class="panel readiness">
     <div class="title" style="padding:0 0 10px;border:0">
-      <h2>🚦 发布就绪状态</h2>
+      <h2>🧭 核心/黄金快速检查</h2>
       <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
         <span id="readinessUpdated">尚无回归结果</span>
         <a id="latestReportMd" href="/api/report/latest.md" style="display:none;font-size:12px;font-weight:800;text-decoration:none">⬇ Markdown</a>
@@ -81,15 +81,15 @@ textarea{min-height:72px;resize:vertical}.send{border:0;border-radius:9px;backgr
       </div>
 
       <div class="ready-card">
-        <div class="ready-label">发布前黄金回归</div>
+        <div class="ready-label">黄金回归</div>
         <div id="goldenReadyValue" class="ready-value ready-unknown">未运行</div>
-        <div id="goldenReadySub" class="ready-sub">运行“发布前黄金回归”后更新</div>
+        <div id="goldenReadySub" class="ready-sub">运行“黄金回归”后更新</div>
       </div>
 
       <div class="ready-card">
         <div class="ready-label">综合判断</div>
         <div id="overallReadyValue" class="ready-value ready-unknown">待验证</div>
-        <div id="overallReadySub" class="ready-sub">核心 + 黄金都通过后显示“可发布”</div>
+        <div id="overallReadySub" class="ready-sub">仅表示核心/黄金快速检查；发布前仍需完整 Playwright 全套通过</div>
       </div>
     </div>
   </section>
@@ -136,8 +136,8 @@ textarea{min-height:72px;resize:vertical}.send{border:0;border-radius:9px;backgr
         <div class="quick">
           <button data-cmd="开始测试临时非卸载区卸料完整闭环">▶ 临时卸料闭环</button>
           <button data-cmd="检查当前机器人卡在哪一步">📍 当前卡点</button>
-          <button data-cmd="运行一键发布检查">🚀 一键发布检查</button>
-          <button data-cmd="运行发布前黄金回归">🏆 黄金回归</button>
+          <button data-cmd="运行一键核心/黄金检查">✅ 一键核心/黄金检查</button>
+          <button data-cmd="运行黄金回归">🏆 黄金回归</button>
           <button data-cmd="运行全部核心回归测试">✅ 核心回归</button>
           <button data-cmd="输出当前测试报告">📄 测试报告</button>
           <button data-cmd="全部机器人恢复待命">↺ 全部待命</button>
@@ -192,7 +192,7 @@ function renderReadiness(data){
     if(!row){
       value.textContent="未运行";
       value.classList.add("ready-unknown");
-      sub.textContent=key==="core" ? "运行“全部核心回归”后更新" : "运行“发布前黄金回归”后更新";
+      sub.textContent=key==="core" ? "运行“全部核心回归”后更新" : "运行“黄金回归”后更新";
       return;
     }
 
@@ -219,13 +219,13 @@ function renderReadiness(data){
   const golden=readinessState.golden;
 
   if(core?.status==="pass" && golden?.status==="pass"){
-    overall.textContent="可发布";
+    overall.textContent="核心/黄金检查通过";
     overall.classList.add("ready-pass");
-    overallSub.textContent="核心回归和黄金回归均已通过";
+    overallSub.textContent="快速检查已通过；发布前仍需完整 Playwright 全套通过。";
   }else if(core?.status==="fail" || golden?.status==="fail"){
-    overall.textContent="暂不可发布";
+    overall.textContent="快速检查未通过";
     overall.classList.add("ready-fail");
-    overallSub.textContent="存在失败回归，请先处理 FAIL";
+    overallSub.textContent="存在核心/黄金检查失败，请先处理 FAIL。";
   }else{
     overall.textContent="待验证";
     overall.classList.add("ready-unknown");

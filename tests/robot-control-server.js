@@ -25524,14 +25524,14 @@ function buildCurrentTestReport() {
         &&
         golden?.status ===
             "pass"
-            ? "ready"
+            ? "quick-checks-pass"
             : (
                 core?.status ===
                     "fail"
                 ||
                 golden?.status ===
                     "fail"
-                    ? "blocked"
+                    ? "quick-checks-failed"
                     : "pending"
             );
 
@@ -25545,11 +25545,11 @@ function buildCurrentTestReport() {
 
         overallLabel:
             overallStatus ===
-                "ready"
+                "quick-checks-pass"
                 ? "核心/黄金检查通过（完整 Playwright 仍需单独通过）"
                 : overallStatus ===
-                    "blocked"
-                    ? "暂不可发布"
+                    "quick-checks-failed"
+                    ? "核心/黄金检查未通过"
                     : "待验证",
 
         scopeLabel:
