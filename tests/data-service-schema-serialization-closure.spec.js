@@ -80,7 +80,7 @@ test("Supabase 序列化契约与 PostgreSQL schema 一致，并完成隔离往�
     path.join(__dirname, "../database/database-schema.sql"),
     "utf8"
   );
-  expect(service.schemaColumns).toEqual(parseSchemaTables(schemaSql));
+  expect(JSON.parse(JSON.stringify(service.schemaColumns))).toEqual(parseSchemaTables(schemaSql));
 
   service.configureSupabase({
     url: "https://supabase.test",
