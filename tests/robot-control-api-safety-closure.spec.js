@@ -57,6 +57,32 @@ test("TEST机器人控制API拒绝缺失命令和所有已支持格式的正式�
     const status = await statusResponse.json();
     expect(status.ok).toBe(true);
     expect(status.playwright.connected).toBe(false);
+    const readinessResponse = await fetch(baseUrl + "/api/readiness");
+    expect(readinessResponse.status).toBe(200);
+    const readiness = await readinessResponse.json();
+    expect(readiness.ok).toBe(true);
+    expect(readiness.readiness).toEqual({
+      core: null,
+      golden: null,
+      updatedAt: null
+    });
+    expect(Array.isArray(readiness.coverage)).toBe(true);
+    expect(readiness.coverage.length).toBeGreaterThan(0);
+    expect(readiness.coverage.every(item =>
+      typeof item.key === "string" &&
+      typeof item.label === "string" &&
+      ["uncovered", "pass", "fail"].includes(item.status)
+    )).toBe(true);
+
+    const latestReportResponse = await fetch(baseUrl + "/api/report/latest");
+    expect(latestReportResponse.status).toBe(200);
+    const latestReport = await latestReportResponse.json();
+    expect(latestReport.ok).toBe(true);
+    expect(latestReport.latestReport).toEqual({
+      exists: false,
+      markdown: null,
+      json: null
+    });
 
     const panelResponse = await fetch(baseUrl);
     expect(panelResponse.status).toBe(200);
