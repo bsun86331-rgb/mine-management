@@ -13,7 +13,7 @@ test("TEST最终考勤保存遇到审计存储失败时不改变考勤或日确�
   page.on("pageerror", error => errors.push(error.message));
   page.on("dialog", async dialog => {
     dialogs.push(dialog.message());
-    await dialog.accept();
+    await dialog.accept(dialog.type === "prompt" ? "TEST故障注入解锁原因" : undefined);
   });
 
   await page.addInitScript(() => {
@@ -152,5 +152,52 @@ test("TEST最终考勤保存遇到审计存储失败时不改变考勤或日确�
   expect(state.final.finalAttendance).toBe(0.5);
   expect(state.daily.status).toBe("confirmed");
   expect(state.audit).toEqual([]);
+
+  // A failed whole-day confirmation must leave the confirmation status untouched and be handled visibly.
+  await page.locator("#cancelFinalAttendanceEditButton").click();
+  let dialogStart = dialogs.length;
+  await page.locator("#finalAttendanceConfirmDayButton").click();
+  await expect.poll(() => dialogs.slice(dialogStart).some(message => message.includes("保存失败"))).toBe(true);
+  let dailyStatus = await page.evaluate(date =>
+    JSON.parse(localStorage.getItem("adminDailyAttendanceFinalConfirmations") || "[]")
+      .find(row => row.date === date)?.status,
+    state.date
+  );
+  expect(dailyStatus).toBe("confirmed");
+
+  // A failed monthly lock write must not create either the lock or a partial audit event.
+  await page.locator("#finalAttendanceMonthlyTab").click();
+  await page.locator("#finalAttendanceMonth").fill(state.date.slice(0, 7));
+  dialogStart = dialogs.length;
+  await page.locator("#finalAttendanceLockMonthButton").click();
+  await expect.poll(() => dialogs.slice(dialogStart).some(message => message.includes("保存失败"))).toBe(true);
+  let monthState = await page.evaluate(month => ({
+    lock: JSON.parse(localStorage.getItem("adminAttendanceMonthlyLocks") || "[]")
+      .find(row => row.month === month),
+    audit: JSON.parse(localStorage.getItem("adminAttendanceAuditLogs") || "[]")
+  }), state.date.slice(0, 7));
+  expect(monthState.lock).toBeUndefined();
+  expect(monthState.audit).toEqual([]);
+
+  // Create a valid lock, then verify that a failed unlock leaves it locked and adds no false audit.
+  await page.evaluate(() => localStorage.setItem("TEST-ATT-AUDIT-FAIL", "0"));
+  await page.locator("#finalAttendanceLockMonthButton").click();
+  await expect.poll(() => page.evaluate(month =>
+    JSON.parse(localStorage.getItem("adminAttendanceMonthlyLocks") || "[]")
+      .find(row => row.month === month)?.status,
+    state.date.slice(0, 7)
+  )).toBe("locked");
+  await page.evaluate(() => localStorage.setItem("TEST-ATT-AUDIT-FAIL", "1"));
+  dialogStart = dialogs.length;
+  await page.locator("#finalAttendanceUnlockMonthButton").click();
+  await expect.poll(() => dialogs.slice(dialogStart).some(message => message.includes("保存失败"))).toBe(true);
+  monthState = await page.evaluate(month => ({
+    lock: JSON.parse(localStorage.getItem("adminAttendanceMonthlyLocks") || "[]")
+      .find(row => row.month === month),
+    audit: JSON.parse(localStorage.getItem("adminAttendanceAuditLogs") || "[]")
+  }), state.date.slice(0, 7));
+  expect(monthState.lock.status).toBe("locked");
+  expect(monthState.audit).toHaveLength(1);
+  expect(monthState.audit[0].action).toBe("lock_month");
   expect(errors).toEqual([]);
 });
