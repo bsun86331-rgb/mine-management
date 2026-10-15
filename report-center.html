@@ -619,7 +619,7 @@
     <div class="header-inner">
         <div>
             <h1>📊 综合报表中心</h1>
-            <p>Report Center · V2.10.8</p>
+            <p>Report Center · V2.10.9</p>
         </div>
 
         <button type="button" class="header-btn" onclick="goHome()">返回首页</button>
@@ -2555,13 +2555,8 @@ function getPayrollFinalLock(month) {
     );
 }
 
-function appendPayrollAudit(record) {
-    const rows =
-        readArray(
-            PAYROLL_AUDIT_KEY
-        );
-
-    rows.push({
+function createPayrollAuditEntry(record) {
+    return {
         auditId:
             "PAYROLL_AUDIT_" +
             Date.now() +
@@ -2585,7 +2580,20 @@ function appendPayrollAudit(record) {
             ),
 
         ...record
-    });
+    };
+}
+
+function appendPayrollAudit(record) {
+    const rows =
+        readArray(
+            PAYROLL_AUDIT_KEY
+        );
+
+    rows.push(
+        createPayrollAuditEntry(
+            record
+        )
+    );
 
     localStorage.setItem(
         PAYROLL_AUDIT_KEY,
@@ -2593,6 +2601,75 @@ function appendPayrollAudit(record) {
     );
 }
 
+function commitPayrollLockAndAudit(
+    lockRows,
+    auditRecord,
+    failureMessage
+) {
+    const previousValues = new Map(
+        [
+            PAYROLL_LOCK_KEY,
+            PAYROLL_AUDIT_KEY
+        ].map(key => [
+            key,
+            localStorage.getItem(key)
+        ])
+    );
+
+    try {
+        const auditRows =
+            readArray(
+                PAYROLL_AUDIT_KEY
+            );
+
+        auditRows.push(
+            createPayrollAuditEntry(
+                auditRecord
+            )
+        );
+
+        localStorage.setItem(
+            PAYROLL_LOCK_KEY,
+            JSON.stringify(lockRows)
+        );
+
+        localStorage.setItem(
+            PAYROLL_AUDIT_KEY,
+            JSON.stringify(auditRows)
+        );
+
+        return true;
+
+    } catch (error) {
+        let rollbackFailed = false;
+
+        for (const [key, value] of previousValues) {
+            try {
+                if (value === null) {
+                    localStorage.removeItem(key);
+                } else {
+                    localStorage.setItem(
+                        key,
+                        value
+                    );
+                }
+            } catch (rollbackError) {
+                rollbackFailed = true;
+            }
+        }
+
+        alert(
+            failureMessage +
+            (
+                rollbackFailed
+                    ? " 存储回滚也未能完成，请先核对工资锁定和审计记录，再重试。"
+                    : " 本次操作未保存，请检查浏览器存储空间后重试。"
+            )
+        );
+
+        return false;
+    }
+}
 function payrollOperatorName() {
     return (
         currentPerson?.name ||
@@ -2927,31 +3004,36 @@ function confirmAndLockPayroll() {
         lock
     );
 
-    savePayrollLocks(
-        existing
-    );
+    const saved =
+        commitPayrollLockAndAudit(
+            existing,
+            {
+                action:
+                    "lock_payroll",
 
-    appendPayrollAudit({
-        action:
-            "lock_payroll",
+                month,
 
-        month,
+                payrollLockId:
+                    lock.lockId,
 
-        payrollLockId:
-            lock.lockId,
+                attendanceLockId:
+                    lock.attendanceLockId,
 
-        attendanceLockId:
-            lock.attendanceLockId,
+                personCount:
+                    lock.personCount,
 
-        personCount:
-            lock.personCount,
+                totalSalary:
+                    lock.totalSalary,
 
-        totalSalary:
-            lock.totalSalary,
+                reason:
+                    "最终确认并锁定本月工资"
+            },
+            "工资锁定未能完整保存。"
+        );
 
-        reason:
-            "最终确认并锁定本月工资"
-    });
+    if (!saved) {
+        return;
+    }
 
     renderPayroll();
 
@@ -3044,25 +3126,30 @@ function unlockPayrollForCorrection() {
             cleaned
     };
 
-    savePayrollLocks(
-        rows
-    );
+    const saved =
+        commitPayrollLockAndAudit(
+            rows,
+            {
+                action:
+                    "unlock_payroll",
 
-    appendPayrollAudit({
-        action:
-            "unlock_payroll",
+                month,
 
-        month,
+                payrollLockId:
+                    lock.lockId,
 
-        payrollLockId:
-            lock.lockId,
+                attendanceLockId:
+                    lock.attendanceLockId,
 
-        attendanceLockId:
-            lock.attendanceLockId,
+                reason:
+                    cleaned
+            },
+            "工资解锁未能完整保存。"
+        );
 
-        reason:
-            cleaned
-    });
+    if (!saved) {
+        return;
+    }
 
     renderPayroll();
 
