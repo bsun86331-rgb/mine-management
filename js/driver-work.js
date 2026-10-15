@@ -1,7 +1,7 @@
 /*
 ====================================================
 矿山管理系统
-司机端 V2.13.9
+司机端 V2.13.10
 ====================================================
 功能：
 1. 审核通过司机才可进入
@@ -6556,9 +6556,43 @@ document.addEventListener("DOMContentLoaded", function () {
         );
 
 
-        saveTripRecords(
-            records
-        );
+        try {
+            saveTripRecords(
+                records
+            );
+        }
+        catch (storageError) {
+            /*
+             * Keep the physical transport cycle retryable when the browser
+             * cannot persist its trip record. Do not leave completedAt set,
+             * or the next click would discard the cycle as already counted.
+             */
+            cycle.completedAt = "";
+
+            try {
+                saveTransportCycle(cycle);
+            }
+            catch (cycleStorageError) {
+                console.error(
+                    "运输趟次保存失败，恢复运输闭环状态也失败：",
+                    cycleStorageError
+                );
+            }
+
+            resetTripButton();
+
+            alert(
+                "趟次记录保存失败，本趟尚未计数。\n\n" +
+                "运输闭环已保留，请检查浏览器存储空间后重试。"
+            );
+
+            console.error(
+                "运输趟次本机保存失败：",
+                storageError
+            );
+
+            return;
+        }
 
 
         /*
@@ -9752,3 +9786,4 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
 });
+
