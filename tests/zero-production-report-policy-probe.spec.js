@@ -133,7 +133,7 @@ test("TEST司机的零产量报备是否要求车队长确认", async ({ page, c
     localStorage.setItem("selectedPosition", "汽车司机");
   });
   await page.goto(`${ORIGIN}/attendance.html`, { waitUntil: "domcontentloaded" });
-  await expect(page.locator("#zeroProductionBadge")).toHaveText("审核通过");
+  await expect(page.locator("#zeroProductionBadge")).toHaveText("异常报备已通过");
   await openAdminAttendanceReport(page);
   await expect(page.locator("#attendanceDayZeroPending")).toHaveText("0");
   await expect(page.locator("#attendanceMonthZeroPending")).toHaveText("0");
