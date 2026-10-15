@@ -36,6 +36,9 @@ test("TEST快速检查报告明确完整Playwright仍是独立发布门槛", asy
   expect(center).toContain("核心/黄金检查通过");
   expect(center).toContain("发布前仍需完整 Playwright 全套通过");
   expect(center).not.toContain('overall.textContent="可发布"');
+  expect(center).not.toContain("一键发布检查");
+  expect(center).not.toContain("发布就绪状态");
+  expect(center).toContain("一键核心/黄金检查");
 });
 
 test("TEST机器人控制API拒绝缺失命令和所有已支持格式的正式业务ID", async () => {
