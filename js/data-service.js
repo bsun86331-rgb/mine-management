@@ -719,6 +719,15 @@ Purpose:
 
 
     const TABLE_PRIMARY_KEY_MAP = {
+        shift_executions: ["shiftId", "shift_id"],
+        transport_zones: ["zoneId", "zone_id"],
+        equipment: ["equipmentId", "equipment_id"],
+        equipment_operational_status: ["equipmentId", "equipment_id"],
+        workshop_bays: ["bayId", "bay_id"],
+        fuel_intakes: ["intakeId", "intake_id"],
+        fuel_stock_adjustments: ["adjustmentId", "adjustment_id"],
+        payroll_monthly_locks: ["month", "payrollMonth", "payroll_month"],
+        equipment_maintenance_settings: ["equipmentId", "equipment_id"],
         attendance_records: ["attendanceId", "attendance_id"],
         leave_requests: ["leaveId", "leave_id", "requestId", "request_id", "id"],
         attendance_geofence_attempts: ["attemptId", "attempt_id"],
