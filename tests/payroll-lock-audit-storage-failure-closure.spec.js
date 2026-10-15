@@ -33,7 +33,7 @@ test("工资锁定和解锁审计写入失败时回滚，重试后只保留完�
 
     const file = path.resolve(
       ROOT,
-      decodeURIComponent(url.pathname).replace(/^\\/+/, "") || "index.html"
+      decodeURIComponent(url.pathname).replace(/^\/+/, "") || "index.html"
     );
     if (!file.startsWith(ROOT + path.sep)) {
       return route.fulfill({ status: 403, body: "blocked" });
