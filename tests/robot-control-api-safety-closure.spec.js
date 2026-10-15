@@ -41,6 +41,7 @@ test("TEST快速检查报告明确完整Playwright仍是独立发布门槛", asy
   expect(center).not.toContain('overall.textContent="可发布"');
   expect(center).not.toContain("一键发布检查");
   expect(center).not.toContain("发布就绪状态");
+  expect(center).not.toContain("可发布");
   expect(center).toContain("一键核心/黄金检查");
 });
 
