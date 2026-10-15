@@ -31,6 +31,53 @@ function makeService() {
   return { service: context.MineDataService, localStorage };
 }
 
+function extractObjectLiteral(name) {
+  const marker = `const ${name} =`;
+  const declaration = source.indexOf(marker);
+  if (declaration < 0) throw new Error(`Missing ${name} in DataService`);
+  const start = source.indexOf("{", declaration);
+  let depth = 0;
+  for (let i = start; i < source.length; i++) {
+    if (source[i] === "{") depth++;
+    else if (source[i] === "}" && --depth === 0) {
+      return vm.runInNewContext(source.slice(start, i + 1));
+    }
+  }
+  throw new Error(`Unclosed ${name} declaration`);
+}
+
+function findSchemaPrimaryKeyGaps() {
+  const appTables = extractObjectLiteral("TABLE_KEY_MAP");
+  const mappedKeys = extractObjectLiteral("TABLE_PRIMARY_KEY_MAP");
+  const candidateStart = source.indexOf("const candidates = [");
+  const candidateEnd = source.indexOf("\n        ];", candidateStart);
+  if (candidateStart < 0 || candidateEnd < 0) throw new Error("Cannot read generic primary-key candidates");
+  const genericKeys = new Set(
+    [...source.slice(candidateStart, candidateEnd).matchAll(/"([^"]+)"/g)].map(match => match[1])
+  );
+  const readStart = source.indexOf("function readRaw(");
+  const readEnd = source.indexOf("\n    function writeRaw(", readStart);
+  if (readStart < 0 || readEnd < 0) throw new Error("Cannot read singleton-storage rules");
+  const singletonTables = new Set(
+    [...source.slice(readStart, readEnd).matchAll(/table\s*===\s*"([a-z_]+)"/g)].map(match => match[1])
+  );
+  const schema = fs.readFileSync(path.join(ROOT, "database", "database-schema.sql"), "utf8");
+  const blocks = [...schema.matchAll(/create table if not exists\s+([a-z_]+)\s*\(([\s\S]*?)\);/gi)];
+  const gaps = [];
+  for (const [, table, columns] of blocks) {
+    if (!appTables[table] || singletonTables.has(table)) continue;
+    const pk = columns.match(/^\s*([a-z_]+)\s+[^,\n]*\bprimary key\b/im)?.[1];
+    if (!pk) continue;
+    const camelPk = pk.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
+    const explicit = mappedKeys[table] || [];
+    if (!explicit.includes(pk) && !explicit.includes(camelPk) &&
+        !genericKeys.has(pk) && !genericKeys.has(camelPk)) {
+      gaps.push(`${table}.${pk}`);
+    }
+  }
+  return gaps;
+}
+
 const cases = [
   ["attendance_records", "attendanceId", { date:"2026-10-14" }, { date:"2026-10-15" }],
   ["leave_requests", "leaveId", { startTime:"2026-10-14" }, { startTime:"2026-10-16" }],
@@ -93,7 +140,11 @@ const upsertCases = [["shift_executions","shiftId","TEST-SHIFT-1"],["transport_z
     console.log(`${passed ? "PASS" : "FAIL"} ${table} same-key upsert rows=${rows.length} value=${rows[0]?.value}`);
     if (!passed) failures.push(table);
   }
-  console.log(`SUMMARY ${cases.length + upsertCases.length - failures.length}/${cases.length + upsertCases.length} pass; ${failures.length} failed: ${failures.join(", ")}`);
+  const schemaGaps = findSchemaPrimaryKeyGaps();
+  const schemaPass = schemaGaps.length === 0;
+  console.log(`${schemaPass ? "PASS" : "FAIL"} schema primary-key coverage: ${schemaGaps.length ? schemaGaps.join(", ") : "all registered array tables covered"}`);
+  if (!schemaPass) failures.push("schema_primary_key_coverage");
+  console.log(`SUMMARY ${cases.length + upsertCases.length + 1 - failures.length}/${cases.length + upsertCases.length + 1} pass; ${failures.length} failed: ${failures.join(", ")}`);
   if (failures.length) process.exitCode = 1;
 })().catch(error => { console.error(error); process.exitCode = 1; });
 
