@@ -36,7 +36,7 @@ test("TEST离职结算存储失败时回滚，重试后只生成一条记录", a
       return route.abort();
     }
 
-    const relative = decodeURIComponent(url.pathname).replace(/^\\/+/, "") || "index.html";
+    const relative = decodeURIComponent(url.pathname.slice(1)) || "index.html";
     const file = path.resolve(ROOT, relative);
     if (!file.startsWith(ROOT + path.sep)) {
       return route.fulfill({ status: 403, body: "blocked" });
@@ -60,7 +60,7 @@ test("TEST离职结算存储失败时回滚，重试后只生成一条记录", a
   });
 
   await page.goto(`${ORIGIN}/admin-master.html`);
-  await expect(page).toHaveTitle(/管理员基础资料中心 V2\\.11\\.3/);
+  await expect(page).toHaveTitle("管理员基础资料中心 V2.11.3");
 
   await page.evaluate(() => {
     document.getElementById("resignationPersonId").value = "TEST-RESIGN-001";
