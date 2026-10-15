@@ -6268,9 +6268,28 @@ document.addEventListener("DOMContentLoaded", function () {
         };
 
 
-        saveTransportCycle(
-            cycle
-        );
+        try {
+            saveTransportCycle(
+                cycle
+            );
+        }
+        catch (storageError) {
+            /* The persisted cycle remains at_unloading and can be retried. */
+            cycle.completedAt = "";
+            resetTripButton();
+
+            alert(
+                "运输闭环完成状态保存失败，本趟尚未计数。\n\n" +
+                "请检查浏览器存储空间后重试。"
+            );
+
+            console.error(
+                "运输闭环完成状态本机保存失败：",
+                storageError
+            );
+
+            return;
+        }
 
 
         const tripId =
