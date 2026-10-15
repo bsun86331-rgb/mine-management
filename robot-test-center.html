@@ -49,7 +49,7 @@ textarea{min-height:72px;resize:vertical}.send{border:0;border-radius:9px;backgr
 <body>
 <header>
   <div class="head">
-    <div><h1>🤖 机器人测试控制中心</h1><div class="sub">Robot Test Control Center · mine-management · 系统版本 V2.14.4</div></div>
+    <div><h1>🤖 机器人测试控制中心</h1><div class="sub">Robot Test Control Center · mine-management · 系统版本 V2.14.5</div></div>
     <div class="safe">🔒 仅允许 TEST- 数据</div>
   </div>
 </header>
@@ -229,7 +229,7 @@ function renderReadiness(data){
   }else{
     overall.textContent="待验证";
     overall.classList.add("ready-unknown");
-    overallSub.textContent="核心 + 黄金都通过后显示“可发布”";
+    overallSub.textContent="尚无快速检查结果；完整 Playwright 全套仍是发布前门槛。";
   }
 
   const updated=document.getElementById("readinessUpdated");
