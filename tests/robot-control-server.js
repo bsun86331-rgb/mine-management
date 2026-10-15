@@ -25432,13 +25432,13 @@ async function runOneClickReleaseCheck() {
         updateBot(
             botName,
             "pass",
-            "一键发布前检查全部通过"
+            "一键核心/黄金检查通过（完整 Playwright 仍需单独通过）"
         );
 
 
         robotMessage(
             botName,
-            "一键发布前检查完成：核心=" +
+            "一键核心/黄金检查完成：核心=" +
             core.passed +
             "/" +
             core.total +
@@ -25498,7 +25498,7 @@ async function runOneClickReleaseCheck() {
 
         robotMessage(
             botName,
-            "一键发布前检查中止：" +
+            "一键核心/黄金检查中止：" +
             message
         );
 
@@ -25546,7 +25546,7 @@ function buildCurrentTestReport() {
         overallLabel:
             overallStatus ===
                 "ready"
-                ? "可发布"
+                ? "核心/黄金检查通过（完整 Playwright 仍需单独通过）"
                 : overallStatus ===
                     "blocked"
                     ? "暂不可发布"
