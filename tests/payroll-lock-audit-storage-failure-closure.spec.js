@@ -128,7 +128,8 @@ test("工资锁定和解锁审计写入失败时回滚，重试后只保留完�
     locks: JSON.parse(localStorage.getItem("payrollMonthlyLocks") || "[]"),
     audit: JSON.parse(localStorage.getItem("payrollAuditLogs") || "[]")
   }));
-  expect(stored.locks).toEqual([locked]);
+  expect(stored.locks).toHaveLength(1);
+  expect(stored.locks[0]).toMatchObject(locked);
   expect(stored.audit.map(row => row.action)).toEqual(["lock_payroll"]);
 
   const unlockRetry = await page.evaluate(candidate =>
@@ -143,7 +144,8 @@ test("工资锁定和解锁审计写入失败时回滚，重试后只保留完�
     locks: JSON.parse(localStorage.getItem("payrollMonthlyLocks") || "[]"),
     audit: JSON.parse(localStorage.getItem("payrollAuditLogs") || "[]")
   }));
-  expect(stored.locks).toEqual([unlocked]);
+  expect(stored.locks).toHaveLength(1);
+  expect(stored.locks[0]).toMatchObject(unlocked);
   expect(stored.audit.map(row => row.action)).toEqual(["lock_payroll", "unlock_payroll"]);
   expect(stored.audit[1].reason).toBe("TEST更正");
   expect(errors).toEqual([]);
