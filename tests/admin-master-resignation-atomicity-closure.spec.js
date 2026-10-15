@@ -7,7 +7,7 @@ const path = require("node:path");
 const ORIGIN = "https://mine.test";
 const ROOT = path.resolve(__dirname, "..");
 
-test("TEST离职结算存储失败时回滚，重试后只生成一条记录", async ({ page }) => {
+test("TEST离职结算失败可重试且阻止重复办理", async ({ page }) => {
   const blocked = [];
   const errors = [];
   page.on("pageerror", error => errors.push(error.message));
@@ -60,7 +60,7 @@ test("TEST离职结算存储失败时回滚，重试后只生成一条记录", a
   });
 
   await page.goto(`${ORIGIN}/admin-master.html`);
-  await expect(page).toHaveTitle("管理员基础资料中心 V2.11.3");
+  await expect(page).toHaveTitle("管理员基础资料中心 V2.11.4");
 
   await page.evaluate(() => {
     document.getElementById("resignationPersonId").value = "TEST-RESIGN-001";
@@ -99,6 +99,16 @@ test("TEST离职结算存储失败时回滚，重试后只生成一条记录", a
   expect(state.people.find(person => person.personId === "TEST-RESIGN-001").status).toBe("resigned");
   expect(state.settlements).toHaveLength(1);
   expect(state.settlements[0].personId).toBe("TEST-RESIGN-001");
+
+  await page.evaluate(() => confirmResignation());
+  state = await page.evaluate(() => ({
+    people: JSON.parse(localStorage.getItem("personnelRecords") || "[]"),
+    settlements: JSON.parse(localStorage.getItem("resignationSettlementRecords") || "[]"),
+    toast: document.getElementById("toast")?.textContent || ""
+  }));
+  expect(state.people.find(person => person.personId === "TEST-RESIGN-001").status).toBe("resigned");
+  expect(state.settlements).toHaveLength(1);
+  expect(state.toast).toContain("该员工已经离职");
   expect(errors).toEqual([]);
   expect(blocked).toEqual([]);
 });

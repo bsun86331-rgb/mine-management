@@ -1,6 +1,6 @@
 /* =========================================================
    矿山管理系统
-   V2.11.3 管理员基础资料中心
+   V2.11.4 管理员基础资料中心
    人员 + 设备（后勤物资统一由库房管理）
 ========================================================= */
 
@@ -6542,6 +6542,14 @@ function confirmResignation() {
   const person =
     personnel[index];
 
+  if (person.status === "resigned") {
+    showToast(
+      "该员工已经离职",
+      "error"
+    );
+    return;
+  }
+
   const outstanding =
     getPersonOutstandingMaterials(
       personId
@@ -6938,7 +6946,7 @@ function init() {
   updateSummary();
 
   console.log(
-    "V2.11.3 管理员基础资料中心已加载：后勤物资统一由库房管理"
+    "V2.11.4 管理员基础资料中心已加载：后勤物资统一由库房管理"
   );
 }
 
