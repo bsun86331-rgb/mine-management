@@ -718,6 +718,636 @@ Purpose:
     }
 
 
+    // Keep this allow-list aligned with database/database-schema.sql. Unknown fields
+    // are preserved in a table's JSONB extra column when available; otherwise writes fail
+    // before any network request instead of sending invalid PostgREST columns.
+    const REMOTE_SCHEMA_COLUMNS = {
+            "audit_logs": [
+                    "id",
+                    "entity_type",
+                    "entity_id",
+                    "action",
+                    "actor_person_id",
+                    "before_data",
+                    "after_data",
+                    "client_record_id",
+                    "created_at"
+            ],
+            "system_settings": [
+                    "setting_key",
+                    "setting_value",
+                    "updated_by",
+                    "updated_at"
+            ],
+            "general_manager_business_settings": [
+                    "singleton_id",
+                    "report_month",
+                    "comprehensive_unit_price",
+                    "updated_at"
+            ],
+            "production_volume_settings": [
+                    "singleton_id",
+                    "default_volume_per_trip",
+                    "vehicle_models",
+                    "updated_at"
+            ],
+            "personnel": [
+                    "person_id",
+                    "auth_user_id",
+                    "employee_no",
+                    "name",
+                    "position",
+                    "department",
+                    "team",
+                    "phone",
+                    "status",
+                    "approval_status",
+                    "personnel_status",
+                    "enabled",
+                    "extra",
+                    "created_at",
+                    "updated_at"
+            ],
+            "vehicles": [
+                    "vehicle_id",
+                    "vehicle_number",
+                    "vehicle_type",
+                    "model",
+                    "team",
+                    "status",
+                    "current_driver_id",
+                    "extra",
+                    "created_at",
+                    "updated_at"
+            ],
+            "team_transfer_requests": [
+                    "request_id",
+                    "person_id",
+                    "from_team",
+                    "to_team",
+                    "reason",
+                    "status",
+                    "reviewed_by",
+                    "reviewed_at",
+                    "created_at"
+            ],
+            "vehicle_change_requests": [
+                    "request_id",
+                    "driver_id",
+                    "from_vehicle_id",
+                    "to_vehicle_id",
+                    "reason",
+                    "status",
+                    "reviewed_by",
+                    "reviewed_at",
+                    "created_at"
+            ],
+            "transport_zones": [
+                    "zone_id",
+                    "zone_name",
+                    "zone_type",
+                    "latitude",
+                    "longitude",
+                    "radius_m",
+                    "geometry_data",
+                    "status",
+                    "created_at",
+                    "updated_at"
+            ],
+            "dispatch_tasks": [
+                    "task_id",
+                    "task_type",
+                    "title",
+                    "driver_id",
+                    "vehicle_id",
+                    "load_zone_id",
+                    "unload_zone_id",
+                    "status",
+                    "priority",
+                    "published_by",
+                    "published_at",
+                    "started_at",
+                    "completed_at",
+                    "client_record_id",
+                    "extra",
+                    "created_at",
+                    "updated_at"
+            ],
+            "shift_executions": [
+                    "shift_id",
+                    "shift_date",
+                    "shift_name",
+                    "driver_id",
+                    "vehicle_id",
+                    "task_id",
+                    "status",
+                    "started_at",
+                    "ended_at",
+                    "extra",
+                    "created_at"
+            ],
+            "trip_records": [
+                    "trip_id",
+                    "task_id",
+                    "shift_id",
+                    "driver_id",
+                    "vehicle_id",
+                    "load_zone_id",
+                    "unload_zone_id",
+                    "loaded_at",
+                    "unloaded_at",
+                    "completed_at",
+                    "status",
+                    "payload_amount",
+                    "client_record_id",
+                    "extra",
+                    "created_at"
+            ],
+            "gps_events": [
+                    "id",
+                    "person_id",
+                    "vehicle_id",
+                    "task_id",
+                    "event_type",
+                    "latitude",
+                    "longitude",
+                    "accuracy_m",
+                    "speed_kph",
+                    "zone_id",
+                    "client_record_id",
+                    "recorded_at"
+            ],
+            "temporary_unload_requests": [
+                    "request_id",
+                    "task_id",
+                    "driver_id",
+                    "vehicle_id",
+                    "requested_zone_text",
+                    "latitude",
+                    "longitude",
+                    "reason",
+                    "status",
+                    "reviewed_by",
+                    "reviewed_at",
+                    "created_at"
+            ],
+            "temporary_loading_assignments": [
+                    "assignment_id",
+                    "driver_id",
+                    "vehicle_id",
+                    "task_id",
+                    "loading_source",
+                    "status",
+                    "starts_at",
+                    "ends_at",
+                    "created_at"
+            ],
+            "auxiliary_work_records": [
+                    "record_id",
+                    "person_id",
+                    "vehicle_id",
+                    "work_type",
+                    "work_area",
+                    "quantity",
+                    "unit",
+                    "status",
+                    "started_at",
+                    "completed_at",
+                    "remark",
+                    "client_record_id",
+                    "created_at"
+            ],
+            "equipment": [
+                    "equipment_id",
+                    "equipment_number",
+                    "equipment_type",
+                    "model",
+                    "status",
+                    "current_meter",
+                    "extra",
+                    "created_at",
+                    "updated_at"
+            ],
+            "equipment_checks": [
+                    "check_id",
+                    "equipment_id",
+                    "checker_person_id",
+                    "result",
+                    "abnormal_items",
+                    "remark",
+                    "checked_at",
+                    "client_record_id"
+            ],
+            "equipment_operational_status": [
+                    "equipment_id",
+                    "operational_status",
+                    "locked",
+                    "lock_reason",
+                    "updated_at"
+            ],
+            "equipment_meter_readings": [
+                    "reading_id",
+                    "equipment_id",
+                    "meter_type",
+                    "reading_value",
+                    "recorded_by",
+                    "recorded_at",
+                    "client_record_id"
+            ],
+            "equipment_maintenance_settings": [
+                    "equipment_id",
+                    "interval_hours",
+                    "interval_km",
+                    "warning_before_hours",
+                    "warning_before_km",
+                    "settings",
+                    "updated_at"
+            ],
+            "equipment_maintenance_records": [
+                    "maintenance_record_id",
+                    "equipment_id",
+                    "maintenance_type",
+                    "meter_value",
+                    "description",
+                    "performed_by",
+                    "performed_at",
+                    "next_due_at",
+                    "created_at"
+            ],
+            "maintenance_requests": [
+                    "request_id",
+                    "equipment_id",
+                    "requested_by",
+                    "source_check_id",
+                    "description",
+                    "severity",
+                    "status",
+                    "approved_by",
+                    "approved_at",
+                    "created_at"
+            ],
+            "workshop_bays": [
+                    "bay_id",
+                    "bay_name",
+                    "status",
+                    "current_order_id",
+                    "updated_at"
+            ],
+            "maintenance_orders": [
+                    "order_id",
+                    "request_id",
+                    "equipment_id",
+                    "bay_id",
+                    "assigned_worker_id",
+                    "status",
+                    "started_at",
+                    "completed_at",
+                    "accepted_at",
+                    "result",
+                    "created_at"
+            ],
+            "maintenance_reports": [
+                    "report_id",
+                    "order_id",
+                    "equipment_id",
+                    "worker_id",
+                    "summary",
+                    "details",
+                    "submitted_at"
+            ],
+            "maintenance_alerts": [
+                    "alert_id",
+                    "equipment_id",
+                    "alert_type",
+                    "message",
+                    "status",
+                    "due_at",
+                    "created_at",
+                    "resolved_at"
+            ],
+            "maintenance_costs": [
+                    "cost_id",
+                    "order_id",
+                    "equipment_id",
+                    "cost_type",
+                    "amount",
+                    "remark",
+                    "incurred_at"
+            ],
+            "warehouse_materials": [
+                    "material_id",
+                    "code",
+                    "name",
+                    "category",
+                    "spec",
+                    "unit",
+                    "material_type",
+                    "available_qty",
+                    "status",
+                    "updated_at"
+            ],
+            "material_requests": [
+                    "request_id",
+                    "person_id",
+                    "material_id",
+                    "request_quantity",
+                    "request_type",
+                    "purpose",
+                    "remark",
+                    "status",
+                    "actual_quantity",
+                    "reviewed_by",
+                    "reviewed_at",
+                    "created_at"
+            ],
+            "warehouse_transactions": [
+                    "transaction_id",
+                    "material_id",
+                    "transaction_type",
+                    "quantity",
+                    "request_id",
+                    "person_id",
+                    "reference_type",
+                    "reference_id",
+                    "remark",
+                    "client_record_id",
+                    "created_at"
+            ],
+            "material_holders": [
+                    "holder_id",
+                    "material_id",
+                    "person_id",
+                    "quantity",
+                    "assigned_at",
+                    "returned_at",
+                    "status"
+            ],
+            "material_loss_records": [
+                    "loss_id",
+                    "material_id",
+                    "person_id",
+                    "quantity",
+                    "reason",
+                    "compensation_amount",
+                    "status",
+                    "created_at"
+            ],
+            "material_recycle_records": [
+                    "recycle_id",
+                    "material_id",
+                    "person_id",
+                    "quantity",
+                    "condition_text",
+                    "created_at"
+            ],
+            "material_scrap_records": [
+                    "scrap_id",
+                    "material_id",
+                    "quantity",
+                    "reason",
+                    "approved_by",
+                    "created_at"
+            ],
+            "attendance_geofence_config": [
+                    "config_id",
+                    "enabled",
+                    "name",
+                    "latitude",
+                    "longitude",
+                    "radius_m",
+                    "max_accuracy_m",
+                    "updated_by",
+                    "updated_at"
+            ],
+            "attendance_records": [
+                    "attendance_id",
+                    "person_id",
+                    "attendance_date",
+                    "check_in_at",
+                    "check_out_at",
+                    "attendance_status",
+                    "check_in_snapshot",
+                    "check_out_snapshot",
+                    "client_record_id",
+                    "created_at"
+            ],
+            "attendance_geofence_attempts": [
+                    "attempt_id",
+                    "person_id",
+                    "action_type",
+                    "valid",
+                    "latitude",
+                    "longitude",
+                    "accuracy_m",
+                    "distance_m",
+                    "recorded_at"
+            ],
+            "leave_requests": [
+                    "request_id",
+                    "person_id",
+                    "leave_type",
+                    "start_at",
+                    "end_at",
+                    "reason",
+                    "status",
+                    "reviewed_by",
+                    "reviewed_at",
+                    "created_at"
+            ],
+            "zero_production_reports": [
+                    "report_id",
+                    "person_id",
+                    "report_date",
+                    "reason",
+                    "detail",
+                    "created_at"
+            ],
+            "fuel_station_config": [
+                    "config_id",
+                    "latitude",
+                    "longitude",
+                    "radius_m",
+                    "fuel_truck_number",
+                    "updated_at"
+            ],
+            "fuel_intakes": [
+                    "intake_id",
+                    "source",
+                    "oil_type",
+                    "amount",
+                    "remark",
+                    "created_at",
+                    "client_record_id"
+            ],
+            "fuel_requests": [
+                    "request_id",
+                    "applicant_id",
+                    "vehicle_id",
+                    "equipment_number",
+                    "equipment_type",
+                    "fuel_truck_number",
+                    "latitude",
+                    "longitude",
+                    "distance_m",
+                    "gps_status",
+                    "status",
+                    "remark",
+                    "requested_at",
+                    "started_at",
+                    "completed_at",
+                    "client_record_id"
+            ],
+            "fuel_records": [
+                    "fuel_id",
+                    "request_id",
+                    "vehicle_id",
+                    "vehicle_number",
+                    "driver_name",
+                    "amount",
+                    "photo_url",
+                    "confirmation_status",
+                    "started_at",
+                    "completed_at",
+                    "confirmed_at",
+                    "rejected_at",
+                    "reject_reason",
+                    "client_record_id",
+                    "created_at"
+            ],
+            "fuel_stock_adjustments": [
+                    "adjustment_id",
+                    "theory_stock",
+                    "actual_stock",
+                    "difference",
+                    "reason",
+                    "status",
+                    "created_at"
+            ],
+            "finance_costs": [
+                    "finance_cost_id",
+                    "cost_month",
+                    "cost_type",
+                    "name",
+                    "department",
+                    "amount",
+                    "voucher_no",
+                    "remark",
+                    "source_type",
+                    "source_id",
+                    "status",
+                    "created_at"
+            ],
+            "penalty_records": [
+                    "penalty_id",
+                    "person_id",
+                    "amount",
+                    "reason",
+                    "source_type",
+                    "source_id",
+                    "status",
+                    "created_at"
+            ],
+            "reward_records": [
+                    "reward_id",
+                    "person_id",
+                    "employee_no",
+                    "person_name",
+                    "position",
+                    "crew",
+                    "vehicle_number",
+                    "reward_type",
+                    "amount",
+                    "description",
+                    "work_date",
+                    "source",
+                    "status",
+                    "issued_by",
+                    "issued_at",
+                    "acknowledged_at",
+                    "acknowledged_by",
+                    "client_record_id",
+                    "extra",
+                    "created_at"
+            ],
+            "overtime_records": [
+                    "overtime_id",
+                    "person_id",
+                    "employee_no",
+                    "person_name",
+                    "position",
+                    "crew",
+                    "vehicle_number",
+                    "overtime_type",
+                    "hours",
+                    "amount",
+                    "description",
+                    "work_date",
+                    "source",
+                    "status",
+                    "issued_by",
+                    "issued_at",
+                    "acknowledged_at",
+                    "acknowledged_by",
+                    "client_record_id",
+                    "extra",
+                    "created_at"
+            ],
+            "payroll_standards": [
+                    "standard_id",
+                    "scope",
+                    "standard_type",
+                    "person_id",
+                    "position",
+                    "salary_mode",
+                    "base_salary",
+                    "probation_salary",
+                    "regular_salary",
+                    "monthly_salary",
+                    "performance_unit_price",
+                    "effective_date",
+                    "remark",
+                    "status",
+                    "created_at",
+                    "updated_at"
+            ],
+            "payroll_rules": [
+                    "rule_id",
+                    "updated_at"
+            ],
+            "payroll_monthly_records": [
+                    "payroll_id",
+                    "payroll_month",
+                    "person_id",
+                    "base_amount",
+                    "performance_amount",
+                    "reward_amount",
+                    "deduction_amount",
+                    "final_amount",
+                    "detail",
+                    "status",
+                    "created_at",
+                    "updated_at"
+            ],
+            "payroll_monthly_locks": [
+                    "payroll_month",
+                    "locked",
+                    "locked_by",
+                    "locked_at",
+                    "remark"
+            ],
+            "payroll_audit_logs": [
+                    "audit_id",
+                    "payroll_month",
+                    "person_id",
+                    "action",
+                    "actor_person_id",
+                    "before_data",
+                    "after_data",
+                    "created_at"
+            ]
+    };
+
+
     const TABLE_PRIMARY_KEY_MAP = {
         shift_executions: ["shiftId", "shift_id"],
         transport_zones: ["zoneId", "zone_id"],
@@ -1583,105 +2213,126 @@ Purpose:
     };
 
 
+    function camelToSnake(value) {
+
+        return String(value).replace(/[A-Z]/g, letter => "_" + letter.toLowerCase());
+    }
+
+
+    function snakeToCamel(value) {
+
+        return String(value).replace(/_([a-z0-9])/g, (_, letter) => letter.toUpperCase());
+    }
+
+
     function toRemotePayload(
         table,
         payload
     ) {
 
-        const value =
-            clone(
-                payload
-            );
+        const value = clone(payload);
 
-
-        if (
-            !value ||
-            typeof value !==
-                "object" ||
-            Array.isArray(
-                value
-            )
-        ) {
-
+        if (!value || typeof value !== "object" || Array.isArray(value)) {
             return value;
         }
 
+        const columns = REMOTE_SCHEMA_COLUMNS[table];
 
-        if (
-            table ===
-                "general_manager_business_settings"
-        ) {
-
-            return {
-                singleton_id:
-                    value.singleton_id ||
-                    value.singletonId ||
-                    "default",
-
-                report_month:
-                    value.report_month ??
-                    value.reportMonth ??
-                    "",
-
-                comprehensive_unit_price:
-                    Number(
-                        value.comprehensive_unit_price ??
-                        value.comprehensiveUnitPrice ??
-                        0
-                    ),
-
-                updated_at:
-                    value.updated_at ||
-                    value.updatedAt ||
-                    new Date()
-                        .toISOString()
-            };
+        if (!columns) {
+            throw new Error("Supabase schema 未定义数据表: " + table);
         }
 
+        const allowed = new Set(columns);
+        const supportsExtra = allowed.has("extra");
+        const result = {};
+        const extra = {};
 
-        if (
-            table ===
-                "production_volume_settings"
-        ) {
-
-            return {
-                singleton_id:
-                    value.singleton_id ||
-                    value.singletonId ||
-                    "default",
-
-                default_volume_per_trip:
-                    Number(
-                        value.default_volume_per_trip ??
-                        value.defaultVolumePerTrip ??
-                        0
-                    ),
-
-                vehicle_models:
-                    (
-                        value.vehicle_models &&
-                        typeof value.vehicle_models ===
-                            "object"
-                    )
-                        ? value.vehicle_models
-                        : (
-                            value.vehicleModels &&
-                            typeof value.vehicleModels ===
-                                "object"
-                        )
-                            ? value.vehicleModels
-                            : {},
-
-                updated_at:
-                    value.updated_at ||
-                    value.updatedAt ||
-                    new Date()
-                        .toISOString()
-            };
+        if (supportsExtra && value.extra && typeof value.extra === "object" && !Array.isArray(value.extra)) {
+            Object.assign(extra, value.extra);
         }
 
+        for (const [key, fieldValue] of Object.entries(value)) {
+            if (key === "extra") {
+                continue;
+            }
 
-        return value;
+            const column = allowed.has(key) ? key : camelToSnake(key);
+
+            if (allowed.has(column)) {
+                if (Object.prototype.hasOwnProperty.call(result, column) && result[column] !== fieldValue) {
+                    throw new Error("Supabase 字段映射冲突: " + table + "." + column);
+                }
+
+                result[column] = fieldValue;
+                continue;
+            }
+
+            if (supportsExtra) {
+                extra[key] = fieldValue;
+                continue;
+            }
+
+            throw new Error("Supabase schema 不支持字段: " + table + "." + key);
+        }
+
+        if (supportsExtra && Object.keys(extra).length) {
+            result.extra = extra;
+        }
+
+        if (table === "general_manager_business_settings" && result.comprehensive_unit_price !== undefined) {
+            result.comprehensive_unit_price = Number(result.comprehensive_unit_price || 0);
+        }
+
+        if (table === "production_volume_settings" && result.default_volume_per_trip !== undefined) {
+            result.default_volume_per_trip = Number(result.default_volume_per_trip || 0);
+        }
+
+        return result;
+    }
+
+
+    function fromRemotePayload(
+        table,
+        payload
+    ) {
+
+        if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+            return payload;
+        }
+
+        const columns = REMOTE_SCHEMA_COLUMNS[table];
+
+        if (!columns) {
+            throw new Error("Supabase schema 未定义数据表: " + table);
+        }
+
+        const allowed = new Set(columns);
+        const result = {};
+        const expandedExtra = payload.extra && typeof payload.extra === "object" && !Array.isArray(payload.extra)
+            ? clone(payload.extra)
+            : {};
+
+        for (const [key, fieldValue] of Object.entries(payload)) {
+            if (key === "extra") {
+                continue;
+            }
+
+            if (!allowed.has(key)) {
+                throw new Error("Supabase 返回了 schema 未声明字段: " + table + "." + key);
+            }
+
+            result[snakeToCamel(key)] = clone(fieldValue);
+        }
+
+        // Keep the JSONB container available and also expose its legacy top-level fields.
+        // Real columns win over same-named JSONB keys to avoid shadowing authoritative values.
+        return {
+            ...expandedExtra,
+            ...result,
+            ...(payload.extra && typeof payload.extra === "object" && !Array.isArray(payload.extra)
+                ? { extra: clone(payload.extra) }
+                : {})
+        };
     }
 
 
@@ -1809,13 +2460,17 @@ Purpose:
             table
         ) {
 
-            return await this.request(
+            const rows = await this.request(
                 table,
                 {
                     query:
                         "select=*"
                 }
             );
+
+            return Array.isArray(rows)
+                ? rows.map(row => fromRemotePayload(table, row))
+                : rows;
         },
 
 
@@ -1824,7 +2479,7 @@ Purpose:
             row
         ) {
 
-            return await this.request(
+            const response = await this.request(
                 table,
                 {
                     method:
@@ -1837,6 +2492,10 @@ Purpose:
                         )
                 }
             );
+
+            return Array.isArray(response)
+                ? response.map(item => fromRemotePayload(table, item))
+                : response;
         },
 
 
@@ -1845,7 +2504,7 @@ Purpose:
             row
         ) {
 
-            return await this.request(
+            const response = await this.request(
                 table,
                 {
                     method:
@@ -1861,6 +2520,10 @@ Purpose:
                         )
                 }
             );
+
+            return Array.isArray(response)
+                ? response.map(item => fromRemotePayload(table, item))
+                : response;
         }
     };
 
@@ -3314,6 +3977,11 @@ Purpose:
         tableKeyMap:
             clone(
                 TABLE_KEY_MAP
+            ),
+
+        schemaColumns:
+            clone(
+                REMOTE_SCHEMA_COLUMNS
             ),
 
         setMode,
