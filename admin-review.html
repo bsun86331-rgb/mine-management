@@ -8643,134 +8643,6 @@ document.addEventListener(
     }
 
 
-    function invalidateDailyFinalConfirmation(
-        date,
-        reason,
-        person
-    ) {
-
-        const records =
-            readArray(
-                KEY.DAILY_FINAL
-            );
-
-
-        const id =
-            dailyFinalId(
-                date
-            );
-
-
-        const index =
-            records.findIndex(
-                item =>
-                    item.dailyFinalId ===
-                        id &&
-                    item.status ===
-                        "confirmed"
-            );
-
-
-        if (
-            index <
-            0
-        ) {
-
-            return false;
-        }
-
-
-        const previous =
-            records[
-                index
-            ];
-
-
-        const now =
-            new Date()
-            .toISOString();
-
-
-        records[
-            index
-        ] = {
-            ...previous,
-
-            status:
-                "needs_reconfirm",
-
-            invalidatedAt:
-                now,
-
-            invalidatedBy:
-                adminName(),
-
-            invalidatedReason:
-                reason ||
-                "最终确认后管理员修改人员考勤",
-
-            invalidatedPersonId:
-                person
-                    ? personId(
-                        person
-                      )
-                    : "",
-
-            invalidatedPersonName:
-                person
-                    ? personName(
-                        person
-                      )
-                    : "",
-
-            updatedAt:
-                now
-        };
-
-
-        saveArray(
-            KEY.DAILY_FINAL,
-            records
-        );
-
-
-        appendAudit({
-            action:
-                "invalidate_day_final_confirmation",
-
-            date,
-
-            personId:
-                person
-                    ? personId(
-                        person
-                      )
-                    : "",
-
-            personName:
-                person
-                    ? personName(
-                        person
-                      )
-                    : "",
-
-            previousDailyFinalId:
-                previous.dailyFinalId,
-
-            previousConfirmedAt:
-                previous.confirmedAt ||
-                "",
-
-            reason:
-                reason ||
-                "最终确认后管理员修改人员考勤，自动转为待重新确认"
-        });
-
-
-        return true;
-    }
-
-
     function lockId(month) {
 
         return (
@@ -10572,6 +10444,16 @@ document.addEventListener(
         persistAuditedChange([entry], changes);
     }
 
+    function tryAppendAudit(entry, changes, fallbackMessage) {
+        try {
+            appendAudit(entry, changes);
+            return true;
+        } catch (error) {
+            alert(error.message || fallbackMessage);
+            return false;
+        }
+    }
+
 
     function saveFinalRecord(
         person,
@@ -11089,16 +10971,9 @@ document.addEventListener(
          * 在一键确认时按当前参考值生成最终记录。
          * 已修改的人保持管理员修改后的值。
          */
-        rows.forEach(
-            row => {
-
-                if (
-                    row.final
-                ) {
-
-                    return;
-                }
-
+        try {
+            rows.forEach(row => {
+                if (row.final) return;
 
                 saveFinalRecord(
                     row.person,
@@ -11107,8 +10982,14 @@ document.addEventListener(
                     "",
                     "admin_one_click_reference"
                 );
-            }
-        );
+            });
+        } catch (error) {
+            alert(
+                error.message ||
+                "当日最终考勤保存失败，尚未标记整日完成。请核对后重试。"
+            );
+            return;
+        }
 
 
         const dailyRecords =
@@ -11207,27 +11088,17 @@ document.addEventListener(
         }
 
 
-        appendAudit({
-            action:
-                "confirm_whole_day",
-
+        const daySaved = tryAppendAudit({
+            action: "confirm_whole_day",
             date,
+            personCount: rows.length,
+            attendanceTotal: total,
+            adjustedCount: adjusted,
+            unreliableCount: unreliable.length,
+            reason: "管理员一键最终确认当日全部人员考勤"
+        }, [[KEY.DAILY_FINAL, dailyRecords]], "当日最终确认保存失败，请重试。");
 
-            personCount:
-                rows.length,
-
-            attendanceTotal:
-                total,
-
-            adjustedCount:
-                adjusted,
-
-            unreliableCount:
-                unreliable.length,
-
-            reason:
-                "管理员一键最终确认当日全部人员考勤"
-        }, [[KEY.DAILY_FINAL, dailyRecords]]);
+        if (!daySaved) return;
 
 
         renderDaily();
@@ -11532,21 +11403,15 @@ document.addEventListener(
         }
 
 
-        appendAudit({
-            action:
-                "lock_month",
-
+        const lockSaved = tryAppendAudit({
+            action: "lock_month",
             month,
+            attendanceTotal: total,
+            unresolvedAtLock: unresolved,
+            reason: "管理员最终锁定月度工资考勤"
+        }, [[KEY.LOCKS, locks]], "月度考勤锁定失败，请核对后重试。");
 
-            attendanceTotal:
-                total,
-
-            unresolvedAtLock:
-                unresolved,
-
-            reason:
-                "管理员最终锁定月度工资考勤"
-        }, [[KEY.LOCKS, locks]]);
+        if (!lockSaved) return;
 
 
         renderDaily();
@@ -11678,21 +11543,14 @@ document.addEventListener(
         };
 
 
-        appendAudit({
-            action:
-                "unlock_month",
-
+        const unlockSaved = tryAppendAudit({
+            action: "unlock_month",
             month,
+            reason: String(reason).trim(),
+            previousLockId: lock.lockId
+        }, [[KEY.LOCKS, locks]], "月度考勤解锁失败，请核对后重试。");
 
-            reason:
-                String(
-                    reason
-                )
-                .trim(),
-
-            previousLockId:
-                lock.lockId
-        }, [[KEY.LOCKS, locks]]);
+        if (!unlockSaved) return;
 
 
         renderDaily();
