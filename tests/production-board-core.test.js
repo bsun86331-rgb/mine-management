@@ -109,6 +109,83 @@ test('daily trips deduplicate aliases and keep A/B teams separate from shifts', 
     assert.deepEqual([stats.aSlag, stats.bSlag], [1, 0]);
     assert.equal(C.statistics('2026-10-11', '夜班', state, data, board).shiftTrips, 2);
 });
+test('trip/task snake-case aliases resolve production groups without empty-ID false matches', () => {
+    const { state, board, data } = fixture();
+    const trip = (tripId, fields) => ({ tripId, completedAt: '2026-10-11T09:00:00', status: 'completed', ...fields });
+
+    data.tasks = [
+        { taskId: 'TASK-A', shiftId: 'SHIFT-A', team: '生产A组', materialType: '岩石' },
+        { taskId: 'TASK-B', shiftId: 'SHIFT-B', team: '生产B组', materialType: '煤' }
+    ];
+    data.trips = [trip('TRIP-SHIFT-SNAKE', { shift_id: 'SHIFT-B' })];
+    let stats = C.statistics(board.date, board.shift, state, data, board);
+    assert.deepEqual([stats.totalTrips, stats.aTrips, stats.bTrips, stats.bCoal, stats.unknownTeam], [1, 0, 1, 1, 0]);
+
+    data.tasks = [{ task_id: 'TASK-B', shift_id: 'SHIFT-B', production_team: '生产B组', material_type: '煤' }];
+    data.trips = [trip('TRIP-TASK-CAMEL', { taskId: 'TASK-B' })];
+    stats = C.statistics(board.date, board.shift, state, data, board);
+    assert.deepEqual([stats.totalTrips, stats.bTrips, stats.bCoal, stats.unknownTeam], [1, 1, 1, 0]);
+
+    data.tasks = [{ task_id: 'TASK-B', shift_id: 'SHIFT-B', production_team: '生产B组', material_type: '煤' }];
+    data.trips = [trip('TRIP-TASK-SNAKE', { task_id: 'TASK-B' })];
+    stats = C.statistics(board.date, board.shift, state, data, board);
+    assert.deepEqual([stats.totalTrips, stats.bTrips, stats.bCoal, stats.unknownTeam], [1, 1, 1, 0]);
+
+    data.tasks = [
+        { team: '生产A组' },
+        { team: '生产B组' }
+    ];
+    data.trips = [trip('TRIP-NO-RELATION', {})];
+    stats = C.statistics(board.date, board.shift, state, data, board);
+    assert.deepEqual([stats.totalTrips, stats.aTrips, stats.bTrips, stats.unknownTeam], [1, 0, 0, 1]);
+
+    data.tasks = [
+        { taskId: 'TASK-A', shiftId: 'SHIFT-A', team: '生产A组', materialType: '岩石' },
+        { taskId: 'TASK-B', shiftId: 'SHIFT-B', team: '生产B组', materialType: '煤' }
+    ];
+    data.trips = [trip('TRIP-CONFLICT-IDS', { shift_id: 'SHIFT-A', task_id: 'TASK-B' })];
+    stats = C.statistics(board.date, board.shift, state, data, board);
+    assert.deepEqual([stats.aTrips, stats.bTrips, stats.aSlag, stats.bCoal, stats.unknownTeam], [1, 0, 1, 0, 0]);
+
+    let matrixCases = 0;
+    for (const tripShiftKey of ['shiftId', 'shift_id']) {
+        for (const taskShiftKey of ['shiftId', 'shift_id']) {
+            for (const tripTaskKey of ['taskId', 'task_id']) {
+                for (const taskTaskKey of ['taskId', 'task_id']) {
+                    for (const teamKey of ['team', 'productionTeam', 'production_team', 'group']) {
+                        for (const materialKey of ['materialType', 'material_type', 'material']) {
+                            for (const material of ['煤', '岩石', '渣']) {
+                                for (const source of ['tasks', 'executions']) {
+                                    const linkedTask = {
+                                        [taskShiftKey]: 'SHIFT-MATRIX-B',
+                                        [taskTaskKey]: 'TASK-MATRIX-B',
+                                        [teamKey]: '生产B组',
+                                        [materialKey]: material
+                                    };
+                                    data.tasks = source === 'tasks' ? [linkedTask] : [];
+                                    data.executions = source === 'executions' ? [linkedTask] : [];
+                                    data.trips = [trip(`TRIP-MATRIX-${matrixCases}`, {
+                                        [tripShiftKey]: 'SHIFT-MATRIX-B',
+                                        [tripTaskKey]: 'TASK-MATRIX-B'
+                                    })];
+                                    stats = C.statistics(board.date, board.shift, state, data, board);
+                                    const isCoal = material === '煤';
+                                    const isSlag = material === '岩石' || material === '渣';
+                                    assert.deepEqual(
+                                        [stats.totalTrips, stats.bTrips, stats.bCoal, stats.bSlag, stats.unknownTeam],
+                                        [1, 1, Number(isCoal), Number(isSlag), 0]
+                                    );
+                                    matrixCases++;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    assert.equal(matrixCases, 1152);
+});
 test('attendance and assignment remain independent; idle and maintenance counts are truthful', () => {
     const { state, board, data } = fixture();
     data.attendance.push({ personId: 'T1D', date: board.date, shift: board.shift, status: 'confirmed' });

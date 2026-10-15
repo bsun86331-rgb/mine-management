@@ -262,10 +262,24 @@
         const range = interval(date, shift, state.schedule);
         const daily = validTrips(data.trips).filter(r => tripTime(r) >= start && tripTime(r) < end);
         const allTasks = [...data.tasks, ...data.executions];
-        const taskFor = r => allTasks.find(t => text(t.shiftId) === text(r.shiftId || r.shift_id) && r.shiftId) || allTasks.find(t => text(t.taskId) === text(r.taskId || r.task_id));
+        const relationId = value => text(value).trim();
+        const taskFor = r => {
+            const shiftId = relationId(r.shiftId || r.shift_id);
+            const taskId = relationId(r.taskId || r.task_id);
+            if (shiftId) {
+                const byShift = allTasks.find(t => relationId(t.shiftId || t.shift_id) === shiftId);
+                if (byShift) return byShift;
+            }
+            if (taskId) return allTasks.find(t => relationId(t.taskId || t.task_id) === taskId);
+            return undefined;
+        };
         const tripTeam = r => team(r) || team(taskFor(r)) || team(data.people.find(p => personId(p) === text(r.driverId || r.driver_id)));
-        const coal = r => /煤|coal/i.test(text(r.materialType || r.material_type || r.material || taskFor(r)?.materialType || taskFor(r)?.material));
-        const slag = r => /岩石|渣|rock|slag/i.test(text(r.materialType || r.material_type || r.material || taskFor(r)?.materialType || taskFor(r)?.material));
+        const materialFor = r => {
+            const task = taskFor(r);
+            return text(r.materialType || r.material_type || r.material || task?.materialType || task?.material_type || task?.material);
+        };
+        const coal = r => /煤|coal/i.test(materialFor(r));
+        const slag = r => /岩石|渣|rock|slag/i.test(materialFor(r));
         const used = assignments(board), equipmentSet = new Set(used.equipment), personSet = new Set(used.people);
         const equipment = data.equipment.filter(e => !/deleted|disabled|停用/.test(text(e.status)));
         const repair = equipment.filter(e => blockedEquipment(e, data));
