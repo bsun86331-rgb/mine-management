@@ -624,7 +624,65 @@ create table if not exists finance_costs (
   created_at timestamptz not null default now()
 );
 
-c (
+create table if not exists penalty_records (
+  penalty_id text primary key,
+  person_id text references personnel(person_id),
+  amount numeric not null,
+  reason text,
+  source_type text,
+  source_id text,
+  status text not null default 'active',
+  created_at timestamptz not null default now()
+);
+
+create table if not exists reward_records (
+  reward_id text primary key,
+  person_id text references personnel(person_id),
+  employee_no text,
+  person_name text,
+  position text,
+  crew text,
+  vehicle_number text,
+  reward_type text,
+  amount numeric not null default 0,
+  description text,
+  work_date date,
+  source text,
+  status text not null default 'issued',
+  issued_by text,
+  issued_at timestamptz,
+  acknowledged_at timestamptz,
+  acknowledged_by text,
+  client_record_id text unique,
+  extra jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists overtime_records (
+  overtime_id text primary key,
+  person_id text references personnel(person_id),
+  employee_no text,
+  person_name text,
+  position text,
+  crew text,
+  vehicle_number text,
+  overtime_type text,
+  hours numeric not null default 0,
+  amount numeric not null default 0,
+  description text,
+  work_date date,
+  source text,
+  status text not null default 'issued',
+  issued_by text,
+  issued_at timestamptz,
+  acknowledged_at timestamptz,
+  acknowledged_by text,
+  client_record_id text unique,
+  extra jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists payroll_standards (
   standard_id text primary key,
   scope text not null,
   standard_type text,
