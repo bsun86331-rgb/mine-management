@@ -1,6 +1,6 @@
 /* =========================================================
    矿山管理系统
-   V2.11.1 管理员基础资料中心
+   V2.11.2 管理员基础资料中心
    人员 + 设备（后勤物资统一由库房管理）
 ========================================================= */
 
@@ -86,6 +86,13 @@ function normalizePersonnelPosition(position) {
   };
 
   return map[position] || position || "";
+}
+
+
+function normalizeIdentityDocument(value) {
+  return String(value || "")
+    .replace(/\s+/g, "")
+    .toUpperCase();
 }
 
 
@@ -2252,6 +2259,16 @@ function savePersonnel() {
 
   const records = getPersonnel();
 
+  const idCardNumber =
+    document
+      .getElementById("personnelIdCard")
+      .value.trim();
+
+  const passportNumber =
+    document
+      .getElementById("personnelPassport")
+      .value.trim();
+
   const duplicate = records.find(
     item =>
       item.phone === phone &&
@@ -2262,6 +2279,38 @@ function savePersonnel() {
   if (duplicate) {
     showToast(
       "该手机号已经存在人员档案",
+      "error"
+    );
+    return;
+  }
+
+  const duplicateIdentity = records.find(item => {
+    if (item.personId === personId) return false;
+
+    const savedIdCardNumber = normalizeIdentityDocument(
+      item.idCardNumber || item.idCard
+    );
+    const savedPassportNumber = normalizeIdentityDocument(
+      item.passportNumber || item.passport
+    );
+
+    return Boolean(
+      (idCardNumber && savedIdCardNumber === normalizeIdentityDocument(idCardNumber)) ||
+      (passportNumber && savedPassportNumber === normalizeIdentityDocument(passportNumber))
+    );
+  });
+
+  if (duplicateIdentity) {
+    const duplicateIdCard =
+      idCardNumber &&
+      normalizeIdentityDocument(
+        duplicateIdentity.idCardNumber || duplicateIdentity.idCard
+      ) === normalizeIdentityDocument(idCardNumber);
+
+    showToast(
+      duplicateIdCard
+        ? "该身份证号已存在人员档案，不能重复录入。"
+        : "该护照号已存在人员档案，不能重复录入。",
       "error"
     );
     return;
@@ -2285,14 +2334,10 @@ function savePersonnel() {
         .value.trim(),
 
     idCardNumber:
-      document
-        .getElementById("personnelIdCard")
-        .value.trim(),
+      idCardNumber,
 
     passportNumber:
-      document
-        .getElementById("personnelPassport")
-        .value.trim(),
+      passportNumber,
 
     emergencyContact:
       document
@@ -6831,7 +6876,7 @@ function init() {
   updateSummary();
 
   console.log(
-    "V2.11.1 管理员基础资料中心已加载：后勤物资统一由库房管理"
+    "V2.11.2 管理员基础资料中心已加载：后勤物资统一由库房管理"
   );
 }
 
