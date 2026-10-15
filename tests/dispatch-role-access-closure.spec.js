@@ -135,3 +135,22 @@ test("TEST已审核车队长可以进入调度操作页", async ({ page }) => {
   expect(state.errors).toEqual([]);
   expect(state.blocked).toEqual([]);
 });
+
+
+test("TEST已审核调度员可以进入调度操作页", async ({ page }) => {
+  const state = await installIsolatedSite(page);
+  await seedIdentity(page, {
+    personId: "TEST-DISPATCH-ACCESS-OPERATOR",
+    name: "TEST已审核调度员",
+    recordPosition: "调度员",
+    selectedPosition: "调度员",
+    status: "approved",
+    approvalStatus: "approved"
+  });
+
+  await page.goto(ORIGIN + "/dispatch.html", { waitUntil: "domcontentloaded" });
+  await expect(page).toHaveURL(/dispatch\\.html$/);
+  await expect(page.getByRole("heading", { name: /生产调度中心/ })).toBeVisible();
+  expect(state.errors).toEqual([]);
+  expect(state.blocked).toEqual([]);
+});
