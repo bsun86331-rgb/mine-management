@@ -124,6 +124,47 @@ test("TEST机器人控制API拒绝缺失命令和所有已支持格式的正式�
       expect((await response.json()).error).toContain("禁止操作非 TEST 数据");
     }
 
+    const unmatchedCommandResponse = await fetch(baseUrl + "/api/command", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        target: "TestManager",
+        command: "请检查一个尚未接入的虚拟场景，不要执行具体测试"
+      })
+    });
+    expect(unmatchedCommandResponse.status).toBe(200);
+    const unmatchedCommand = await unmatchedCommandResponse.json();
+    expect(unmatchedCommand.ok).toBe(true);
+    expect(unmatchedCommand.status).toBe("waiting");
+    expect(unmatchedCommand.action).toBe("natural-language-no-match");
+
+    const ambiguousCommandResponse = await fetch(baseUrl + "/api/command", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        target: "TestManager",
+        command: "把维修和库房跑一下"
+      })
+    });
+    expect(ambiguousCommandResponse.status).toBe(200);
+    const ambiguousCommand = await ambiguousCommandResponse.json();
+    expect(ambiguousCommand.ok).toBe(true);
+    expect(ambiguousCommand.status).toBe("waiting");
+    expect(ambiguousCommand.action).toBe("natural-language-awaiting-confirmation");
+    expect(ambiguousCommand.guessedAction).toBeTruthy();
+
+    const cancelCommandResponse = await fetch(baseUrl + "/api/command", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ target: "TestManager", command: "取消" })
+    });
+    expect(cancelCommandResponse.status).toBe(200);
+    const cancelCommand = await cancelCommandResponse.json();
+    expect(cancelCommand.ok).toBe(true);
+    expect(cancelCommand.status).toBe("waiting");
+    expect(cancelCommand.action).toBe("natural-language-confirmation-cancelled");
+    expect(cancelCommand.cancelledAction).toBe(ambiguousCommand.guessedAction);
+
     const finalStatusResponse = await fetch(`${baseUrl}/api/status`);
     const finalStatus = await finalStatusResponse.json();
     expect(finalStatus.playwright.connected).toBe(false);
