@@ -91,7 +91,7 @@ test("隔离快照全部页面可加载且静态资源无404", async ({ page }) 
   }
   expect(brokenLinks, `Dead internal HTML links: ${brokenLinks.join("; ")}`).toEqual([]);
   const routeSources = new Set(pages);
-  const scriptSourcePattern = /<script\\b[^>]*?\\bsrc\\s*=\\s*(?:"([^"]*)"|'([^']*)'|([^\\s>]+))/gi;
+  const scriptSourcePattern = /<script\b[^>]*?\bsrc\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))/gi;
   const brokenScriptSources = [];
   function resolveSitePath(value) {
     let pathname;
@@ -101,7 +101,7 @@ test("隔离快照全部页面可加载且静态资源无404", async ({ page }) 
       return null;
     }
     const segments = [];
-    for (const segment of pathname.replace(/\\\\/g, "/").split("/")) {
+    for (const segment of pathname.replace(/\\/g, "/").split("/")) {
       if (!segment || segment === ".") continue;
       if (segment === "..") {
         if (!segments.length) return null;
@@ -118,7 +118,7 @@ test("隔离快照全部页面可加载且静态资源无404", async ({ page }) 
     let match;
     while ((match = scriptSourcePattern.exec(html))) {
       const src = (match[1] ?? match[2] ?? match[3] ?? "").trim();
-      if (!src || src.includes("${") || /^(?:[a-z][a-z0-9+.-]*:|\\/\\/)/i.test(src)) continue;
+      if (!src || src.includes("\${") || src.startsWith("//") || /^[a-z][a-z0-9+.-]*:/i.test(src)) continue;
       const scriptPath = resolveSitePath(src);
       if (!scriptPath || !scriptPath.toLowerCase().endsWith(".js")) continue;
       try {
@@ -131,7 +131,7 @@ test("隔离快照全部页面可加载且静态资源无404", async ({ page }) 
   }
   expect(brokenScriptSources, `Missing local scripts: ${brokenScriptSources.join("; ")}`).toEqual([]);
 
-  const literalRoutePattern = /["'\x60]([^"'\x60]{1,240}?\\.html(?:[?#][^"'\x60]*?)?)["'\x60]/gi;
+  const literalRoutePattern = /["'\x60]([^"'\x60]{1,240}?\.html(?:[?#][^"'\x60]*?)?)["'\x60]/gi;
   const brokenRoutes = [];
   for (const source of routeSources) {
     const body = await fs.readFile(path.join(ROOT, source), "utf8");
@@ -139,9 +139,9 @@ test("隔离快照全部页面可加载且静态资源无404", async ({ page }) 
     let match;
     while ((match = literalRoutePattern.exec(body))) {
       const href = (match[1] ?? "").replace(/&amp;/g, "&").trim();
-      if (!href || href.includes("${") || /^(?:[a-z][a-z0-9+.-]*:|\\/\\/)/i.test(href)) continue;
+      if (!href || href.includes("\${") || href.startsWith("//") || /^[a-z][a-z0-9+.-]*:/i.test(href)) continue;
       const pathname = href.split(/[?#]/, 1)[0];
-      if (!/\\.html?$/i.test(pathname)) continue;
+      if (!/.html?$/i.test(pathname)) continue;
       const target = resolveSitePath(href);
       if (!target || !pageSet.has(target)) {
         brokenRoutes.push(`${source}: ${href} -> ${target || "outside site root"}`);
