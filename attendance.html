@@ -543,7 +543,7 @@
         <div class="section-title">
             <div>
                 <h2>⚠️ 零产量异常报备</h2>
-                <p>有有效考勤但当天生产数量为 0 的生产人员可自行提交说明；由车队长 / 调度审核通过后才算完成。</p>
+                <p>有有效考勤但当天生产数量为 0 的生产人员可自行提交说明；由车队长 / 调度审核通过后完成异常报备；报备不改变趟次，也不代表整班最终产量为零。</p>
             </div>
 
             <span id="zeroProductionBadge" class="badge gray">无需报备</span>
@@ -2110,12 +2110,12 @@ function renderZeroProduction(record, productionCount, leaveActive) {
         form.style.display = "none";
         result.style.display = "block";
         result.innerHTML = `
-            审核通过：<strong>${escapeHtml(existingReport.reason || "-")}</strong><br>
+            异常报备审核通过（不代表整班最终产量为零）：<strong>${escapeHtml(existingReport.reason || "-")}</strong><br>
             提交人：${escapeHtml(existingReport.reporterName || currentPerson?.name || "-")}<br>
             审核人：${escapeHtml(existingReport.reviewedByName || "-")}<br>
             说明：${escapeHtml(existingReport.remark || "-")}
         `;
-        badge.textContent = "审核通过";
+        badge.textContent = "异常报备已通过";
         badge.className = "badge green";
         return;
     }
@@ -3009,7 +3009,7 @@ function buildLedgerRow(date) {
     if (zeroReport) {
         const reviewLabel =
             zeroReport.status === "approved"
-                ? "审核通过"
+                ? "异常报备审核通过"
                 : zeroReport.status === "rejected"
                     ? "已驳回，待重报"
                     : "待审核";
