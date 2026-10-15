@@ -17,9 +17,11 @@ test("工资锁定和解锁审计写入失败时回滚，重试后只保留完�
   });
 
   await page.addInitScript(() => {
-    localStorage.setItem("personnelRecords", "[]");
-    localStorage.setItem("currentPersonId", "");
-    localStorage.setItem("selectedPosition", "");
+    const admin = { personId: "TEST-PAYROLL-AUDIT-001", employeeNo: "TEST-PAYROLL-AUDIT-001", name: "TEST工资管理员", position: "管理员", status: "approved", approvalStatus: "approved" };
+    localStorage.setItem("personnelRecords", JSON.stringify([admin]));
+    localStorage.setItem("currentPersonId", admin.personId);
+    localStorage.setItem("selectedPosition", "管理员");
+    sessionStorage.setItem("managementSession", JSON.stringify({ verified: true, personId: admin.personId, position: "管理员", expiresAt: Date.now() + 600000 }));
     localStorage.setItem("payrollMonthlyLocks", "[]");
     localStorage.setItem("payrollAuditLogs", "[]");
   });
