@@ -67,6 +67,10 @@ function findSchemaPrimaryKeyGaps() {
   const gaps = Object.keys(appTables)
     .filter(table => !schemaTables.has(table))
     .map(table => `${table} missing from schema`);
+  const stringIdTables = new Set([
+    ...cases.map(([table]) => table),
+    ...upsertCases.map(([table]) => table)
+  ]);
   for (const [, table, columns] of blocks) {
     if (!appTables[table] || singletonTables.has(table)) continue;
     const pk = columns.match(/^\s*([a-z_]+)\s+[^,\n]*\bprimary key\b/im)?.[1];
@@ -76,6 +80,10 @@ function findSchemaPrimaryKeyGaps() {
     if (!explicit.includes(pk) && !explicit.includes(camelPk) &&
         !genericKeys.has(pk) && !genericKeys.has(camelPk)) {
       gaps.push(`${table}.${pk}`);
+    }
+    const pkType = columns.match(new RegExp(`^\\s*${pk}\\s+([a-z_]+)\\b`, "im"))?.[1]?.toLowerCase();
+    if (stringIdTables.has(table) && pkType !== "text") {
+      gaps.push(`${table}.${pk} must use text for string IDs (found ${pkType || "unknown"})`);
     }
   }
   return gaps;

@@ -502,7 +502,7 @@ create unique index if not exists uq_attendance_person_date
 on attendance_records(person_id, attendance_date);
 
 create table if not exists attendance_geofence_attempts (
-  attempt_id bigserial primary key,
+  attempt_id text primary key,
   person_id text references personnel(person_id),
   action_type text not null,
   valid boolean not null,
