@@ -484,7 +484,7 @@
         <div class="header-row">
             <div>
                 <h1>📦 后勤物资库管理端</h1>
-                <p>Warehouse & Logistics Materials · V2.11.1B</p>
+                <p>Warehouse & Logistics Materials · V2.11.1C</p>
             </div>
 
             <div class="header-actions">
@@ -960,7 +960,7 @@
 </main>
 
 <footer>
-    矿山管理系统 · 后勤物资库管理端 V2.10.1C
+    矿山管理系统 · 后勤物资库管理端 V2.11.1C
 </footer>
 
 <script src="js/data-service.js"></script>
@@ -1084,17 +1084,56 @@ function readArray(key) {
 }
 
 function saveArray(key, data) {
-    let previous = [];
+    const previous = readArray(key);
+    localStorage.setItem(key, JSON.stringify(data));
+    syncArrayToDataService(key, data, previous);
+}
+
+function saveArrayBatch(updates) {
+    const prepared = updates.map(({ key, data }) => {
+        const previousRaw = localStorage.getItem(key);
+        let previous = [];
+        try {
+            const parsed = JSON.parse(previousRaw || "[]");
+            previous = Array.isArray(parsed) ? parsed : [];
+        } catch (error) {
+            previous = [];
+        }
+        return { key, data, previous, previousRaw };
+    });
+    const written = [];
 
     try {
-        const parsed = JSON.parse(localStorage.getItem(key) || "[]");
-        previous = Array.isArray(parsed) ? parsed : [];
+        prepared.forEach(({ key, data }) => {
+            localStorage.setItem(key, JSON.stringify(data));
+            written.push(key);
+        });
     } catch (error) {
-        previous = [];
+        const rollbackErrors = [];
+        for (const key of written.reverse()) {
+            const previousRaw = prepared.find(item => item.key === key)?.previousRaw;
+            try {
+                if (previousRaw === null) {
+                    localStorage.removeItem(key);
+                } else {
+                    localStorage.setItem(key, previousRaw);
+                }
+            } catch (rollbackError) {
+                rollbackErrors.push(rollbackError);
+            }
+        }
+        if (rollbackErrors.length) {
+            console.error("库房本机存储失败且回滚不完整，请立即核对库存与流水。", error, rollbackErrors);
+        }
+        throw error;
     }
 
-    localStorage.setItem(key, JSON.stringify(data));
+    prepared.forEach(({ key, data, previous }) => {
+        syncArrayToDataService(key, data, previous);
+    });
+}
 
+function syncArrayToDataService(key, data, previous) {
     /*
      * V2.10.1C
      * 库房 / 物资模块并行接入统一 DataService。
@@ -1341,16 +1380,26 @@ function submitInbound() {
     material.lastPurchasePrice = price;
     material.updatedAt = new Date().toISOString();
 
-    saveArray(STORAGE.MATERIALS, materials);
-
-    addLedger({
+    const ledger = readArray(STORAGE.LEDGER);
+    ledger.push(createLedgerRecord({
         type: "入库",
         materialId,
         materialName: material.name,
         quantity,
         personName: supplier || "-",
         remark: (inboundType || "") + (remark ? "；" + remark : "")
-    });
+    }));
+
+    try {
+        saveArrayBatch([
+            { key: STORAGE.MATERIALS, data: materials },
+            { key: STORAGE.LEDGER, data: ledger }
+        ]);
+    } catch (error) {
+        console.error("入库保存失败，库存和流水已回滚：", error);
+        alert("入库未完成，库存和流水未更新。请检查本机存储后重试。");
+        return;
+    }
 
     document.getElementById("inboundQuantity").value = "";
     document.getElementById("inboundPrice").value = "";
@@ -1971,14 +2020,17 @@ function confirmLostWriteOff(lostId) {
 
 function addLedger(data) {
     const records = readArray(STORAGE.LEDGER);
+    records.push(createLedgerRecord(data));
 
-    records.push({
+    saveArray(STORAGE.LEDGER, records);
+}
+
+function createLedgerRecord(data) {
+    return {
         ledgerId: createId("LEDGER"),
         createdAt: new Date().toISOString(),
         ...data
-    });
-
-    saveArray(STORAGE.LEDGER, records);
+    };
 }
 
 function renderAll() {
@@ -2436,5 +2488,6 @@ if (verifyWarehouseAccess()) {
 </body>
 
 </html>
+
 
 
