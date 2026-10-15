@@ -51,6 +51,8 @@ const cases = [
   ["trip_records", "tripId", { }, { }]
 ];
 
+const upsertCases = [["shift_executions","shiftId","TEST-SHIFT-1"],["transport_zones","zoneId","TEST-ZONE-1"],["equipment","equipmentId","TEST-EQUIP-1"],["equipment_operational_status","equipmentId","TEST-EQUIP-1"],["workshop_bays","bayId","TEST-BAY-1"],["fuel_intakes","intakeId","TEST-INTAKE-1"],["fuel_stock_adjustments","adjustmentId","TEST-ADJUSTMENT-1"],["payroll_monthly_locks","month","2099-12"],["equipment_maintenance_settings","equipmentId","TEST-EQUIP-1"]];
+
 (async () => {
   const failures = [];
   for (const [table, idField, oldExtra, newExtra] of cases) {
@@ -80,7 +82,18 @@ const cases = [
     console.log(`${passed ? "PASS" : "FAIL"} ${table}: ${ids.join(", ")}`);
     if (!passed) failures.push(table);
   }
-  console.log(`SUMMARY ${cases.length - failures.length}/${cases.length} pass; ${failures.length} failed: ${failures.join(", ")}`);
+  for (const [table, idField, id] of upsertCases) {
+    const { service, localStorage } = makeService();
+    const storageKey = service.tableKeyMap[table];
+    if (!storageKey) throw new Error(`${table} is missing from TABLE_KEY_MAP`);
+    localStorage.setItem(storageKey, JSON.stringify([{ [idField]:id, value:"old" }]));
+    await service.upsert(table, { [idField]:id, value:"new" });
+    const rows = await service.list(table);
+    const passed = rows.length === 1 && rows[0][idField] === id && rows[0].value === "new";
+    console.log(`${passed ? "PASS" : "FAIL"} ${table} same-key upsert rows=${rows.length} value=${rows[0]?.value}`);
+    if (!passed) failures.push(table);
+  }
+  console.log(`SUMMARY ${cases.length + upsertCases.length - failures.length}/${cases.length + upsertCases.length} pass; ${failures.length} failed: ${failures.join(", ")}`);
   if (failures.length) process.exitCode = 1;
 })().catch(error => { console.error(error); process.exitCode = 1; });
 
