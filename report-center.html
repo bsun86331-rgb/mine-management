@@ -1521,7 +1521,7 @@
             <div class="formula">
                 有效考勤：非请假期间的正常定位打卡<br>
                 请假期间打卡：记录保留，但不计有效出勤<br>
-                生产岗位有有效考勤但生产数量为 0：自动显示零产量异常报备状态
+                生产岗位有有效考勤但生产数量为 0：显示零产量异常报备状态；审核通过只代表异常说明已核实，不代表班组最终产量为零
             </div>
 
             <div class="toolbar">
@@ -1598,7 +1598,7 @@
                 </div>
 
                 <div class="summary-box">
-                    <span>本月零产量审核通过</span>
+                    <span>本月审核通过的零产量异常报备</span>
                     <strong id="attendanceMonthZeroReported">0</strong>
                 </div>
 
@@ -7857,7 +7857,7 @@ function renderAttendance() {
 
             if (zeroNeeded) {
                 if (zeroApproved) {
-                    zeroStatus = "审核通过";
+                    zeroStatus = "异常报备审核通过（不代表整班最终产量为零）";
                 } else if (zeroReport?.status === "rejected") {
                     zeroStatus = "已驳回，待重新报备";
                 } else if (zeroReport) {
