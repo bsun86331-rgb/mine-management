@@ -15,5 +15,5 @@ test("DataService updates existing rows for schema-backed primary keys", () => {
     }
   );
 
-  expect(output).toContain("SUMMARY 37/37 pass; 0 failed:");
+  expect(output).toContain("SUMMARY 39/39 pass; 0 failed:");
 });
