@@ -1,0 +1,117 @@
+"use strict";
+
+const { test, expect } = require("@playwright/test");
+const { spawn } = require("node:child_process");
+const net = require("node:net");
+const path = require("node:path");
+
+async function reserveLoopbackPort() {
+  const socket = net.createServer();
+
+  await new Promise((resolve, reject) => {
+    socket.once("error", reject);
+    socket.listen(0, "127.0.0.1", resolve);
+  });
+
+  const address = socket.address();
+  await new Promise((resolve, reject) => {
+    socket.close(error => error ? reject(error) : resolve());
+  });
+
+  return address.port;
+}
+
+test("TEST机器人控制API拒绝缺失命令和所有已支持格式的正式业务ID", async () => {
+  const port = await reserveLoopbackPort();
+  const baseUrl = `http://127.0.0.1:${port}`;
+  const serverPath = path.join(__dirname, "robot-control-server.js");
+  const server = spawn(process.execPath, [serverPath], {
+    env: {
+      ...process.env,
+      ROBOT_PORT: String(port),
+      ROBOT_BASE_URL: "http://127.0.0.1:9/"
+    },
+    stdio: ["ignore", "ignore", "pipe"]
+  });
+
+  let serverErrors = "";
+  server.stderr.on("data", chunk => {
+    serverErrors += chunk.toString();
+  });
+
+  try {
+    await expect.poll(async () => {
+      if (server.exitCode !== null) {
+        throw new Error(`robot-control-server exited early: ${serverErrors}`);
+      }
+
+      try {
+        const response = await fetch(`${baseUrl}/api/status`);
+        return response.status;
+      } catch {
+        return 0;
+      }
+    }, { timeout: 10_000 }).toBe(200);
+
+    const statusResponse = await fetch(`${baseUrl}/api/status`);
+    const status = await statusResponse.json();
+    expect(status.ok).toBe(true);
+    expect(status.playwright.connected).toBe(false);
+
+    const panelResponse = await fetch(baseUrl);
+    expect(panelResponse.status).toBe(200);
+    expect(await panelResponse.text()).toContain("机器人测试控制中心");
+
+    const emptyCommand = await fetch(`${baseUrl}/api/command`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ command: "   " })
+    });
+    expect(emptyCommand.status).toBe(400);
+    expect((await emptyCommand.json()).error).toContain("测试命令不能为空");
+
+    const realIds = [
+      "TASK-001",
+      "TRIP-001",
+      "DRIVER-001",
+      "VEHICLE-001",
+      "SHIFT-001",
+      "ZONE-001",
+      "REQ-001",
+      "REQUEST-001",
+      "PERSON-001",
+      "EMPLOYEE-001",
+      "EQUIPMENT-001",
+      "EQUIP-001",
+      "MATERIAL-001",
+      "ORDER-001"
+    ];
+
+    for (const id of realIds) {
+      const response = await fetch(`${baseUrl}/api/command`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ target: "TestManager", command: `核对 ${id}` })
+      });
+
+      expect(response.status, `ID ${id} must be rejected`).toBe(400);
+      expect((await response.json()).error).toContain("禁止操作非 TEST 数据");
+    }
+
+    const finalStatusResponse = await fetch(`${baseUrl}/api/status`);
+    const finalStatus = await finalStatusResponse.json();
+    expect(finalStatus.playwright.connected).toBe(false);
+  } finally {
+    if (server.exitCode === null) {
+      const exited = new Promise(resolve => server.once("exit", resolve));
+      server.kill("SIGTERM");
+      await Promise.race([
+        exited,
+        new Promise(resolve => setTimeout(resolve, 3_000))
+      ]);
+      if (server.exitCode === null) {
+        server.kill("SIGKILL");
+      }
+    }
+  }
+});
