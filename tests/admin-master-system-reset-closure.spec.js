@@ -162,7 +162,9 @@ test("TEST管理员系统归零：取消和错误口令不改数据，确认后�
   expect(await readStorage()).toEqual(before);
 
   await page.locator("#systemResetConfirmInput").fill("RESET");
+  const downloadPromise = page.waitForEvent("download", { timeout: 10_000 });
   await page.locator("#systemResetExecuteButton").click();
+  const download = await downloadPromise;
 
   await page.waitForFunction(
     () => Boolean(
@@ -178,6 +180,11 @@ test("TEST管理员系统归零：取消和错误口令不改数据，确认后�
     intent: window.__systemResetDownloadIntent
   }));
   const backup = JSON.parse(captured.text);
+  expect(download.suggestedFilename()).toMatch(/^mine-management-full-backup-.*\.json$/);
+  const downloadedPath = await download.path();
+  expect(downloadedPath).toBeTruthy();
+  const downloadedBackup = JSON.parse(await fs.readFile(downloadedPath, "utf8"));
+  expect(downloadedBackup).toEqual(backup);
 
   expect(backup.localStorage).toEqual(before.local);
   expect(backup.sessionStorage).toEqual(before.session);
