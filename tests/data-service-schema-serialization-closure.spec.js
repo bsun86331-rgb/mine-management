@@ -80,7 +80,7 @@ test("Supabase 序列化契约与 PostgreSQL schema 一致，并完成隔离往�
     path.join(__dirname, "../database/database-schema.sql"),
     "utf8"
   );
-  expect(JSON.parse(JSON.stringify(service.schemaColumns))).toEqual(parseSchemaTables(schemaSql));
+  expect(service.schemaColumns).toEqual(parseSchemaTables(schemaSql));
 
   service.configureSupabase({
     url: "https://supabase.test",
@@ -117,7 +117,8 @@ test("Supabase 序列化契约与 PostgreSQL schema 一致，并完成隔离往�
     personId: "TEST-PERSON-01",
     employeeNo: "TEST-001",
     avatarUrl: "test-avatar.png",
-    fixture: "TEST-ONLY"
+    fixture: "TEST-ONLY",
+    extra: { fixture: "TEST-ONLY", avatarUrl: "test-avatar.png" }
   });
 
   const listed = await service.supabase.list("personnel");
