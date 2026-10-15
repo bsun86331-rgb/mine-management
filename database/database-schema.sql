@@ -624,18 +624,7 @@ create table if not exists finance_costs (
   created_at timestamptz not null default now()
 );
 
-create table if not exists penalty_records (
-  penalty_id text primary key,
-  person_id text references personnel(person_id),
-  amount numeric not null,
-  reason text,
-  source_type text,
-  source_id text,
-  status text not null default 'active',
-  created_at timestamptz not null default now()
-);
-
-create table if not exists payroll_standards (
+c (
   standard_id text primary key,
   scope text not null,
   standard_type text,
