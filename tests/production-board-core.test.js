@@ -186,6 +186,25 @@ test('trip/task snake-case aliases resolve production groups without empty-ID fa
     }
     assert.equal(matrixCases, 1152);
 });
+test('official trip IDs accept only stable trip/record aliases and deduplicate them', () => {
+    const { state, board, data } = fixture();
+    const rows = [
+        { tripId: 'TRIP-1', status: 'completed', completedAt: '2026-10-11T09:00:00' },
+        { trip_id: 'TRIP-2', status: 'completed', completedAt: '2026-10-11T09:01:00' },
+        { recordId: 'TRIP-3', status: 'completed', completedAt: '2026-10-11T09:02:00' },
+        { record_id: 'TRIP-4', status: 'completed', completedAt: '2026-10-11T09:03:00' },
+        { clientRecordId: 'TRIP-5', status: 'completed', completedAt: '2026-10-11T09:04:00' },
+        { client_record_id: 'TRIP-6', status: 'completed', completedAt: '2026-10-11T09:05:00' },
+        { id: 'TRIP-7', status: 'completed', completedAt: '2026-10-11T09:06:00' },
+        { recordId: 'TRIP-3', status: 'completed', completedAt: '2026-10-11T09:02:00' },
+        { status: 'completed', completedAt: '2026-10-11T09:07:00' }
+    ];
+    assert.deepEqual(rows.map(C.stableTripId), ['TRIP-1', 'TRIP-2', 'TRIP-3', 'TRIP-4', 'TRIP-5', 'TRIP-6', 'TRIP-7', 'TRIP-3', '']);
+    data.trips = rows;
+    const accepted = C.validTrips(rows);
+    assert.deepEqual(accepted.map(C.stableTripId), ['TRIP-1', 'TRIP-2', 'TRIP-3', 'TRIP-4', 'TRIP-5', 'TRIP-6', 'TRIP-7']);
+    assert.equal(C.statistics(board.date, board.shift, state, data, board).totalTrips, 7);
+});
 test('attendance and assignment remain independent; idle and maintenance counts are truthful', () => {
     const { state, board, data } = fixture();
     data.attendance.push({ personId: 'T1D', date: board.date, shift: board.shift, status: 'confirmed' });

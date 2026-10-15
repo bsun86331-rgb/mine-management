@@ -228,6 +228,7 @@ footer{text-align:center;color:#94a3b8;font-size:12px;padding:20px}
 
 <footer>mine-management · TRANSPORT-INTEGRATION-CHECK V1.4</footer>
 
+<script src="js/production-board-core.js?v=2.0.15"></script>
 <script>
 "use strict";
 
@@ -514,22 +515,18 @@ function isValidOfficialTrip(item){
     item.status !== "cancelled" &&
     item.status !== "rejected" &&
     item.dispatchConfirmation !== "rejected" &&
+    window.ProductionBoardCore?.hasStableTripId(item) &&
     item.officialCountEligible !== false
   );
 }
 
 function unifiedTrips(){
   const canonical = readArray(KEYS.TRIPS);
-
-  if(canonical.length){
-    return canonical;
-  }
-
-  const fallback = readArray(KEYS.LEGACY_TRIPS);
+  const source = canonical.length ? canonical : readArray(KEYS.LEGACY_TRIPS);
   const seen = new Set();
 
-  return fallback.filter(item=>{
-    const id = tripId(item);
+  return source.filter(item=>{
+    const id = window.ProductionBoardCore?.stableTripId(item) || "";
     if(!id) return true;
     if(seen.has(id)) return false;
     seen.add(id);
@@ -1417,7 +1414,6 @@ function renderIssues(issues){
 init();
 </script>
 <script src="js/work-chat.js?v=1.0.1"></script>
-<script src="js/production-board-core.js?v=2.0.12"></script>
 <script src="js/production-board.js?v=2.0.12"></script>
 </body>
 </html>
