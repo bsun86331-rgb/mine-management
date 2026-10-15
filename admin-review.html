@@ -7447,6 +7447,65 @@ document.addEventListener(
         );
     }
 
+    function writeStorageTransaction(writes) {
+        const snapshots = new Map();
+        const applied = [];
+
+        writes.forEach(([key]) => {
+            if (!snapshots.has(key)) {
+                snapshots.set(key, localStorage.getItem(key));
+            }
+        });
+
+        try {
+            writes.forEach(([key, value]) => {
+                localStorage.setItem(key, JSON.stringify(value));
+                applied.push(key);
+            });
+        } catch (error) {
+            const rollbackErrors = [];
+            [...new Set(applied)].reverse().forEach(key => {
+                try {
+                    const previous = snapshots.get(key);
+                    if (previous === null) localStorage.removeItem(key);
+                    else localStorage.setItem(key, previous);
+                } catch (rollbackError) {
+                    rollbackErrors.push(rollbackError);
+                }
+            });
+
+            const failure = new Error(
+                rollbackErrors.length
+                    ? "保存失败，且浏览器存储回滚不完整。请勿重复提交，先检查当前数据。"
+                    : "保存失败，已撤销本次写入。请检查浏览器存储空间后重试。"
+            );
+            failure.cause = error;
+            throw failure;
+        }
+    }
+
+    function persistAuditedChange(entries, changes = []) {
+        const audits = readArray(KEY.AUDIT);
+        const now = new Date().toISOString();
+
+        entries.forEach(entry => {
+            audits.push({
+                auditId: "ATT_AUDIT_" + Date.now() + "_" +
+                    Math.random().toString(36).slice(2, 7),
+                at: now,
+                admin: adminName(),
+                ...entry
+            });
+        });
+
+        // Write the audit first. If the audit write fails, business data stays untouched.
+        writeStorageTransaction([
+            [KEY.AUDIT, audits],
+            ...changes
+        ]);
+    }
+
+
 
     function esc(value) {
 
@@ -10509,41 +10568,8 @@ document.addEventListener(
     }
 
 
-    function appendAudit(entry) {
-
-        const records =
-            readArray(
-                KEY.AUDIT
-            );
-
-
-        records.push({
-            auditId:
-                "ATT_AUDIT_" +
-                Date.now() +
-                "_" +
-                Math.random()
-                    .toString(36)
-                    .slice(
-                        2,
-                        7
-                    ),
-
-            at:
-                new Date()
-                    .toISOString(),
-
-            admin:
-                adminName(),
-
-            ...entry
-        });
-
-
-        saveArray(
-            KEY.AUDIT,
-            records
-        );
+    function appendAudit(entry, changes = []) {
+        persistAuditedChange([entry], changes);
     }
 
 
@@ -10552,7 +10578,8 @@ document.addEventListener(
         date,
         finalValue,
         reason,
-        source
+        source,
+        options = {}
     ) {
 
         const rows =
@@ -10684,54 +10711,65 @@ document.addEventListener(
         }
 
 
-        saveArray(
-            KEY.FINAL,
-            rows
-        );
-
-
-        appendAudit({
-            action:
-                previous
-                    ? "update_final_attendance"
-                    : "confirm_final_attendance",
-
-            personId:
-                personId(
-                    person
-                ),
-
-            personName:
-                personName(
-                    person
-                ),
-
+        const auditEntries = [{
+            action: previous
+                ? "update_final_attendance"
+                : "confirm_final_attendance",
+            personId: personId(person),
+            personName: personName(person),
             date,
+            beforeValue: previous
+                ? Number(previous.finalAttendance || 0)
+                : null,
+            afterValue: Number(finalValue),
+            referenceValue: reference.value,
+            reason: reason || "",
+            source: source || "admin_manual"
+        }];
 
-            beforeValue:
-                previous
-                    ? Number(
-                        previous.finalAttendance ||
-                        0
-                      )
-                    : null,
+        const changes = [[KEY.FINAL, rows]];
+        let invalidated = false;
 
-            afterValue:
-                Number(
-                    finalValue
-                ),
+        if (options.invalidateConfirmedDay) {
+            const dailyRecords = readArray(KEY.DAILY_FINAL);
+            const dailyId = dailyFinalId(date);
+            const dailyIndex = dailyRecords.findIndex(item =>
+                item.dailyFinalId === dailyId &&
+                item.status === "confirmed"
+            );
 
-            referenceValue:
-                reference.value,
+            if (dailyIndex >= 0) {
+                const previousDaily = dailyRecords[dailyIndex];
+                const invalidationReason = options.invalidationReason ||
+                    "最终确认后管理员修改人员考勤";
 
-            reason:
-                reason ||
-                "",
+                dailyRecords[dailyIndex] = {
+                    ...previousDaily,
+                    status: "needs_reconfirm",
+                    invalidatedAt: now,
+                    invalidatedBy: adminName(),
+                    invalidatedReason: invalidationReason,
+                    invalidatedPersonId: personId(person),
+                    invalidatedPersonName: personName(person),
+                    updatedAt: now
+                };
 
-            source:
-                source ||
-                "admin_manual"
-        });
+                auditEntries.push({
+                    action: "invalidate_day_final_confirmation",
+                    date,
+                    personId: personId(person),
+                    personName: personName(person),
+                    previousDailyFinalId: previousDaily.dailyFinalId,
+                    previousConfirmedAt: previousDaily.confirmedAt || "",
+                    reason: invalidationReason
+                });
+                changes.push([KEY.DAILY_FINAL, dailyRecords]);
+                invalidated = true;
+            }
+        }
+
+        persistAuditedChange(auditEntries, changes);
+        return { invalidated };
     }
 
 
@@ -10822,26 +10860,29 @@ document.addEventListener(
             );
 
 
-        saveFinalRecord(
-            person,
-            date,
-            value,
-            reason,
-            changedFromReference
-                ? "admin_adjustment"
-                : "admin_review_no_change"
-        );
+        let saveResult;
 
+        try {
+            saveResult = saveFinalRecord(
+                person,
+                date,
+                value,
+                reason,
+                changedFromReference
+                    ? "admin_adjustment"
+                    : "admin_review_no_change",
+                {
+                    invalidateConfirmedDay: wasDayFinalConfirmed,
+                    invalidationReason: reason ||
+                        "最终确认后管理员修改人员考勤"
+                }
+            );
+        } catch (error) {
+            alert(error.message || "考勤保存失败，本次更正未完成。");
+            return;
+        }
 
-        const invalidated =
-            wasDayFinalConfirmed
-                ? invalidateDailyFinalConfirmation(
-                    date,
-                    reason ||
-                        "最终确认后管理员修改人员考勤",
-                    person
-                  )
-                : false;
+        const invalidated = saveResult.invalidated;
 
 
         closeEdit();
@@ -11166,12 +11207,6 @@ document.addEventListener(
         }
 
 
-        saveArray(
-            KEY.DAILY_FINAL,
-            dailyRecords
-        );
-
-
         appendAudit({
             action:
                 "confirm_whole_day",
@@ -11192,7 +11227,7 @@ document.addEventListener(
 
             reason:
                 "管理员一键最终确认当日全部人员考勤"
-        });
+        }, [[KEY.DAILY_FINAL, dailyRecords]]);
 
 
         renderDaily();
@@ -11497,12 +11532,6 @@ document.addEventListener(
         }
 
 
-        saveArray(
-            KEY.LOCKS,
-            locks
-        );
-
-
         appendAudit({
             action:
                 "lock_month",
@@ -11517,7 +11546,7 @@ document.addEventListener(
 
             reason:
                 "管理员最终锁定月度工资考勤"
-        });
+        }, [[KEY.LOCKS, locks]]);
 
 
         renderDaily();
@@ -11649,12 +11678,6 @@ document.addEventListener(
         };
 
 
-        saveArray(
-            KEY.LOCKS,
-            locks
-        );
-
-
         appendAudit({
             action:
                 "unlock_month",
@@ -11669,7 +11692,7 @@ document.addEventListener(
 
             previousLockId:
                 lock.lockId
-        });
+        }, [[KEY.LOCKS, locks]]);
 
 
         renderDaily();
