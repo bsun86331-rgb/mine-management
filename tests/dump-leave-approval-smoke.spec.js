@@ -3,6 +3,7 @@
 const { test, expect } = require("@playwright/test");
 const fs = require("node:fs/promises");
 const path = require("node:path");
+const { evidencePath } = require("./evidence-path.cjs");
 
 const ORIGIN = "https://mine.test";
 const ROOT = path.resolve(__dirname, "..");
@@ -54,7 +55,7 @@ test("TEST 调度可审核排土管理请假", async ({ page }) => {
   await expect(modal.locator("h3")).toHaveText("🗓 一线人员请假审批");
   await expect(page.locator("#openLeaveReviewButton")).toHaveAttribute("aria-label", "一线人员请假，1 条待审批");
   await expect(modal).toContainText("TEST排土管理员");
-  await page.screenshot({ path: "C:/Users/Administrator/Documents/Codex/2026-10-11/new-chat/outputs/证据_OPS-05_调度一线请假待办标题_2026-10-14.png", fullPage: true });
+  await page.screenshot({ path: evidencePath("证据_OPS-05_调度一线请假待办标题", "dump-leave-approval-smoke"), fullPage: true });
   await modal.locator('[data-leave-approve="TEST-LEAVE-001"]').click();
   await expect.poll(async () => page.evaluate(() => JSON.parse(localStorage.getItem("leaveRequests") || "[]")[0]?.status)).toBe("approved");
   await expect.poll(() => page.locator("#openLeaveReviewButton").getAttribute("aria-label")).toBe("一线人员请假");
