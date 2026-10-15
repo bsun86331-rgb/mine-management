@@ -63,7 +63,10 @@ function findSchemaPrimaryKeyGaps() {
   );
   const schema = fs.readFileSync(path.join(ROOT, "database", "database-schema.sql"), "utf8");
   const blocks = [...schema.matchAll(/create table if not exists\s+([a-z_]+)\s*\(([\s\S]*?)\);/gi)];
-  const gaps = [];
+  const schemaTables = new Set(blocks.map(([, table]) => table));
+  const gaps = Object.keys(appTables)
+    .filter(table => !schemaTables.has(table))
+    .map(table => `${table} missing from schema`);
   for (const [, table, columns] of blocks) {
     if (!appTables[table] || singletonTables.has(table)) continue;
     const pk = columns.match(/^\s*([a-z_]+)\s+[^,\n]*\bprimary key\b/im)?.[1];
@@ -142,7 +145,7 @@ const upsertCases = [["shift_executions","shiftId","TEST-SHIFT-1"],["transport_z
   }
   const schemaGaps = findSchemaPrimaryKeyGaps();
   const schemaPass = schemaGaps.length === 0;
-  console.log(`${schemaPass ? "PASS" : "FAIL"} schema primary-key coverage: ${schemaGaps.length ? schemaGaps.join(", ") : "all registered array tables covered"}`);
+  console.log(`${schemaPass ? "PASS" : "FAIL"} schema table and primary-key coverage: ${schemaGaps.length ? schemaGaps.join(", ") : "all registered tables and primary keys covered"}`);
   if (!schemaPass) failures.push("schema_primary_key_coverage");
   console.log(`SUMMARY ${cases.length + upsertCases.length + 1 - failures.length}/${cases.length + upsertCases.length + 1} pass; ${failures.length} failed: ${failures.join(", ")}`);
   if (failures.length) process.exitCode = 1;
