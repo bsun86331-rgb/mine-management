@@ -25552,6 +25552,9 @@ function buildCurrentTestReport() {
                     ? "暂不可发布"
                     : "待验证",
 
+        scopeLabel:
+            "仅表示核心与黄金快速检查通过；发布前仍需独立运行并核对完整 Playwright 套件。",
+
         readiness: {
             core:
                 core ||
@@ -25709,7 +25712,7 @@ function saveCurrentTestReport(
             report.overallLabel +
             "**",
         "",
-        "## 发布就绪",
+        "## 核心/黄金快速检查结果",
         "",
         "- 核心回归：" +
             (
