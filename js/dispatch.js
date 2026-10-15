@@ -1,30 +1,6 @@
 /* Existing dispatch approvals. Task authoring now lives only in production-board.js. */
 document.addEventListener('DOMContentLoaded',function(){
 'use strict';
-function hasApprovedDispatchIdentity() {
-    try {
-        const profile = JSON.parse(localStorage.getItem("dispatchUserProfile") || "null");
-        const people = JSON.parse(localStorage.getItem("personnelRecords") || "[]");
-        const allowed = value => ({ "调度员": "车队长" }[String(value || "").trim()] || String(value || "").trim()) === "车队长";
-        const id = String(localStorage.getItem("currentPersonId") || profile?.personId || profile?.employeeId || profile?.id || "");
-        const selected = localStorage.getItem("selectedPosition") || profile?.position || "";
-        if (!id || !allowed(selected) || !Array.isArray(people)) return false;
-        const person = people.find(row => String(row.personId || row.employeeId || row.driverId || row.id || "") === id);
-        if (!person || !allowed(person.position)) return false;
-        const state = String(person.status || person.personnelStatus || "");
-        const approval = String(person.approvalStatus || person.approval_status || "");
-        if (/rejected|disabled|resigned|deleted|驳回|停用|离职/.test(state + " " + approval)) return false;
-        return /^(approved|active|working|通过|已审核)$/.test(state) ||
-            /^(approved|通过|已审核)$/.test(approval) ||
-            /^(在职可用|作业中)$/.test(String(person.personnelStatus || ""));
-    } catch (_) {
-        return false;
-    }
-}
-if (!hasApprovedDispatchIdentity()) {
-    location.replace("index.html");
-    return;
-}
 const STORAGE = {
 
             TASKS:
