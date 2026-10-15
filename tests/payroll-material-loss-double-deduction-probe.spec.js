@@ -46,7 +46,12 @@ test("TEST同一丢失记录只扣款一次且独立丢失分别计入", async (
     catch { return route.fulfill({ status: 404, body: "missing test asset" }); }
   });
   await page.goto(`${ORIGIN}/report-center.html`, { waitUntil: "domcontentloaded" });
-  await expect(page.locator("footer")).toContainText("V2.10.8");
+  const headerText = await page.locator("header p").innerText();
+  const footerText = await page.locator("footer").innerText();
+  const headerVersion = headerText.match(/V\\d+\\.\\d+\\.\\d+/)?.[0];
+  expect(headerVersion).toBeTruthy();
+  expect(footerText).toContain("综合报表中心");
+  expect(footerText).toContain(headerVersion);
   const payroll = await page.evaluate(() => JSON.parse(localStorage.getItem("payrollMonthlyRecords") || "[]").find(row => row.personId === "TEST-LOSS-PAY-EMPLOYEE"));
   const lossSummary = await page.evaluate(() => { const rows = JSON.parse(localStorage.getItem("materialLostRecords") || "[]"); return { duplicateCount: rows.length, uniqueLostIds: [...new Set(rows.map(row => row.lostId))] }; });
   console.log("TEST duplicate written-off loss payroll observation:", JSON.stringify({ otherDeduction: payroll?.otherDeduction, ...lossSummary }));
