@@ -1,6 +1,13 @@
 "use strict";
 
-const OUTPUT_DIR = "C:/Users/Administrator/Documents/Codex/2026-10-11/new-chat/outputs";
+const fs = require("node:fs");
+const os = require("node:os");
+const path = require("node:path");
+
+const OUTPUT_DIR = process.env.MINE_MANAGEMENT_EVIDENCE_DIR
+  ? path.resolve(process.env.MINE_MANAGEMENT_EVIDENCE_DIR)
+  : path.join(os.tmpdir(), "mine-management-test-evidence");
+fs.mkdirSync(OUTPUT_DIR, { recursive: true });
 
 function dateStamp(now = new Date()) {
   const parts = new Intl.DateTimeFormat("en-US", {
@@ -14,7 +21,7 @@ function dateStamp(now = new Date()) {
 }
 
 function evidencePath(name, scenario) {
-  return OUTPUT_DIR + "/" + name + "_" + scenario + "_" + dateStamp() + ".png";
+  return path.join(OUTPUT_DIR, name + "_" + scenario + "_" + dateStamp() + ".png");
 }
 
 module.exports = { evidencePath };
