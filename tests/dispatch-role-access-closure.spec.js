@@ -20,10 +20,10 @@ async function installIsolatedSite(page) {
     const request = route.request();
     const url = new URL(request.url());
     if (!["GET", "HEAD"].includes(request.method()) || url.origin !== ORIGIN) {
-      blocked.push(`${request.method()} ${request.url()}`);
+      blocked.push(request.method() + " " + request.url());
       return route.abort();
     }
-    const relative = decodeURIComponent(url.pathname).replace(/^\\/+/, "") || "index.html";
+    const relative = decodeURIComponent(url.pathname).replace(/^\/+/, "") || "index.html";
     const file = path.resolve(ROOT, relative);
     if (!file.startsWith(ROOT + path.sep)) {
       return route.fulfill({ status: 403, body: "blocked" });
@@ -72,8 +72,8 @@ test("TEST司机不能直接进入调度操作页", async ({ page }) => {
     approvalStatus: "approved"
   });
 
-  await page.goto(`${ORIGIN}/dispatch.html`, { waitUntil: "domcontentloaded" });
-  await expect(page).toHaveURL(/index\\.html$/);
+  await page.goto(ORIGIN + "/dispatch.html", { waitUntil: "domcontentloaded" });
+  await expect(page).toHaveURL(/index\.html$/);
   expect(state.dialogs).toContain("调度操作页仅对已审核的车队长 / 调度员开放，请从首页进入你的岗位页面。");
   await expect(page.getByRole("heading", { name: /生产调度中心/ })).toHaveCount(0);
   expect(state.errors).toEqual([]);
@@ -91,8 +91,8 @@ test("TEST司机不能伪造车队长所选岗位进入调度操作页", async (
     approvalStatus: "approved"
   });
 
-  await page.goto(`${ORIGIN}/dispatch.html`, { waitUntil: "domcontentloaded" });
-  await expect(page).toHaveURL(/index\\.html$/);
+  await page.goto(ORIGIN + "/dispatch.html", { waitUntil: "domcontentloaded" });
+  await expect(page).toHaveURL(/index\.html$/);
   expect(state.dialogs).toContain("调度操作页仅对已审核的车队长 / 调度员开放，请从首页进入你的岗位页面。");
   await expect(page.getByRole("heading", { name: /生产调度中心/ })).toHaveCount(0);
   expect(state.errors).toEqual([]);
@@ -110,8 +110,8 @@ test("TEST待审核车队长不能进入调度操作页", async ({ page }) => {
     approvalStatus: "pending"
   });
 
-  await page.goto(`${ORIGIN}/dispatch.html`, { waitUntil: "domcontentloaded" });
-  await expect(page).toHaveURL(/index\\.html$/);
+  await page.goto(ORIGIN + "/dispatch.html", { waitUntil: "domcontentloaded" });
+  await expect(page).toHaveURL(/index\.html$/);
   expect(state.dialogs).toContain("调度操作页仅对已审核的车队长 / 调度员开放，请从首页进入你的岗位页面。");
   await expect(page.getByRole("heading", { name: /生产调度中心/ })).toHaveCount(0);
   expect(state.errors).toEqual([]);
@@ -129,8 +129,8 @@ test("TEST已审核车队长可以进入调度操作页", async ({ page }) => {
     approvalStatus: "approved"
   });
 
-  await page.goto(`${ORIGIN}/dispatch.html`, { waitUntil: "domcontentloaded" });
-  await expect(page).toHaveURL(/dispatch\\.html$/);
+  await page.goto(ORIGIN + "/dispatch.html", { waitUntil: "domcontentloaded" });
+  await expect(page).toHaveURL(/dispatch\.html$/);
   await expect(page.getByRole("heading", { name: /生产调度中心/ })).toBeVisible();
   expect(state.errors).toEqual([]);
   expect(state.blocked).toEqual([]);
