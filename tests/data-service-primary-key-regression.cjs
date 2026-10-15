@@ -40,7 +40,7 @@ function extractObjectLiteral(name) {
   for (let i = start; i < source.length; i++) {
     if (source[i] === "{") depth++;
     else if (source[i] === "}" && --depth === 0) {
-      return vm.runInNewContext(source.slice(start, i + 1));
+      return vm.runInNewContext("(" + source.slice(start, i + 1) + ")");
     }
   }
   throw new Error(`Unclosed ${name} declaration`);
