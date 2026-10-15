@@ -484,7 +484,7 @@
         <div class="header-row">
             <div>
                 <h1>📦 后勤物资库管理端</h1>
-                <p>Warehouse & Logistics Materials · V2.11.1C</p>
+                <p>Warehouse & Logistics Materials · V2.11.1D</p>
             </div>
 
             <div class="header-actions">
@@ -960,7 +960,7 @@
 </main>
 
 <footer>
-    矿山管理系统 · 后勤物资库管理端 V2.11.1C
+    矿山管理系统 · 后勤物资库管理端 V2.11.1D
 </footer>
 
 <script src="js/data-service.js"></script>
@@ -1133,6 +1133,18 @@ function saveArrayBatch(updates) {
     });
 }
 
+function commitWarehouseBatch(updates, failureMessage) {
+    try {
+        saveArrayBatch(updates);
+        return true;
+    } catch (error) {
+        console.error("库房业务未完成，本机存储批次已回滚。", error);
+        renderAll();
+        alert(failureMessage || "操作未完成，数据未更新。请检查本机存储后重试。");
+        return false;
+    }
+}
+
 function syncArrayToDataService(key, data, previous) {
     /*
      * V2.10.1C
@@ -1264,9 +1276,9 @@ function getHoldingQuantity(personName, materialId) {
         );
 }
 
-function consumeHolding(personName, materialId, quantity, closeReason) {
+function consumeHoldingRecords(holders, personName, materialId, quantity, closeReason) {
     let remaining = Math.max(0, Number(quantity || 0));
-    const holders = readArray(STORAGE.HOLDERS);
+    const original = holders.map(item => ({ ...item }));
 
     for (const item of holders) {
         if (remaining <= 0) break;
@@ -1295,9 +1307,11 @@ function consumeHolding(personName, materialId, quantity, closeReason) {
         }
     }
 
-    saveArray(STORAGE.HOLDERS, holders);
-
-    return remaining === 0;
+    if (remaining > 0) {
+        holders.splice(0, holders.length, ...original);
+        return false;
+    }
+    return true;
 }
 
 
@@ -1573,9 +1587,9 @@ function approveRequest(requestId) {
     request.issuedAt = new Date().toISOString();
     request.issuedBy = "后勤管理";
 
+    let holders = null;
     if (material.type === "recyclable") {
-        const holders = readArray(STORAGE.HOLDERS);
-
+        holders = readArray(STORAGE.HOLDERS);
         holders.push({
             holderId: createId("HOLD"),
             personId: request.personId || "",
@@ -1589,17 +1603,19 @@ function approveRequest(requestId) {
             issuedAt: request.issuedAt
         });
 
-        saveArray(STORAGE.HOLDERS, holders);
     }
 
-    saveArray(STORAGE.MATERIALS, materials);
-    saveArray(STORAGE.REQUESTS, requests);
-
+    const updates = [
+        { key: STORAGE.MATERIALS, data: materials },
+        { key: STORAGE.REQUESTS, data: requests }
+    ];
+    if (holders) updates.push({ key: STORAGE.HOLDERS, data: holders });
     if (exchangeRecords) {
-        saveArray(STORAGE.RECYCLES, exchangeRecords);
+        updates.push({ key: STORAGE.RECYCLES, data: exchangeRecords });
     }
 
-    addLedger({
+    const ledgerRecords = readArray(STORAGE.LEDGER);
+    ledgerRecords.push(createLedgerRecord({
         type: "出库",
         materialId: material.materialId,
         materialName: material.name,
@@ -1608,7 +1624,10 @@ function approveRequest(requestId) {
         remark: request.requestType === "exchange"
             ? "以旧换新，已关联验收合格旧物"
             : request.purpose || request.remark || ""
-    });
+    }));
+    updates.push({ key: STORAGE.LEDGER, data: ledgerRecords });
+
+    if (!commitWarehouseBatch(updates, "出库未完成，库存、申请和流水未更新。请检查本机存储后重试。")) return;
 
     renderAll();
     alert("已确认出库。");
@@ -1686,21 +1705,24 @@ function submitRecycle() {
         createdAt: new Date().toISOString()
     });
 
-    saveArray(STORAGE.RECYCLES, records);
-
     const materials = getMaterials();
     const target = materials.find(item => item.materialId === materialId);
     target.pendingInspectQty = Number(target.pendingInspectQty || 0) + quantity;
-    saveArray(STORAGE.MATERIALS, materials);
-
-    addLedger({
+    const ledger = readArray(STORAGE.LEDGER);
+    ledger.push(createLedgerRecord({
         type: type === "exchange" ? "以旧换新回收待检" : "回收待检",
         materialId,
         materialName: material.name,
         quantity,
         personName,
         remark
-    });
+    }));
+
+    if (!commitWarehouseBatch([
+        { key: STORAGE.RECYCLES, data: records },
+        { key: STORAGE.MATERIALS, data: materials },
+        { key: STORAGE.LEDGER, data: ledger }
+    ], "回收登记未完成，库存和流水未更新。请检查本机存储后重试。")) return;
 
     document.getElementById("recyclePersonName").value = "";
     document.getElementById("recycleRemark").value = "";
@@ -1729,8 +1751,11 @@ function inspectRecycle(recycleId, result) {
         Number(material.pendingInspectQty || 0) - quantity
     );
 
+    const updates = [];
     if (result === "available") {
-        if (!consumeHolding(
+        const holders = readArray(STORAGE.HOLDERS);
+        if (!consumeHoldingRecords(
+            holders,
             record.personName,
             record.materialId,
             quantity,
@@ -1749,14 +1774,17 @@ function inspectRecycle(recycleId, result) {
         record.status = "returned_to_stock";
         record.inspectionResult = "可继续使用";
 
-        addLedger({
+        updates.push({ key: STORAGE.HOLDERS, data: holders });
+        const ledger = readArray(STORAGE.LEDGER);
+        ledger.push(createLedgerRecord({
             type: "回收入库",
             materialId: material.materialId,
             materialName: material.name,
             quantity,
             personName: record.personName,
             remark: "检查合格，重新入库"
-        });
+        }));
+        updates.push({ key: STORAGE.LEDGER, data: ledger });
 
     } else {
         material.pendingScrapQty =
@@ -1779,23 +1807,28 @@ function inspectRecycle(recycleId, result) {
                 status: "pending_approval",
                 createdAt: new Date().toISOString()
             });
-            saveArray(STORAGE.SCRAPS, scraps);
+            updates.push({ key: STORAGE.SCRAPS, data: scraps });
         }
 
-        addLedger({
+        const ledger = readArray(STORAGE.LEDGER);
+        ledger.push(createLedgerRecord({
             type: "回收转待报废",
             materialId: material.materialId,
             materialName: material.name,
             quantity,
             personName: record.personName,
             remark: "检查不合格，已自动生成报废审批"
-        });
+        }));
+        updates.push({ key: STORAGE.LEDGER, data: ledger });
     }
 
     record.inspectedAt = new Date().toISOString();
 
-    saveArray(STORAGE.MATERIALS, materials);
-    saveArray(STORAGE.RECYCLES, records);
+    updates.push(
+        { key: STORAGE.MATERIALS, data: materials },
+        { key: STORAGE.RECYCLES, data: records }
+    );
+    if (!commitWarehouseBatch(updates, "回收验收未完成，库存、持有记录和流水未更新。请检查本机存储后重试。")) return;
 
     renderAll();
 }
@@ -1837,12 +1870,13 @@ function submitScrap() {
         createdAt: new Date().toISOString()
     });
 
-    saveArray(STORAGE.SCRAPS, records);
-
     const materials = getMaterials();
     const target = materials.find(item => item.materialId === materialId);
     target.pendingScrapQty = Number(target.pendingScrapQty || 0) + quantity;
-    saveArray(STORAGE.MATERIALS, materials);
+    if (!commitWarehouseBatch([
+        { key: STORAGE.SCRAPS, data: records },
+        { key: STORAGE.MATERIALS, data: materials }
+    ], "报废申请未完成，库存与申请状态未更新。请检查本机存储后重试。")) return;
 
     document.getElementById("scrapPersonName").value = "";
     document.getElementById("scrapReason").value = "";
@@ -1862,7 +1896,9 @@ function approveScrap(scrapId) {
 
     const quantity = Math.max(0, Number(record.quantity || 0));
 
-    if (!consumeHolding(
+    const holders = readArray(STORAGE.HOLDERS);
+    if (!consumeHoldingRecords(
+        holders,
         record.personName,
         record.materialId,
         quantity,
@@ -1886,6 +1922,11 @@ function approveScrap(scrapId) {
     record.status = "scrapped";
     record.approvedAt = new Date().toISOString();
 
+    const updates = [
+        { key: STORAGE.HOLDERS, data: holders },
+        { key: STORAGE.MATERIALS, data: materials },
+        { key: STORAGE.SCRAPS, data: records }
+    ];
     if (record.sourceRecycleId) {
         const recycles = readArray(STORAGE.RECYCLES);
         const recycle = recycles.find(
@@ -1894,21 +1935,21 @@ function approveScrap(scrapId) {
         if (recycle) {
             recycle.status = "scrapped";
             recycle.scrappedAt = record.approvedAt;
-            saveArray(STORAGE.RECYCLES, recycles);
+            updates.push({ key: STORAGE.RECYCLES, data: recycles });
         }
     }
 
-    saveArray(STORAGE.MATERIALS, materials);
-    saveArray(STORAGE.SCRAPS, records);
-
-    addLedger({
+    const ledger = readArray(STORAGE.LEDGER);
+    ledger.push(createLedgerRecord({
         type: "报废核销",
         materialId: material.materialId,
         materialName: material.name,
         quantity,
         personName: record.personName || "-",
         remark: record.reason
-    });
+    }));
+    updates.push({ key: STORAGE.LEDGER, data: ledger });
+    if (!commitWarehouseBatch(updates, "报废核销未完成，持有记录、库存与流水未更新。请检查本机存储后重试。")) return;
 
     renderAll();
 }
@@ -1952,12 +1993,13 @@ function submitLost() {
         createdAt: new Date().toISOString()
     });
 
-    saveArray(STORAGE.LOSTS, records);
-
     const materials = getMaterials();
     const target = materials.find(item => item.materialId === materialId);
     target.pendingLostQty = Number(target.pendingLostQty || 0) + quantity;
-    saveArray(STORAGE.MATERIALS, materials);
+    if (!commitWarehouseBatch([
+        { key: STORAGE.LOSTS, data: records },
+        { key: STORAGE.MATERIALS, data: materials }
+    ], "丢失登记未完成，库存与记录未更新。请检查本机存储后重试。")) return;
 
     document.getElementById("lostPersonName").value = "";
     document.getElementById("lostAmount").value = "";
@@ -1981,7 +2023,9 @@ function confirmLostWriteOff(lostId) {
 
     const quantity = Math.max(0, Number(record.quantity || 0));
 
-    if (!consumeHolding(
+    const holders = readArray(STORAGE.HOLDERS);
+    if (!consumeHoldingRecords(
+        holders,
         record.personName,
         record.materialId,
         quantity,
@@ -2003,17 +2047,21 @@ function confirmLostWriteOff(lostId) {
     record.status = "written_off";
     record.writeOffAt = new Date().toISOString();
 
-    saveArray(STORAGE.MATERIALS, materials);
-    saveArray(STORAGE.LOSTS, records);
-
-    addLedger({
+    const ledger = readArray(STORAGE.LEDGER);
+    ledger.push(createLedgerRecord({
         type: "丢失核销",
         materialId: material.materialId,
         materialName: material.name,
         quantity,
         personName: record.personName,
         remark: "赔偿金额：" + Number(record.compensationAmount || 0)
-    });
+    }));
+    if (!commitWarehouseBatch([
+        { key: STORAGE.HOLDERS, data: holders },
+        { key: STORAGE.MATERIALS, data: materials },
+        { key: STORAGE.LOSTS, data: records },
+        { key: STORAGE.LEDGER, data: ledger }
+    ], "丢失核销未完成，持有记录、库存和流水未更新。请检查本机存储后重试。")) return;
 
     renderAll();
 }
