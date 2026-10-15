@@ -34,6 +34,7 @@ test("TEST调度作业页面仅允许已审核的车队长身份进入", async (
   page.on("pageerror", error => errors.push(error.message));
   await attachSnapshotRoutes(page, blocked);
   await page.addInitScript(() => {
+    if (localStorage.getItem("personnelRecords")) return;
     const driver = { personId: "TEST-DISPATCH-DRIVER-001", name: "TEST司机", position: "汽车司机", status: "approved", approvalStatus: "approved", personnelStatus: "在职可用" };
     const dispatcher = { personId: "TEST-DISPATCH-LEAD-001", name: "TEST车队长", position: "车队长", status: "approved", approvalStatus: "approved", personnelStatus: "在职可用" };
     localStorage.setItem("personnelRecords", JSON.stringify([driver, dispatcher]));
