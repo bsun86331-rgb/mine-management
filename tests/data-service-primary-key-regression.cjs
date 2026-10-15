@@ -100,6 +100,7 @@ const cases = [
   ["reward_records", "rewardId", { amount:10 }, { amount:20 }],
   ["overtime_records", "overtimeId", { hours:2 }, { hours:4 }],
   ["payroll_monthly_records", "payrollId", { month:"2026-09" }, { month:"2026-10" }],
+  ["payroll_audit_logs", "auditId", { action:"lock" }, { action:"unlock" }],
   ["material_requests", "requestId", { materialId:"TEST-MAT-1" }, { materialId:"TEST-MAT-2" }],
   ["material_holders", "holderId", { materialId:"TEST-MAT-1" }, { materialId:"TEST-MAT-2" }],
   ["material_recycle_records", "recycleId", { materialId:"TEST-MAT-1" }, { materialId:"TEST-MAT-2" }],
@@ -109,7 +110,7 @@ const cases = [
   ["trip_records", "tripId", { }, { }]
 ];
 
-const upsertCases = [["shift_executions","shiftId","TEST-SHIFT-1"],["transport_zones","zoneId","TEST-ZONE-1"],["equipment","equipmentId","TEST-EQUIP-1"],["equipment_operational_status","equipmentId","TEST-EQUIP-1"],["workshop_bays","bayId","TEST-BAY-1"],["fuel_intakes","intakeId","TEST-INTAKE-1"],["fuel_stock_adjustments","adjustmentId","TEST-ADJUSTMENT-1"],["payroll_monthly_locks","month","2099-12"],["equipment_maintenance_settings","equipmentId","TEST-EQUIP-1"],["shift_executions","shift_id","TEST-SHIFT-1"],["transport_zones","zone_id","TEST-ZONE-1"],["equipment","equipment_id","TEST-EQUIP-1"],["equipment_operational_status","equipment_id","TEST-EQUIP-1"],["workshop_bays","bay_id","TEST-BAY-1"],["fuel_intakes","intake_id","TEST-INTAKE-1"],["fuel_stock_adjustments","adjustment_id","TEST-ADJUSTMENT-1"],["payroll_monthly_locks","payroll_month","2099-12"],["equipment_maintenance_settings","equipment_id","TEST-EQUIP-1"],["payroll_monthly_locks","payrollMonth","2099-12"]];
+const upsertCases = [["payroll_audit_logs","auditId","TEST-PAYROLL-AUDIT-001"],"shift_executions","shiftId","TEST-SHIFT-1"],["transport_zones","zoneId","TEST-ZONE-1"],["equipment","equipmentId","TEST-EQUIP-1"],["equipment_operational_status","equipmentId","TEST-EQUIP-1"],["workshop_bays","bayId","TEST-BAY-1"],["fuel_intakes","intakeId","TEST-INTAKE-1"],["fuel_stock_adjustments","adjustmentId","TEST-ADJUSTMENT-1"],["payroll_monthly_locks","month","2099-12"],["equipment_maintenance_settings","equipmentId","TEST-EQUIP-1"],["shift_executions","shift_id","TEST-SHIFT-1"],["transport_zones","zone_id","TEST-ZONE-1"],["equipment","equipment_id","TEST-EQUIP-1"],["equipment_operational_status","equipment_id","TEST-EQUIP-1"],["workshop_bays","bay_id","TEST-BAY-1"],["fuel_intakes","intake_id","TEST-INTAKE-1"],["fuel_stock_adjustments","adjustment_id","TEST-ADJUSTMENT-1"],["payroll_monthly_locks","payroll_month","2099-12"],["equipment_maintenance_settings","equipment_id","TEST-EQUIP-1"],["payroll_monthly_locks","payrollMonth","2099-12"]];
 
 (async () => {
   const failures = [];
