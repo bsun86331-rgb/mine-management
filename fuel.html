@@ -643,7 +643,7 @@
                 </h1>
 
                 <p>
-                    Fuel Truck Management · V2.10.0S
+                    Fuel Truck Management · V2.10.0T
                 </p>
 
             </div>
@@ -1423,7 +1423,7 @@
 
 <footer>
 
-    矿山管理系统 · 加油车司机端 V2.10.0S
+    矿山管理系统 · 加油车司机端 V2.10.0T
 
 </footer>
 
@@ -2528,16 +2528,13 @@ function submitFuelCompletion(
             .toISOString();
 
 
-    save(
-        STORAGE.FUEL_RECORDS,
-        records
-    );
-
-
-    save(
-        STORAGE.FUEL_REQUESTS,
-        requests
-    );
+    if (!saveFuelBatch([
+        { key: STORAGE.FUEL_RECORDS, data: records },
+        { key: STORAGE.FUEL_REQUESTS, data: requests }
+    ])) {
+        renderAll();
+        return;
+    }
 
 
     activeFuelRequestId =
@@ -5311,6 +5308,40 @@ function readArray(
 
 
 
+function saveFuelBatch(updates) {
+    const prepared = updates.map(({ key, data }) => ({
+        key,
+        data,
+        previousRaw: localStorage.getItem(key)
+    }));
+    const written = [];
+
+    try {
+        for (const item of prepared) {
+            localStorage.setItem(item.key, JSON.stringify(item.data));
+            written.push(item.key);
+        }
+        return true;
+    } catch (error) {
+        const rollbackErrors = [];
+        for (const key of written.reverse()) {
+            const previousRaw = prepared.find(item => item.key === key)?.previousRaw;
+            try {
+                if (previousRaw === null) localStorage.removeItem(key);
+                else localStorage.setItem(key, previousRaw);
+            } catch (rollbackError) {
+                rollbackErrors.push(rollbackError);
+            }
+        }
+        if (rollbackErrors.length) {
+            console.error("加油完成失败且本机数据回滚不完整，请核对加油记录与申请状态。", error, rollbackErrors);
+        }
+        alert("加油完成未提交，加油记录和申请状态未更新。请检查本机存储后重试。");
+        return false;
+    }
+}
+
+
 function save(
     key,
     data
@@ -5648,4 +5679,5 @@ function goHome() {
 </body>
 
 </html>
+
 
