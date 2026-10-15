@@ -33,15 +33,24 @@ test("TEST生产看板显示车辆、设备、人员和岗位汇总", async ({ p
     const state = { schemaVersion:2, revision:1, schedule:{dayStart:"08:00",dayEnd:"20:00",nightStart:"20:00",nightEnd:"08:00"}, boards:{[`${dateKey}|${shift}`]:board}, audit:[] };
     localStorage.setItem("mineProductionBoardV2", JSON.stringify(state));
     localStorage.setItem("transportZones", JSON.stringify([{zoneId:"TEST-LOAD-001",name:"TEST装载区",zoneType:"loading"},{zoneId:"TEST-UNLOAD-WASTE",name:"TEST排土场",zoneType:"unloading",materialType:"渣"}]));
+    const relationId = "TEST-OPS58-SHIFT-B";
+    localStorage.setItem("dispatchShiftExecutions", JSON.stringify([{ shift_id: relationId, task_id: "TEST-OPS58-TASK-B", production_team: "生产B组", extra: { material_type: "煤" }, status: "published", testFixture: true }]));
+    localStorage.setItem("tripRecords", JSON.stringify([{ tripId: "TEST-OPS58-TRIP-B-COAL", shift_id: relationId, completedAt: now.toISOString(), status: "completed", testFixture: true }]));
   }, { equipment: payload.equipment, groups });
   await page.goto(`${ORIGIN}/dispatch.html`, { waitUntil: "domcontentloaded" });
   const board = page.locator("#production-board"); await board.locator('[data-action="toggle"]').click();
   const values = await board.locator(".pb-metrics").evaluateAll(groups => { const result={}; for(const group of groups) for(const metric of group.querySelectorAll(".pb-metric")){const label=metric.querySelector("span")?.textContent.trim();const value=metric.querySelector("strong")?.textContent.trim();if(label)result[label]=value;} return result; });
+  const tripValues = await board.locator(".pb-trip-summary .pb-metric").evaluateAll(metrics => { const result={}; for(const metric of metrics){const label=metric.querySelector("span")?.textContent.trim();const value=metric.querySelector("strong")?.textContent.trim();if(label)result[label]=value;} return result; });
   const currentBoard = await page.evaluate(() => {const state=JSON.parse(localStorage.getItem("mineProductionBoardV2")||"{}");return Object.values(state.boards||{}).find(item=>item.published);});
   expect(currentBoard).toBeTruthy();
+  expect(tripValues["当日总趟数"]).toBe("1");
+  expect(tripValues["B组总趟数"]).toBe("1");
+  expect(tripValues["B组煤总趟数"]).toBe("1");
+  expect(tripValues["A组总趟数"]).toBe("0");
   const assignedPeople = new Set(currentBoard.groups.flatMap(group => [group.excavatorDriverId, ...group.trucks.map(truck=>truck.driverId), ...(group.dumpManagementPeople||[])]).filter(Boolean));
   expect(values["汽车总数（辆）"]).toBe("6"); expect(values["出勤作业（辆）"]).toBe("6"); expect(values["全部设备（台）"]).toBe("8");
   expect(values["生产组绑定人员"]).toBe(String(assignedPeople.size)); await expect(board).toContainText("挖机司机 2 人 · 汽车司机 6 人 · 排土管理 1 人");
   expect(values["人员总数"]).toBe(String(payload.personnel.length)); expect(errors).toEqual([]); expect(blocked).toEqual([]);
 });
+
 
