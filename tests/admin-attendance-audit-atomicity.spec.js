@@ -107,7 +107,7 @@ test("TEST最终考勤保存遇到审计存储失败时不改变考勤或日确�
     if (url.origin !== ORIGIN || !["GET", "HEAD"].includes(request.method())) {
       return route.abort();
     }
-    const relative = decodeURIComponent(url.pathname).replace(/^\\/+/, "") || "index.html";
+    const relative = decodeURIComponent(url.pathname).replace(/^\/+/, "") || "index.html";
     const file = path.resolve(ROOT, relative);
     if (!file.startsWith(ROOT + path.sep)) {
       return route.fulfill({ status: 403, body: "blocked" });
