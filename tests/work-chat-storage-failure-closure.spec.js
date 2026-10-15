@@ -60,6 +60,13 @@ test("TEST聊天消息本地存储失败时保留草稿且重试只发一条", a
   await page.locator("#mineChatLauncher").click();
   const messageText = "TEST: 存储失败后必须保留并允许重试";
   await page.locator("#mineChatInput").fill(messageText);
+  await page.locator("#mineChatPhotoInput").setInputFiles({
+    name: "TEST-chat-photo.png",
+    mimeType: "image/png",
+    buffer: Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/9ioAAAAASUVORK5CYII=", "base64")
+  });
+  await expect(page.locator("#mineChatImagePreviewWrap")).toBeVisible();
+  await expect(page.locator("#mineChatImageName")).toHaveText("TEST-chat-photo.png");
 
   await page.evaluate(() => {
     window.__chatOriginalSetItem = Storage.prototype.setItem;
@@ -74,6 +81,8 @@ test("TEST聊天消息本地存储失败时保留草稿且重试只发一条", a
   await expect.poll(() => alerts.length).toBe(1);
   expect(alerts[0]).toContain("本地存储空间不足");
   await expect(page.locator("#mineChatInput")).toHaveValue(messageText);
+  await expect(page.locator("#mineChatImagePreviewWrap")).toBeVisible();
+  await expect(page.locator("#mineChatImageName")).toHaveText("TEST-chat-photo.png");
   await expect(page.locator("#mineChatMessages")).not.toContainText(messageText);
   expect(await page.evaluate(() => JSON.parse(localStorage.getItem("mineWorkChatMessagesV1") || "[]"))).toHaveLength(0);
 
@@ -81,9 +90,16 @@ test("TEST聊天消息本地存储失败时保留草稿且重试只发一条", a
   await page.locator("#mineChatSend").click();
   await expect(page.locator("#mineChatMessages")).toContainText(messageText);
   await expect(page.locator("#mineChatInput")).toHaveValue("");
+  await expect(page.locator("#mineChatImagePreviewWrap")).toBeHidden();
   const messages = await page.evaluate(() => JSON.parse(localStorage.getItem("mineWorkChatMessagesV1") || "[]"));
   expect(messages).toHaveLength(1);
-  expect(messages[0]).toMatchObject({ senderPersonId: "TEST-CHAT-STORAGE-001", text: messageText });
+  expect(messages[0]).toMatchObject({
+    senderPersonId: "TEST-CHAT-STORAGE-001",
+    text: messageText,
+    imageName: "TEST-chat-photo.png",
+    messageType: "text_image"
+  });
+  expect(messages[0].imageData).toMatch(/^data:image\/jpeg;base64,/);
   expect(errors).toEqual([]);
   expect(blocked).toEqual([]);
 });
