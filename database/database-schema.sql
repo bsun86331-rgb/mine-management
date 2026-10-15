@@ -739,7 +739,7 @@ create table if not exists payroll_monthly_locks (
 );
 
 create table if not exists payroll_audit_logs (
-  id bigserial primary key,
+  audit_id text primary key,
   payroll_month text,
   person_id text references personnel(person_id),
   action text not null,
