@@ -52,9 +52,8 @@ function findSchemaPrimaryKeyGaps() {
   const candidateStart = source.indexOf("const candidates = [");
   const candidateEnd = source.indexOf("\n        ];", candidateStart);
   if (candidateStart < 0 || candidateEnd < 0) throw new Error("Cannot read generic primary-key candidates");
-  const genericKeys = new Set(
-    [...source.slice(candidateStart, candidateEnd).matchAll(/"([^"]+)"/g)].map(match => match[1])
-  );
+  const genericOrder = [...source.slice(candidateStart, candidateEnd).matchAll(/"([^"]+)"/g)].map(match => match[1]);
+  const genericKeys = new Set(genericOrder);
   const readStart = source.indexOf("function readRaw(");
   const readEnd = source.indexOf("\n    function writeRaw(", readStart);
   if (readStart < 0 || readEnd < 0) throw new Error("Cannot read singleton-storage rules");
@@ -80,6 +79,20 @@ function findSchemaPrimaryKeyGaps() {
     if (!explicit.includes(pk) && !explicit.includes(camelPk) &&
         !genericKeys.has(pk) && !genericKeys.has(camelPk)) {
       gaps.push(`${table}.${pk}`);
+    }
+    if (!explicit.includes(pk) && !explicit.includes(camelPk)) {
+      const pkIndex = genericOrder.findIndex(key => key === pk || key === camelPk);
+      if (pkIndex >= 0) {
+        const columnAliases = new Set();
+        for (const [, column] of columns.matchAll(/^\\s*([a-z_]+)\\s+/gm)) {
+          columnAliases.add(column);
+          columnAliases.add(column.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase()));
+        }
+        const shadowingKeys = genericOrder.slice(0, pkIndex).filter(key => columnAliases.has(key));
+        if (shadowingKeys.length) {
+          gaps.push(`${table}.${pk} shadowed by earlier generic keys: ${shadowingKeys.join(", ")}`);
+        }
+      }
     }
     const pkType = columns.match(new RegExp(`^\\s*${pk}\\s+([a-z_]+)\\b`, "im"))?.[1]?.toLowerCase();
     if (stringIdTables.has(table) && pkType !== "text") {
