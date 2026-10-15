@@ -21,7 +21,7 @@ async function openAdminAttendanceReport(page) {
   await page.goto(`${ORIGIN}/report-center.html`, { waitUntil: "domcontentloaded" });
 }
 
-test("TEST司机的零产量报备是否要求车队长确认", async ({ page, context }) => {
+test("TEST零产量异常报备审核后仍独立保留已完成趟次", async ({ page, context }) => {
   const errors = [];
   const blocked = [];
   const dialogs = [];
@@ -125,6 +125,17 @@ test("TEST司机的零产量报备是否要求车队长确认", async ({ page, c
   await page.goto(`${ORIGIN}/dispatch.html`, { waitUntil: "domcontentloaded" });
   await page.locator("#openZeroProductionReviewButton").click();
   await expect(page.locator("#zeroProductionReviewList")).toContainText("维修工单TEST-WO-001");
+  await page.evaluate(() => {
+    const now = new Date();
+    const localDate = [now.getFullYear(), String(now.getMonth() + 1).padStart(2, "0"), String(now.getDate()).padStart(2, "0")].join("-");
+    localStorage.setItem("tripRecords", JSON.stringify([{
+      tripId: "TEST-ZERO-TRIP-001",
+      personId: "TEST-ZERO-001",
+      productionDate: localDate,
+      status: "completed",
+      tripCount: 1
+    }]));
+  });
   await page.locator("#zeroProductionReviewList").getByRole("button", { name: "审核通过" }).click();
   const approved = await page.evaluate(() => JSON.parse(localStorage.getItem("zeroProductionReports") || "[]"));
   expect(approved[0]).toMatchObject({ status: "approved", reviewedBy: "TEST-ZERO-DISPATCH-001", reviewedByName: "TEST车队长", approverRole: "车队长", remark: "TEST设备故障等待维修，无运输趟次；维修工单TEST-WO-001" });
@@ -134,6 +145,7 @@ test("TEST司机的零产量报备是否要求车队长确认", async ({ page, c
   });
   await page.goto(`${ORIGIN}/attendance.html`, { waitUntil: "domcontentloaded" });
   await expect(page.locator("#zeroProductionBadge")).toHaveText("异常报备已通过");
+  await expect(page.locator("#productionCount")).toHaveText("1");
   await openAdminAttendanceReport(page);
   await expect(page.locator("#attendanceDayZeroPending")).toHaveText("0");
   await expect(page.locator("#attendanceMonthZeroPending")).toHaveText("0");
