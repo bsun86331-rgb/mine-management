@@ -44,8 +44,8 @@ test("TEST管理员新增和编辑人员档案均阻止重复身份证或护照"
   });
 
   await page.goto(`${ORIGIN}/admin-master.html`);
-  await expect(page).toHaveTitle(/管理员基础资料中心 V2\.11\.2/);
-  await expect(page.locator("header p")).toContainText("V2.11.2");
+  await expect(page).toHaveTitle(/管理员基础资料中心 V2\.11\.4/);
+  await expect(page.locator("header p")).toContainText("V2.11.4");
   await page.getByRole("button", { name: "+ 新增人员" }).click();
   await page.locator("#personnelName").fill("TEST重复身份证新档案");
   await page.locator("#personnelPhone").fill("13800000005");
