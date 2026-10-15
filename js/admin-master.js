@@ -1,6 +1,6 @@
 /* =========================================================
    矿山管理系统
-   V2.11.2 管理员基础资料中心
+   V2.11.3 管理员基础资料中心
    人员 + 设备（后勤物资统一由库房管理）
 ========================================================= */
 
@@ -38,6 +38,52 @@ function readStorage(key, fallback = []) {
 
 function writeStorage(key, value) {
   localStorage.setItem(key, JSON.stringify(value));
+}
+
+
+function writeStorageBatch(entries) {
+  const originalValues = entries.map(({ key }) => ({
+    key,
+    raw: localStorage.getItem(key)
+  }));
+  const writtenKeys = [];
+
+  try {
+    entries.forEach(({ key, value }) => {
+      localStorage.setItem(key, JSON.stringify(value));
+      writtenKeys.push(key);
+    });
+  } catch (error) {
+    const rollbackErrors = [];
+
+    writtenKeys.reverse().forEach(key => {
+      const original = originalValues.find(
+        item => item.key === key
+      );
+
+      try {
+        if (original.raw === null) {
+          localStorage.removeItem(key);
+        } else {
+          localStorage.setItem(key, original.raw);
+        }
+      } catch (rollbackError) {
+        rollbackErrors.push(rollbackError);
+      }
+    });
+
+    if (rollbackErrors.length) {
+      const combinedError = new Error(
+        "存储写入失败且自动回滚未完成。",
+        { cause: error }
+      );
+      combinedError.rollbackFailed = true;
+      combinedError.rollbackErrors = rollbackErrors;
+      throw combinedError;
+    }
+
+    throw error;
+  }
 }
 
 
@@ -6595,13 +6641,9 @@ function confirmResignation() {
 
   settlements.push(settlement);
 
-  writeStorage(
-    STORAGE.RESIGNATIONS,
-    settlements
-  );
-
-  personnel[index] = {
-    ...personnel[index],
+  const updatedPersonnel = personnel.slice();
+  updatedPersonnel[index] = {
+    ...person,
 
     ...personnelStateFields(
       "resigned"
@@ -6624,7 +6666,27 @@ function confirmResignation() {
     updatedAt: nowISO()
   };
 
-  savePersonnelRecords(personnel);
+  try {
+    writeStorageBatch([
+      {
+        key: STORAGE.RESIGNATIONS,
+        value: settlements
+      },
+      {
+        key: STORAGE.PERSONNEL,
+        value: updatedPersonnel
+      }
+    ]);
+  } catch (error) {
+    console.error("离职结算保存失败：", error);
+    showToast(
+      error?.rollbackFailed
+        ? "离职结算保存失败且自动回滚未完成，请核对人员状态和结算记录。"
+        : "离职结算保存失败，人员状态未变更，请重试。",
+      "error"
+    );
+    return;
+  }
 
   closeModal("resignationModal");
 
@@ -6876,7 +6938,7 @@ function init() {
   updateSummary();
 
   console.log(
-    "V2.11.2 管理员基础资料中心已加载：后勤物资统一由库房管理"
+    "V2.11.3 管理员基础资料中心已加载：后勤物资统一由库房管理"
   );
 }
 
