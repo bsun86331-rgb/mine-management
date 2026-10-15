@@ -150,6 +150,8 @@ test("TEST零产量异常报备审核后仍独立保留已完成趟次", async (
   await expect(page.locator("#attendanceDayZeroPending")).toHaveText("0");
   await expect(page.locator("#attendanceMonthZeroPending")).toHaveText("0");
   await expect(page.locator("#attendanceMonthZeroReported")).toHaveText("1");
+  await expect(page.locator("#attendanceTableBody")).toContainText("异常报备审核通过（不代表整班最终产量为零）");
+  await expect(page.locator("#attendanceTableBody")).toContainText("1");
   expect(errors).toEqual([]);
   expect(blocked).toEqual([]);
 });
