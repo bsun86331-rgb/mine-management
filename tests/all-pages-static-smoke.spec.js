@@ -50,6 +50,46 @@ test("隔离快照全部页面可加载且静态资源无404", async ({ page }) 
   });
 
   const pages = (await fs.readdir(ROOT)).filter(file => file.toLowerCase().endsWith(".html")).sort();
+  const pageSet = new Set(pages);
+  const brokenLinks = [];
+  const hrefPattern = /\bhref\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))/gi;
+  for (const source of pages) {
+    const html = await fs.readFile(path.join(ROOT, source), "utf8");
+    hrefPattern.lastIndex = 0;
+    let match;
+    while ((match = hrefPattern.exec(html))) {
+      const href = (match[1] ?? match[2] ?? match[3] ?? "").replace(/&amp;/g, "&").trim();
+      if (!href || href.includes("${") || href.startsWith("#") ||
+          /^(?:[a-z][a-z0-9+.-]*:|\/\/)/i.test(href)) continue;
+      const pathname = href.split(/[?#]/, 1)[0];
+      if (!/\.html?$/i.test(pathname)) continue;
+      let decodedPath;
+      try {
+        decodedPath = decodeURIComponent(pathname);
+      } catch {
+        brokenLinks.push(`${source}: invalid encoded link ${href}`);
+        continue;
+      }
+      const segments = decodedPath.startsWith("/")
+        ? []
+        : source.split("/").slice(0, -1);
+      let escapesRoot = false;
+      for (const segment of decodedPath.replace(/\\/g, "/").split("/")) {
+        if (!segment || segment === ".") continue;
+        if (segment === "..") {
+          if (!segments.length) { escapesRoot = true; break; }
+          segments.pop();
+        } else {
+          segments.push(segment);
+        }
+      }
+      const target = segments.join("/") || "index.html";
+      if (escapesRoot || !pageSet.has(target)) {
+        brokenLinks.push(`${source}: ${href} -> ${escapesRoot ? "outside site root" : target}`);
+      }
+    }
+  }
+  expect(brokenLinks, `Dead internal HTML links: ${brokenLinks.join("; ")}`).toEqual([]);
   const checked = [];
   for (const file of pages) {
     if (NON_STATIC_ROUTES.has(file)) continue;
