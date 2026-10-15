@@ -84,7 +84,7 @@ function findSchemaPrimaryKeyGaps() {
       const pkIndex = genericOrder.findIndex(key => key === pk || key === camelPk);
       if (pkIndex >= 0) {
         const columnAliases = new Set();
-        for (const [, column] of columns.matchAll(/^\\s*([a-z_]+)\\s+/gm)) {
+        for (const [, column] of columns.matchAll(/^\s*([a-z_]+)\s+/gm)) {
           columnAliases.add(column);
           columnAliases.add(column.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase()));
         }
