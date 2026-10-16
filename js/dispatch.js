@@ -9061,7 +9061,9 @@ function dispatchGetUnifiedTrips(){
 function dispatchIsValidTrip(item){
     return Boolean(
         item &&
-        window.ProductionBoardCore?.validTrips([item]).length === 1
+        window.ProductionBoardCore?.isTripStatusEligible(item) &&
+        window.ProductionBoardCore?.hasStableTripId(item) &&
+        item.officialCountEligible !== false
     );
 }
 
