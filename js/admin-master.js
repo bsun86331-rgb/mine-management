@@ -997,6 +997,7 @@ function showSystemResetSecondStep() {
       "systemResetNextButton"
     );
 
+
   const executeButton =
     document.getElementById(
       "systemResetExecuteButton"
@@ -1997,6 +1998,7 @@ function switchModule(module) {
 
   const section =
     document.getElementById(module + "Module");
+
   const tab =
     document.getElementById(module + "Tab");
 
@@ -5996,6 +5998,7 @@ function renderEmployeeMaterials() {
     document.getElementById(
       "employeeMaterialSummary"
     );
+
   if (!container) return;
 
   const personId =
