@@ -111,7 +111,12 @@ test("TEST任务看板投影中途写入失败时不发布部分数据", async (
   await dialog.locator('select[name="value"]').selectOption("TEST-ATOMIC-TRUCK-D2");
   await dialog.getByRole("button", { name: "确认" }).click();
 
-  const before = await page.evaluate(() => Object.fromEntries(["mineProductionBoardV2", "dispatchPublishedTasks", "dispatchShiftExecutions"].map(key => [key, localStorage.getItem(key)])));
+  await page.evaluate(() => {
+    localStorage.setItem("publishedDispatchTask", JSON.stringify({ taskId: "TEST-LEGACY-TASK", boardManaged: true, testFixture: true }));
+    localStorage.setItem("driverCurrentTask", JSON.stringify({ taskId: "BOARD-TEST-LEGACY-TASK", boardManaged: true, testFixture: true }));
+  });
+  const transactionKeys = ["mineProductionBoardV2", "dispatchPublishedTasks", "dispatchShiftExecutions", "publishedDispatchTask", "driverCurrentTask"];
+  const before = await page.evaluate(keys => Object.fromEntries(keys.map(key => [key, localStorage.getItem(key)])), transactionKeys);
   await page.evaluate(() => {
     const nativeSetItem = Storage.prototype.setItem;
     let failed = false;
@@ -126,10 +131,11 @@ test("TEST任务看板投影中途写入失败时不发布部分数据", async (
   await board.locator('[data-action="publish"]').click();
   await expect(board.locator(".pb-error")).toContainText("看板保存失败，已恢复原数据");
 
-  const after = await page.evaluate(() => Object.fromEntries(["mineProductionBoardV2", "dispatchPublishedTasks", "dispatchShiftExecutions"].map(key => [key, localStorage.getItem(key)])));
+  const after = await page.evaluate(keys => Object.fromEntries(keys.map(key => [key, localStorage.getItem(key)])), transactionKeys);
   expect(after).toEqual(before);
   await board.locator('[data-action="publish"]').click();
   await expect(board).toContainText("绑定已发布");
+  await expect.poll(() => page.evaluate(() => ["publishedDispatchTask", "driverCurrentTask"].every(key => localStorage.getItem(key) === null))).toBe(true);
   const retried = await page.evaluate(() => ({
     board: JSON.parse(localStorage.getItem("mineProductionBoardV2") || "{}"),
     tasks: JSON.parse(localStorage.getItem("dispatchPublishedTasks") || "[]"),
