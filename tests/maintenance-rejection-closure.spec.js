@@ -32,7 +32,7 @@ test("TEST维修申请被调度驳回后保留原因且不进入修理厂", asyn
     }]));
     localStorage.setItem("maintenanceWorkOrders", "[]");
     localStorage.setItem("equipmentOperationalStatus", JSON.stringify([
-      { equipmentId: "TEST-TRUCK-REJECT-001", status: "maintenance", previousStatus: "available", source: "repair_flow", testFixture: true }
+      { equipmentId: "TEST-TRUCK-REJECT-001", status: "maintenance", previousStatus: "working", source: "repair_flow", testFixture: true }
     ]));
     localStorage.setItem("vehicleRecords", JSON.stringify([
       { vehicleNumber: "TEST-TRUCK-REJECT-001", status: "maintenance", currentStatus: "维修中", testFixture: true }
@@ -74,15 +74,15 @@ test("TEST维修申请被调度驳回后保留原因且不进入修理厂", asyn
 
   let request = await page.evaluate(() => JSON.parse(localStorage.getItem("maintenanceRequests"))[0]);
   expect(request).toMatchObject({ status: "pending_dispatch", dispatchStatus: "pending" });
-  expect(await page.evaluate(() => JSON.parse(localStorage.getItem("equipmentOperationalStatus"))[0])).toMatchObject({ status: "maintenance", previousStatus: "available" });
+  expect(await page.evaluate(() => JSON.parse(localStorage.getItem("equipmentOperationalStatus"))[0])).toMatchObject({ status: "maintenance", previousStatus: "working" });
   expect(await page.evaluate(() => JSON.parse(localStorage.getItem("vehicleRecords"))[0])).toMatchObject({ status: "maintenance", currentStatus: "维修中" });
   expect(dialogs.some(message => message.includes("驳回未保存"))).toBe(true);
 
   await page.locator("#maintenanceReviewList").getByRole("button", { name: "❌ 驳回申请" }).click();
   request = await page.evaluate(() => JSON.parse(localStorage.getItem("maintenanceRequests"))[0]);
   expect(request).toMatchObject({ status: "rejected", dispatchStatus: "rejected", dispatchRejectReason: "TEST设备无法安全运行，补充检查后再申请" });
-  expect(await page.evaluate(() => JSON.parse(localStorage.getItem("equipmentOperationalStatus"))[0])).toMatchObject({ status: "available", previousStatus: "", source: "dispatch_rejection" });
-  expect(await page.evaluate(() => JSON.parse(localStorage.getItem("vehicleRecords"))[0])).toMatchObject({ status: "available", currentStatus: "可用" });
+  expect(await page.evaluate(() => JSON.parse(localStorage.getItem("equipmentOperationalStatus"))[0])).toMatchObject({ status: "working", previousStatus: "", source: "dispatch_rejection" });
+  expect(await page.evaluate(() => JSON.parse(localStorage.getItem("vehicleRecords"))[0])).toMatchObject({ status: "working", currentStatus: "作业中" });
   expect(await page.evaluate(() => JSON.parse(localStorage.getItem("maintenanceWorkOrders") || "[]"))).toHaveLength(0);
   expect(errors).toEqual([]);
   expect(blocked).toEqual([]);
