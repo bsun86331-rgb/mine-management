@@ -61,7 +61,7 @@ test("TEST无稳定趟次ID不进入调度、运输和综合报表正式统计�
 
   await page.goto(`${ORIGIN}/dispatch.html`, { waitUntil: "domcontentloaded" });
   const boardCoreSrc = await page.locator('script[src*="production-board-core.js"]').getAttribute("src");
-  expect(boardCoreSrc).toContain("v=2.0.15");
+  expect(boardCoreSrc).toContain("v=2.0.16");
   const dispatchIds = await page.evaluate(() => dispatchGetUnifiedTrips().filter(dispatchIsValidTrip).map(row => window.ProductionBoardCore.stableTripId(row)).sort());
   expect(dispatchIds).toEqual(["TEST-OFFICIAL-CLIENT-003", "TEST-OFFICIAL-ID-006", "TEST-OFFICIAL-LEGACY-002", "TEST-OFFICIAL-RECORD-005", "TEST-OFFICIAL-SNAKE-004", "TEST-OFFICIAL-STABLE-001"]);
 
