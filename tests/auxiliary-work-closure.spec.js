@@ -52,9 +52,15 @@ test("TEST辅助车辆司机开始并完成调度作业", async ({ page }) => {
   expect(records).toHaveLength(1);
   expect(records[0].status).toBe("completed");
   expect(records[0].completedAt).toBeTruthy();
-  expect(records[0].durationMinutes).toBeGreaterThanOrEqual(1);
+  const startedAt = Date.parse(records[0].startedAt);
+  const completedAt = Date.parse(records[0].completedAt);
+  expect(Number.isFinite(startedAt)).toBe(true);
+  expect(Number.isFinite(completedAt)).toBe(true);
+  expect(completedAt).toBeGreaterThanOrEqual(startedAt);
+  expect(records[0].durationMinutes).toBe(Math.max(1, Math.round((completedAt - startedAt) / 60000)));
   await expect(page.locator("#taskStatusBadge")).toHaveText("待执行");
   expect(dialogs.some(message => message.includes("本次作业已完成"))).toBe(true);
   expect(errors).toEqual([]);
   expect(blocked).toEqual([]);
 });
+
