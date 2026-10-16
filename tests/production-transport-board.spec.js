@@ -77,9 +77,28 @@ test("TEST 汽车司机运输一趟渣后，生产看板只计一趟", async ({ 
             ...JSON.parse(localStorage.getItem("tripRecords") || "[]"),
             ...JSON.parse(localStorage.getItem("driverTripRecords") || "[]")
         ];
-        return rows.map(row => Object.fromEntries(Object.entries(row).filter(([key]) =>
-            /tripId|recordId|status|review|confirm|gps|manual|official|completedAt/.test(key)
-        )));
+        const core = window.ProductionBoardCore;
+        const valid = core.validTrips(rows);
+        const state = JSON.parse(localStorage.getItem("mineProductionBoardV2") || "{}");
+        const selectedDate = document.querySelector('#production-board input[type="date"]')?.value || "";
+        const schedule = state.schedule || core.DEFAULT_SCHEDULE;
+        const start = core.interval(selectedDate, "白班", schedule).start;
+        const end = core.interval(selectedDate, "夜班", schedule).end;
+        const tripsInProductionDay = valid.filter(row => {
+            const time = new Date(row.completedAt || row.completed_at || row.unloadedAt || row.unloaded_at || row.finishedAt || row.endTime || row.createdAt || row.created_at || row.time || row.date);
+            return time >= start && time < end;
+        });
+        return {
+            rows: rows.map(row => Object.fromEntries(Object.entries(row).filter(([key]) =>
+                /tripId|recordId|status|review|confirm|gps|manual|official|completedAt|invalid|deleted|isValid/.test(key)
+            ))),
+            selectedDate,
+            productionDayStart: start.toISOString(),
+            productionDayEnd: end.toISOString(),
+            coreValidCount: valid.length,
+            coreValidTimes: valid.map(row => row.completedAt || row.completed_at || row.unloadedAt || row.unloaded_at || row.finishedAt || row.endTime || row.createdAt || row.created_at || row.time || row.date),
+            coreValidWithinProductionDay: tripsInProductionDay.length
+        };
     });
     console.log("[OPS-71 trip status diagnostic]", JSON.stringify(tripStatusDiagnostic));
     expect(driverTrips).toHaveLength(1);
