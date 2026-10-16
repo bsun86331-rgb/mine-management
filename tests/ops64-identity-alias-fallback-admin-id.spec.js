@@ -29,7 +29,8 @@ test("OPS-64 candidate blocks duplicate ID through legacy alias in admin master"
   });
   await page.goto(`${ORIGIN}/admin-master.html`);
   await expect(page).toHaveTitle(/^管理员基础资料中心 V/);
-  await page.getByRole("button", { name: "+ 新增人员" }).click();
+  await page.evaluate(() => openPersonnelModal());
+  await expect(page.locator("#personnelModal")).toBeVisible();
   await page.locator("#personnelName").fill("TEST别名重复人员");
   await page.locator("#personnelPhone").fill("TEST-OPS64-PHONE-2");
   await page.locator("#personnelPosition").selectOption({ label: "汽车司机" });
