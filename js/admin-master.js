@@ -1,3 +1,6 @@
+Warning: truncated output (original token count: 30017)
+Total output lines: 6959
+
 /* =========================================================
    矿山管理系统
    V2.11.4 管理员基础资料中心
@@ -2335,10 +2338,10 @@ function savePersonnel() {
     if (item.personId === personId) return false;
 
     const savedIdCardNumber = normalizeIdentityDocument(
-      item.idCardNumber || item.idCard
+      normalizeIdentityDocument(item.idCardNumber) || item.idCard
     );
     const savedPassportNumber = normalizeIdentityDocument(
-      item.passportNumber || item.passport
+      normalizeIdentityDocument(item.passportNumber) || item.passport
     );
 
     return Boolean(
@@ -2351,7 +2354,7 @@ function savePersonnel() {
     const duplicateIdCard =
       idCardNumber &&
       normalizeIdentityDocument(
-        duplicateIdentity.idCardNumber || duplicateIdentity.idCard
+        normalizeIdentityDocument(duplicateIdentity.idCardNumber) || duplicateIdentity.idCard
       ) === normalizeIdentityDocument(idCardNumber);
 
     showToast(
@@ -3605,12 +3608,7 @@ async function changeEquipmentNumber() {
         oldNumber,
       equipmentNumberChangedAt:
         nowISO(),
-      updatedAt:
-        nowISO()
-    };
-
-    saveEquipmentRecords(
-      records
+      updat…17 tokens truncated…rds
     );
 
     const migratedCount =
@@ -6956,3 +6954,4 @@ document.addEventListener(
   "DOMContentLoaded",
   init
 );
+
