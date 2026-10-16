@@ -1,6 +1,3 @@
-Warning: truncated output (original token count: 30017)
-Total output lines: 6959
-
 /* =========================================================
    矿山管理系统
    V2.11.4 管理员基础资料中心
@@ -999,7 +996,6 @@ function showSystemResetSecondStep() {
     document.getElementById(
       "systemResetNextButton"
     );
-
 
   const executeButton =
     document.getElementById(
@@ -2001,7 +1997,6 @@ function switchModule(module) {
 
   const section =
     document.getElementById(module + "Module");
-
   const tab =
     document.getElementById(module + "Tab");
 
@@ -3000,8 +2995,7 @@ function compressEquipmentImage(
                 )
             );
 
-          width =
-            Math.max(
+          width =            Math.max(
               1,
               Math.round(
                 width *
@@ -3608,7 +3602,12 @@ async function changeEquipmentNumber() {
         oldNumber,
       equipmentNumberChangedAt:
         nowISO(),
-      updat…17 tokens truncated…rds
+      updatedAt:
+        nowISO()
+    };
+
+    saveEquipmentRecords(
+      records
     );
 
     const migratedCount =
@@ -3995,8 +3994,7 @@ async function saveEquipment() {
     );
 
   if (duplicate) {
-    showToast(
-      "该设备编号已经存在",
+    showToast(      "该设备编号已经存在",
       "error"
     );
     return;
@@ -4995,8 +4993,7 @@ function renderMaterials() {
   if (!container) return;
 
   const search =
-    document
-      .getElementById(
+    document      .getElementById(
         "materialSearch"
       )
       ?.value
@@ -5996,7 +5993,6 @@ function renderEmployeeMaterials() {
     document.getElementById(
       "employeeMaterialSummary"
     );
-
   if (!container) return;
 
   const personId =
@@ -6954,4 +6950,3 @@ document.addEventListener(
   "DOMContentLoaded",
   init
 );
-
