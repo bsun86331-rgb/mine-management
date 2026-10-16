@@ -7427,13 +7427,14 @@ function buildMaintenanceRejectionWrites(requests, request, updatedAt) {
                 );
                 if (recordId !== equipmentId) continue;
 
+                let recordChanged = false;
                 if ("status" in record) {
                     record.status = restoreStatus;
-                    changed = true;
+                    recordChanged = true;
                 }
                 if ("equipmentStatus" in record) {
                     record.equipmentStatus = restoreStatus;
-                    changed = true;
+                    recordChanged = true;
                 }
                 if ("currentStatus" in record) {
                     const labels = {
@@ -7445,9 +7446,12 @@ function buildMaintenanceRejectionWrites(requests, request, updatedAt) {
                         disabled: "停用"
                     };
                     record.currentStatus = labels[restoreStatus] || restoreStatus;
+                    recordChanged = true;
+                }
+                if (recordChanged) {
+                    record.updatedAt = updatedAt;
                     changed = true;
                 }
-                if (changed) record.updatedAt = updatedAt;
             }
 
             if (changed) {
