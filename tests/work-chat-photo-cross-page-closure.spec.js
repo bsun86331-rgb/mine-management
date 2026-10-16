@@ -179,3 +179,86 @@ test("TEST工作聊天图片可以从维修员端送达挖机和辅助车辆端"
   expect(blocked).toEqual([]);
 });
 
+test("TEST聊天拒绝损坏图片并将大图压缩到900像素内后再发送", async ({ page }) => {
+  const errors = [];
+  const blocked = [];
+  const alerts = [];
+  page.on("pageerror", error => errors.push(error.message));
+  page.on("dialog", async dialog => {
+    alerts.push(dialog.message());
+    await dialog.accept();
+  });
+  await page.route("**/*", async route => {
+    const request = route.request();
+    const url = new URL(request.url());
+    if (!["GET", "HEAD"].includes(request.method()) || url.origin !== ORIGIN) {
+      blocked.push(`${request.method()} ${request.url()}`);
+      return route.abort();
+    }
+    const relative = decodeURIComponent(url.pathname).replace(/^\/+/, "") || "index.html";
+    const file = path.resolve(ROOT, relative);
+    if (!file.startsWith(ROOT + path.sep)) return route.fulfill({ status: 403, body: "blocked" });
+    try {
+      const body = await fs.readFile(file);
+      const ext = path.extname(file).toLowerCase();
+      const contentType = ext === ".html" ? "text/html; charset=utf-8" : ext === ".js" ? "text/javascript; charset=utf-8" : ext === ".css" ? "text/css; charset=utf-8" : "application/octet-stream";
+      return route.fulfill({ status: 200, contentType, body });
+    } catch {
+      return route.fulfill({ status: 404, body: "missing TEST asset" });
+    }
+  });
+
+  await page.goto(`${ORIGIN}/index.html`, { waitUntil: "domcontentloaded" });
+  await page.evaluate(() => {
+    const person = { personId: "TEST-CHAT-LARGE-IMAGE", employeeNo: "TEST-CHAT-LARGE-IMAGE", name: "TEST大图司机", position: "汽车司机", team: "生产A组", status: "approved", approvalStatus: "approved", personnelStatus: "在职可用" };
+    localStorage.setItem("personnelRecords", JSON.stringify([person]));
+    localStorage.setItem("currentPersonId", person.personId);
+    localStorage.setItem("selectedPosition", person.position);
+    localStorage.setItem("mineWorkChatMessagesV1", "[]");
+  });
+  await page.goto(`${ORIGIN}/driver-work.html`, { waitUntil: "domcontentloaded" });
+  await page.locator("#mineChatLauncher").click();
+
+  await page.locator("#mineChatPhotoInput").setInputFiles({ name: "TEST-corrupt.png", mimeType: "image/png", buffer: Buffer.from("TEST-not-an-image") });
+  await expect.poll(() => alerts.length).toBe(1);
+  expect(alerts[0]).toContain("图片读取失败");
+  await expect(page.locator("#mineChatImagePreviewWrap")).toBeHidden();
+  expect(await page.evaluate(() => JSON.parse(localStorage.getItem("mineWorkChatMessagesV1") || "[]"))).toHaveLength(0);
+
+  const largePngBase64 = await page.evaluate(() => {
+    const canvas = document.createElement("canvas");
+    canvas.width = 2400;
+    canvas.height = 1200;
+    const context = canvas.getContext("2d");
+    const gradient = context.createLinearGradient(0, 0, 2400, 1200);
+    gradient.addColorStop(0, "#16a085");
+    gradient.addColorStop(0.5, "#f1c40f");
+    gradient.addColorStop(1, "#34495e");
+    context.fillStyle = gradient;
+    context.fillRect(0, 0, canvas.width, canvas.height);
+    for (let i = 0; i < 120; i++) {
+      context.fillStyle = `rgba(${(i * 37) % 255}, ${(i * 73) % 255}, ${(i * 19) % 255}, 0.45)`;
+      context.fillRect((i * 97) % 2350, (i * 53) % 1150, 50, 50);
+    }
+    return canvas.toDataURL("image/png").split(",")[1];
+  });
+  await page.locator("#mineChatPhotoInput").setInputFiles({ name: "TEST-large-photo.png", mimeType: "image/png", buffer: Buffer.from(largePngBase64, "base64") });
+  const preview = page.locator("#mineChatImagePreview");
+  await expect.poll(() => preview.evaluate(image => [image.naturalWidth, image.naturalHeight])).toEqual([900, 450]);
+  await page.locator("#mineChatSend").click();
+
+  const messages = await page.evaluate(() => JSON.parse(localStorage.getItem("mineWorkChatMessagesV1") || "[]"));
+  expect(messages).toHaveLength(1);
+  expect(messages[0]).toMatchObject({ senderPersonId: "TEST-CHAT-LARGE-IMAGE", imageName: "TEST-large-photo.png", messageType: "image" });
+  expect(messages[0].imageData).toMatch(/^data:image\/jpeg;base64,/);
+  const storedImageDimensions = await page.evaluate(dataUrl => new Promise(resolve => {
+    const image = new Image();
+    image.onload = () => resolve([image.naturalWidth, image.naturalHeight]);
+    image.onerror = () => resolve(null);
+    image.src = dataUrl;
+  }), messages[0].imageData);
+  expect(storedImageDimensions).toEqual([900, 450]);
+  expect(errors).toEqual([]);
+  expect(blocked).toEqual([]);
+});
+
