@@ -7439,6 +7439,7 @@ function buildMaintenanceRejectionWrites(requests, request, updatedAt) {
                     const labels = {
                         available: "可用",
                         working: "作业中",
+                        standby: "备用",
                         maintenance: "维修中",
                         service: "保养中",
                         disabled: "停用"
