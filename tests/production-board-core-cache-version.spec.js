@@ -12,7 +12,7 @@ test("所有生产看板页面使用当前共享核心缓存版本", async () =>
   const references = [];
   for (const page of pages) {
     const source = await fs.readFile(path.join(ROOT, page), "utf8");
-    const tags = [...source.matchAll(/<script\\b[^>]*\\bsrc\\s*=\\s*["']([^"']*production-board-core\\.js[^"']*)["'][^>]*>/gi)];
+    const tags = [...source.matchAll(/<script\b[^>]*\bsrc\s*=\s*["']([^"']*production-board-core\.js[^"']*)["'][^>]*>/gi)];
     for (const tag of tags) {
       const src = tag[1];
       const version = src.match(/[?&]v=([^&]+)/)?.[1] || "";
