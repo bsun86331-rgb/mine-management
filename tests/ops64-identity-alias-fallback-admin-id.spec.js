@@ -14,6 +14,8 @@ test("OPS-64 candidate blocks duplicate ID through legacy alias in admin master"
       personId: "TEST-OPS64-ORIGINAL", name: "TEST原档", phone: "TEST-OPS64-PHONE-1",
       position: "汽车司机", status: "active", idCardNumber: "   ", idCard: "TEST-OPS64-LEGACY-ID-001"
     }]));
+    localStorage.setItem("adminPersonId", "TEST-OPS64-ADMIN");
+    localStorage.setItem("selectedPosition", "管理员");
     sessionStorage.setItem("managementSession", JSON.stringify({ verified: true, position: "管理员", personId: "TEST-OPS64-ADMIN", expiresAt: Date.now() + 60000 }));
   });
   await page.route("**/*", async route => {
