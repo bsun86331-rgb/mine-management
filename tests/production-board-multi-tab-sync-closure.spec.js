@@ -1,6 +1,7 @@
 "use strict";
 
 const { test, expect } = require("@playwright/test");
+const { evidencePath } = require("./evidence-path.cjs");
 const fs = require("node:fs/promises");
 const path = require("node:path");
 
@@ -27,7 +28,7 @@ async function routeSnapshot(page, blocked) {
   });
 }
 
-test("TEST调度在另一标签发布后已打开的司机看板自动同步", async ({ page }) => {
+test("TEST调度首次发布及再次调整绑定后已打开司机看板实时同步", async ({ page }) => {
   const errors = [];
   const blocked = [];
   page.on("pageerror", error => errors.push(error.message));
@@ -44,7 +45,8 @@ test("TEST调度在另一标签发布后已打开的司机看板自动同步", a
     const people = [
       { personId: "TEST-MULTITAB-DISPATCH", employeeNo: "TEST-MULTITAB-DISPATCH", name: "TEST调度", position: "车队长", team: "管理组", status: "approved", approvalStatus: "approved", personnelStatus: "在职可用", testFixture: true },
       { personId: "TEST-MULTITAB-EX-D", employeeNo: "TEST-MULTITAB-EX-D", name: "TEST挖机司机", position: "挖机司机", team: "生产A组", status: "approved", approvalStatus: "approved", personnelStatus: "在职可用", testFixture: true },
-      { personId: "TEST-MULTITAB-TR-D", employeeNo: "TEST-MULTITAB-TR-D", name: "TEST汽车司机", position: "汽车司机", team: "生产A组", status: "approved", approvalStatus: "approved", personnelStatus: "在职可用", testFixture: true }
+      { personId: "TEST-MULTITAB-TR-D", employeeNo: "TEST-MULTITAB-TR-D", name: "TEST汽车司机", position: "汽车司机", team: "生产A组", status: "approved", approvalStatus: "approved", personnelStatus: "在职可用", testFixture: true },
+      { personId: "TEST-MULTITAB-TR-D2", employeeNo: "TEST-MULTITAB-TR-D2", name: "TEST汽车司机二", position: "汽车司机", team: "生产A组", status: "approved", approvalStatus: "approved", personnelStatus: "在职可用", testFixture: true }
     ];
     localStorage.setItem("personnelRecords", JSON.stringify(people));
     localStorage.setItem("currentPersonId", "TEST-MULTITAB-DISPATCH");
@@ -60,7 +62,8 @@ test("TEST调度在另一标签发布后已打开的司机看板自动同步", a
     ]));
     localStorage.setItem("attendanceRecords", JSON.stringify([
       { attendanceId: "TEST-MULTITAB-EX-ATT", personId: "TEST-MULTITAB-EX-D", date, shift, status: "present", checkInAt: `${date}T08:00:00`, testFixture: true },
-      { attendanceId: "TEST-MULTITAB-TR-ATT", personId: "TEST-MULTITAB-TR-D", date, shift, status: "present", checkInAt: `${date}T08:00:00`, testFixture: true }
+      { attendanceId: "TEST-MULTITAB-TR-ATT", personId: "TEST-MULTITAB-TR-D", date, shift, status: "present", checkInAt: `${date}T08:00:00`, testFixture: true },
+      { attendanceId: "TEST-MULTITAB-TR-ATT2", personId: "TEST-MULTITAB-TR-D2", date, shift, status: "present", checkInAt: `${date}T08:00:00`, testFixture: true }
     ]));
     for (const key of ["mineProductionBoardV2", "dispatchPublishedTasks", "dispatchShiftExecutions", "maintenanceRequests", "maintenanceWorkOrders", "leaveRequests", "driverLeaveRequests", "equipmentOperationalStatus"]) localStorage.removeItem(key);
     localStorage.setItem("TEST-MULTITAB-SETUP", "done");
@@ -124,8 +127,40 @@ test("TEST调度在另一标签发布后已打开的司机看板自动同步", a
   }));
   expect(result.revision).toBe(1);
   expect(result.activeTasks).toBe(1);
+
+  // Rebind the truck while its driver page stays open; the new board revision must replace the old assignment live.
+  await board.locator('[data-action="toggle"]').click();
+  await board.locator('[data-action="edit"]').click();
+  await dialog.locator('select[name="team"]').selectOption("A");
+  await dialog.getByRole("button", { name: "确认" }).click();
+  const editedGroup = board.locator(".pb-group").first();
+  const editedTruck = editedGroup.locator(".pb-pair").last();
+  await editedTruck.locator('[data-action="choose-person"]').click();
+  await dialog.locator('select[name="value"]').selectOption("TEST-MULTITAB-TR-D2");
+  await dialog.getByRole("button", { name: "确认" }).click();
+  const publishObstruction = await page.evaluate(() => {
+    const button = document.querySelector('#production-board [data-action="publish"]');
+    const launcher = document.querySelector("#mineChatLauncher");
+    const a = button?.getBoundingClientRect();
+    const b = launcher?.getBoundingClientRect();
+    return { overlap: !!a && !!b && a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top, button: a && { left: a.left, right: a.right, top: a.top, bottom: a.bottom }, launcher: b && { left: b.left, right: b.right, top: b.top, bottom: b.bottom } };
+  });
+  await page.screenshot({ path: evidencePath("证据_看板编辑时工作聊天入口避开发布按钮", "production-board-chat-clear-of-editor") });
+  console.log("TEST publish/chat overlap after fix:", JSON.stringify(publishObstruction));
+  expect(publishObstruction.overlap).toBe(false);
+  await board.locator('[data-action="publish"]').click();
+
+  await expect(board).toContainText("绑定已发布");
+  await expect(driverBoard.locator(".pb-group").first()).toContainText("TEST汽车司机二", { timeout: 5000 });
+  await expect(driverBoard.locator(".pb-group").first().getByText("TEST汽车司机", { exact: true })).toHaveCount(0);
+  const revised = await page.evaluate(() => ({
+    revision: JSON.parse(localStorage.getItem("mineProductionBoardV2") || "{}").revision,
+    driverId: JSON.parse(localStorage.getItem("mineProductionBoardV2") || "{}").boards[Object.keys(JSON.parse(localStorage.getItem("mineProductionBoardV2") || "{}").boards)[0]].groups[0].trucks[0].driverId
+  }));
+  expect(revised).toEqual({ revision: 2, driverId: "TEST-MULTITAB-TR-D2" });
   expect(errors).toEqual([]);
   expect(blocked).toEqual([]);
   await driverPage.close();
 });
+
 
