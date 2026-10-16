@@ -99,3 +99,83 @@ test("TEST工作聊天图片跨工作端显示、刷新留存并支持放大查�
   expect(blocked).toEqual([]);
 });
 
+test("TEST工作聊天图片可以从维修员端送达挖机和辅助车辆端", async ({ page, context }) => {
+  const errors = [];
+  const blocked = [];
+  page.on("pageerror", error => errors.push(error.message));
+  await context.route("**/*", async route => {
+    const request = route.request();
+    const url = new URL(request.url());
+    if (!["GET", "HEAD"].includes(request.method()) || url.origin !== ORIGIN) {
+      blocked.push(`${request.method()} ${request.url()}`);
+      return route.abort();
+    }
+    const relative = decodeURIComponent(url.pathname).replace(/^\/+/, "") || "index.html";
+    const file = path.resolve(ROOT, relative);
+    if (!file.startsWith(ROOT + path.sep)) return route.fulfill({ status: 403, body: "blocked" });
+    try {
+      const body = await fs.readFile(file);
+      const ext = path.extname(file).toLowerCase();
+      const contentType = ext === ".html" ? "text/html; charset=utf-8" : ext === ".js" ? "text/javascript; charset=utf-8" : ext === ".css" ? "text/css; charset=utf-8" : "application/octet-stream";
+      return route.fulfill({ status: 200, contentType, body });
+    } catch {
+      return route.fulfill({ status: 404, body: "missing TEST asset" });
+    }
+  });
+
+  await page.goto(`${ORIGIN}/index.html`, { waitUntil: "domcontentloaded" });
+  await page.evaluate(() => {
+    const people = [
+      { personId: "TEST-CHAT-CROSS-MAINT", employeeNo: "TEST-CHAT-CROSS-MAINT", name: "TEST跨岗维修员", position: "维修员", team: "生产A组", status: "approved", approvalStatus: "approved", personnelStatus: "在职可用" },
+      { personId: "TEST-CHAT-CROSS-EXC", employeeNo: "TEST-CHAT-CROSS-EXC", name: "TEST跨岗挖机司机", position: "挖机司机", team: "生产A组", status: "approved", approvalStatus: "approved", personnelStatus: "在职可用" },
+      { personId: "TEST-CHAT-CROSS-AUX", employeeNo: "TEST-CHAT-CROSS-AUX", name: "TEST跨岗辅助司机", position: "辅助车辆司机", team: "生产B组", status: "approved", approvalStatus: "approved", personnelStatus: "在职可用" }
+    ];
+    localStorage.setItem("personnelRecords", JSON.stringify(people));
+    localStorage.setItem("currentPersonId", "TEST-CHAT-CROSS-MAINT");
+    localStorage.setItem("selectedPosition", "维修员");
+    localStorage.setItem("mineWorkChatMessagesV1", "[]");
+  });
+
+  await page.goto(`${ORIGIN}/maintenance-worker.html`, { waitUntil: "domcontentloaded" });
+  const excavator = await context.newPage();
+  excavator.on("pageerror", error => errors.push(error.message));
+  await page.evaluate(() => {
+    localStorage.setItem("currentPersonId", "TEST-CHAT-CROSS-EXC");
+    localStorage.setItem("selectedPosition", "挖机司机");
+  });
+  await excavator.goto(`${ORIGIN}/excavator.html`, { waitUntil: "domcontentloaded" });
+
+  const auxiliary = await context.newPage();
+  auxiliary.on("pageerror", error => errors.push(error.message));
+  await page.evaluate(() => {
+    localStorage.setItem("currentPersonId", "TEST-CHAT-CROSS-AUX");
+    localStorage.setItem("selectedPosition", "辅助车辆司机");
+  });
+  await auxiliary.goto(`${ORIGIN}/auxiliary.html`, { waitUntil: "domcontentloaded" });
+  for (const workPage of [page, excavator, auxiliary]) {
+    await expect(workPage.locator("#mineChatLauncher")).toBeVisible();
+    await workPage.locator("#mineChatLauncher").click();
+  }
+
+  const messageText = "TEST: 维修员跨岗发送现场图片";
+  const fileName = "TEST-maintenance-cross-role.png";
+  await page.locator("#mineChatInput").fill(messageText);
+  await page.locator("#mineChatPhotoInput").setInputFiles({ name: fileName, mimeType: "image/png", buffer: PNG });
+  await expect.poll(() => page.locator("#mineChatImagePreview").getAttribute("src")).toMatch(/^data:image\/jpeg;base64,/);
+  await page.locator("#mineChatSend").click();
+
+  for (const receiver of [excavator, auxiliary]) {
+    const photo = receiver.locator(`.mine-chat-photo[alt="${fileName}"]`);
+    await expect(photo).toBeVisible();
+    await expect.poll(() => photo.evaluate(image => image.naturalWidth)).toBe(1);
+    await expect(receiver.locator("#mineChatMessages")).toContainText(messageText);
+  }
+
+  const messages = await page.evaluate(() => JSON.parse(localStorage.getItem("mineWorkChatMessagesV1") || "[]"));
+  expect(messages).toHaveLength(1);
+  expect(messages[0]).toMatchObject({ senderPersonId: "TEST-CHAT-CROSS-MAINT", senderName: "TEST跨岗维修员", imageName: fileName, messageType: "text_image" });
+  expect(messages[0].imageData).toMatch(/^data:image\/jpeg;base64,/);
+  expect(errors).toEqual([]);
+  expect(blocked).toEqual([]);
+});
+
