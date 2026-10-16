@@ -72,57 +72,6 @@ test("TEST 汽车司机运输一趟渣后，生产看板只计一趟", async ({ 
     await expect.poll(async () => (await bot.readLocalStorage("tripRecords") || []).length, { timeout: 5000 }).toBe(1);
 
     const canonicalTrips = await bot.readLocalStorage("tripRecords");
-    const tripStatusDiagnostic = await page.evaluate(() => {
-        const rows = [
-            ...JSON.parse(localStorage.getItem("tripRecords") || "[]"),
-            ...JSON.parse(localStorage.getItem("driverTripRecords") || "[]")
-        ];
-        const core = window.ProductionBoardCore;
-        const valid = core.validTrips(rows);
-        const state = JSON.parse(localStorage.getItem("mineProductionBoardV2") || "{}");
-        const selectedDate = document.querySelector('#production-board input[type="date"]')?.value || "";
-        const schedule = state.schedule || core.DEFAULT_SCHEDULE;
-        const start = core.interval(selectedDate, "白班", schedule).start;
-        const end = core.interval(selectedDate, "夜班", schedule).end;
-        const readRows = key => core.array(JSON.parse(localStorage.getItem(key) || "[]")).map(core.flatten);
-        const data = {
-            people: readRows("personnelRecords"),
-            equipment: readRows("equipmentRecords"),
-            tasks: readRows("dispatchPublishedTasks"),
-            executions: readRows("dispatchShiftExecutions"),
-            zones: readRows("transportZones"),
-            operational: readRows("equipmentOperationalStatus"),
-            maintenance: [...readRows("maintenanceRequests"), ...readRows("maintenanceWorkOrders")],
-            leaves: [...readRows("leaveRequests"), ...readRows("driverLeaveRequests")],
-            attendance: [...readRows("attendanceRecords"), ...readRows("dispatchAttendanceConfirmations")],
-            trips: rows
-        };
-        const selectedShift = document.querySelector('#production-board .pb-tabs [data-action="shift"].pb-active')?.dataset.shift || "白班";
-        const boardState = { ...core.emptyState(), ...state, schedule };
-        const board = core.boardFor(boardState, selectedDate, selectedShift, data);
-        const statistics = core.statistics(selectedDate, selectedShift, boardState, data, board);
-        const tripsInProductionDay = valid.filter(row => {
-            const time = new Date(row.completedAt || row.completed_at || row.unloadedAt || row.unloaded_at || row.finishedAt || row.endTime || row.createdAt || row.created_at || row.time || row.date);
-            return time >= start && time < end;
-        });
-        return {
-            rows: rows.map(row => Object.fromEntries(Object.entries(row).filter(([key]) =>
-                /tripId|recordId|status|review|confirm|gps|manual|official|completedAt|invalid|deleted|isValid/.test(key)
-            ))),
-            selectedDate,
-            productionDayStart: start.toISOString(),
-            productionDayEnd: end.toISOString(),
-            coreValidCount: valid.length,
-            coreValidTimes: valid.map(row => row.completedAt || row.completed_at || row.unloadedAt || row.unloaded_at || row.finishedAt || row.endTime || row.createdAt || row.created_at || row.time || row.date),
-            coreValidWithinProductionDay: tripsInProductionDay.length,
-            selectedShift,
-            actualStatisticsTotalTrips: statistics.totalTrips,
-            boardStateRevision: boardState.revision,
-            published: board.published,
-            renderedTripSummary: document.querySelector('#production-board .pb-trip-summary')?.innerText || ""
-        };
-    });
-    console.log("[OPS-71 trip status diagnostic]", JSON.stringify(tripStatusDiagnostic));
     expect(driverTrips).toHaveLength(1);
     expect(canonicalTrips).toHaveLength(1);
     expect(driverTrips[0].tripId).toMatch(/^TEST-/);
@@ -130,24 +79,7 @@ test("TEST 汽车司机运输一趟渣后，生产看板只计一趟", async ({ 
     expect(canonicalTrips[0].materialType).toBe("渣");
     expect(canonicalTrips[0].unloadingZoneId).toBe("TEST-UNLOAD-WASTE");
     await page.goto(TEST_ORIGIN + "/driver-work.html", { waitUntil: "domcontentloaded" });
-    const afterReloadDiagnostic = await page.evaluate(() => {
-        const state = JSON.parse(localStorage.getItem("mineProductionBoardV2") || "{}");
-        const rows = [...JSON.parse(localStorage.getItem("tripRecords") || "[]"), ...JSON.parse(localStorage.getItem("driverTripRecords") || "[]")];
-        const core = window.ProductionBoardCore;
-        return {
-            tripRecords: JSON.parse(localStorage.getItem("tripRecords") || "[]").length,
-            driverTripRecords: JSON.parse(localStorage.getItem("driverTripRecords") || "[]").length,
-            validTrips: core.validTrips(rows).length,
-            now: new Date().toISOString(),
-            trips: rows.map(row => ({completedAt: row.completedAt, team: row.team, productionTeam: row.productionTeam, materialType: row.materialType, dispatchConfirmation: row.dispatchConfirmation, status: row.status})),
-            boardPublished: Object.values(state.boards || {}).map(board => ({date: board.date, shift: board.shift, published: board.published, team: board.team})),
-            mounted: Boolean(window.MineProductionBoard),
-            rendered: document.querySelector("#production-board .pb-trip-summary")?.innerText || ""
-        };
-    });
-    console.log("[OPS-71 after-reload diagnostic]", JSON.stringify(afterReloadDiagnostic));
     await page.locator('#production-board [data-action="toggle"]').click();
-    console.log("[OPS-71 after-toggle diagnostic]", JSON.stringify(await page.locator('#production-board .pb-trip-summary').innerText().catch(() => "missing")));
 
     const board = page.locator("#production-board");
     await expect(board).toContainText(/当日总趟数\s*1/);
@@ -170,7 +102,9 @@ test("TEST 汽车司机运输一趟渣后，生产看板只计一趟", async ({ 
     await expect(page.locator("#todayTripCount")).toHaveText("1");
     await expect(page.locator("#tripRankValue")).toContainText("第");
     await page.locator('#production-board [data-action="toggle"]').click();
-    await expect(page.locator("#production-board")).toContainText(/当日总趟数\s*1/);
+    // Rejected trips stay in driver trip/payroll/ranking counts but leave official production totals.
+    await expect(page.locator("#production-board")).toContainText(/当日总趟数\s*0/);
+    await expect(page.locator("#production-board")).toContainText(/A组总趟数\s*0/);
 
     const payrollMonth = new Date().toISOString().slice(0, 7);
     const seedPayroll = month => {
