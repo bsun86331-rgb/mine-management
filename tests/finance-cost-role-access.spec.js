@@ -65,7 +65,7 @@ test("D11-2 已审核会计、管理员、总经理可以查看财务费用", as
         await seedIdentity(page, position, {
             useSession: position !== "会计"
         });
-        await expect(page.getByRole("heading", { name: "🧮 财务费用录入中心" })).toBeVisible();
+        await expect(page.getByRole("heading", { name: "🧮 财务费用查看中心" })).toBeVisible();
         await expect(page.getByRole("heading", { name: "📋 财务费用记录" })).toBeVisible();
         await expect(page.getByRole("button", { name: "保存费用" })).toHaveCount(0);
         await expect(page.getByRole("button", { name: "删除" })).toHaveCount(0);
@@ -139,5 +139,5 @@ test("已审核司机不能通过伪造所选岗位冒充管理员", async ({ pa
     });
     await page.goto(`${ORIGIN}/finance-cost.html`, { waitUntil: "domcontentloaded" });
     await expect(page).toHaveURL(/index\.html$/);
-    await expect(page.getByRole("heading", { name: "🧮 财务费用录入中心" })).toHaveCount(0);
+    await expect(page.getByRole("heading", { name: "🧮 财务费用查看中心" })).toHaveCount(0);
 });
