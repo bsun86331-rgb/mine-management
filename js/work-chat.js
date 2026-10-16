@@ -1210,11 +1210,41 @@ mine-management 全端工作聊天 V1.5.3
                     "page-history"
                 );
 
+            const historyButton =
+                document.querySelector(
+                    '.nav-btn[data-page="history"]'
+                );
+
             if (
                 historySection
             ) {
                 historySection.style.display =
                     "";
+            }
+
+
+            /*
+             * Fuel management uses class-based navigation and has no
+             * window.openPage() function. Its history shortcut must use the
+             * same navigation handler as the hidden tab instead of falling
+             * through to the generic report-center route.
+             */
+            if (
+                page ===
+                    "fuel.html" &&
+                historyButton
+            ) {
+                historyButton.click();
+
+                historySection
+                    ?.scrollIntoView({
+                        behavior:
+                            "smooth",
+                        block:
+                            "start"
+                    });
+
+                return;
             }
 
 
@@ -1490,8 +1520,7 @@ mine-management 全端工作聊天 V1.5.3
             ],
 
             "fuel.html": [
-                '[data-page="history"]',
-                "#page-history"
+                '[data-page="history"]'
             ],
 
             "dispatch.html": [

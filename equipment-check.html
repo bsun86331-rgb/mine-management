@@ -380,8 +380,6 @@ function renderMaintenance(){
  if(!i){b.className="badge gray";b.textContent="未配置";["lastMaint","maintInterval","nextMaint","maintRemain"].forEach(id=>document.getElementById(id).textContent="-");document.getElementById("maintenanceMessage").textContent="未配置保养参数时，只记录本次读数，不影响提交。";return}
  b.className="badge "+(i.status==="正常"?"green":i.status==="临近"?"yellow":"red");b.textContent=i.status;document.getElementById("lastMaint").textContent=`${i.last} ${u}`;document.getElementById("maintInterval").textContent=`${i.intv} ${u}`;document.getElementById("nextMaint").textContent=`${i.due} ${u}`;document.getElementById("maintRemain").textContent=i.remain>=0?`${i.remain.toFixed(1)} ${u}`:`超 ${Math.abs(i.remain).toFixed(1)} ${u}`;document.getElementById("maintenanceMessage").textContent=i.status==="正常"?"当前保养状态：正常":i.status==="临近"?`⚠️ 临近保养：剩余 ${i.remain.toFixed(1)} ${u}`:`🚨 已超期 ${Math.abs(i.remain).toFixed(1)} ${u}`;
 }
-function addAlert(reading){const i=maintInfo(reading),a=arr(K.ALERTS).filter(x=>String(x.equipmentId||"")!==String(equipment.equipmentId));if(i&&["临近","超期"].includes(i.status))a.push({alertId:"MA_"+Date.now(),equipmentId:equipment.equipmentId,equipmentNumber:equipment.equipmentNumber,status:i.status,currentReading:reading,dueReading:i.due,remaining:i.remain,createdAt:new Date().toISOString()});save(K.ALERTS,a)}
-
 function uniqueKey(){return mode==="shift"?`${ctx?.shiftId||""}|${equipment?.equipmentId||""}|${pid(person)}`:`${new Date().toISOString().slice(0,10)}|${equipment?.equipmentId||""}|${pid(person)}`}
 function existing(){if(!equipment||!person)return null;return arr(K.CHECKS).find(x=>x.uniqueKey===uniqueKey()&&x.locked===true)||null}
 function showLocked(){
@@ -390,16 +388,47 @@ function showLocked(){
  c.classList.remove("hidden");f.classList.add("hidden");document.getElementById("lockedContent").innerHTML=`<b>${r.equipmentNumber}</b> · ${r.mode==="shift"?(r.shift||"-"):"临时用车"} · ${r.result}<br>读数：${r.meterReading} ${r.meterUnit}<br>提交：${new Date(r.createdAt).toLocaleString("zh-CN")}<br>${r.maintenanceRequestId?"维修单："+r.maintenanceRequestId:"使用记录已建立。"}`
 }
 
-function createMaintReq(check,prev){
+function buildMaintReq(check,prev){
  const rs=arr(K.MAINTREQ),id="MR_"+Date.now();
- rs.push({requestId:id,maintenanceRequestId:id,source:"equipment_usage_check",checkId:check.checkId,inspectionMode:mode,taskId:check.taskId||"",shiftId:check.shiftId||"",equipmentId:check.equipmentId,equipmentNumber:check.equipmentNumber,equipmentType:check.equipmentType,reportedById:check.personId,reportedByName:check.personName,abnormalParts:check.abnormalParts,description:check.abnormalDescription,photos:check.abnormalPhotos,status:"pending_dispatch",dispatchStatus:"pending",dispatchRequired:true,maintenanceType:"故障维修",feeConfirmationStatus:"not_ready",feeConfirmationDriverId:prev?.id||prev?.personId||"",feeConfirmationDriverName:prev?.name||prev?.personName||"",feeConfirmationReference:mode==="shift"?"上一班设备使用人":"上一位车辆使用人",createdAt:new Date().toISOString()});
- save(K.MAINTREQ,rs);return id;
+ const record={requestId:id,maintenanceRequestId:id,source:"equipment_usage_check",checkId:check.checkId,inspectionMode:mode,taskId:check.taskId||"",shiftId:check.shiftId||"",equipmentId:check.equipmentId,equipmentNumber:check.equipmentNumber,equipmentType:check.equipmentType,reportedById:check.personId,reportedByName:check.personName,abnormalParts:check.abnormalParts,description:check.abnormalDescription,photos:check.abnormalPhotos,status:"pending_dispatch",dispatchStatus:"pending",dispatchRequired:true,maintenanceType:"故障维修",feeConfirmationStatus:"not_ready",feeConfirmationDriverId:prev?.id||prev?.personId||"",feeConfirmationDriverName:prev?.name||prev?.personName||"",feeConfirmationReference:mode==="shift"?"上一班设备使用人":"上一位车辆使用人",createdAt:new Date().toISOString()};
+ return {requestId:id,record};
 }
 
-function createUsageRecord(check){
- const rs=arr(K.USAGE_RECORDS);
- rs.push({usageId:"EUR_"+Date.now(),checkId:check.checkId,mode,taskId:check.taskId||"",shiftId:check.shiftId||"",shift:check.shift||"",equipmentId:check.equipmentId,equipmentNumber:check.equipmentNumber,equipmentType:check.equipmentType,personId:check.personId,personName:check.personName,purpose:check.usagePurpose||"",meterReading:check.meterReading,meterUnit:check.meterUnit,result:check.result,createdAt:check.createdAt});
- save(K.USAGE_RECORDS,rs);
+function buildUsageRecord(check){
+ return {usageId:"EUR_"+Date.now(),checkId:check.checkId,mode,taskId:check.taskId||"",shiftId:check.shiftId||"",shift:check.shift||"",equipmentId:check.equipmentId,equipmentNumber:check.equipmentNumber,equipmentType:check.equipmentType,personId:check.personId,personName:check.personName,purpose:check.usagePurpose||"",meterReading:check.meterReading,meterUnit:check.meterUnit,result:check.result,createdAt:check.createdAt};
+}
+
+function buildAlertRecords(reading){
+ const i=maintInfo(reading),alerts=arr(K.ALERTS).filter(x=>String(x.equipmentId||"")!==String(equipment.equipmentId));
+ if(i&&["临近","超期"].includes(i.status))alerts.push({alertId:"MA_"+Date.now(),equipmentId:equipment.equipmentId,equipmentNumber:equipment.equipmentNumber,status:i.status,currentReading:reading,dueReading:i.due,remaining:i.remain,createdAt:new Date().toISOString()});
+ return alerts;
+}
+
+function saveStorageBatch(changes){
+ const entries=changes.map(([key,value])=>({key,serialized:JSON.stringify(value),previous:localStorage.getItem(key)}));
+ const replacedUnits=entries.reduce((n,item)=>n+item.key.length+(item.previous===null?0:item.previous.length),0);
+ const nextUnits=entries.reduce((n,item)=>n+item.key.length+item.serialized.length,0);
+ const growth=Math.max(0,nextUnits-replacedUnits);
+ let probeKey="";
+ if(growth>0){
+  probeKey="__mine_euc_capacity_probe__"+Date.now()+Math.random().toString(36).slice(2);
+  try{
+   localStorage.setItem(probeKey,"x".repeat(Math.max(0,growth+96-probeKey.length)));
+  }catch(error){
+   try{localStorage.removeItem(probeKey)}catch{}
+   throw new Error("本机存储空间不足，本次设备检查未保存。请先导出并清理已归档数据，再重新提交。",{cause:error});
+  }
+  localStorage.removeItem(probeKey);
+ }
+ try{
+  for(const item of entries)localStorage.setItem(item.key,item.serialized);
+ }catch(error){
+  const rollbackErrors=[];
+  for(const item of entries){try{localStorage.removeItem(item.key)}catch(e){rollbackErrors.push(e.message)}}
+  for(const item of entries){if(item.previous!==null){try{localStorage.setItem(item.key,item.previous)}catch(e){rollbackErrors.push(e.message)}}}
+  if(rollbackErrors.length)throw new Error("设备检查保存失败，且本地回滚未能完整完成，请立即核对设备检查、仪表读数和维修申请数据。",{cause:error});
+  throw new Error("本机存储空间发生变化，本次设备检查已取消并回滚，请释放空间后重试。",{cause:error});
+ }
 }
 
 function submitCheck(){
@@ -423,8 +452,15 @@ function submitCheck(){
  const now=new Date().toISOString(),prev=previousUser(),id=pid(person),u=unit();
  const check={checkId:"EUC_"+Date.now(),uniqueKey:uniqueKey(),locked:true,mode,taskId:mode==="shift"?(ctx?.taskId||""):"",shiftId:mode==="shift"?(ctx?.shiftId||""):"",shift:mode==="shift"?(ctx?.shift||""):"",shiftDate:mode==="shift"?(ctx?.shiftDate||""):"",equipmentId:equipment.equipmentId,equipmentNumber:equipment.equipmentNumber,equipmentType:equipment.equipmentType,meterType:isExc(equipment)?"hours":"mileage",meterReading:reading,meterUnit:u,meterPhoto,personId:id,personName:person.name||"",position:norm(person.position||localStorage.getItem("selectedPosition")||""),previousUserId:prev?.id||prev?.personId||"",previousUserName:prev?.name||prev?.personName||"",result,abnormalParts:result==="发现异常"?parts:[],abnormalDescription:result==="发现异常"?desc:"",abnormalPhotos:result==="发现异常"?abPhotos:[],usagePurpose:mode==="usage"?document.getElementById("usagePurpose").value.trim():"",createdAt:now};
 
- if(result==="发现异常")check.maintenanceRequestId=createMaintReq(check,prev);
- const cs=arr(K.CHECKS);cs.push(check);save(K.CHECKS,cs);
+ let maintenanceRequest=null;
+ const maintenanceRequests=arr(K.MAINTREQ);
+ if(result==="发现异常"){
+  const built=buildMaintReq(check,prev);
+  check.maintenanceRequestId=built.requestId;
+  maintenanceRequest=built.record;
+  maintenanceRequests.push(maintenanceRequest);
+ }
+ const cs=arr(K.CHECKS);cs.push(check);
 
  const meterRecord={
   meterRecordId:"EMR_"+Date.now(),
@@ -444,7 +480,13 @@ function submitCheck(){
   createdAt:now
  };
 
- const ms=arr(K.METERS);ms.push(meterRecord);save(K.METERS,ms);
+ const ms=arr(K.METERS);ms.push(meterRecord);
+ const usageRecords=arr(K.USAGE_RECORDS);usageRecords.push(buildUsageRecord(check));
+ const alerts=buildAlertRecords(reading);
+ const localChanges=[];
+ if(maintenanceRequest)localChanges.push([K.MAINTREQ,maintenanceRequests]);
+ localChanges.push([K.CHECKS,cs],[K.METERS,ms],[K.USAGE_RECORDS,usageRecords],[K.ALERTS,alerts]);
+ try{saveStorageBatch(localChanges)}catch(error){console.error("设备使用前检查本机事务保存失败：",error);alert(error.message||"本次检查保存失败，请核对本机存储空间后重试。");return;}
 
  /*
   * V2.13.8C
@@ -492,7 +534,7 @@ function submitCheck(){
   }
  }
 
- createUsageRecord(check);addAlert(reading);renderHistory();showLocked();
+ renderHistory();showLocked();
  alert(result==="发现异常"?`检查已锁定，已自动生成维修单：${check.maintenanceRequestId}`:"检查已锁定，设备使用记录已建立。");
 }
 
@@ -576,4 +618,6 @@ document.addEventListener('DOMContentLoaded', function () {
 <script src="js/production-board.js?v=2.0.13"></script>
 </body>
 </html>
+
+
 

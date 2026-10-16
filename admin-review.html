@@ -6561,16 +6561,16 @@ function approveCurrentPerson() {
         if (recordIndex === index) return false;
 
         const candidateId = normalizeIdentityDocument(
-            person.idCardNumber || person.idCard
+            normalizeIdentityDocument(person.idCardNumber) || person.idCard
         );
         const candidatePassport = normalizeIdentityDocument(
-            person.passportNumber || person.passport
+            normalizeIdentityDocument(person.passportNumber) || person.passport
         );
         const savedId = normalizeIdentityDocument(
-            record.idCardNumber || record.idCard
+            normalizeIdentityDocument(record.idCardNumber) || record.idCard
         );
         const savedPassport = normalizeIdentityDocument(
-            record.passportNumber || record.passport
+            normalizeIdentityDocument(record.passportNumber) || record.passport
         );
 
         return Boolean(
