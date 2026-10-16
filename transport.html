@@ -516,7 +516,7 @@ function isValidOfficialTrip(item){
     item.status !== "rejected" &&
     item.confirmationStatus !== "rejected" &&
     item.dispatchConfirmation !== "rejected" &&
-    !/pending|rejected/.test(String(item.gpsReviewStatus || item.reviewStatus || "").toLowerCase()) &&
+    !/pending|rejected/.test([item.gpsReviewStatus, item.reviewStatus].filter(Boolean).join(" ").toLowerCase()) &&
     !(item.confirmationStatus === "pending" && (item.manualOverride === true || item.gpsStatus === "manual_override" || item.gpsReviewStatus === "pending")) &&
     !(item.dispatchConfirmation === "pending" && (item.manualOverride === true || item.gpsStatus === "manual_override" || item.gpsReviewStatus === "pending")) &&
     item.gpsReviewStatus !== "pending" &&

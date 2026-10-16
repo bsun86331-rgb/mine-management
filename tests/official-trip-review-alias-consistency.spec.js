@@ -49,9 +49,11 @@ test("正式趟次统计在各页面统一排除审核别名待审与驳回记�
   const cases = [
     { name: "reviewStatus-pending", record: { tripId: "TEST-OPS70-PENDING", status: "completed", completedAt, reviewStatus: "pending", manualOverride: true, gpsStatus: "manual_override" }, expectedOfficial: false, expectedBoard: false },
     { name: "reviewStatus-rejected", record: { tripId: "TEST-OPS70-REJECTED", status: "completed", completedAt, reviewStatus: "rejected", manualOverride: true, gpsStatus: "manual_override" }, expectedOfficial: false, expectedBoard: false },
+    { name: "gps-approved-review-rejected", record: { tripId: "TEST-OPS70-ALIAS-CONFLICT-REJECTED", status: "completed", completedAt, gpsReviewStatus: "approved", reviewStatus: "rejected", manualOverride: true, gpsStatus: "manual_override" }, expectedOfficial: false, expectedBoard: false },
+    { name: "gps-pending-review-approved", record: { tripId: "TEST-OPS70-ALIAS-CONFLICT-PENDING", status: "completed", completedAt, gpsReviewStatus: "pending", reviewStatus: "approved", manualOverride: true, gpsStatus: "manual_override" }, expectedOfficial: false, expectedBoard: false },
     { name: "confirmationStatus-pending", record: { tripId: "TEST-OPS70-CONF-PENDING", status: "completed", completedAt, confirmationStatus: "pending", manualOverride: true, gpsStatus: "manual_override" }, expectedOfficial: false, expectedBoard: false },
-    { name: "confirmationStatus-rejected", record: { tripId: "TEST-OPS70-CONF-REJECTED", status: "completed", completedAt, confirmationStatus: "rejected", manualOverride: true, gpsStatus: "manual_override" }, expectedOfficial: false, expectedBoard: true },
-    { name: "dispatchConfirmation-rejected-nonofficial-trip", record: { tripId: "TEST-OPS70-DISPATCH-REJECTED", status: "completed", completedAt, dispatchConfirmation: "rejected", officialCountEligible: false }, expectedOfficial: false, expectedBoard: true },
+    { name: "confirmationStatus-rejected", record: { tripId: "TEST-OPS70-CONF-REJECTED", status: "completed", completedAt, confirmationStatus: "rejected", manualOverride: true, gpsStatus: "manual_override" }, expectedOfficial: false, expectedBoard: false },
+    { name: "dispatchConfirmation-rejected-nonofficial-trip", record: { tripId: "TEST-OPS70-DISPATCH-REJECTED", status: "completed", completedAt, dispatchConfirmation: "rejected", officialCountEligible: false }, expectedOfficial: false, expectedBoard: false },
     { name: "approved-normal", record: { tripId: "TEST-OPS70-APPROVED", status: "completed", completedAt, dispatchConfirmation: "confirmed", gpsReviewStatus: "approved", officialCountEligible: true }, expectedOfficial: true, expectedBoard: true }
   ];
 
