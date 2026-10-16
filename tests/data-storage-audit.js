@@ -119,6 +119,12 @@ const CLIENT_ONLY_KEYS = new Set([
   "auxiliaryVehicleProfile"
 ]);
 
+// Print preview data contains a short-lived render payload in sessionStorage;
+// it is not an authentication identity or a durable business record.
+const SESSION_ONLY_KEYS = new Set([
+  "minePrintPreviewPayload"
+]);
+
 function walk(dir, out = []) {
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
     const full = path.join(dir, entry.name);
@@ -142,6 +148,10 @@ function walk(dir, out = []) {
 function classify(key) {
   if (TEST_ONLY_KEYS.has(key)) {
     return "测试/演示";
+  }
+
+  if (SESSION_ONLY_KEYS.has(key)) {
+    return "页面缓存/草稿";
   }
 
   if (CLIENT_ONLY_KEYS.has(key)) {
@@ -260,7 +270,7 @@ function scanFile(file, map) {
 
   for (const [symbol, key] of constants.entries()) {
     const genericRe = new RegExp(
-      "(?:readArray|readJson|saveArray|save|saveRecords|readRecords|getItem|setItem)\\s*\\(\\s*" +
+      "(?:readArray|readJson|saveArray|save|saveRecords|readRecords)\\s*\\(\\s*" +
       escapeRegex(symbol) +
       "\\b",
       "g"

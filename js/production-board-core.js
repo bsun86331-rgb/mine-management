@@ -227,7 +227,11 @@
         const seen = new Set();
         return rows.map(flatten).filter(r => {
             if (r.invalid === true || r.deleted === true || r.isValid === false || /rejected|cancelled|pending|invalid|loading|运输中|待审核|作废/.test(text(r.status || r.reviewStatus))) return false;
-            if (/pending|rejected/.test(text(r.gpsReviewStatus || r.reviewStatus))) return false;
+            if (/rejected/.test([r.gpsReviewStatus, r.reviewStatus].map(text).join(' '))) return false;
+            if (/pending/.test(text(r.gpsReviewStatus || r.reviewStatus))) return false;
+            if (/rejected/.test([r.confirmationStatus, r.dispatchConfirmation].map(text).join(' '))) return false;
+            if ((r.dispatchConfirmation === 'pending' || r.confirmationStatus === 'pending') &&
+                (r.manualOverride === true || r.gpsStatus === 'manual_override' || r.gpsReviewStatus === 'pending')) return false;
             if (!/completed|approved|finished|valid|完成|通过/.test(text(r.status)) && !r.completedAt && !r.completed_at && !r.unloadedAt && !r.unloaded_at) return false;
             const completedAt = tripTime(r);
             // Records without an immutable trip ID cannot be safely reconciled. Keep them out of official totals until manually matched.
