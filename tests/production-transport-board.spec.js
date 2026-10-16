@@ -130,7 +130,24 @@ test("TEST 汽车司机运输一趟渣后，生产看板只计一趟", async ({ 
     expect(canonicalTrips[0].materialType).toBe("渣");
     expect(canonicalTrips[0].unloadingZoneId).toBe("TEST-UNLOAD-WASTE");
     await page.goto(TEST_ORIGIN + "/driver-work.html", { waitUntil: "domcontentloaded" });
+    const afterReloadDiagnostic = await page.evaluate(() => {
+        const state = JSON.parse(localStorage.getItem("mineProductionBoardV2") || "{}");
+        const rows = [...JSON.parse(localStorage.getItem("tripRecords") || "[]"), ...JSON.parse(localStorage.getItem("driverTripRecords") || "[]")];
+        const core = window.ProductionBoardCore;
+        return {
+            tripRecords: JSON.parse(localStorage.getItem("tripRecords") || "[]").length,
+            driverTripRecords: JSON.parse(localStorage.getItem("driverTripRecords") || "[]").length,
+            validTrips: core.validTrips(rows).length,
+            now: new Date().toISOString(),
+            trips: rows.map(row => ({completedAt: row.completedAt, team: row.team, productionTeam: row.productionTeam, materialType: row.materialType, dispatchConfirmation: row.dispatchConfirmation, status: row.status})),
+            boardPublished: Object.values(state.boards || {}).map(board => ({date: board.date, shift: board.shift, published: board.published, team: board.team})),
+            mounted: Boolean(window.MineProductionBoard),
+            rendered: document.querySelector("#production-board .pb-trip-summary")?.innerText || ""
+        };
+    });
+    console.log("[OPS-71 after-reload diagnostic]", JSON.stringify(afterReloadDiagnostic));
     await page.locator('#production-board [data-action="toggle"]').click();
+    console.log("[OPS-71 after-toggle diagnostic]", JSON.stringify(await page.locator('#production-board .pb-trip-summary').innerText().catch(() => "missing")));
 
     const board = page.locator("#production-board");
     await expect(board).toContainText(/当日总趟数\s*1/);
@@ -193,6 +210,7 @@ test("TEST 汽车司机运输一趟渣后，生产看板只计一趟", async ({ 
     expect(pageErrors).toEqual([]);
     expect(blockedRequests).toEqual([]);
 });
+
 
 
 
