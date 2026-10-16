@@ -2995,7 +2995,8 @@ function compressEquipmentImage(
                 )
             );
 
-          width =            Math.max(
+          width =
+            Math.max(
               1,
               Math.round(
                 width *
@@ -3994,7 +3995,8 @@ async function saveEquipment() {
     );
 
   if (duplicate) {
-    showToast(      "该设备编号已经存在",
+    showToast(
+      "该设备编号已经存在",
       "error"
     );
     return;
@@ -4993,7 +4995,8 @@ function renderMaterials() {
   if (!container) return;
 
   const search =
-    document      .getElementById(
+    document
+      .getElementById(
         "materialSearch"
       )
       ?.value
