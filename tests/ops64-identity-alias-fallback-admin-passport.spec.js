@@ -14,6 +14,8 @@ test("OPS-64 candidate blocks duplicate passport through legacy alias in admin m
       personId: "TEST-OPS64-ORIGINAL", name: "TEST原档", phone: "TEST-OPS64-PHONE-1",
       position: "汽车司机", status: "active", passportNumber: "   ", passport: "TEST-OPS64-LEGACY-PASSPORT-001"
     }]));
+    localStorage.setItem("adminPersonId", "TEST-OPS64-ADMIN");
+    localStorage.setItem("selectedPosition", "管理员");
     sessionStorage.setItem("managementSession", JSON.stringify({ verified: true, position: "管理员", personId: "TEST-OPS64-ADMIN", expiresAt: Date.now() + 60000 }));
   });
   await page.route("**/*", async route => {
