@@ -84,6 +84,23 @@ test("TEST 汽车司机运输一趟渣后，生产看板只计一趟", async ({ 
         const schedule = state.schedule || core.DEFAULT_SCHEDULE;
         const start = core.interval(selectedDate, "白班", schedule).start;
         const end = core.interval(selectedDate, "夜班", schedule).end;
+        const readRows = key => core.array(JSON.parse(localStorage.getItem(key) || "[]")).map(core.flatten);
+        const data = {
+            people: readRows("personnelRecords"),
+            equipment: readRows("equipmentRecords"),
+            tasks: readRows("dispatchPublishedTasks"),
+            executions: readRows("dispatchShiftExecutions"),
+            zones: readRows("transportZones"),
+            operational: readRows("equipmentOperationalStatus"),
+            maintenance: [...readRows("maintenanceRequests"), ...readRows("maintenanceWorkOrders")],
+            leaves: [...readRows("leaveRequests"), ...readRows("driverLeaveRequests")],
+            attendance: [...readRows("attendanceRecords"), ...readRows("dispatchAttendanceConfirmations")],
+            trips: rows
+        };
+        const selectedShift = document.querySelector('#production-board .pb-tabs [data-action="shift"].pb-active')?.dataset.shift || "白班";
+        const boardState = { ...core.emptyState(), ...state, schedule };
+        const board = core.boardFor(boardState, selectedDate, selectedShift, data);
+        const statistics = core.statistics(selectedDate, selectedShift, boardState, data, board);
         const tripsInProductionDay = valid.filter(row => {
             const time = new Date(row.completedAt || row.completed_at || row.unloadedAt || row.unloaded_at || row.finishedAt || row.endTime || row.createdAt || row.created_at || row.time || row.date);
             return time >= start && time < end;
@@ -97,7 +114,12 @@ test("TEST 汽车司机运输一趟渣后，生产看板只计一趟", async ({ 
             productionDayEnd: end.toISOString(),
             coreValidCount: valid.length,
             coreValidTimes: valid.map(row => row.completedAt || row.completed_at || row.unloadedAt || row.unloaded_at || row.finishedAt || row.endTime || row.createdAt || row.created_at || row.time || row.date),
-            coreValidWithinProductionDay: tripsInProductionDay.length
+            coreValidWithinProductionDay: tripsInProductionDay.length,
+            selectedShift,
+            actualStatisticsTotalTrips: statistics.totalTrips,
+            boardStateRevision: boardState.revision,
+            published: board.published,
+            renderedTripSummary: document.querySelector('#production-board .pb-trip-summary')?.innerText || ""
         };
     });
     console.log("[OPS-71 trip status diagnostic]", JSON.stringify(tripStatusDiagnostic));
