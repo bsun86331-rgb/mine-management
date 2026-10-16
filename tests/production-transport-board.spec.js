@@ -72,6 +72,16 @@ test("TEST 汽车司机运输一趟渣后，生产看板只计一趟", async ({ 
     await expect.poll(async () => (await bot.readLocalStorage("tripRecords") || []).length, { timeout: 5000 }).toBe(1);
 
     const canonicalTrips = await bot.readLocalStorage("tripRecords");
+    const tripStatusDiagnostic = await page.evaluate(() => {
+        const rows = [
+            ...JSON.parse(localStorage.getItem("tripRecords") || "[]"),
+            ...JSON.parse(localStorage.getItem("driverTripRecords") || "[]")
+        ];
+        return rows.map(row => Object.fromEntries(Object.entries(row).filter(([key]) =>
+            /tripId|recordId|status|review|confirm|gps|manual|official|completedAt/.test(key)
+        )));
+    });
+    console.log("[OPS-71 trip status diagnostic]", JSON.stringify(tripStatusDiagnostic));
     expect(driverTrips).toHaveLength(1);
     expect(canonicalTrips).toHaveLength(1);
     expect(driverTrips[0].tripId).toMatch(/^TEST-/);
