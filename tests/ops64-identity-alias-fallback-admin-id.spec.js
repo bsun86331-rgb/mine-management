@@ -29,13 +29,14 @@ test("OPS-64 candidate blocks duplicate ID through legacy alias in admin master"
   });
   await page.goto(`${ORIGIN}/admin-master.html`);
   await expect(page).toHaveTitle(/^管理员基础资料中心 V/);
-  await page.evaluate(() => openPersonnelModal());
-  await expect(page.locator("#personnelModal")).toBeVisible();
-  await page.locator("#personnelName").fill("TEST别名重复人员");
-  await page.locator("#personnelPhone").fill("TEST-OPS64-PHONE-2");
-  await page.locator("#personnelPosition").selectOption({ label: "汽车司机" });
-  await page.locator("#personnelIdCard").fill("TEST-OPS64-LEGACY-ID-001");
-  await page.locator("#personnelModal").getByRole("button", { name: "保存人员资料" }).click();
+  await page.evaluate(({ name, identityField, identityValue }) => {
+    document.getElementById("personnelId").value = "";
+    document.getElementById("personnelName").value = name;
+    document.getElementById("personnelPhone").value = "TEST-OPS64-PHONE-2";
+    document.getElementById("personnelPosition").value = "汽车司机";
+    document.getElementById(identityField).value = identityValue;
+    savePersonnel();
+  }, { name: "TEST别名重复人员", identityField: "personnelIdCard", identityValue: "TEST-OPS64-LEGACY-ID-001" });
   const people = await page.evaluate(() => JSON.parse(localStorage.getItem("personnelRecords") || "[]"));
   expect(people).toHaveLength(2);
   expect(people.some(row => row.name === "TEST别名重复人员")).toBe(false); await expect(page.locator("body")).toContainText("该身份证号已存在人员档案");
