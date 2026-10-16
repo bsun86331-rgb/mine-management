@@ -97,6 +97,7 @@
 - driverCurrentTask
 - driverTransportCycleState
 - pendingTransportZoneSelection
+- minePrintPreviewPayload（只在 sessionStorage 保存一次性打印预览数据；使用后清理，不进入业务数据库）
 - fuelRequestDraft
 - fuelRequestManualPerson
 - maintenanceReportDraft

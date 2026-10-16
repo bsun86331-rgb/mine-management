@@ -514,7 +514,12 @@ function isValidOfficialTrip(item){
     item &&
     item.status !== "cancelled" &&
     item.status !== "rejected" &&
+    item.confirmationStatus !== "rejected" &&
     item.dispatchConfirmation !== "rejected" &&
+    !/pending|rejected/.test(String(item.gpsReviewStatus || item.reviewStatus || "").toLowerCase()) &&
+    !(item.confirmationStatus === "pending" && (item.manualOverride === true || item.gpsStatus === "manual_override" || item.gpsReviewStatus === "pending")) &&
+    !(item.dispatchConfirmation === "pending" && (item.manualOverride === true || item.gpsStatus === "manual_override" || item.gpsReviewStatus === "pending")) &&
+    item.gpsReviewStatus !== "pending" &&
     window.ProductionBoardCore?.hasStableTripId(item) &&
     item.officialCountEligible !== false
   );
