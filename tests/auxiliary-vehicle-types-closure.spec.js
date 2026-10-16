@@ -77,11 +77,17 @@ test("TEST六类辅助车辆岗位作业闭环", async ({ page }) => {
     await page.locator("#currentTaskArea").getByRole("button", { name: "结束作业" }).click();
     rows = await page.evaluate(() => JSON.parse(localStorage.getItem("auxiliaryWorkRecords") || "[]"));
     expect(rows[0]).toMatchObject({ status: "completed", completedAt: expect.any(String), durationMinutes: expect.any(Number) });
-    expect(rows[0].durationMinutes).toBeGreaterThanOrEqual(1);
+    const startedAt = Date.parse(rows[0].startedAt);
+    const completedAt = Date.parse(rows[0].completedAt);
+    expect(Number.isFinite(startedAt)).toBe(true);
+    expect(Number.isFinite(completedAt)).toBe(true);
+    expect(completedAt).toBeGreaterThanOrEqual(startedAt);
+    expect(rows[0].durationMinutes).toBe(Math.max(1, Math.round((completedAt - startedAt) / 60000)));
   }
   expect(errors).toEqual([]);
   expect(blocked).toEqual([]);
 });
+
 
 
 
