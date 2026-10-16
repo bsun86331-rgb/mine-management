@@ -38,6 +38,10 @@ test("TEST维修申请被调度驳回后保留原因且不进入修理厂", asyn
     localStorage.setItem("vehicleRecords", JSON.stringify([
       { vehicleNumber: "TEST-TRUCK-REJECT-001", status: "maintenance", currentStatus: "维修中", testFixture: true }
     ]));
+    localStorage.setItem("equipmentRecords", JSON.stringify([
+      { equipmentId: "TEST-TRUCK-REJECT-001", equipmentNumber: "TEST-TRUCK-REJECT-001", status: "maintenance", currentStatus: "维修中", updatedAt: "TEST-TARGET-OLD", testFixture: true },
+      { equipmentId: "TEST-TRUCK-OTHER-002", equipmentNumber: "TEST-TRUCK-OTHER-002", status: "available", currentStatus: "可用", updatedAt: "TEST-UNRELATED-UNCHANGED", testFixture: true }
+    ]));
     const originalSetItem = Storage.prototype.setItem;
     let failRequestWriteOnce = previousStatus === "working";
     Storage.prototype.setItem = function (key, value) {
@@ -85,6 +89,10 @@ test("TEST维修申请被调度驳回后保留原因且不进入修理厂", asyn
   expect(await page.evaluate(() => JSON.parse(localStorage.getItem("equipmentOperationalStatus"))[0])).toMatchObject({ status: "working", previousStatus: "", source: "dispatch_rejection" });
   expect(await page.evaluate(() => JSON.parse(localStorage.getItem("vehicleRecords"))[0])).toMatchObject({ status: "working", currentStatus: "作业中" });
   expect(await page.evaluate(() => JSON.parse(localStorage.getItem("maintenanceWorkOrders") || "[]"))).toHaveLength(0);
+  expect(await page.evaluate(() => JSON.parse(localStorage.getItem("equipmentRecords") || "[]"))).toEqual([
+    { equipmentId: "TEST-TRUCK-REJECT-001", equipmentNumber: "TEST-TRUCK-REJECT-001", status: "working", currentStatus: "作业中", updatedAt: expect.any(String), testFixture: true },
+    { equipmentId: "TEST-TRUCK-OTHER-002", equipmentNumber: "TEST-TRUCK-OTHER-002", status: "available", currentStatus: "可用", updatedAt: "TEST-UNRELATED-UNCHANGED", testFixture: true }
+  ]);
 
   const expectedStatusText = { available: "可用", standby: "备用", disabled: "停用" };
   for (const previousStatus of ["available", "standby", "disabled"]) {
