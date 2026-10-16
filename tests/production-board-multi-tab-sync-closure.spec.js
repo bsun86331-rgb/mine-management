@@ -28,7 +28,7 @@ async function routeSnapshot(page, blocked) {
   });
 }
 
-test("TEST调度首次发布及再次调整绑定后已打开司机看板实时同步", async ({ page }) => {
+test("TEST调度首次发布、旧草稿冲突保护和再次换绑跨标签同步", async ({ page }) => {
   const errors = [];
   const blocked = [];
   page.on("pageerror", error => errors.push(error.message));
@@ -74,7 +74,19 @@ test("TEST调度首次发布及再次调整绑定后已打开司机看板实时�
   const board = page.locator("#production-board");
   await expect(board.locator("[data-action=edit]")).toContainText("下发任务");
 
-  // Open the other role in a second same-origin tab before dispatch publishes.
+  // Keep a second dispatch tab on revision 0 with an unpublished draft.
+  const staleDispatchPage = await page.context().newPage();
+  staleDispatchPage.on("pageerror", error => errors.push(error.message));
+  await routeSnapshot(staleDispatchPage, blocked);
+  await staleDispatchPage.goto(`${ORIGIN}/dispatch.html`, { waitUntil: "domcontentloaded" });
+  const staleBoard = staleDispatchPage.locator("#production-board");
+  await staleBoard.locator('[data-action="edit"]').click();
+  const staleDialog = staleDispatchPage.locator("dialog.pb-dialog");
+  await staleDialog.locator('select[name="team"]').selectOption("A");
+  await staleDialog.getByRole("button", { name: "确认" }).click();
+  await expect(staleBoard.locator('[data-action="publish"]')).toBeVisible();
+
+  // Open the driver role before either dispatch tab publishes.
   await page.evaluate(() => {
     localStorage.setItem("currentPersonId", "TEST-MULTITAB-TR-D");
     localStorage.setItem("selectedPosition", "汽车司机");
@@ -117,6 +129,10 @@ test("TEST调度首次发布及再次调整绑定后已打开司机看板实时�
   await board.locator('[data-action="publish"]').click();
 
   await expect(board).toContainText("绑定已发布");
+  // Publishing the old draft must be rejected instead of overwriting revision 1.
+  await staleBoard.locator('[data-action="publish"]').click();
+  await expect(staleBoard).toContainText("看板已经被其他页面修改，请取消编辑后重新进入。");
+  expect(await page.evaluate(() => JSON.parse(localStorage.getItem("mineProductionBoardV2") || "{}").revision)).toBe(1);
   await expect(driverBoard.locator(".pb-group").first()).toContainText("TEST-MULTITAB-TRUCK", { timeout: 5000 });
   await expect(driverBoard.locator(".pb-group").first()).toContainText("TEST汽车司机");
   await expect(driverBoard.locator(".pb-tag")).toContainText("只读");
@@ -160,6 +176,7 @@ test("TEST调度首次发布及再次调整绑定后已打开司机看板实时�
   expect(revised).toEqual({ revision: 2, driverId: "TEST-MULTITAB-TR-D2" });
   expect(errors).toEqual([]);
   expect(blocked).toEqual([]);
+  await staleDispatchPage.close();
   await driverPage.close();
 });
 
