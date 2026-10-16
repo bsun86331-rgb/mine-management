@@ -21,7 +21,7 @@ test("所有生产看板页面使用当前共享核心缓存版本", async () =>
   }
   expect(references.length, "应该发现共享看板核心脚本引用").toBeGreaterThan(0);
   const indexSource = await fs.readFile(path.join(ROOT, "index.html"), "utf8");
-  expect(indexSource).toContain("系统版本 V2.14.16");
+  expect(indexSource).toContain("系统版本 V2.14.17");
   expect(references.filter(item => item.version !== EXPECTED_CORE_CACHE_VERSION),
     "共享核心缓存版本必须与当前代码统一：" + JSON.stringify(references)).toEqual([]);
 });

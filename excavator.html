@@ -948,7 +948,7 @@
 
 <footer>
 
-    矿山管理系统 · 挖机司机端 V2.11.0J V2.10.0L
+    矿山管理系统 · 挖机司机端 V2.11.0K · 系统版本 V2.14.17
 
 </footer>
 
@@ -2271,22 +2271,25 @@ function getTrips() {
 
 
 
-function getTaskTrips(
-    task
-) {
+function dedupeTripsWithStableIds(trips) {
+  const stableTripId = window.ProductionBoardCore?.stableTripId;
+  const seen = new Set();
+  return trips.filter(trip => {
+    const id = typeof stableTripId === "function" ? String(stableTripId(trip) || "") : "";
+    if (!id) return true;
+    if (seen.has(id)) return false;
+    seen.add(id);
+    return true;
+  });
+}
 
-    return getTrips()
-        .filter(
-            trip =>
-
-                trip.taskId ===
-                    task.taskId
-
-                ||
-
-                trip.dispatchTaskId ===
-                    task.taskId
-        );
+function getTaskTrips(task) {
+  const targetTaskId = String(task?.taskId || task?.dispatchTaskId || task?.id || "");
+  if (!targetTaskId) return [];
+  return getTrips().filter(trip =>
+    [trip.taskId, trip.dispatchTaskId, trip.task_id, trip.dispatch_task_id]
+      .some(id => String(id || "") === targetTaskId)
+  );
 }
 
 
@@ -2299,24 +2302,13 @@ function getTaskTrips(
    2. officialCountEligible === false
 ========================================================= */
 
-function getValidTaskTrips(
-    task
-) {
-
-    return getTaskTrips(
-        task
+function getValidTaskTrips(task) {
+  return dedupeTripsWithStableIds(
+    getTaskTrips(task).filter(trip =>
+      trip.dispatchConfirmation !== "rejected" &&
+      trip.officialCountEligible !== false
     )
-        .filter(
-            trip =>
-
-                trip.dispatchConfirmation !==
-                    "rejected"
-
-                &&
-
-                trip.officialCountEligible !==
-                    false
-        );
+  );
 }
 
 
@@ -3982,11 +3974,11 @@ function getMonthlyDriverTripRecords() {
     const personName = String(currentPerson.name || "").trim();
     const tasks = getTasks();
     const byId = new Map(tasks.map(t => [String(t.taskId || t.dispatchTaskId || t.id || ""), t]));
-    return getTrips().filter(trip => {
+    return dedupeTripsWithStableIds(getTrips().filter(trip => {
         if (trip.dispatchConfirmation === "rejected" || trip.officialCountEligible === false) return false;
         const time = getTripTime(trip);
         if (!time || time < first || time >= next || !getTripVehicleNumber(trip)) return false;
-        const taskId = String(trip.taskId || trip.dispatchTaskId || "");
+        const taskId = String(trip.taskId || trip.dispatchTaskId || trip.task_id || trip.dispatch_task_id || "");
         const task = byId.get(taskId);
         if (!task) return false;
         const directOperatorId = String(trip.excavatorDriverId || trip.excavatorOperatorId || trip.operatorId || "");
@@ -4004,7 +3996,7 @@ function getMonthlyDriverTripRecords() {
             const excavatorId = String(row.excavatorId || row.excavatorNumber || "");
             return matched && excavatorId && tripBelongsToExcavator(task, trip, excavatorId);
         });
-    }).sort((a,b) => getTripTime(b) - getTripTime(a));
+    })).sort((a,b) => getTripTime(b) - getTripTime(a));
 }
 
 function openMonthlyDriverTripDetail() {
