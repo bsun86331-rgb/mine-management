@@ -31,6 +31,21 @@ test("TEST维修申请被调度驳回后保留原因且不进入修理厂", asyn
       description: "TEST转向异常", createdAt: new Date().toISOString(), testFixture: true
     }]));
     localStorage.setItem("maintenanceWorkOrders", "[]");
+    localStorage.setItem("equipmentOperationalStatus", JSON.stringify([
+      { equipmentId: "TEST-TRUCK-REJECT-001", status: "maintenance", previousStatus: "available", source: "repair_flow", testFixture: true }
+    ]));
+    localStorage.setItem("vehicleRecords", JSON.stringify([
+      { vehicleNumber: "TEST-TRUCK-REJECT-001", status: "maintenance", currentStatus: "维修中", testFixture: true }
+    ]));
+    const originalSetItem = Storage.prototype.setItem;
+    let failRequestWriteOnce = true;
+    Storage.prototype.setItem = function (key, value) {
+      if (key === "maintenanceRequests" && failRequestWriteOnce) {
+        failRequestWriteOnce = false;
+        throw new Error("TEST quota failure");
+      }
+      return originalSetItem.call(this, key, value);
+    };
   });
   await page.route("**/*", async route => {
     const req = route.request();
@@ -56,12 +71,18 @@ test("TEST维修申请被调度驳回后保留原因且不进入修理厂", asyn
   await page.locator("#openMaintenanceReviewButton").click();
   await expect(page.locator("#maintenanceReviewList")).toContainText("TEST-TRUCK-REJECT-001");
   await page.locator("#maintenanceReviewList").getByRole("button", { name: "❌ 驳回申请" }).click();
-  let request = await page.evaluate(() => JSON.parse(localStorage.getItem("maintenanceRequests"))[0]);
-  expect(request).toMatchObject({ status: "rejected", dispatchStatus: "rejected", dispatchRejectReason: "TEST设备无法安全运行，补充检查后再申请" });
-  expect(await page.evaluate(() => JSON.parse(localStorage.getItem("maintenanceWorkOrders") || "[]"))).toHaveLength(0);
 
+  let request = await page.evaluate(() => JSON.parse(localStorage.getItem("maintenanceRequests"))[0]);
+  expect(request).toMatchObject({ status: "pending_dispatch", dispatchStatus: "pending" });
+  expect(await page.evaluate(() => JSON.parse(localStorage.getItem("equipmentOperationalStatus"))[0])).toMatchObject({ status: "maintenance", previousStatus: "available" });
+  expect(await page.evaluate(() => JSON.parse(localStorage.getItem("vehicleRecords"))[0])).toMatchObject({ status: "maintenance", currentStatus: "维修中" });
+  expect(dialogs.some(message => message.includes("驳回未保存"))).toBe(true);
+
+  await page.locator("#maintenanceReviewList").getByRole("button", { name: "❌ 驳回申请" }).click();
   request = await page.evaluate(() => JSON.parse(localStorage.getItem("maintenanceRequests"))[0]);
   expect(request).toMatchObject({ status: "rejected", dispatchStatus: "rejected", dispatchRejectReason: "TEST设备无法安全运行，补充检查后再申请" });
+  expect(await page.evaluate(() => JSON.parse(localStorage.getItem("equipmentOperationalStatus"))[0])).toMatchObject({ status: "available", previousStatus: "", source: "dispatch_rejection" });
+  expect(await page.evaluate(() => JSON.parse(localStorage.getItem("vehicleRecords"))[0])).toMatchObject({ status: "available", currentStatus: "可用" });
   expect(await page.evaluate(() => JSON.parse(localStorage.getItem("maintenanceWorkOrders") || "[]"))).toHaveLength(0);
   expect(errors).toEqual([]);
   expect(blocked).toEqual([]);
