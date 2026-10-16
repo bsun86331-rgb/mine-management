@@ -55,6 +55,8 @@ test("正式趟次统计在各页面统一排除审核别名待审与驳回记�
     { name: "confirmationStatus-pending", record: { tripId: "TEST-OPS70-CONF-PENDING", status: "completed", completedAt, confirmationStatus: "pending", manualOverride: true, gpsStatus: "manual_override" }, expectedOfficial: false, expectedBoard: false },
     { name: "confirmationStatus-rejected", record: { tripId: "TEST-OPS70-CONF-REJECTED", status: "completed", completedAt, confirmationStatus: "rejected", manualOverride: true, gpsStatus: "manual_override" }, expectedOfficial: false, expectedBoard: false },
     { name: "dispatchConfirmation-rejected-nonofficial-trip", record: { tripId: "TEST-OPS70-DISPATCH-REJECTED", status: "completed", completedAt, dispatchConfirmation: "rejected", officialCountEligible: false }, expectedOfficial: false, expectedBoard: false },
+    { name: "status-pending-dispatch", record: { tripId: "TEST-OPS70-STATUS-PENDING", status: "pending_dispatch", completedAt }, expectedOfficial: false, expectedBoard: false },
+    { name: "status-loading", record: { tripId: "TEST-OPS70-STATUS-LOADING", status: "loading", completedAt }, expectedOfficial: false, expectedBoard: false },
     { name: "approved-normal", record: { tripId: "TEST-OPS70-APPROVED", status: "completed", completedAt, dispatchConfirmation: "confirmed", gpsReviewStatus: "approved", officialCountEligible: true }, expectedOfficial: true, expectedBoard: true }
   ];
 
