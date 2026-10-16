@@ -8865,7 +8865,8 @@ function dispatchIsValidTrip(item){
         item.status !== "rejected" &&
         item.confirmationStatus !== "rejected" &&
         item.dispatchConfirmation !== "rejected" &&
-        !/pending|rejected/.test([item.gpsReviewStatus, item.reviewStatus].filter(Boolean).join(" ").toLowerCase()) &&
+        !/rejected/.test([item.gpsReviewStatus, item.reviewStatus].filter(Boolean).join(" ").toLowerCase()) &&
+        !/pending/.test(String(item.gpsReviewStatus || item.reviewStatus || "").toLowerCase()) &&
         !(item.confirmationStatus === "pending" && (item.manualOverride === true || item.gpsStatus === "manual_override" || item.gpsReviewStatus === "pending")) &&
         !(item.dispatchConfirmation === "pending" && (item.manualOverride === true || item.gpsStatus === "manual_override" || item.gpsReviewStatus === "pending")) &&
         item.gpsReviewStatus !== "pending" &&
