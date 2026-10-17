@@ -1470,8 +1470,8 @@ function getExchangeReturnRecords(request) {
 }
 
 function approveRequest(requestId) {
-    const requests = readArray(STORAGE.REQUESTS);
-    const request = requests.find(item => item.requestId === requestId);
+    let requests = readArray(STORAGE.REQUESTS);
+    let request = requests.find(item => item.requestId === requestId);
 
     if (!request) {
         alert("没有找到该领用单。");
@@ -1489,6 +1489,20 @@ function approveRequest(requestId) {
     ));
 
     if (!actualQuantity || actualQuantity <= 0) {
+        return;
+    }
+
+    // The quantity prompt can stay open while another tab issues this request. Re-read its state before mutating stock.
+    requests = readArray(STORAGE.REQUESTS);
+    request = requests.find(item => item.requestId === requestId);
+
+    if (!request) {
+        alert("没有找到该领用单。");
+        return;
+    }
+
+    if (request.status && request.status !== "pending") {
+        alert("该领用单已经处理，不能重复出库。");
         return;
     }
 
