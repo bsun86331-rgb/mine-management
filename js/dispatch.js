@@ -5827,9 +5827,14 @@ function reviewGpsTrip(
 
 
             if (
-                !record
+                !record ||
+                record.gpsStatus === "正常" ||
+                record.gpsStatus === "normal" ||
+                record.dispatchConfirmation === "confirmed" ||
+                record.dispatchConfirmation === "rejected"
             ) {
-
+                alert("该GPS异常趟次已被其他窗口处理，请刷新后查看。");
+                renderGpsReview();
                 return;
             }
 
@@ -6112,9 +6117,12 @@ function reviewDriverLeave(
 
 
             if (
-                !item
+                !item ||
+                item.status !== "pending" ||
+                item.approverRole !== "dispatch"
             ) {
-
+                alert("该请假申请已被其他窗口处理，请刷新后查看。");
+                renderLeaveReview();
                 return;
             }
 
