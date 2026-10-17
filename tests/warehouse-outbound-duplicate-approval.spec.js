@@ -76,3 +76,42 @@ test("TEST同一出库单重复确认或刷新后重试不会重复扣库存", a
   expect(errors).toEqual([]);
   expect(blocked).toEqual([]);
 });
+
+
+test("TEST并发交错确认同一出库单时只扣一次库存并写入一条流水", async ({ page }) => {
+  const { errors, blocked } = await prepare(page, false);
+  await page.evaluate(() => {
+    const realPrompt = window.prompt;
+    const alerts = [];
+    let nested = false;
+    window.alert = message => alerts.push(String(message));
+    window.prompt = () => {
+      if (!nested) {
+        nested = true;
+        window.prompt = () => "2";
+        approveRequest("TEST-WH-DUP-REQ-001");
+        window.prompt = realPrompt;
+        return "3";
+      }
+      return "2";
+    };
+    approveRequest("TEST-WH-DUP-REQ-001");
+    window.prompt = realPrompt;
+    window.__TEST_DUP_APPROVAL_ALERTS__ = alerts;
+  });
+
+  const result = await page.evaluate(() => ({
+    material: JSON.parse(localStorage.getItem("warehouseMaterials") || "[]")[0],
+    request: JSON.parse(localStorage.getItem("materialRequests") || "[]")[0],
+    ledger: JSON.parse(localStorage.getItem("materialLedger") || "[]"),
+    alerts: window.__TEST_DUP_APPROVAL_ALERTS__
+  }));
+
+  expect(result.material).toMatchObject({ availableQty: 6, issuedQty: 2 });
+  expect(result.request).toMatchObject({ status: "issued", actualQuantity: 2 });
+  expect(result.ledger.filter(row => row.type === "出库")).toHaveLength(1);
+  expect(result.ledger.find(row => row.type === "出库").quantity).toBe(2);
+  expect(result.alerts.some(message => message.includes("已经处理"))).toBeTruthy();
+  expect(errors).toEqual([]);
+  expect(blocked).toEqual([]);
+});
