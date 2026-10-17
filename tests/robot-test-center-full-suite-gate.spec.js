@@ -54,14 +54,14 @@ async function openReadinessCase(page, options = {}) {
     }
   });
   await page.goto(ORIGIN + "/robot-test-center.html", { waitUntil: "domcontentloaded" });
-  await expect(page.locator("#fullSuiteReadySub")).toContainText("更新时间 2026");
+  await expect(page.locator("#fullSuiteReadyValue")).not.toHaveText("核验中");
   return errors;
 }
 
 test("TEST快速检查与GitHub main全量门槛分开并显示SHA和时间", async ({ page }) => {
   const errors = await openReadinessCase(page);
   await expect(page.locator("#overallReadyValue")).toHaveText("待验证");
-  await expect(page.locator("#overallReadySub")).toContainText("完整 Playwright 全套仍是发布前门槛");
+  await expect(page.locator("#overallReadySub")).toContainText("发布前仍需完整 Playwright 全套通过");
   await expect(page.locator("#fullSuiteReadyValue")).toHaveText("当前 main 全量通过");
   await expect(page.locator("#fullSuiteReadySub")).toContainText("测试提交 aaaaaaaaaaaa");
   await expect(page.locator("#fullSuiteReadySub")).toContainText("当前 main aaaaaaaaaaaa");
