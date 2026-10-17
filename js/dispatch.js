@@ -1557,23 +1557,6 @@ function approveVehicleChange(
                 return;
             }
 
-            if (request.status !== "pending") {
-                alert("该换车申请已被其他窗口处理，请刷新后查看。");
-                renderVehicleChanges();
-                return;
-            }
-
-            const vehicleStillAvailable =
-                getAvailableReplacementTrucks(request.taskId)
-                    .some(truck => String(truck.id) === String(newVehicle));
-
-            if (!vehicleStillAvailable) {
-                alert("所选车辆已不可调配，请刷新候选车辆后重试。");
-                renderVehicleChanges();
-                return;
-            }
-
-
             const oldVehicle =
 
                 request.oldVehicleNumber ||
@@ -5582,13 +5565,6 @@ function rejectVehicleChange(
 
                 return;
             }
-
-            if (record.status !== "pending") {
-                alert("该换车申请已被其他窗口处理，请刷新后查看。");
-                renderVehicleChanges();
-                return;
-            }
-
 
             record.status =
                 "rejected";
