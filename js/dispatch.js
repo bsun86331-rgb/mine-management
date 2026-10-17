@@ -1557,7 +1557,6 @@ function approveVehicleChange(
                 return;
             }
 
-
             const oldVehicle =
 
                 request.oldVehicleNumber ||
@@ -5567,7 +5566,6 @@ function rejectVehicleChange(
                 return;
             }
 
-
             record.status =
                 "rejected";
 
@@ -5827,9 +5825,14 @@ function reviewGpsTrip(
 
 
             if (
-                !record
+                !record ||
+                record.gpsStatus === "正常" ||
+                record.gpsStatus === "normal" ||
+                record.dispatchConfirmation === "confirmed" ||
+                record.dispatchConfirmation === "rejected"
             ) {
-
+                alert("该GPS异常趟次已被其他窗口处理，请刷新后查看。");
+                renderGpsReview();
                 return;
             }
 
@@ -6112,9 +6115,12 @@ function reviewDriverLeave(
 
 
             if (
-                !item
+                !item ||
+                item.status !== "pending" ||
+                item.approverRole !== "dispatch"
             ) {
-
+                alert("该请假申请已被其他窗口处理，请刷新后查看。");
+                renderLeaveReview();
                 return;
             }
 
@@ -7246,11 +7252,11 @@ function approveMaintenanceEntry(
     requestId
 ) {
 
-    const records =
+    let records =
         getMaintenanceRequestsForDispatch();
 
 
-    const item =
+    let item =
         records.find(
             record =>
                 getMaintenanceRequestIdForDispatch(
@@ -7273,6 +7279,11 @@ function approveMaintenanceEntry(
         return;
     }
 
+    if (!isPendingMaintenanceDispatch(item)) {
+        alert("该维修申请已被处理，请刷新后查看。");
+        return;
+    }
+
 
     if (
         !confirm(
@@ -7280,6 +7291,22 @@ function approveMaintenanceEntry(
         )
     ) {
 
+        return;
+    }
+
+    records =
+        getMaintenanceRequestsForDispatch();
+
+    item =
+        records.find(
+            record =>
+                getMaintenanceRequestIdForDispatch(record) ===
+                String(requestId)
+        );
+
+    if (!item || !isPendingMaintenanceDispatch(item)) {
+        alert("该维修申请已被其他窗口处理，请刷新后查看。");
+        renderMaintenanceReviewList();
         return;
     }
 
@@ -7328,6 +7355,178 @@ function approveMaintenanceEntry(
     alert(
         "已批准进厂。该申请现在进入“待进厂”，维修管理可以接车。"
     );
+}
+
+function buildMaintenanceRejectionWrites(requests, request, updatedAt) {
+
+    const writes = [];
+    const equipmentId = String(
+        request?.equipmentId ||
+        request?.equipmentNumber ||
+        request?.vehicleId ||
+        request?.vehicleNumber ||
+        ""
+    );
+
+    const operationalStatusKey = "equipmentOperationalStatus";
+    const operationalRaw = localStorage.getItem(operationalStatusKey);
+    let operationalRecords = [];
+
+    if (operationalRaw) {
+        try {
+            operationalRecords = JSON.parse(operationalRaw);
+        } catch (error) {
+            return { ok: false, error: "设备状态数据无法读取，驳回未保存。" };
+        }
+        if (!Array.isArray(operationalRecords)) {
+            return { ok: false, error: "设备状态数据格式异常，驳回未保存。" };
+        }
+    }
+
+    if (equipmentId) {
+        operationalRecords = JSON.parse(JSON.stringify(operationalRecords));
+        let operationalRecord = operationalRecords.find(
+            record => String(record?.equipmentId || "") === equipmentId
+        );
+        const restoreStatus =
+            operationalRecord?.previousStatus &&
+            !["maintenance", "service"].includes(operationalRecord.previousStatus)
+                ? operationalRecord.previousStatus
+                : "available";
+
+        if (!operationalRecord) {
+            operationalRecord = { equipmentId };
+            operationalRecords.push(operationalRecord);
+        }
+
+        operationalRecord.status = restoreStatus;
+        operationalRecord.source = "dispatch_rejection";
+        operationalRecord.previousStatus = "";
+        operationalRecord.updatedAt = updatedAt;
+
+        writes.push({
+            key: operationalStatusKey,
+            value: JSON.stringify(operationalRecords)
+        });
+
+        const excludedKeys = new Set([
+            operationalStatusKey,
+            "equipmentMeterReadings",
+            "equipmentMaintenanceSettings",
+            "maintenanceAlerts",
+            "equipmentMaintenanceRecords",
+            "equipmentUsageChecks",
+            "equipmentUsageRecords"
+        ]);
+
+        const masterSnapshots = [];
+        for (let index = 0; index < localStorage.length; index++) {
+            const key = localStorage.key(index);
+            if (!key || excludedKeys.has(key) || !/equipment|vehicle|设备|车辆/i.test(key)) {
+                continue;
+            }
+
+            const raw = localStorage.getItem(key);
+            if (!raw) continue;
+
+            let data;
+            try {
+                data = JSON.parse(raw);
+            } catch (error) {
+                continue;
+            }
+
+            const nextData = JSON.parse(JSON.stringify(data));
+            const list = Array.isArray(nextData)
+                ? nextData
+                : (nextData && typeof nextData === "object" ? [nextData] : []);
+            let changed = false;
+
+            for (const record of list) {
+                if (!record || typeof record !== "object") continue;
+                const recordId = String(
+                    record.equipmentNumber ||
+                    record.vehicleNumber ||
+                    record.equipmentId ||
+                    record.vehicleId ||
+                    record.number ||
+                    ""
+                );
+                if (recordId !== equipmentId) continue;
+
+                let recordChanged = false;
+                if ("status" in record) {
+                    record.status = restoreStatus;
+                    recordChanged = true;
+                }
+                if ("equipmentStatus" in record) {
+                    record.equipmentStatus = restoreStatus;
+                    recordChanged = true;
+                }
+                if ("currentStatus" in record) {
+                    const labels = {
+                        available: "可用",
+                        working: "作业中",
+                        standby: "备用",
+                        maintenance: "维修中",
+                        service: "保养中",
+                        disabled: "停用"
+                    };
+                    record.currentStatus = labels[restoreStatus] || restoreStatus;
+                    recordChanged = true;
+                }
+                if (recordChanged) {
+                    record.updatedAt = updatedAt;
+                    changed = true;
+                }
+            }
+
+            if (changed) {
+                masterSnapshots.push({ key, value: JSON.stringify(nextData) });
+            }
+        }
+
+        writes.push(...masterSnapshots);
+    }
+
+    writes.push({
+        key: MAINTENANCE_REQUEST_KEY,
+        value: JSON.stringify(requests)
+    });
+
+    const originalValues = new Map();
+    for (const write of writes) {
+        if (!originalValues.has(write.key)) {
+            originalValues.set(write.key, localStorage.getItem(write.key));
+        }
+    }
+
+    const appliedKeys = [];
+    try {
+        for (const write of writes) {
+            localStorage.setItem(write.key, write.value);
+            appliedKeys.push(write.key);
+        }
+        return { ok: true };
+    } catch (error) {
+        let rollbackFailed = false;
+        for (const key of appliedKeys.reverse()) {
+            try {
+                const originalValue = originalValues.get(key);
+                if (originalValue === null) localStorage.removeItem(key);
+                else localStorage.setItem(key, originalValue);
+            } catch (rollbackError) {
+                rollbackFailed = true;
+            }
+        }
+        return {
+            ok: false,
+            rollbackFailed,
+            error: rollbackFailed
+                ? "保存失败且本机数据回滚不完整，请立即检查设备和维修申请状态。"
+                : "保存失败，已恢复原设备状态，驳回未保存。"
+        };
+    }
 }
 
 function rejectMaintenanceEntry(
@@ -7388,50 +7587,85 @@ function rejectMaintenanceEntry(
         return;
     }
 
+    if (!isPendingMaintenanceDispatch(item)) {
+        alert("该维修申请已被其他窗口处理，请刷新后查看。");
+        renderMaintenanceReviewList();
+        return;
+    }
+
 
     const now =
         new Date()
             .toISOString();
 
 
-    item.dispatchRequired =
+    const nextRecords =
+        JSON.parse(
+            JSON.stringify(
+                records
+            )
+        );
+
+
+    const nextItem =
+        nextRecords.find(
+            record =>
+                getMaintenanceRequestIdForDispatch(
+                    record
+                ) ===
+                String(
+                    requestId
+                )
+        );
+
+
+    nextItem.dispatchRequired =
         true;
 
 
-    item.dispatchStatus =
+    nextItem.dispatchStatus =
         "rejected";
 
 
-    item.status =
+    nextItem.status =
         "rejected";
 
 
-    item.dispatchRejectReason =
+    nextItem.dispatchRejectReason =
         reason.trim();
 
 
-    item.dispatchRejectedAt =
+    nextItem.dispatchRejectedAt =
         now;
 
 
-    item.dispatchRejectedBy =
+    nextItem.dispatchRejectedBy =
         "车队长 / 调度";
 
 
-    item.updatedAt =
+    nextItem.updatedAt =
         now;
 
 
-    saveMaintenanceRequestsForDispatch(
-        records
-    );
+    const result =
+        buildMaintenanceRejectionWrites(
+            nextRecords,
+            nextItem,
+            now
+        );
+
+
+    if (!result.ok) {
+        alert(result.error);
+        return;
+    }
 
 
     renderMaintenanceReviewList();
 
 
     alert(
-        "该维修申请已驳回。"
+        "该维修申请已驳回，设备状态已恢复。"
     );
 }
 
@@ -8858,11 +9092,10 @@ function dispatchGetUnifiedTrips(){
 }
 
 function dispatchIsValidTrip(item){
-    return (
+    return Boolean(
         item &&
+        window.ProductionBoardCore?.isTripStatusEligible(item) &&
         window.ProductionBoardCore?.hasStableTripId(item) &&
-        item.status !== "cancelled" &&
-        item.dispatchConfirmation !== "rejected" &&
         item.officialCountEligible !== false
     );
 }
@@ -9215,6 +9448,22 @@ function reviewManualTrip(tripId,action){
             );
 
     if(!confirm(message)){
+        return;
+    }
+
+    const latestRecord = manualTripPendingRecords()
+        .find(item =>
+            String(
+                item.tripId ||
+                item.recordId ||
+                item.id ||
+                ""
+            ) === String(tripId)
+        );
+
+    if(!latestRecord){
+        alert("该手动补录记录已被其他窗口处理，请刷新后核对。");
+        renderManualTripReview();
         return;
     }
 
@@ -16211,13 +16460,13 @@ function temporaryUnloadApprove(
     requestId
 ) {
 
-    const requests =
+    let requests =
         temporaryUnloadReadArray(
             TEMP_UNLOAD_REQUEST_KEY
         );
 
 
-    const index =
+    let index =
         requests.findIndex(
             item =>
                 String(
@@ -16245,7 +16494,7 @@ function temporaryUnloadApprove(
     }
 
 
-    const request =
+    let request =
         requests[
             index
         ];
@@ -16297,7 +16546,16 @@ function temporaryUnloadApprove(
     if (
         !ok
     ) {
+        return;
+    }
 
+    // Another review tab may finish this request while the confirmation dialog is open.
+    requests = temporaryUnloadReadArray(TEMP_UNLOAD_REQUEST_KEY);
+    index = requests.findIndex(item => String(item.requestId || "") === String(requestId));
+    request = requests[index];
+    if (!request || request.status !== "pending_dispatch") {
+        alert("该记录已经处理，不能重复审核。");
+        renderTemporaryUnloadReview();
         return;
     }
 
@@ -16381,13 +16639,13 @@ function temporaryUnloadReject(
     requestId
 ) {
 
-    const requests =
+    let requests =
         temporaryUnloadReadArray(
             TEMP_UNLOAD_REQUEST_KEY
         );
 
 
-    const index =
+    let index =
         requests.findIndex(
             item =>
                 String(
@@ -16415,7 +16673,7 @@ function temporaryUnloadReject(
     }
 
 
-    const request =
+    let request =
         requests[
             index
         ];
@@ -16445,7 +16703,16 @@ function temporaryUnloadReject(
     if (
         !ok
     ) {
+        return;
+    }
 
+    // Another review tab may finish this request while the confirmation dialog is open.
+    requests = temporaryUnloadReadArray(TEMP_UNLOAD_REQUEST_KEY);
+    index = requests.findIndex(item => String(item.requestId || "") === String(requestId));
+    request = requests[index];
+    if (!request || request.status !== "pending_dispatch") {
+        alert("该记录已经处理，不能重复审核。");
+        renderTemporaryUnloadReview();
         return;
     }
 

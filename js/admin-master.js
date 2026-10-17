@@ -2335,10 +2335,10 @@ function savePersonnel() {
     if (item.personId === personId) return false;
 
     const savedIdCardNumber = normalizeIdentityDocument(
-      item.idCardNumber || item.idCard
+      normalizeIdentityDocument(item.idCardNumber) || item.idCard
     );
     const savedPassportNumber = normalizeIdentityDocument(
-      item.passportNumber || item.passport
+      normalizeIdentityDocument(item.passportNumber) || item.passport
     );
 
     return Boolean(
@@ -2351,7 +2351,7 @@ function savePersonnel() {
     const duplicateIdCard =
       idCardNumber &&
       normalizeIdentityDocument(
-        duplicateIdentity.idCardNumber || duplicateIdentity.idCard
+        normalizeIdentityDocument(duplicateIdentity.idCardNumber) || duplicateIdentity.idCard
       ) === normalizeIdentityDocument(idCardNumber);
 
     showToast(

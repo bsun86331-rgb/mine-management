@@ -1470,8 +1470,8 @@ function getExchangeReturnRecords(request) {
 }
 
 function approveRequest(requestId) {
-    const requests = readArray(STORAGE.REQUESTS);
-    const request = requests.find(item => item.requestId === requestId);
+    let requests = readArray(STORAGE.REQUESTS);
+    let request = requests.find(item => item.requestId === requestId);
 
     if (!request) {
         alert("没有找到该领用单。");
@@ -1489,6 +1489,20 @@ function approveRequest(requestId) {
     ));
 
     if (!actualQuantity || actualQuantity <= 0) {
+        return;
+    }
+
+    // The quantity prompt can stay open while another tab issues this request. Re-read its state before mutating stock.
+    requests = readArray(STORAGE.REQUESTS);
+    request = requests.find(item => item.requestId === requestId);
+
+    if (!request) {
+        alert("没有找到该领用单。");
+        return;
+    }
+
+    if (request.status && request.status !== "pending") {
+        alert("该领用单已经处理，不能重复出库。");
         return;
     }
 
@@ -2010,12 +2024,21 @@ function submitLost() {
 }
 
 function confirmLostWriteOff(lostId) {
-    const records = readArray(STORAGE.LOSTS);
-    const record = records.find(item => item.lostId === lostId);
+    let records = readArray(STORAGE.LOSTS);
+    let record = records.find(item => item.lostId === lostId);
 
     if (!record || record.status !== "pending_compensation") return;
 
     if (!confirm("确认财务/离职结算已经完成扣款，并核销该物资？")) return;
+
+    // The confirmation dialog may remain open while another tab completes this write-off.
+    records = readArray(STORAGE.LOSTS);
+    record = records.find(item => item.lostId === lostId);
+    if (!record || record.status !== "pending_compensation") {
+        alert("该丢失记录已经处理，不能重复核销。");
+        renderAll();
+        return;
+    }
 
     const materials = getMaterials();
     const material = materials.find(item => item.materialId === record.materialId);
@@ -2532,7 +2555,7 @@ if (verifyWarehouseAccess()) {
 
 <script src="js/work-chat.js?v=1.0.1"></script>
 <script src="js/production-board-core.js?v=2.0.16"></script>
-<script src="js/production-board.js?v=2.0.12"></script>
+<script src="js/production-board.js?v=2.0.13"></script>
 </body>
 
 </html>

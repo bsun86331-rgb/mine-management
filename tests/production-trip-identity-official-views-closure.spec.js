@@ -69,6 +69,11 @@ test("TEST无稳定趟次ID不进入调度、运输和综合报表正式统计�
   const transportIds = await page.evaluate(() => unifiedTrips().filter(isValidOfficialTrip).map(row => window.ProductionBoardCore.stableTripId(row)).sort());
   expect(transportIds).toEqual(["TEST-OFFICIAL-CLIENT-003", "TEST-OFFICIAL-ID-006", "TEST-OFFICIAL-LEGACY-002", "TEST-OFFICIAL-RECORD-005", "TEST-OFFICIAL-SNAKE-004", "TEST-OFFICIAL-STABLE-001"]);
 
+  const rawTripSnapshot = await page.evaluate(() => JSON.parse(localStorage.getItem("tripRecords") || "[]"));
+  expect(rawTripSnapshot).toHaveLength(9);
+  expect(rawTripSnapshot.some(row => !(row.tripId || row.trip_id || row.recordId || row.record_id || row.clientRecordId || row.client_record_id || row.id))).toBe(true);
+  expect(rawTripSnapshot.some(row => row.officialCountEligible === false)).toBe(true);
+
   expect(errors).toEqual([]);
   expect(blocked).toEqual([]);
 });

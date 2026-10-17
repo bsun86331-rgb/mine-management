@@ -48,6 +48,9 @@ test("D02-1 TEST辅助车辆自定义夜班记录按任务生产日归档", asyn
     localStorage.setItem("transportRecords", "[]");
   });
 
+  // Freeze time before the start action. Moving the clock backwards after
+  // starting made this date-only probe appear to pass with a 1-minute record.
+  await page.clock.install({ time: new Date("2026-10-13T15:50:00.000Z") });
   await page.goto(`${ORIGIN}/auxiliary.html`, { waitUntil: "domcontentloaded" });
   await expect(page.locator("#currentTaskArea")).toContainText("TEST洒水作业");
   await page.locator("#currentTaskArea").getByRole("button", { name: "开始作业" }).click();
@@ -57,8 +60,12 @@ test("D02-1 TEST辅助车辆自定义夜班记录按任务生产日归档", asyn
   const saved = await page.evaluate(() => JSON.parse(localStorage.getItem("auxiliaryWorkRecords") || "[]")[0]);
   expect(saved.taskId).toBe("TEST-AUX-SHIFT-TASK");
   expect(saved.shift).toBe("夜班");
+  const startedAt = Date.parse(saved.startedAt);
+  expect(startedAt).toBeGreaterThanOrEqual(Date.parse("2026-10-13T15:50:00.000Z"));
+  expect(startedAt).toBeLessThan(Date.parse("2026-10-13T15:51:00.000Z"));
   expect(saved.completedAt).toBe("2026-10-14T00:30:00.000Z");
   expect(saved.shiftDate).toBe("2026-10-13");
+  expect(saved.durationMinutes).toBe(520);
 
   await page.evaluate(() => {
     const adminId = "TEST-AUX-SHIFT-ADMIN";
@@ -82,4 +89,5 @@ test("D02-1 TEST辅助车辆自定义夜班记录按任务生产日归档", asyn
   expect(errors).toEqual([]);
   expect(blocked).toEqual([]);
 });
+
 

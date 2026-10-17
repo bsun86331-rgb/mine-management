@@ -3193,12 +3193,12 @@ function findDuplicateIdentityDocument() {
 
         const savedIdCardNumber =
             normalizeIdentityDocument(
-                person.idCardNumber || person.idCard
+                normalizeIdentityDocument(person.idCardNumber) || person.idCard
             );
 
         const savedPassportNumber =
             normalizeIdentityDocument(
-                person.passportNumber || person.passport
+                normalizeIdentityDocument(person.passportNumber) || person.passport
             );
 
         return Boolean(
@@ -3342,7 +3342,7 @@ function validateForm() {
 
         const savedIdCardNumber =
             normalizeIdentityDocument(
-                duplicateIdentityDocument.idCardNumber ||
+                normalizeIdentityDocument(duplicateIdentityDocument.idCardNumber) ||
                 duplicateIdentityDocument.idCard
             );
 
@@ -4146,5 +4146,6 @@ initializePage();
 </body>
 
 </html>
+
 
 

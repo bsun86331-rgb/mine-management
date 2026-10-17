@@ -39,6 +39,7 @@ select,textarea,button{font:inherit}select,textarea{width:100%;border:1px solid 
 textarea{min-height:72px;resize:vertical}.send{border:0;border-radius:9px;background:#2563eb;color:white;font-weight:900;padding:0 16px;cursor:pointer}.send:disabled{opacity:.5;cursor:not-allowed}
 .quick{display:flex;gap:7px;flex-wrap:wrap;margin-top:8px}.quick button{border:1px solid #cbd5e1;background:#f8fafc;border-radius:8px;padding:7px 10px;font-size:12px;font-weight:700;cursor:pointer}
 .readiness{margin-bottom:12px;padding:12px}.readiness-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.ready-card{border:1px solid #dbe3ef;border-radius:10px;padding:11px;background:#fbfdff}.ready-label{font-size:12px;color:#64748b}.ready-value{font-size:18px;font-weight:900;margin-top:4px}.ready-sub{font-size:11px;color:#64748b;margin-top:5px;line-height:1.5}.ready-pass{color:#166534}.ready-fail{color:#b91c1c}.ready-unknown{color:#64748b}
+.full-suite-card{margin-top:10px;display:grid;grid-template-columns:1fr auto;align-items:center;gap:8px}.full-suite-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.full-suite-actions button{border:1px solid #cbd5e1;background:#fff;border-radius:8px;padding:6px 10px;font-size:12px;font-weight:800;cursor:pointer}.full-suite-actions a{font-size:12px;font-weight:800;text-decoration:none;color:#1d4ed8}.full-suite-card .ready-sub{word-break:break-word}
 .coverage{margin-bottom:12px;padding:12px}.coverage-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}.coverage-card{border:1px solid #dbe3ef;border-radius:10px;padding:11px;background:#fbfdff;min-height:112px}.coverage-head{display:flex;align-items:center;justify-content:space-between;gap:8px}.coverage-name{font-weight:900}.coverage-status{font-size:11px;font-weight:900;padding:4px 8px;border-radius:999px}.coverage-status.pass{background:#dcfce7;color:#166534}.coverage-status.fail{background:#fee2e2;color:#b91c1c}.coverage-status.uncovered{background:#f1f5f9;color:#475569}.coverage-count{font-size:12px;color:#64748b;margin-top:8px}.coverage-note{font-size:11px;color:#64748b;line-height:1.45;margin-top:6px;word-break:break-word}.coverage-summary{font-size:12px;color:#64748b}
 .timeline{margin-top:12px}.tl{padding:12px 16px;max-height:240px;overflow:auto}
 .tli{display:grid;grid-template-columns:70px 130px 1fr;gap:10px;padding:7px 0;border-bottom:1px dashed #e2e8f0;font-size:12px}
@@ -90,6 +91,17 @@ textarea{min-height:72px;resize:vertical}.send{border:0;border-radius:9px;backgr
         <div class="ready-label">综合判断</div>
         <div id="overallReadyValue" class="ready-value ready-unknown">待验证</div>
         <div id="overallReadySub" class="ready-sub">仅表示核心/黄金快速检查；发布前仍需完整 Playwright 全套通过</div>
+      </div>
+    </div>
+    <div class="ready-card full-suite-card" aria-live="polite">
+      <div>
+        <div class="ready-label">GitHub main 完整 Playwright 门槛</div>
+        <div id="fullSuiteReadyValue" class="ready-value ready-unknown">核验中</div>
+        <div id="fullSuiteReadySub" class="ready-sub">正在核对最新 main 提交与完整机器人测试结果</div>
+      </div>
+      <div class="full-suite-actions">
+        <button id="refreshFullSuiteButton" type="button">刷新全量结果</button>
+        <a id="fullSuiteRunLink" href="#" target="_blank" rel="noopener noreferrer" hidden>查看 GitHub Actions</a>
       </div>
     </div>
   </section>
@@ -237,6 +249,81 @@ function renderReadiness(data){
     ? "最近更新 "+new Date(readinessState.updatedAt).toLocaleString("zh-CN")
     : "尚无回归结果";
 }
+
+const FULL_SUITE_GITHUB_API = "https://api.github.com/repos/bsun86331-rgb/mine-management";
+
+function renderFullSuiteStatus(valueText, state, detail, runUrl) {
+  const value = document.getElementById("fullSuiteReadyValue");
+  const sub = document.getElementById("fullSuiteReadySub");
+  const link = document.getElementById("fullSuiteRunLink");
+
+  value.textContent = valueText;
+  value.classList.remove("ready-pass", "ready-fail", "ready-unknown");
+  value.classList.add(state);
+  sub.textContent = detail;
+
+  const safeRunUrl = typeof runUrl === "string" &&
+    /^https:\/\/github\.com\/bsun86331-rgb\/mine-management\/actions\/runs\/\d+$/.test(runUrl);
+  link.hidden = !safeRunUrl;
+  link.href = safeRunUrl ? runUrl : "#";
+}
+
+function formatFullSuiteTimestamp(value) {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? "时间未知" : date.toLocaleString("zh-CN");
+}
+
+async function loadFullSuiteStatus() {
+  const button = document.getElementById("refreshFullSuiteButton");
+  button.disabled = true;
+  renderFullSuiteStatus("核验中", "ready-unknown", "正在读取 GitHub main 提交和最近一次 push 全量测试结果。", "");
+
+  try {
+    const headers = { Accept: "application/vnd.github+json" };
+    const [runsResponse, mainResponse] = await Promise.all([
+      fetch(FULL_SUITE_GITHUB_API + "/actions/workflows/robot-tests.yml/runs?branch=main&event=push&per_page=1", { headers, cache: "no-store" }),
+      fetch(FULL_SUITE_GITHUB_API + "/commits/main", { headers, cache: "no-store" })
+    ]);
+    if (!runsResponse.ok || !mainResponse.ok) {
+      throw new Error("GitHub API 返回 " + (!runsResponse.ok ? runsResponse.status : mainResponse.status));
+    }
+
+    const [runsData, mainCommit] = await Promise.all([runsResponse.json(), mainResponse.json()]);
+    const run = Array.isArray(runsData.workflow_runs) ? runsData.workflow_runs[0] : null;
+    const currentMainSha = String(mainCommit.sha || "").toLowerCase();
+    if (!run || !currentMainSha) {
+      renderFullSuiteStatus("未能核验", "ready-unknown", "GitHub 未返回可用的 main 提交或完整 Playwright 运行记录；不能据此判定通过。", "");
+      return;
+    }
+
+    const testedSha = String(run.head_sha || "").toLowerCase();
+    const detail = "测试提交 " + (testedSha ? testedSha.slice(0, 12) : "未知") +
+      " · 当前 main " + currentMainSha.slice(0, 12) +
+      " · 更新时间 " + formatFullSuiteTimestamp(run.updated_at || run.created_at);
+    const runUrl = run.html_url || "";
+
+    if (run.event !== "push" || run.head_branch !== "main" || testedSha !== currentMainSha) {
+      renderFullSuiteStatus("最近运行已过时", "ready-unknown", detail + " · 测试提交与当前 main 不一致，不能作为当前全量通过。", runUrl);
+      return;
+    }
+    if (run.status !== "completed") {
+      renderFullSuiteStatus("当前 main 全量运行中", "ready-unknown", detail + " · 状态 " + String(run.status || "未知") + "，尚无最终结论。", runUrl);
+      return;
+    }
+    if (run.conclusion === "success") {
+      renderFullSuiteStatus("当前 main 全量通过", "ready-pass", detail + " · 完整 Playwright 全量检查已通过。", runUrl);
+      return;
+    }
+    renderFullSuiteStatus("当前 main 全量未通过", "ready-fail", detail + " · 结论 " + String(run.conclusion || "未知") + "。", runUrl);
+  } catch (error) {
+    renderFullSuiteStatus("未能核验", "ready-unknown", "无法读取 GitHub Actions 全量状态（" + String(error.message || error) + "）；不能据此判定通过。", "");
+  } finally {
+    button.disabled = false;
+  }
+}
+
+document.getElementById("refreshFullSuiteButton").addEventListener("click", loadFullSuiteStatus);
+
 
 function renderCoverage(rows){
   const grid=document.getElementById("coverageGrid");
@@ -548,6 +635,7 @@ renderBots();
 renderMessages();
 renderTimeline();
 renderCoverage([]);
+loadFullSuiteStatus();
 setFlow("当前流程：连接后台","正在检查本地机器人服务","CONNECTING");
 
 loadStatus().then(ok=>{

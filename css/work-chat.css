@@ -283,6 +283,19 @@
     margin-top: 8px;
 }
 
+/* Keep the floating chat shortcut away from production-board editor actions. */
+body:has(#production-board .pb-editor-footer) #mineWorkChatRoot {
+    right: auto;
+    left: 18px;
+}
+
+@media (max-width: 560px) {
+    body:has(#production-board .pb-editor-footer) #mineWorkChatRoot {
+        right: auto;
+        left: 10px;
+    }
+}
+
 .mine-chat-photo {
     display: block;
     width: min(240px, 100%);
@@ -390,3 +403,4 @@
     flex: 1;
     min-width: 145px;
 }
+

@@ -17,6 +17,9 @@ test("TEST 驳回加油单保留库存扣减，核对后更正并重报", async 
   await page.addInitScript(() => {
     const now = new Date().toISOString();
     localStorage.clear(); sessionStorage.clear();
+    localStorage.setItem("personnelRecords", JSON.stringify([{ personId:"TEST-D07-OP", employeeNo:"TEST-D07-OP", name:"TEST加油员", position:"加油车司机", status:"approved", approvalStatus:"approved", personnelStatus:"在职可用" }]));
+    localStorage.setItem("currentPersonId", "TEST-D07-OP");
+    localStorage.setItem("selectedPosition", "加油车司机");
     localStorage.setItem("fuelIntakeRecords", JSON.stringify([{ intakeId:"TEST-D07-INTAKE-1",source:"TEST油罐",oilType:"柴油",amount:1000,createdAt:now }]));
     localStorage.setItem("fuelRequests", "[]");
     localStorage.setItem("fuelRecords", JSON.stringify([{ fuelId:"TEST-D07-FUEL-1",requestId:"TEST-D07-REQ-1",vehicleNumber:"TEST-D07-TRUCK-1",driverName:"TEST司机",amount:120,confirmationStatus:"pending",startedAt:now,completedAt:now,createdAt:now,photoData:"data:image/jpeg;base64,TEST",photoName:"TEST凭证" }]));
@@ -32,7 +35,10 @@ test("TEST 驳回加油单保留库存扣减，核对后更正并重报", async 
   });
   await page.goto(ORIGIN+"/fuel.html",{waitUntil:"domcontentloaded"});
   expect(await page.evaluate(()=>calculateCurrentStock())).toBe(880);
-  await page.locator('[data-page="history"]').click();
+  await page.waitForTimeout(500);
+  await page.locator("#mineBottomQuickActions").getByRole("button",{name:/作业历史/}).click();
+  await expect(page.locator("#page-history")).toHaveClass(/active/);
+  await expect(page.locator("#fuelHistoryList")).toContainText("TEST-D07-TRUCK-1");
   await page.locator("#fuelHistoryList").getByRole("button",{name:"模拟司机驳回"}).click();
   expect(await page.evaluate(()=>calculateCurrentStock())).toBe(880);
   await page.locator("#fuelHistoryList").getByRole("button",{name:"核对并更正重报"}).click();

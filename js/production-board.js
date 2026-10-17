@@ -45,10 +45,40 @@
         if (latest.revision !== expectedRevision) throw new Error('其他页面已修改看板，请取消编辑、刷新后再调整。');
         next.revision = latest.revision + 1;
         next.audit = [...C.array(latest.audit), { action, operatorId: identity().personId, time: new Date().toISOString(), date: selected.date, shift: selected.shift }].slice(-500);
-        localStorage.setItem(KEY, JSON.stringify(next));
-        state = next;
-        projectionSignature = '';
-        refreshProjections();
+        const transactionKeys = [KEY, 'dispatchPublishedTasks', 'dispatchShiftExecutions', 'publishedDispatchTask', 'driverCurrentTask'];
+        const before = new Map(transactionKeys.map(key => [key, localStorage.getItem(key)]));
+        const previousState = state;
+        const previousSignature = projectionSignature;
+        try {
+            localStorage.setItem(KEY, JSON.stringify(next));
+            state = next;
+            projectionSignature = '';
+            refreshProjections();
+        } catch (error) {
+            const rollbackFailures = [];
+            const changedKeys = transactionKeys.filter(key => localStorage.getItem(key) !== before.get(key));
+            const rollbackKeys = [
+                ...changedKeys.filter(key => before.get(key) === null),
+                ...changedKeys.filter(key => before.get(key) !== null).reverse()
+            ];
+            for (const key of rollbackKeys) {
+                try {
+                    const value = before.get(key);
+                    if (value === null) localStorage.removeItem(key);
+                    else localStorage.setItem(key, value);
+                } catch (rollbackError) {
+                    rollbackFailures.push(key);
+                }
+            }
+            state = previousState;
+            projectionSignature = previousSignature;
+            data.tasks = rows('dispatchPublishedTasks');
+            data.executions = rows('dispatchShiftExecutions');
+            if (rollbackFailures.length) {
+                throw new Error(`看板保存失败，自动回滚未能完成（${rollbackFailures.join('、')}）；请停止重复提交并联系管理员核对。`);
+            }
+            throw new Error('看板保存失败，已恢复原数据；请检查浏览器存储空间后重试。');
+        }
         window.dispatchEvent(new CustomEvent('production-board-updated'));
     }
     function refreshProjections() {
@@ -317,4 +347,5 @@
     window.MineProductionBoard = { refresh, beginEdit, storageKey: KEY };
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', mount); else mount();
 })();
+
 

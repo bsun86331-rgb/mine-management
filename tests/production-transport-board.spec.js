@@ -102,7 +102,9 @@ test("TEST 汽车司机运输一趟渣后，生产看板只计一趟", async ({ 
     await expect(page.locator("#todayTripCount")).toHaveText("1");
     await expect(page.locator("#tripRankValue")).toContainText("第");
     await page.locator('#production-board [data-action="toggle"]').click();
-    await expect(page.locator("#production-board")).toContainText(/当日总趟数\s*1/);
+    // Rejected trips stay in driver trip/payroll/ranking counts but leave official production totals.
+    await expect(page.locator("#production-board")).toContainText(/当日总趟数\s*0/);
+    await expect(page.locator("#production-board")).toContainText(/A组总趟数\s*0/);
 
     const payrollMonth = new Date().toISOString().slice(0, 7);
     const seedPayroll = month => {

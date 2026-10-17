@@ -223,11 +223,20 @@
         return { tasks, executions };
     }
     function tripTime(row) { return new Date(row.completedAt || row.completed_at || row.unloadedAt || row.unloaded_at || row.finishedAt || row.endTime || row.createdAt || row.created_at || row.time || row.date); }
+    function isTripStatusEligible(row) {
+        const r = flatten(row);
+        if (r.invalid === true || r.deleted === true || r.isValid === false || /rejected|cancelled|pending|invalid|loading|运输中|待审核|作废/.test(text(r.status || r.reviewStatus))) return false;
+        if (/rejected/.test([r.gpsReviewStatus, r.reviewStatus].map(text).join(' '))) return false;
+        if (/pending/.test(text(r.gpsReviewStatus || r.reviewStatus))) return false;
+        if (/rejected/.test([r.confirmationStatus, r.dispatchConfirmation].map(text).join(' '))) return false;
+        if ((r.dispatchConfirmation === 'pending' || r.confirmationStatus === 'pending') &&
+            (r.manualOverride === true || r.gpsStatus === 'manual_override' || r.gpsReviewStatus === 'pending')) return false;
+        return true;
+    }
     function validTrips(rows) {
         const seen = new Set();
         return rows.map(flatten).filter(r => {
-            if (r.invalid === true || r.deleted === true || r.isValid === false || /rejected|cancelled|pending|invalid|loading|运输中|待审核|作废/.test(text(r.status || r.reviewStatus))) return false;
-            if (/pending|rejected/.test(text(r.gpsReviewStatus || r.reviewStatus))) return false;
+            if (!isTripStatusEligible(r)) return false;
             if (!/completed|approved|finished|valid|完成|通过/.test(text(r.status)) && !r.completedAt && !r.completed_at && !r.unloadedAt && !r.unloaded_at) return false;
             const completedAt = tripTime(r);
             // Records without an immutable trip ID cannot be safely reconciled. Keep them out of official totals until manually matched.
@@ -335,6 +344,6 @@
         }
         return { personId: text(currentId) };
     }
-    return { DEFAULT_SCHEDULE, clone, array, text, flatten, stableTripId, hasStableTripId, personId, equipmentId, equipmentNumber, team, role, category, approved, minute, dateKey, shiftDate, validateSchedule, interval, currentSlot, slotKey, emptyBoard, emptyState, assignments, blockedEquipment, onLeave, occupiedElsewhere, equipmentChoices, personChoices, validateBoard, boardFor, projections, validTrips, personInShift, unassignedPeople, statistics, canEdit, dispatchIdentity, teamDraft };
+    return { DEFAULT_SCHEDULE, clone, array, text, flatten, stableTripId, hasStableTripId, isTripStatusEligible, personId, equipmentId, equipmentNumber, team, role, category, approved, minute, dateKey, shiftDate, validateSchedule, interval, currentSlot, slotKey, emptyBoard, emptyState, assignments, blockedEquipment, onLeave, occupiedElsewhere, equipmentChoices, personChoices, validateBoard, boardFor, projections, validTrips, personInShift, unassignedPeople, statistics, canEdit, dispatchIdentity, teamDraft };
 });
 
