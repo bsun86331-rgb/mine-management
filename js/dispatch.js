@@ -16411,13 +16411,13 @@ function temporaryUnloadApprove(
     requestId
 ) {
 
-    const requests =
+    let requests =
         temporaryUnloadReadArray(
             TEMP_UNLOAD_REQUEST_KEY
         );
 
 
-    const index =
+    let index =
         requests.findIndex(
             item =>
                 String(
@@ -16445,7 +16445,7 @@ function temporaryUnloadApprove(
     }
 
 
-    const request =
+    let request =
         requests[
             index
         ];
@@ -16497,7 +16497,16 @@ function temporaryUnloadApprove(
     if (
         !ok
     ) {
+        return;
+    }
 
+    // Another review tab may finish this request while the confirmation dialog is open.
+    requests = temporaryUnloadReadArray(TEMP_UNLOAD_REQUEST_KEY);
+    index = requests.findIndex(item => String(item.requestId || "") === String(requestId));
+    request = requests[index];
+    if (!request || request.status !== "pending_dispatch") {
+        alert("该记录已经处理，不能重复审核。");
+        renderTemporaryUnloadReview();
         return;
     }
 
@@ -16581,13 +16590,13 @@ function temporaryUnloadReject(
     requestId
 ) {
 
-    const requests =
+    let requests =
         temporaryUnloadReadArray(
             TEMP_UNLOAD_REQUEST_KEY
         );
 
 
-    const index =
+    let index =
         requests.findIndex(
             item =>
                 String(
@@ -16615,7 +16624,7 @@ function temporaryUnloadReject(
     }
 
 
-    const request =
+    let request =
         requests[
             index
         ];
@@ -16645,7 +16654,16 @@ function temporaryUnloadReject(
     if (
         !ok
     ) {
+        return;
+    }
 
+    // Another review tab may finish this request while the confirmation dialog is open.
+    requests = temporaryUnloadReadArray(TEMP_UNLOAD_REQUEST_KEY);
+    index = requests.findIndex(item => String(item.requestId || "") === String(requestId));
+    request = requests[index];
+    if (!request || request.status !== "pending_dispatch") {
+        alert("该记录已经处理，不能重复审核。");
+        renderTemporaryUnloadReview();
         return;
     }
 
