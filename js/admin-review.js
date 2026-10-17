@@ -1484,6 +1484,53 @@ function updateReviewButtons(person) {
 }
 
 
+function refreshPersonRecordForReview(expectedPerson) {
+
+    let latestRecords;
+
+    try {
+        latestRecords = JSON.parse(
+            localStorage.getItem("personnelRecords") || "[]"
+        );
+    } catch (error) {
+        return {
+            ok: false,
+            error: "人员档案无法重新读取，审核未保存。"
+        };
+    }
+
+    if (!Array.isArray(latestRecords)) {
+        return {
+            ok: false,
+            error: "人员档案格式异常，审核未保存。"
+        };
+    }
+
+    const expectedId = getPersonId(expectedPerson);
+    const index = latestRecords.findIndex(
+        item => getPersonId(item) === expectedId
+    );
+    const latestPerson = index >= 0 ? latestRecords[index] : null;
+
+    personnelRecords = latestRecords;
+
+    if (
+        !latestPerson ||
+        JSON.stringify(latestPerson) !== JSON.stringify(expectedPerson)
+    ) {
+        return {
+            ok: false,
+            conflict: true
+        };
+    }
+
+    return {
+        ok: true,
+        index
+    };
+}
+
+
 /* =========================================================
    审核通过
 ========================================================= */
@@ -1534,15 +1581,22 @@ function approveCurrentPerson() {
     }
 
 
-    const index =
-        findPersonIndex(
-            currentPersonId
+    const refreshed =
+        refreshPersonRecordForReview(
+            person
         );
 
-
-    if (index < 0) {
+    if (!refreshed.ok) {
+        renderPage();
+        alert(
+            refreshed.error ||
+            "人员档案已在其他窗口发生变化，请重新核对后审核。"
+        );
         return;
     }
+
+    const index =
+        refreshed.index;
 
 
     const oldPerson =
@@ -1765,15 +1819,22 @@ function rejectCurrentPerson() {
     }
 
 
-    const index =
-        findPersonIndex(
-            currentPersonId
+    const refreshed =
+        refreshPersonRecordForReview(
+            person
         );
 
-
-    if (index < 0) {
+    if (!refreshed.ok) {
+        renderPage();
+        alert(
+            refreshed.error ||
+            "人员档案已在其他窗口发生变化，请重新核对后审核。"
+        );
         return;
     }
+
+    const index =
+        refreshed.index;
 
 
     const oldPerson =
