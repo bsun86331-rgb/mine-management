@@ -40,7 +40,7 @@ test("TEST维修进厂审核在确认框期间状态变化后不覆盖其他窗�
       blocked.push(`${req.method()} ${req.url()}`);
       return route.abort();
     }
-    const relative = decodeURIComponent(url.pathname).replace(/^\\/+/, "") || "index.html";
+    const relative = decodeURIComponent(url.pathname).replace(/^\/+/, "") || "index.html";
     const file = path.resolve(ROOT, relative);
     if (!file.startsWith(ROOT + path.sep)) return route.fulfill({ status: 403, body: "blocked" });
     try {
