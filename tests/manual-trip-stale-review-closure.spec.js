@@ -68,6 +68,11 @@ test("TEST手动补录趟次审核会拒绝确认框期间已被其他窗口处�
       rows[0].gpsReviewStatus = "approved";
       rows[0].officialCountEligible = true;
       localStorage.setItem("tripRecords", JSON.stringify(rows));
+      const legacyRows = JSON.parse(localStorage.getItem("driverTripRecords"));
+      legacyRows[0].dispatchConfirmation = "confirmed";
+      legacyRows[0].gpsReviewStatus = "approved";
+      legacyRows[0].officialCountEligible = true;
+      localStorage.setItem("driverTripRecords", JSON.stringify(legacyRows));
       return true;
     };
     reviewManualTrip("TEST-MANUAL-TRIP-RACE-001", "reject");
@@ -75,7 +80,7 @@ test("TEST手动补录趟次审核会拒绝确认框期间已被其他窗口处�
   let canonical = await page.evaluate(() => JSON.parse(localStorage.getItem("tripRecords"))[0]);
   let legacy = await page.evaluate(() => JSON.parse(localStorage.getItem("driverTripRecords"))[0]);
   expect(canonical).toMatchObject({ dispatchConfirmation: "confirmed", gpsReviewStatus: "approved", officialCountEligible: true });
-  expect(legacy).toMatchObject({ dispatchConfirmation: "pending", gpsReviewStatus: "pending", officialCountEligible: false });
+  expect(legacy).toMatchObject({ dispatchConfirmation: "confirmed", gpsReviewStatus: "approved", officialCountEligible: true });
 
   await page.evaluate(() => {
     const rows = JSON.parse(localStorage.getItem("tripRecords"));
@@ -94,6 +99,11 @@ test("TEST手动补录趟次审核会拒绝确认框期间已被其他窗口处�
       latest[0].gpsReviewStatus = "rejected";
       latest[0].officialCountEligible = false;
       localStorage.setItem("tripRecords", JSON.stringify(latest));
+      const latestLegacy = JSON.parse(localStorage.getItem("driverTripRecords"));
+      latestLegacy[0].dispatchConfirmation = "rejected";
+      latestLegacy[0].gpsReviewStatus = "rejected";
+      latestLegacy[0].officialCountEligible = false;
+      localStorage.setItem("driverTripRecords", JSON.stringify(latestLegacy));
       return true;
     };
     reviewManualTrip("TEST-MANUAL-TRIP-RACE-001", "approve");
@@ -101,7 +111,7 @@ test("TEST手动补录趟次审核会拒绝确认框期间已被其他窗口处�
   canonical = await page.evaluate(() => JSON.parse(localStorage.getItem("tripRecords"))[0]);
   legacy = await page.evaluate(() => JSON.parse(localStorage.getItem("driverTripRecords"))[0]);
   expect(canonical).toMatchObject({ dispatchConfirmation: "rejected", gpsReviewStatus: "rejected", officialCountEligible: false });
-  expect(legacy).toMatchObject({ dispatchConfirmation: "pending", gpsReviewStatus: "pending", officialCountEligible: false });
+  expect(legacy).toMatchObject({ dispatchConfirmation: "rejected", gpsReviewStatus: "rejected", officialCountEligible: false });
   expect(errors).toEqual([]);
   expect(blocked).toEqual([]);
 });
