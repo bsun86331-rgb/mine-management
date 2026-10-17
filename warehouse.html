@@ -2024,12 +2024,21 @@ function submitLost() {
 }
 
 function confirmLostWriteOff(lostId) {
-    const records = readArray(STORAGE.LOSTS);
-    const record = records.find(item => item.lostId === lostId);
+    let records = readArray(STORAGE.LOSTS);
+    let record = records.find(item => item.lostId === lostId);
 
     if (!record || record.status !== "pending_compensation") return;
 
     if (!confirm("确认财务/离职结算已经完成扣款，并核销该物资？")) return;
+
+    // The confirmation dialog may remain open while another tab completes this write-off.
+    records = readArray(STORAGE.LOSTS);
+    record = records.find(item => item.lostId === lostId);
+    if (!record || record.status !== "pending_compensation") {
+        alert("该丢失记录已经处理，不能重复核销。");
+        renderAll();
+        return;
+    }
 
     const materials = getMaterials();
     const material = materials.find(item => item.materialId === record.materialId);
