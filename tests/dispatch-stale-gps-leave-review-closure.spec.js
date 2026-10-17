@@ -68,6 +68,7 @@ test("TEST调度GPS与请假审核不会让旧提示框覆盖已处理结果", a
   await page.locator('#gpsReviewList [data-gps-reject="TEST-GPS-REVIEW-RACE"]').click();
   let trip = await page.evaluate(() => JSON.parse(localStorage.getItem("driverTripRecords"))[0]);
   expect(trip).toMatchObject({ dispatchConfirmation: "confirmed", officialCountEligible: true });
+  await page.locator("#closeGpsReviewModal").click();
 
   await page.evaluate(() => {
     const rows = JSON.parse(localStorage.getItem("driverTripRecords"));
@@ -86,6 +87,7 @@ test("TEST调度GPS与请假审核不会让旧提示框覆盖已处理结果", a
   await page.locator('#gpsReviewList [data-gps-confirm="TEST-GPS-REVIEW-RACE"]').click();
   trip = await page.evaluate(() => JSON.parse(localStorage.getItem("driverTripRecords"))[0]);
   expect(trip).toMatchObject({ dispatchConfirmation: "rejected", officialCountEligible: false });
+  await page.locator("#closeGpsReviewModal").click();
 
   await page.locator("#openLeaveReviewButton").click();
   await page.evaluate(() => {
@@ -101,6 +103,7 @@ test("TEST调度GPS与请假审核不会让旧提示框覆盖已处理结果", a
   let leave = await page.evaluate(() => JSON.parse(localStorage.getItem("leaveRequests"))[0]);
   expect(leave).toMatchObject({ status: "approved", approvedBy: "TEST另一调度窗口" });
   expect(leave.reviewedBy).toBeUndefined();
+  await page.locator("#closeLeaveReviewModal").click();
 
   await page.evaluate(() => {
     const rows = JSON.parse(localStorage.getItem("leaveRequests"));
