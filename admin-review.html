@@ -6515,6 +6515,24 @@ function generateNextEmployeeNo(
    审核通过
 ========================================================= */
 
+function refreshPersonnelRecordsAfterReviewConfirm(records, personSnapshot, serializedSnapshot) {
+    const latestRecords = getPersonnelRecords();
+    const personId = getPersonId(personSnapshot);
+    const latestIndex = latestRecords.findIndex(person => getPersonId(person) === personId);
+    const latestPerson = latestRecords[latestIndex];
+
+    if (!latestPerson || JSON.stringify(latestPerson) !== serializedSnapshot) {
+        alert("人员资料已在其他窗口更新，请刷新页面并重新核对后再审核。");
+        closeDetail();
+        refreshPage();
+        return false;
+    }
+
+    records.splice(0, records.length, ...latestRecords);
+    return true;
+}
+
+
 function approveCurrentPerson() {
 
     if (!selectedPersonId) {
@@ -6550,6 +6568,8 @@ function approveCurrentPerson() {
 
     const person =
         records[index];
+
+    const reviewSnapshot = JSON.stringify(person);
 
     const normalizeIdentityDocument = value =>
         String(value || "")
@@ -6629,6 +6649,13 @@ function approveCurrentPerson() {
 
 
     if (!confirmed) {
+
+        return;
+
+    }
+
+
+    if (!refreshPersonnelRecordsAfterReviewConfirm(records, person, reviewSnapshot)) {
 
         return;
 
@@ -6928,6 +6955,8 @@ function confirmReject() {
     const person =
         records[index];
 
+    const reviewSnapshot = JSON.stringify(person);
+
 
     if (
         getApprovalState(person) ===
@@ -6956,6 +6985,13 @@ function confirmReject() {
 
 
     if (!confirmed) {
+
+        return;
+
+    }
+
+
+    if (!refreshPersonnelRecordsAfterReviewConfirm(records, person, reviewSnapshot)) {
 
         return;
 
