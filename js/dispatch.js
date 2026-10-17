@@ -7246,11 +7246,11 @@ function approveMaintenanceEntry(
     requestId
 ) {
 
-    const records =
+    let records =
         getMaintenanceRequestsForDispatch();
 
 
-    const item =
+    let item =
         records.find(
             record =>
                 getMaintenanceRequestIdForDispatch(
@@ -7273,6 +7273,11 @@ function approveMaintenanceEntry(
         return;
     }
 
+    if (!isPendingMaintenanceDispatch(item)) {
+        alert("该维修申请已被处理，请刷新后查看。");
+        return;
+    }
+
 
     if (
         !confirm(
@@ -7280,6 +7285,22 @@ function approveMaintenanceEntry(
         )
     ) {
 
+        return;
+    }
+
+    records =
+        getMaintenanceRequestsForDispatch();
+
+    item =
+        records.find(
+            record =>
+                getMaintenanceRequestIdForDispatch(record) ===
+                String(requestId)
+        );
+
+    if (!item || !isPendingMaintenanceDispatch(item)) {
+        alert("该维修申请已被其他窗口处理，请刷新后查看。");
+        renderMaintenanceReviewList();
         return;
     }
 
@@ -7557,6 +7578,12 @@ function rejectMaintenanceEntry(
             "没有找到该维修申请。"
         );
 
+        return;
+    }
+
+    if (!isPendingMaintenanceDispatch(item)) {
+        alert("该维修申请已被其他窗口处理，请刷新后查看。");
+        renderMaintenanceReviewList();
         return;
     }
 
