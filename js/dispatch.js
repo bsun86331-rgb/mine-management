@@ -9445,6 +9445,22 @@ function reviewManualTrip(tripId,action){
         return;
     }
 
+    const latestRecord = manualTripPendingRecords()
+        .find(item =>
+            String(
+                item.tripId ||
+                item.recordId ||
+                item.id ||
+                ""
+            ) === String(tripId)
+        );
+
+    if(!latestRecord){
+        alert("该手动补录记录已被其他窗口处理，请刷新后核对。");
+        renderManualTripReview();
+        return;
+    }
+
     /*
      * driver-work V2.10.2E1 当前会同时写：
      * tripRecords（正式）
